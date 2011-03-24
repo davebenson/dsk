@@ -33,8 +33,8 @@
 #include "dsk-common.h"
 #include "dsk-fd.h"
 #include "dsk-dispatch.h"
-#include "../gskrbtreemacros.h"
-#include "../gsklistmacros.h"
+#include "gskrbtreemacros.h"
+#include "gsklistmacros.h"
 
 #define DEBUG_DISPATCH_INTERNALS  0
 #define DEBUG_DISPATCH            0

@@ -1,7 +1,7 @@
 #include "dsk.h"
 #include "dsk-table-checkpoint.h"
-#include "../gskrbtreemacros.h"
-#include "../gsklistmacros.h"
+#include "gskrbtreemacros.h"
+#include "gsklistmacros.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>

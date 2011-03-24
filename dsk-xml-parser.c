@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <search.h>             /* for the seldom-used lfind() */
 #include "dsk.h"
-#include "../gskrbtreemacros.h"
+#include "gskrbtreemacros.h"
 
 /* TODO:
    _ check for NUL

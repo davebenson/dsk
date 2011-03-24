@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>                      /* TMP: debugging */
-#include "../gskrbtreemacros.h"
+#include "gskrbtreemacros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"
 #include "dsk-error.h"
