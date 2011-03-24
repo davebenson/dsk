@@ -1,22 +1,9 @@
 /* TODO: write test program to verify all these macros */
 
-
-#if defined(__GNUC__)
-#define DSK_ALIGNOF_INT        __alignof(int)
-#define DSK_ALIGNOF_FLOAT      __alignof(float)
-#define DSK_ALIGNOF_DOUBLE     __alignof(double)
-#define DSK_ALIGNOF_INT64      __alignof(int64_t)
-#define DSK_ALIGNOF_POINTER    __alignof(void*)
-#else
-#warn "Need alignment info for this compiler"
-#endif
-
-/* Verify that
-       sizeof(struct { char a }) == 1,
-       sizeof(struct { char a,b }) == 2,
-       sizeof(struct { char a,b,c }) == 3,
-   and sizeof(struct { char a,b,c,d,e }) == 5. */
-#define DSK_ALIGNOF_STRUCTURE  1
+/* SEE:
+ *    gcc -dM -E - < /dev/null
+ * for the set of gcc preproc macros.
+ */
 
 #ifdef __SIZEOF_POINTER__
 # define DSK_SIZEOF_POINTER     __SIZEOF_POINTER__
@@ -29,6 +16,25 @@
 #else
 # error "need sizeof(size_t) at preprocessor time"
 #endif
+
+
+#if defined(__GNUC__)
+# define DSK_ALIGNOF_INT        __alignof(int)
+# define DSK_ALIGNOF_FLOAT      __alignof(float)
+# define DSK_ALIGNOF_DOUBLE     __alignof(double)
+# define DSK_ALIGNOF_INT64      __alignof(int64_t)
+# define DSK_ALIGNOF_POINTER    __alignof(void*)
+#else
+# define DSK_ALIGNOF_FLOAT      4
+# warn "Need alignment info for this compiler"
+#endif
+
+/* Verify that
+       sizeof(struct { char a }) == 1,
+       sizeof(struct { char a,b }) == 2,
+       sizeof(struct { char a,b,c }) == 3,
+   and sizeof(struct { char a,b,c,d,e }) == 5. */
+#define DSK_ALIGNOF_STRUCTURE  1
 
 #ifdef __linux__
 # include <endian.h>
