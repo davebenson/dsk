@@ -1,0 +1,59 @@
+DNS 
+	http://www.ietf.org/rfc/rfc1035.txt
+
+HTTP
+	http://www.ietf.org/rfc/rfc2616.txt
+
+HTTP Authentication
+	http://www.ietf.org/rfc/rfc2617.txt
+  OAuth:
+	http://www.ietf.org/rfc/rfc5849.txt
+
+HTTP Cookies
+	http://www.ietf.org/rfc/rfc2109.txt
+	http://www.ietf.org/rfc/rfc2965.txt
+
+CGI:
+	http://www.ietf.org/rfc/rfc3875.txt
+
+
+POST Forms:
+    MIME:
+	http://www.ietf.org/rfc/rfc822.txt
+    MIME: Format of Message Bodies
+	http://www.ietf.org/rfc/rfc2045.txt
+    MIME: Media Types
+	http://www.ietf.org/rfc/rfc2046.txt
+    Content-Disposition header type
+	http://www.ietf.org/rfc/rfc2183.txt
+    MIME type: MultipartDecoder/Related
+	http://www.ietf.org/rfc/rfc2387.txt
+    MIME type: MultipartDecoder/Form-Data
+	http://www.ietf.org/rfc/rfc2388.txt
+
+URLs:
+	http://www.ietf.org/rfc/rfc3986.txt
+
+XML:
+	...
+
+XML-Namespaces:
+	...
+
+Checksumming algos:
+  MD5:	
+	http://www.ietf.org/rfc/rfc1321.txt
+  SHA1:
+	http://www.ietf.org/rfc/rfc3174.txt
+  SHA256:
+
+---
+NOT IMPLEMENTEDD
+
+FTP?
+	...
+	
+SSL
+HTTPS
+JSON
+YAML

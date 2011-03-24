@@ -1,0 +1,206 @@
+BANNER: character classes
+PATTERNS:
+  [abc]
+MATCH 0:a
+MATCH 0:b
+MATCH 0:c
+NO MATCH:0
+NO MATCH:d
+NO MATCH:aa
+NO MATCH:BB
+NO MATCH:
+
+
+PATTERNS:
+  [^abc]
+NO MATCH:a
+NO MATCH:b
+NO MATCH:c
+MATCH 0:0
+MATCH 0:d
+NO MATCH:aa
+NO MATCH:BB
+NO MATCH:
+
+
+PATTERNS:
+  [m-q]
+NO MATCH:l
+NO MATCH:r
+MATCH 0:m
+MATCH 0:q
+NO MATCH:mm
+NO MATCH:qq
+NO MATCH:
+
+BANNER: star operator
+PATTERNS:
+  a*b
+NO MATCH:a
+NO MATCH:aaaaaaaaaaaaaaaaaaaaaa
+NO MATCH:bb
+MATCH 0:b
+MATCH 0:ab
+MATCH 0:aab
+MATCH 0:aaab
+MATCH 0:aaaab
+MATCH 0:aaaaab
+MATCH 0:aaaaaab
+MATCH 0:aaaaaaab
+MATCH 0:aaaaaaaab
+MATCH 0:aaaaaaaaab
+MATCH 0:aaaaaaaaaab
+MATCH 0:aaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaaaab
+
+PATTERNS:
+  a*b*c*
+NO MATCH:cba
+
+BANNER: question-mark operator
+PATTERNS:
+  a?b
+NO MATCH:a
+NO MATCH:aa
+NO MATCH:bb
+MATCH 0:b
+MATCH 0:ab
+
+PATTERNS:
+  a?b?c?d?e?f?
+NO MATCH:ba
+NO MATCH:fa
+NO MATCH:ff
+MATCH 0:a
+MATCH 0:ab
+MATCH 0:b
+MATCH 0:bd
+MATCH 0:bdf
+MATCH 0:bdef
+MATCH 0:bcdef
+MATCH 0:bcef
+MATCH 0:
+MATCH 0:abcdef
+
+BANNER: plus operator
+PATTERNS:
+  a+b
+NO MATCH:a
+NO MATCH:aaaaaaaaaaaaaaaaaaaaaa
+NO MATCH:bb
+NO MATCH:b
+MATCH 0:ab
+MATCH 0:aab
+MATCH 0:aaab
+MATCH 0:aaaab
+MATCH 0:aaaaab
+MATCH 0:aaaaaab
+MATCH 0:aaaaaaab
+MATCH 0:aaaaaaaab
+MATCH 0:aaaaaaaaab
+MATCH 0:aaaaaaaaaab
+MATCH 0:aaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaaab
+MATCH 0:aaaaaaaaaaaaaaaaaaaaaab
+
+PATTERNS:
+  a+b+c
+NO MATCH:
+NO MATCH:ab
+NO MATCH:a
+NO MATCH:b
+NO MATCH:aaab
+NO MATCH:aaaaa
+NO MATCH:abbbb
+NO MATCH:c
+MATCH 0:abc
+NO MATCH:ac
+NO MATCH:bc
+MATCH 0:aaabc
+NO MATCH:aaaaac
+MATCH 0:abbbbc
+
+BANNER: alternation
+PATTERNS:
+  (a|bc|def)
+NO MATCH:
+MATCH 0:a
+MATCH 0:bc
+MATCH 0:def
+NO MATCH:abcdef
+
+PATTERNS:
+  (a|b)(b|c)
+NO MATCH:
+MATCH 0:ab
+MATCH 0:ac
+MATCH 0:bb
+MATCH 0:bc
+NO MATCH:abcdef
+
+BANNER: alternation star
+PATTERNS:
+  (ab|bc|cd)*
+MATCH 0:
+MATCH 0:ababab
+MATCH 0:abbccd
+NO MATCH:abcbcd
+MATCH 0:abababababababababababab
+
+PATTERNS:
+  (ab|bc|cd)*EEE
+MATCH 0:EEE
+MATCH 0:abababEEE
+MATCH 0:abbccdEEE
+NO MATCH:abcbcdEEE
+MATCH 0:ababababababababababababEEE
+
+
+BANNER: alternation plus
+PATTERNS:
+  (ab|bc|cd)+
+NO MATCH:
+MATCH 0:ababab
+MATCH 0:abbccd
+NO MATCH:abcbcd
+MATCH 0:abababababababababababab
+
+BANNER: multiple rules
+PATTERNS:
+  abc
+  a*b*c*
+NO MATCH:cba
+MATCH 0:abc
+MATCH 1:aabc
+MATCH 1:abbc
+MATCH 1:abcc
+MATCH 1:
+MATCH 1:a
+MATCH 1:b
+MATCH 1:c
+
+PATTERNS:
+  .*abc.*
+  aabcddd
+NO MATCH:cba
+MATCH 0:aabcddd
+MATCH 0:whatever abc whatever

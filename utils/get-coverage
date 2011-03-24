@@ -1,0 +1,101 @@
+#! /bin/sh
+
+echo "XXX: i had some unexplained thing remove some .h and .c files" 1>&2
+echo "XXX: RUN THIS SCRIPT WITH CAUTION" 1>&2
+
+dirs=""
+#set -x
+d=gcov.$$
+echo "output in $d/"
+mkdir $d
+make clean  > $d/make-clean.log 2>&1
+make EXTRA_CFLAGS="-fprofile-arcs -ftest-coverage" EXTRA_LDFLAGS="-fprofile-arcs -ftest-coverage" > $d/make.log 2>&1
+make check > $d/run-tests.log 2>&1
+for a in *.c ; do
+  echo --- $a --- >> $d/gcov.output
+  gcov $a >> $d/gcov.output 2>&1
+done
+for dir in $dirs ; do
+  for a in $dir/*.c ; do
+    echo --- $a --- >> $d/gcov.output
+
+    if false; then
+      ### HACK!!!!  gcov needs certain files to be in '.' but not all of them
+      no_ext=`echo $a | sed -e 's/\\.c$//'`
+      base_no_ext=`basename $no_ext`
+      base=`basename $a`
+      ln -s $no_ext.gcda .
+      ln -s $no_ext.gcno .
+      ln -s $a .
+      gcov $a >> $d/gcov.output 2>&1
+      rm $base_no_ext.gcda
+      rm $base_no_ext.gcno
+      rm $base
+      mv $base.gcov $dir
+    else
+      ### This would work, if gcov's output always used the full path names
+      ### consistently...
+      gcov $a >> $d/gcov.output 2>&1
+    fi
+      
+  done
+done
+mv *.c.gcov $d
+rm *.gcda *.gcno
+for dir in $dirs ; do
+  mv $dir/*.c.gcov $d/$dir
+  rm $dir/*.gcda $dir/*.gcno
+done
+
+make clean > /dev/null 2>&1
+
+perl -e  \
+'
+my $total = 0; my $executed = 0;
+sub pad($$) { $_[0] . (" " x ($_[1] - length($_[0]))) }
+sub rpad($$) { (" " x ($_[1] - length($_[0]))) . $_[0]  }
+sub pr() {
+  print join(" ",
+	     rpad($percent, 7),
+	     rpad($executed, 4),
+	     rpad($lines-$executed, 4),
+	     rpad($lines, 4), $fname) . "\n"
+}
+$all_executed = 0;
+$all_total = 0;
+$all_lines = 0;
+sub update_total {
+  $all_executed += $executed;
+  $all_total += $total;
+  $all_lines += $lines;
+}
+while (<STDIN>) {
+  if (/--- (.*) ---/) {
+    my $new_fname = $1;
+    if (defined $fname and defined $lines) { pr(); update_total() }
+    $fname = $new_fname;
+    undef $lines;
+  } elsif (scalar(<STDIN>) =~ /Lines executed:\s*(\d*\.\d\d)% of (\d+)/) {
+    $percent = $1; $lines = $2;
+    $total += $lines;
+    $executed = int($lines * $percent / 100);
+  }
+}
+if (defined $fname) { pr(); update_total() }
+
+$executed = $all_executed;
+$lines = $all_lines;
+$percent = sprintf("%.02f", 100.0 * $executed / $lines);
+$fname = "TOTAL";
+pr();
+print STDERR "Executed $executed lines of $lines ($percent\%).\n";
+' < $d/gcov.output > $d/file-summary.output 2> $d/summary.output
+
+cat $d/summary.output
+
+echo `date`: `cat $d/summary.output` >> coverage-history.txt
+
+echo '[backgrounding make]' 1>&2
+
+make > /dev/null 2>&1 &
+

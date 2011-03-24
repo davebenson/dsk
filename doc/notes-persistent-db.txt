@@ -1,0 +1,27 @@
+- a replicating, auto-adjusting layer should be built atop a normal database
+- the current server config gives a list of host/ports and ranges
+  of data that that partition handles
+- data should only be written to the first node (which will
+  pass it along to mirrors) that is responsible for the data;
+  it will forward the insertions to the appropriate mirrors
+  (this guarantees synchronizedness)
+- when a node comes online it will be assigned a range to mirror.
+  it will connect to authorities for that.
+- after it is done mirroring, it may become an authority for that range
+
+INITIAL STARTUP 
+
+HANDLING CLEAN SHUTDOWN & STARTING AFTERWARD
+
+HANDLING UNCLEAN SHUTDOWN & STARTING AFTERWARD
+
+UNDERLYING DB API:
+   // key-ranges are half-open 
+   void Database::get_approx_quantile (double frac);
+   void Database::get_approx_n_records ();
+   void Database::restrict_database (start_key, end_key);
+   Transaction Database::create_transaction (start_key, end_key);
+   void Transaction::add(key, value)
+   void Transaction::commit();
+
+

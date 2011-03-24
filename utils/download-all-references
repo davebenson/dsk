@@ -1,0 +1,18 @@
+#! /bin/sh
+
+exit_status=0
+
+download () {
+  if curl $url > rfc/`basename $url` ; then
+    echo "downloaded $url" 1>&2
+  else
+    echo "error downloading $url" 1>&2
+    exit_status=1
+  fi
+}
+for url in `perl -ne 'print if m,^\\s+http://,' REFERENCES`
+do
+  download $url
+done
+
+exit $exit_status

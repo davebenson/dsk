@@ -1,0 +1,69 @@
+input=abcdef
+filter=
+output=abcdef
+
+# One layer of C escaping is removed by test-octet-filter
+input=\"
+filter=c
+output=\\\"
+
+input=\"
+filter=cC
+output=\"
+
+input=0123
+filter=h
+output=30313233
+
+input=0123
+filter=hH
+output=0123
+
+input=000102
+filter=H
+output=\0\1\2
+
+input=0123
+filter=b
+output=MDEyMw=
+
+input=0123
+filter=bB
+output=0123
+
+input=01234
+filter=bB
+output=01234
+
+input=012345
+filter=bB
+output=012345
+
+input=<>&
+filter=x
+output=&lt;&gt;&amp;
+
+input=hi mom
+filter=u
+output=hi+mom
+
+input=hi+mom
+filter=u
+output=hi%2bmom
+
+input=hi mom
+filter=uU
+output=hi mom
+
+input=hi+mom
+filter=uU
+output=hi+mom
+
+# Whitespace trimmer
+input=hi      mom
+filter=w
+output=hi mom
+
+input=hi  \t\n   mom
+filter=w
+output=hi mom

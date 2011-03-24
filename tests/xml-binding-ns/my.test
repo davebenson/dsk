@@ -1,0 +1,20 @@
+namespace my.test;
+
+struct A
+{
+  int! a;
+  int? b;
+  int* c;
+  int+ d;
+};
+
+union B
+{
+  foo: int;
+  bar: string;
+};
+
+union C
+{
+  foo: { int* z; string* zz; }
+}

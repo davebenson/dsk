@@ -1,0 +1,295 @@
+STUDY:
+_ make a survey of existing HTTP Client APIs
+  _ wget
+  _ curl
+  _ java
+  _ c#
+  _ gnet
+  _ qt
+  _ libwww
+  _ libsoup
+  _ php:curl
+  _ python
+  _ ruby
+  _ apache
+TESTS:
+_ request header parsing
+_ response header parsing
+_ CGI parsing
+  x GET variable style
+  _ MIME Multipart (POST) style
+  x MIME URL-Encoder GET-string style
+_ MIME Multipart Decoder
+  x stole simple test from GSK
+  _ want base-64 and quoted-printable tests
+  _ tests for all supported headers
+_ MIME Multipart Encoder
+x http client stream: connection-close
+x http client stream: content-length POST data, connection-close
+x http client stream: transfer-encoding chunked POST data
+x http client stream: transfer-encoding chunked content data
+x http client stream: keepalive (GET,POST,content-length,chunked)
+x http client stream: oddballs
+  x transfer-encoding chunk extensions
+  x transfer-encoding chunk trailer
+  x multiline header lines (w/ indent)
+  x "Continue" header
+x http client stream: HEAD requests
+_ http client stream: error conditions:
+  x extra blank space at front of request [ignored blank space]
+  x bad response code
+  x bad transfer-encoding chunked format
+  x bad gzip data
+    x content-stream should have a way to enqueue an error
+      (needs to be in DskMemorySource)
+  x random data tests
+  _ transport errors reading/writing
+    x read errors
+    _ write errors
+  _ post-data stream read errors
+  _ more responses than requests
+_ http client: request instead of request_options testing
+  _ modify http-client test to be two-pass
+  _ test error conditions
+  _ audit that we don't use assert inappropriately
+_ http client gzip content-encoding:
+  x POST data, pre-gzipped, with size
+  x POST data, pre-gzipped, with chunked
+  _ POST data, streaming, with chunked
+  _ POST data, data in slab with size
+    (gzip and provide content-length=compressed-size)
+  x body, with size
+  x body, streaming
+  _ body, without auto-decompression
+x http server stream: content-length POST data
+x http server stream: transfer-encoding-chunked POST data
+x http server stream: transfer-encoding-chunked content
+_ http server stream: transfer-encoding-chunked trailer
+_ http server stream: transfer-encoding-chunked extensions
+x http server stream: pipelining
+_ http server stream: HEAD requests
+_ http server stream: error conditions:
+  _ extra blank space at front of request
+  _ bad transfer-encoding chunked format
+  _ bad gzip data
+  _ random data tests
+  _ transport errors reading/writing
+  _ post-data stream read errors
+  _ unknown Transfer-Encodings; other bogus critical headers (Content-Length)
+_ tie http-server and client together with pipes
+  X simple GET / close connection
+  _ simple HEAD / close connection
+  _ simple POST / close connection
+  _ import 'test_keepalive' (from tests/test-http-client-stream-0)
+x date parsing (each of the three formats)
+x date printing RFC-822
+x converting unixtime <=> DskDate 
+x XML Parser: basics
+x XML Parser: big documents
+x XML Parser: error conditions
+x XML Parser: comments
+_ audit/test: i recall that any http verb may include a content-body
+  from the client -> server, even GET.
+   (1) do we handle that correctly?
+        - including checking if post_data==NULL for a POST or PUT?
+   (2) what does the CGI spec say about this?
+_ http server
+  x CGI Get-style
+  _ CGI POST multipart
+  _ CGI POST URL-Encoded-GET
+  _ streaming POST data (TODO: needs design work)
+  x internal redirect
+  _ internal redirect with POST data
+  _ internal redirect with changing GET params
+  _ "pass" - ie find find next match
+  _ "serve-file" support
+  _ (broken) MD5Sum of POST data
+    _ in header
+    _ in trailer
+  _ max POST size limit
+  _ max header size limit
+_ http client
+  _ keepalive pool
+  _ POST
+  _ POST multipart CGI
+  _ POST URL-Encoded-GET
+  _ streaming content (from server)
+  _ in-memory/on-disk content (from server) based on data-size
+  _ max data size limits
+
+_ Get-If-Modified Server support 
+  _ On serving a file:
+    _ include modification time header (is that a Date header??)
+    _ Obey If-Modified-Since header (with a flag to suppress?)
+  _ A simple flag for non-file data
+
+_ content_type_kv_pairs
+  _ in request-parser
+  _ in response-parser
+  _ in request_new
+  _ in response_new
+  _ in request_init_options
+
+_ Range-support in HTTP (client & server)
+
+WORK ON LUSK - the LUA/DSK HTTP Server
+
+_ XML Parser: ignore doctype and processing-instructions
+x XML Parser: multiple return paths
+x XML Parser: namespace support
+_ XML Parser: parse errors
+_ XML Parser: strip whitespace (not implemented yet) 
+x XML Parser: search for existing conformance test
+_ XML Parser: XML conformance test: suck up entities included
+_ octet-filter test harness [feed data in several ways]
+  x c-quote test
+  x hex test
+  x base64 test
+  x XML escape
+  . XML unescape
+  x url-encode test
+  _ byte doubler test
+  _ quoted-printable test
+  _ zlib test
+_ dsk_octet_filter_source()
+_ more checksum tests
+
+WARNING CONDITIONS:
+_ high trap counts?
+
+TODO:
+_ HTTP Client implementation (search for TODO in dsk-http-client.h)
+_ client support for receiving trailers (and server too, on principle)
+_ remove DskObjectWeakPointer ?
+_ Authentication support in DskHttpServer.
+  _ support for HTTP auth
+  _ support for Cookie-based auth
+_ Authentication support in DskHttpClient.
+_ Cookie support in DskHttpClient
+
+_ DskPattern:
+  _ optimize certain patterns.  e.g. q*q* ==> q*
+                                     q+q* ==> q+
+                                     q*q+ ==> q+
+    in fact, maybe we should always use q+ => qq*
+  _ IMPORTANT OPTIMIZATION: implement "state-trumping"
+    PROBLEM: currently something like:
+            .*a.*
+	    .*b.*
+	    .*c.*
+    Generates 2^N states (where N is the number of unanchored regexes).
+    To minimize this, note that if we have gotten 'a' and 'b', then we will
+    always return 'a', so keeping track of 'b' is unneeded,
+    and the state transition graph should have one state of each of 'a', 'b', 'c':
+    the highest character found.
+
+    A useful implementation might handle JUST .* which is very common.
+    A better implementation might allow any trailing expression, for example
+    the same situation occurs with:
+            .*ax*
+	    .*bx*
+	    .*cx*
+  _ add 'flags' to DskPatternEntry with "ignore_case",
+  _ utf-8 support
+  _ implement some sort of NFA fallback
+  _ support captures (ugh)
+  _ TEST:
+    _ empty list of patterns
+
+x HTTP Client Stream        KEEP UNTIL DONE TESTING
+  x content-encoding gzip
+    x message body
+    x POST data
+      x make dsk_http_client_stream_request_new take a
+	DskHttpClientStreamRequestOptions
+      x add force_post_data_gzip to Options; if given a static buffer,
+        compress at request time; if given a stream, make a post-data-encoder.
+	content-length must be handled carefullly.
+
+filters:
+  x dsk_hex_encoder_new             
+  x dsk_hex_decoder_new             
+  x dsk_url_encoder_new             
+  x dsk_url_decoder_new
+  x dsk_xml_encoder_new             
+  x dsk_quote_printable_new         
+  x dsk_unquote_printable_new      
+  _ dsk_utf8_to_utf16_converter_new
+  _ dsk_utf16_to_utf8_converter_new
+  x dsk_byte_doubler_new           
+  x dsk_byte_undoubler_new         
+  x dsk_octet_filter_chain_new_take [steal from programs/dsk-octet-filter.c]
+_ remove persistency support from DskClientStream !?!
+_ dsk_buffer_transfer, dsk_buffer_drain: consolidate fragments
+  if they are both small.
+_ figure out a way to tune buffer allocations
+  (perhaps a way to build to write a behavior log?)
+_ Is the post_data hack of dsk_http_server_stream_respond() really ok?
+_ Review dsk-dispatch API... has_idle and has_timeout are clearly bogus...
+  implement epoll support.
+_ Date:
+  _ dsk_date_print_rfc850()
+  _ dsk_date_print_iso8601()
+_ HTTP Header Work:
+  _ "no_cache" response:
+    HTTP/1.1:
+      Cache-Control: no-store, no-cache, must-revalidate
+      Cache-Control: post-check=0, pre-check=0
+    HTTP/1.0:
+      Pragma: no-cache
+
+_ fix dsk_utf8_skip_whitespace()
+_ other utf8 functions
+  _ strdown? strup?
+  _ diacritical normalization
+
+
+
+_ HTTP Server Stream implementation
+  _ content-encoding gzip
+    _ POST data, with size
+    _ POST data, with chunked
+    _ POST data, without auto-decompression
+    _ body, pre-gzipped, with size
+    _ body, pre-gzipped, with chunked
+    _ body, streaming, with chunked
+    _ body, data in slab with size
+      (gzip and provide content-length=compressed-size)
+_ HTTP Server implementation
+_ MIME Multipart Impl
+_ XML implementation
+  x xml node object
+  x parser
+  _ parser: suppress whitespace
+  _ parser: UTF-16
+  _ parser: other char encodings? iconv plugin?
+  _ parser: parsing dtd headers:
+    _ internal entities
+    _ external entities (a config parameter?)
+    _ validation?
+    note: there should be a flag to disable/skip this
+  _ printer / pretty-printer
+_ JSON implementation
+  _ parser
+  _ printer
+_ dsk_octet_filter_sink()
+
+LATER
+_ SSL and HTTPS [see file TODO-SSL]
+_ YAML implementation
+  _ parser
+  _ printer
+
+DOCUMENTATION
+*everything needs docs, but just remind ourselves of subtle stuff*
+_ pick a documentation standard
+_ document XML binding language
+
+CODING STANDARDS
+"when in doubt, do NOT abbreviated"
+_ DOCUMENT: length (not abbreviated)
+_ size_t everywhere ?
+_ s/octet/byte/ ?????
+_ break apart dsk-octet-io.h
+_ DskClientStreamSource BUT DskOctetStreamSourceFd.
+  Fix this inconsistency and come up with a policy for naming derived classes

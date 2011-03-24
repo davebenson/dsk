@@ -1,0 +1,183 @@
+\documentclass{article}
+\title{A Survey of HTTP Client APIs and Implementations}
+\author{Dave Benson}
+\frenchspacing
+\usepackage{amsfonts,amsmath,amssymb,epsfig,eucal}
+\pagestyle{headings}
+\begin{document}
+\maketitle
+
+\section{Overview}
+In designing a new HTTP Client library,
+one must walk a fine line between a library
+with so many features it is practically impossible to learn,
+and a library that isn't sufficient for all uses.
+This document attempts to congeal wisdom to succor future HTTP client
+library architects.
+
+Library features can be {\bf manual}, meaning that all or most of
+the responsibility falls on the user;
+or they can be {\bf automatic}, meaning that all the work is done
+internal to the library.  Automatic features do not place
+any burden on the user of the API, except perhaps during debugging.
+Most features naturally fall between these extremes.
+
+The remainder of this document will first enumerate and
+discuss various features; we will often mention the availability
+of each feature in the various APIs we have investigated.
+Then we will briefly look at each API,
+in order to orient the reader who might wish to study some
+aspect in detail.
+
+\section{Client API Features}
+
+\subsection{Basic Operation}
+Path, port.  User-agent and other misc headers.
+blocking or nonblocking.  http 1.0 versus 1.1.
+Support for HEAD, CONNECT, TRACE, DELETE, OPTIONS.
+Spport for SOCKS proxies.
+
+Error-handling, streaming versQs nonstreaming.
+
+\subsection{Transport Layer Issues}
+ssl, unix-domain-sockets, nagling, ipv6, willingness to use proxy.
+Tunneled HTTPS connections through HTTP proxies, via the CONNECT method.
+
+\subsection{Keepalive and Pipelining}
+HTTP 1.1 encourages keepalive, which refers to the ability to
+make multiple requests over the same underlying connection.
+
+Manual APIs for keepalive can be implemented, especially if
+the API is transport-layer aware.
+
+However, most keepalive use is probably automatic:
+a client library can keep a pool of connections that are
+ready for reuse, and will do so if a request for the same
+host comes in.
+Some libraries\footnote{like jakarta} provide a total maximum of connections
+and a per-host maximum.  
+
+Stale connections mQst be prQned if a keepalive pool is in Qse.
+
+... pipelining
+... actual library/api observations
+
+HTTP 1.0 spports keepalive throgh a special nonstandard header
+called {\tt KeepAlive}; some clients spport it.
+
+\subsection{Byte-Ranges}
+
+\subsection{Authentification Support}
+Basic, Digest, NTLM (``NT Lan Manager''), Negotiate, Kerberos
+
+\subsection{Cookie Support}
+Ultimately, no known API is brazen enough to implement
+a cookie policy on its own.  However, some APIs
+allow a policy abstraction; others may require the client
+to manually just set cookies; others may allow use of a ``cookie jar'' file.
+
+\subsection{Robustness}
+Timeouts, retrying, following redirects, md5sums (of all sorts)
+
+\section{Client API Summaries}
+
+\subsection{{\tt wget}}
+
+\subsection{{\tt curl}}
+Curl and its library, {\tt libcurl} aim to be an omnibus library for
+file transfer.  It supports non-HTTP protocols as well.
+It has several APIs:  {\tt easy} is a specialization for
+simple uses; {\tt multi} is a specialization to get multiple URLs at
+the same time.
+
+It supports MIME multipart forms, SSL (HTTPS), IPv6,
+a number of authentication strategies, file transfer resume,
+http proxy tunneling, cookies.  Many of them are accessed via
+{\tt Curl\_setopt}.
+
+It is a non-blocking API, but it is desired to operate principally
+in blocking mode -- but it's nice because it doesn't constrain the
+user to a main-loop type API.
+
+The {\tt struct Curl\_handler} is worth studying since
+it generalizes so many APIs.  For convenience, it is reproduced here
+(from {\tt lib/urldata.h}):
+\begin{tiny}
+\begin{verbatim}
+struct Curl_handler {
+  const char * scheme;        /* URL scheme name. */
+
+  /* Complement to setup_connection_internals(). */
+  CURLcode (*setup_connection)(struct connectdata *);
+
+  /* These two functions MUST be set to be protocol dependent */
+  CURLcode (*do_it)(struct connectdata *, bool *done);
+  Curl_done_func done;
+
+  /* If the curl_do() function is better made in two halves, this
+   * curl_do_more() function will be called afterwards, if set. For example
+   * for doing the FTP stuff after the PASV/PORT command.
+   */
+  Curl_do_more_func do_more;
+
+  /* This function *MAY* be set to a protocol-dependent function that is run
+   * after the connect() and everything is done, as a step in the connection.
+   * The 'done' pointer points to a bool that should be set to TRUE if the
+   * function completes before return. If it doesn't complete, the caller
+   * should call the curl_connecting() function until it is.
+   */
+  CURLcode (*connect_it)(struct connectdata *, bool *done);
+
+  /* See above. Currently only used for FTP. */
+  CURLcode (*connecting)(struct connectdata *, bool *done);
+  CURLcode (*doing)(struct connectdata *, bool *done);
+
+  /* Called from the multi interface during the PROTOCONNECT phase, and it
+     should then return a proper fd set */
+  int (*proto_getsock)(struct connectdata *conn,
+                       curl_socket_t *socks,
+                       int numsocks);
+
+  /* Called from the multi interface during the DOING phase, and it should
+     then return a proper fd set */
+  int (*doing_getsock)(struct connectdata *conn,
+                       curl_socket_t *socks,
+                       int numsocks);
+
+  /* Called from the multi interface during the DO_DONE, PERFORM and
+     WAITPERFORM phases, and it should then return a proper fd set. Not setting
+     this will make libcurl use the generic default one. */
+  int (*perform_getsock)(const struct connectdata *conn,
+                         curl_socket_t *socks,
+                         int numsocks);
+
+  /* This function *MAY* be set to a protocol-dependent function that is run
+   * by the curl_disconnect(), as a step in the disconnection.
+   */
+  CURLcode (*disconnect)(struct connectdata *);
+
+  long defport;       /* Default port. */
+  long protocol;      /* PROT_* flags concerning the protocol set */
+};
+\end{verbatim}
+\end{tiny}
+
+Configuration is by way of a {\tt setopt} function.
+
+Based on analysis of version 7.21.2 downloaded from
+\centerline{\tt http://curl.haxx.se/download/curl-7.21.2.tar.bz2}
+
+\subsection{java - JDK {\tt HttpUrllient}}
+\subsection{java - Jakarta {\tt HttpClient}}
+The Apache Foundation has an HTTP client library in Jakarta.\footnote{{\tt http://hc.apache.org/httpclient-3.x/features.html}}
+\subsection{c\#}
+\subsection{gnet}
+\subsection{qt}
+\subsection{libwww}
+\subsection{python}
+\subsection{ruby}
+\subsection{apache}
+\subsection{webkit}
+\subsection{mozilla}
+
+\end{document}

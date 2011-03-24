@@ -1,0 +1,28 @@
+#! /bin/sh
+
+p=`pwd`/programs/make-validation-test-data
+t=/home/daveb/xml-test-suite/xmlconf
+
+# add XMLPATH DIRECTORY FILENAME
+add () {
+  cd "$t/$2"
+  echo "/* ==== from $2 $3 ==== */"
+  $p --xmlpath="$1" < "$3" || {
+    echo "error processing $p/$2/$3" 1>&2
+    exit 1
+  }
+}
+
+#    XMLPATH                    DIRECTORY            FILENAME
+add TESTCASES/TESTCASES/TEST  ibm                  ibm_oasis_invalid.xml
+add TESTCASES/TESTCASES/TEST  ibm                  ibm_oasis_valid.xml
+add TESTCASES/TESTCASES/TEST  ibm                  ibm_oasis_not-wf.xml
+add TESTCASES/TEST            eduni/namespaces/1.0 rmt-ns10.xml
+add TESTCASES/TEST            eduni/namespaces/1.1 rmt-ns11.xml
+add TESTCASES/TEST            eduni/xml-1.1        xml11.xml
+add TEST                      sun                  sun-invalid.xml
+add TEST                      sun                  sun-valid.xml
+add TEST                      sun                  sun-not-wf.xml
+add TEST                      sun                  sun-error.xml
+add TESTCASES/TEST            xmltest              xmltest.xml
+
