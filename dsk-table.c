@@ -871,6 +871,8 @@ lookup_do_merge_or_set (DskTable *table,
           *res_index_inout = -1;
           return;
 #endif
+        default:
+          dsk_return_if_reached ("bad ret-val from merge");
         }
       if (!is_correct)
         {
