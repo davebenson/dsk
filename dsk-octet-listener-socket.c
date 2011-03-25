@@ -185,8 +185,12 @@ DskOctetListener *
 dsk_octet_listener_socket_new (const DskOctetListenerSocketOptions *options,
                                DskError **error)
 {
-  struct sockaddr_storage storage;
-  struct sockaddr *addr = (struct sockaddr *) &storage;
+  union {
+    struct sockaddr_storage storage;
+    struct sockaddr addr;
+    struct sockaddr_un un;
+  } storage;
+  struct sockaddr *addr = &storage.addr;
   socklen_t addr_len = sizeof (storage);
   DskFileDescriptor fd;
   DskOctetListenerSocket *rv;
@@ -203,7 +207,7 @@ dsk_octet_listener_socket_new (const DskOctetListenerSocketOptions *options,
   /* set-up socket address */
   if (options->is_local)
     {
-      struct sockaddr_un *un = (struct sockaddr_un *) addr;
+      struct sockaddr_un *un = &storage.un;
       addr_len = sizeof (struct sockaddr_un);
       memset (un, 0, addr_len);
       un->sun_family = PF_LOCAL;
