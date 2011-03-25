@@ -1,7 +1,7 @@
 #include <stdio.h>              /* for snprintf() */
 #include "dsk.h"
 #include "dsk-http-internals.h"
-#include "../gsklistmacros.h"
+#include "gsklistmacros.h"
 
 #define GET_XFER_QUEUE(server_stream) \
   DskHttpServerStreamTransfer *,      \

@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include "../gskrbtreemacros.h"
+#include "gskrbtreemacros.h"
 #include "dsk.h"
 
 typedef struct _VarDef VarDef;

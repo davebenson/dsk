@@ -1,9 +1,9 @@
 #include <string.h>
 #include "dsk.h"
-#include "../gsklistmacros.h"           /* TODO: USE THESE */
-#include "../gskrbtreemacros.h"
+#include "gsklistmacros.h"           /* TODO: USE THESE */
+#include "gskrbtreemacros.h"
 #define DANG_SIZEOF_SIZE_T DSK_SIZEOF_POINTER
-#include "../gskqsortmacro.h"           /* TODO: USE THESE */
+#include "gskqsortmacro.h"           /* TODO: USE THESE */
 
 #define DEBUG_TOKENIZE    0
 #define DEBUG_PARSE       0

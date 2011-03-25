@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include "dsk.h"
 
-#include "../gsklistmacros.h"
+#include "gsklistmacros.h"
 
 
 /* === Request Matching Infrastructure === */

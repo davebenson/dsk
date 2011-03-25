@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "dsk.h"
-#include "../gskrbtreemacros.h"
-#include "../gsklistmacros.h"
+#include "gskrbtreemacros.h"
+#include "gsklistmacros.h"
 
 #define MAX_CNAMES                 16
 #define TIME_WAIT_TO_RECYCLE_ID    60

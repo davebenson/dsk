@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include "dsk.h"
 #include "dsk-xml-binding-internals.h"
-#include "../gskrbtreemacros.h"
+#include "gskrbtreemacros.h"
 #define DANG_SIZEOF_SIZE_T 8
-#include "../gskqsortmacro.h"
+#include "gskqsortmacro.h"
 #define DSK_STRUCT_MEMBER_P(struct_p, struct_offset)   \
     ((void*) ((char*) (struct_p) + (long) (struct_offset)))
 #define DSK_STRUCT_MEMBER(member_type, struct_p, struct_offset)   \

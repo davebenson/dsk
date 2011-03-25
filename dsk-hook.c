@@ -1,6 +1,6 @@
 #include "dsk.h"
 
-#include "../gsklistmacros.h"
+#include "gsklistmacros.h"
 #include "debug.h"
 
 static DskDispatchIdle *idle_handler = NULL;

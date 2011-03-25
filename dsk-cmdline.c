@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../gskrbtreemacros.h"
+#include "gskrbtreemacros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"
 #include "dsk-error.h"
