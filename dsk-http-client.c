@@ -57,6 +57,10 @@ struct _DskHttpClientTransfer
   DskHttpClientStreamTransfer *transfer;  /* iff connection!=NULL */
   RequestMode request_mode;
 
+  DskHttpClientRequestFuncs *funcs;
+  void *func_data;
+  DskDestroyNotify func_data_destroy;
+
   /* Either the prev/next withing the connection,
      or within the unassigned_requests list. */
   Transfer *prev, *next;
@@ -261,7 +265,13 @@ connection_fatal_fail (Connection *connection,
                     prev->next = next;
 
                   /* fail 'cur': too many retries */
-                  ...
+                  if (cur->funcs->handle_fail != NULL)
+                    {
+                      DskError *error = dsk_error_new ("too many retries");
+                      cur->funcs->handle_fail (cur, error, cur->func_data);
+                      dsk_error_unref (error);
+                    }
+                  transfer_unref (cur);
                 }
               else
                 {
@@ -644,6 +654,9 @@ dsk_http_client_request  (DskHttpClient               *client,
   /* Create request object */
   request = dsk_malloc0 (sizeof (Transfer));
   request->host_info = host_info;
+  request->funcs = options->funcs;
+  request->func_data = options->func_data;
+  request->func_data_destroy = options->destroy;
 
   /* Determine request->mode */
   ...
