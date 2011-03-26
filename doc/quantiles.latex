@@ -1,0 +1,60 @@
+\documentclass{article}
+\title{Quantile Estimation in a Map-Reduce Framework}
+\author{David Benson}
+\frenchspacing
+\usepackage{amsfonts,amsmath,amssymb,epsfig,eucal}
+\pagestyle{headings}
+\begin{document}
+\maketitle
+
+
+Goal is to maintain approximate quantile
+estimation for a set $X$ whose only known property is
+the ordering.
+
+
+We use a slightly different but equivalent representation
+than Greenwald and Khanna:
+   $$S = t_0, t_1, \dots, t_{s-1}$$
+with
+   $$t_i = (v_i, r_{\min,i}, r_{\max,i})$$
+where
+   $$v_i \in X$$
+   $$v_0 = \min(X)$$
+   $$v_{s-i} = \max(X)$$
+   $$v_{i-1} \leq v_i$$
+
+And $r_{\min,i}$ is the minimum possible
+rank that the element $v_i$ might have,
+and $r_{\max,i}$ is the maximum possible rank.
+
+Our goal here is to implement a merging algorithm:
+given $S^1$ and $S^2$ combine them into an $S^+$.
+It is obvious how to merge the lists of values $v_i^1$
+and $v_i^2$.
+
+Let us compute $r^+_{\min,i^{\prime}}$ corresponding to
+$v^+_{i^{\prime}}$ which is drawn from the $i$th element
+of $S^2$ (for concreteness) (i.e. $v^+_{i^{\prime}} = v^2_i$).
+Let $i''$ be defined as the greatest index of $S^1$
+such that
+  $$v^1_{i^{\prime \prime}} \leq v^2_i < v^1_{i^{\prime \prime}+1}.$$
+We wish to compute bounds on the rank of $v^+_{i^{\prime}} = v^2_i$ in $S^+$
+
+Suppose first that $v^1_{i^{\prime \prime}} = v^2_i$.
+Then
+\begin{align*}
+r^+_{\min,i^{\prime}} &= r^2_{\min,i} + r^1_{\min,i^{\prime \prime}}, \\
+r^+_{\max,i^{\prime}} &= r^2_{\max,i} + r^1_{\max,i^{\prime \prime}}.
+\end{align*}
+
+Now suppose that the inequality is strict: $v^1_{i^{\prime \prime}} < v^2_i$.
+is bounded by:
+\begin{align*}
+r^+_{\min,i^{\prime}} &= r^2_{\min,i} + r^1_{\min,i^{\prime \prime}}, \\
+r^+_{\max,i^{\prime}} &= r^2_{\max,i} + r^1_{\max,i^{\prime \prime}+1} - 1.
+\end{align*}
+
+  
+
+\end{document}
