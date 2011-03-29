@@ -22,7 +22,9 @@ typedef enum
   DSK_PRINTF_COLLECT_INT64    = 'q',
   DSK_PRINTF_COLLECT_DOUBLE   = 'f'
 } DskPrintfCollectType;
-typedef struct
+
+typedef struct _DskPrintfCollectArg DskPrintfCollectArg;
+struct _DskPrintfCollectArg
 {
   DskPrintfCollectType type;
   union {
@@ -32,7 +34,7 @@ typedef struct
     int64_t q;
     double d;
   } info;
-} DskPrintfCollectArg;
+};
 typedef void (*DskPrintfFunc) (unsigned n_args,
                                DskPrintfCollectArg *args,
 			       const char *format,

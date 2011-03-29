@@ -50,6 +50,12 @@ struct _DskTableConfig
   const char *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
+
+  /* quantile-estimation.  For some apps, it is helpful
+     to be able to get a reasonable current distribution of
+     the keyspace.  In particular this is good for implementing "DHTs"
+     that support range queries. */
+  unsigned quantiles_n;
 };
 #define DSK_TABLE_CONFIG_DEFAULT                                       \
 {                                                                      \
@@ -58,7 +64,8 @@ struct _DskTableConfig
   DSK_FALSE,            /* anti-chronological lookups */               \
   NULL,                 /* directory: mandatory */                     \
   NULL,                 /* default to trivial table-file */            \
-  NULL                  /* default to trivial checkpoint interface */  \
+  NULL,                 /* default to trivial checkpoint interface */  \
+  0                     /* by default, disable quantile estimation */  \
 }
 
 DskTable   *dsk_table_new          (DskTableConfig *config,

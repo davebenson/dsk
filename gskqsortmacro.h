@@ -1,4 +1,5 @@
 
+#include "dsk-config.h"
 
 typedef struct _GskQsortStackNode GskQsortStackNode;
 typedef struct _GskQsortStack GskQsortStack;

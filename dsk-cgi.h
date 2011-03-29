@@ -1,5 +1,6 @@
 
-typedef struct
+typedef struct _DskCgiVariable DskCgiVariable;
+struct _DskCgiVariable
 {
   dsk_boolean is_get;           /* if !is_get, then its a POST CGI var */
   char *key;
@@ -10,7 +11,7 @@ typedef struct
   char *content_type;
   char *content_location;
   char *content_description;
-} DskCgiVariable;
+};
 
 
 /* query_string starts (and includes) the '?'  */

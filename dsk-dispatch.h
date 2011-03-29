@@ -73,11 +73,13 @@ DskDispatchSignal *
 void  dsk_dispatch_remove_signal (DskDispatchSignal *signal);
 
 /* Process termination */
-typedef struct {
+typedef struct _DskDispatchChildInfo DskDispatchChildInfo;
+struct _DskDispatchChildInfo
+{
   int process_id;
   dsk_boolean killed;           /* killed by signal */
   int value;                    /* exit status or signal number */
-} DskDispatchChildInfo;
+};
 typedef void (*DskChildHandler) (DskDispatchChildInfo  *info,
                                  void                  *func_data);
 DskDispatchChild *
@@ -99,16 +101,20 @@ void  dsk_dispatch_run      (DskDispatch *dispatch);
 
 
 /* --- API for those who want to embed a dispatch into their own main-loop --- */
-typedef struct {
+typedef struct _DskFileDescriptorNotify DskFileDescriptorNotify;
+struct _DskFileDescriptorNotify
+{
   DskFileDescriptor fd;
   Dsk_Events events;
-} DskFileDescriptorNotify;
+};
 
-typedef struct {
+typedef struct _DskFileDescriptorNotifyChange DskFileDescriptorNotifyChange;
+struct _DskFileDescriptorNotifyChange
+{
   DskFileDescriptor fd;
   Dsk_Events old_events;
   Dsk_Events events;
-} DskFileDescriptorNotifyChange;
+};
 
 void  dsk_dispatch_dispatch (DskDispatch *dispatch,
                                     size_t              n_notifies,
