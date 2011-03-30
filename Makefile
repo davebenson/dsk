@@ -25,9 +25,10 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-table-0 \
 		tests/test-json-0 \
 		tests/test-ctoken
+EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding
-all: $(BUILT_SOURCES) $(PROGRAMS) build-tests
+all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all
 	@if test -z "$(PREFIX)"; then echo "you must specify PREFIX" 1>&2 ; exit 1; fi
@@ -37,6 +38,7 @@ install: all
 	install -m 644 libdsk.a "$(PREFIX)/lib"
 
 build-tests: test-build-dependencies $(TEST_PROGRAMS)
+build-examples: example-build-dependencies $(EXAMPLE_PROGRAMS)
 
 EXTRA_PROGRAMS = programs/make-validation-test-data
 extra: $(EXTRA_PROGRAMS)
@@ -54,6 +56,8 @@ tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^ -lm
 programs/%: programs/%.c libdsk.a
 	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^
+examples/%: examples/%.c libdsk.a
+	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^ -lm
 libdsk.a: dsk-inlines.o \
           dsk-dns-protocol.o dsk-error.o dsk-object.o dsk-common.o dsk-udp-socket.o dsk-dispatch.o dsk-hook.o \
 	  dsk-cmdline.o dsk-ip-address.o dsk-dns-client.o dsk-mem-pool.o \
@@ -120,9 +124,18 @@ tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c: \
 	programs/dsk-make-xml-binding --namespace=my.test \
 		--search-dotted=tests/xml-binding-ns \
 		--output-basename=tests/generated/xml-binding-test
+examples/generated/wikiformats.h examples/generated/wikiformats.c: \
+	examples/wikiformats programs/dsk-make-xml-binding
+	@test -d examples/generated || mkdir examples/generated
+	programs/dsk-make-xml-binding --namespace=wikiformats \
+		--search-dotted=examples \
+		--output-basename=examples/generated/wikiformats
 
 test-build-dependencies: \
 	tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c
+
+example-build-dependencies: \
+	examples/generated/wikiformats.h examples/generated/wikiformats.c
 
 clean:
 	rm -f *.o libdsk.a

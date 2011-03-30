@@ -730,7 +730,7 @@ static void render_namespace_descriptor_def (DskPrint *ctx,
     {
       /* needs sorting array */
       dsk_print_set_template_string (ctx, "types_sorted_by_name",
-				     "(unsigned *) ${namespace}__type_sorted_by_name");
+				     "${namespace}__type_sorted_by_name");
       dsk_print (ctx, "static const unsigned $types_sorted_by_name[] =\n{");
       for (i = 0; i < ns->n_types; i++)
 	{

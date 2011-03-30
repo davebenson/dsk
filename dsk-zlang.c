@@ -52,18 +52,12 @@ DskZLangContext *dsk_zlang_context_new        (void)
 {
   DskZLangContext *rv = dsk_malloc (sizeof (DskZLangContext));
   rv->namespace.tree = NULL;
-  dsk_zlang_namespace_register_type (&rv->namespace, "int",
-                                     dsk_zlang_stack_node_clear_do_nothing,
-                                     dsk_zlang_stack_node_copy_memcpy);
-  dsk_zlang_namespace_register_type (&rv->namespace, "uint",
+  dsk_zlang_namespace_register_type (&rv->namespace, "number",
                                      dsk_zlang_stack_node_clear_do_nothing,
                                      dsk_zlang_stack_node_copy_memcpy);
   dsk_zlang_namespace_register_type (&rv->namespace, "string",
                                      dsk_zlang_stack_node_clear_string,
                                      dsk_zlang_stack_node_copy_string);
-  dsk_zlang_namespace_register_type (&rv->namespace, "float",
-                                     dsk_zlang_stack_node_clear_do_nothing,
-                                     dsk_zlang_stack_node_copy_memcpy);
   return rv;
 }
 
@@ -72,6 +66,18 @@ dsk_boolean      dsk_zlang_context_parse_file (DskZLangContext *context,
                                                DskZLangInsn   **main_out,
                                                DskError       **error)
 {
+  size_t size;
+  char *contents = dsk_file_get_contents (filename, &size, error);
+  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_DEFAULT;
+  if (content == NULL)
+    return DSK_FALSE;
+  config.error_filename = filename;
+  ctoken = dsk_ctoken_scan_str (contents, contents + size, &config, error);
+  if (ctoken == NULL)
+    {
+      dsk_free (contents);
+      return DSK_FALSE;
+    }
   ...
 }
 

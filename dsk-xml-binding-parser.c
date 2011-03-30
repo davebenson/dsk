@@ -288,15 +288,20 @@ dotted_bareword_to_type (ParseContext *context,
       /* just a name:  first lookup in current namespace,
          then look it up in 'use' statements without 'as' clauses. */
       unsigned i;
+      DskXmlBindingType *rv = NULL;
+      dsk_warning ("looking up %s in current ns", dotted_type_name);
       for (i = 0; i < context->n_types; i++)
         if (strcmp (dotted_type_name, context->types[i]->name) == 0)
           return context->types[i];
+      dsk_warning ("%s not found current ns", dotted_type_name);
+      rv = dsk_xml_binding_namespace_lookup (context->ns, dotted_type_name);
+      if (rv)
+        return rv;
       for (i = 0; i < context->n_use_statements; i++)
         if (context->use_statements[i].as == NULL)
           {
-            DskXmlBindingType *rv = 
-               dsk_xml_binding_namespace_lookup (context->use_statements[i].ns,
-                                                 dotted_type_name);
+            DskXmlBindingNamespace *as_ns = context->use_statements[i].ns;
+            rv = dsk_xml_binding_namespace_lookup (as_ns, dotted_type_name);
             if (rv != NULL)
               return rv;
           }
@@ -889,12 +894,13 @@ error_cleanup:
   {
     unsigned i;
     dsk_free (ns_name);
-    for (i = 0; i < n_ns_types; i++)
-      dsk_xml_binding_type_unref (ns_type_info[i].type);
+    /* note: the various ns_type_info[i].type are owned by the namespace */
     dsk_free (ns_type_info);
     for (i = 0; i < context->n_use_statements; i++)
       dsk_free (context->use_statements[i].as);
     dsk_free (context->use_statements);
+    context->n_use_statements = 0;
+    context->use_statements = NULL;
   }
   return DSK_FALSE;
 }

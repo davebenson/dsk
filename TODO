@@ -12,6 +12,7 @@ _ make a survey of existing HTTP Client APIs
   _ python
   _ ruby
   _ apache
+
 TESTS:
 _ request header parsing
 _ response header parsing
@@ -116,6 +117,14 @@ _ http client
   _ streaming content (from server)
   _ in-memory/on-disk content (from server) based on data-size
   _ max data size limits
+
+_ make XML parser:
+  _ obey xml:whitespace="preserve" (in SUPPRESS_WHITESPACE mode)
+  _ add CONDENSE_WHITESPACE mode that elides preceding and trailing whitespace,
+    and condenses all runs of whitespace into a single space character.
+    (CONDENSE_WHITESPACE performs a superset of SUPPRESS_WHITESPACE,
+    and so, adding both is redundant; maybe WHITESPACE_HANDLING_PRESERVE,
+    WHITESPACE_HANDLING_SUPPRESS, WHITESPACE_HANDLING_CONDENSE is needed)
 
 _ Get-If-Modified Server support 
   _ On serving a file:

@@ -1487,7 +1487,7 @@ static TryDirectiveResult try_directive (DskXmlParser *parser,
   return TRY_DIRECTIVE__SUCCESS;
 }
 /* --- lexing --- */
-static unsigned count_newlines (unsigned length, const char *data)
+static unsigned count_newlines (unsigned length, const uint8_t *data)
 {
   unsigned rv = 0;
   while (length--)
@@ -1498,7 +1498,7 @@ static unsigned count_newlines (unsigned length, const char *data)
 dsk_boolean
 dsk_xml_parser_feed(DskXmlParser       *parser,
                     unsigned            length,
-                    const char               *data,
+                    const uint8_t      *data,
                     DskError          **error)
 {
   //dsk_boolean suppress;
@@ -1534,7 +1534,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
     case LEX_DEFAULT:
     label__LEX_DEFAULT:
       {
-        const char *start = data;
+        const uint8_t *start = data;
       continue_default:
         switch (*data)
           {
@@ -1569,7 +1569,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
     case LEX_DEFAULT_ENTITY_REF:
     label__LEX_DEFAULT_ENTITY_REF:
       {
-        const char *semicolon = memchr (data, ';', length);
+        const uint8_t *semicolon = memchr (data, ';', length);
         unsigned app_len;
         unsigned new_elen;
         if (semicolon == NULL)
@@ -1758,7 +1758,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
     label__LEX_OPEN_IN_ATTR_VALUE_SQ_ENTITY_REF:
     label__LEX_OPEN_IN_ATTR_VALUE_DQ_ENTITY_REF:
       {
-        const char *semicolon = memchr (data, ';', length);
+        const uint8_t *semicolon = memchr (data, ';', length);
         unsigned new_elen;
         if (semicolon == NULL)
           new_elen = parser->entity_buf_len + length;
@@ -1901,7 +1901,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
     case LEX_COMMENT:
     label__LEX_COMMENT:
       {
-        const char *hyphen = memchr (data, '-', length);
+        const uint8_t *hyphen = memchr (data, '-', length);
         if (hyphen == NULL)
           {
             if (!IS_SUPPRESSED && parser->config->include_comments)
@@ -1993,7 +1993,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
     case LEX_CDATA:
     label__LEX_CDATA:
       {
-        const char *rbracket = memchr (data, ']', length);
+        const uint8_t *rbracket = memchr (data, ']', length);
         if (rbracket == NULL)
           {
             if (!IS_SUPPRESSED)
@@ -2047,7 +2047,7 @@ dsk_xml_parser_feed(DskXmlParser       *parser,
       /* this encompasses ELEMENT, ATTLIST, ENTITY, DOCTYPE declarations */
       /* strategy: try every substring until one ends with '>' */
       {
-        const char *rangle = memchr (data, '>', length);
+        const uint8_t *rangle = memchr (data, '>', length);
         if (rangle == NULL)
           {
             simple_buffer_append (&parser->buffer, length, data);

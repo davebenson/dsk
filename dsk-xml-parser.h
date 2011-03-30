@@ -44,7 +44,7 @@ DskXml       *dsk_xml_parser_pop (DskXmlParser       *parser,
                                   unsigned           *xmlpath_index_out);
 dsk_boolean   dsk_xml_parser_feed(DskXmlParser       *parser,
                                   unsigned            length,
-                                  const char         *data,
+                                  const uint8_t      *data,
                                   DskError          **error_out);
 void          dsk_xml_parser_free(DskXmlParser       *parser);
 

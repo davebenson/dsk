@@ -83,7 +83,10 @@ int main(int argc, char **argv)
       if (verbose)
         fprintf (stderr, "%s... ", tests[i].name);
       parser = dsk_xml_parser_new (config, tests[i].name);
-      if (dsk_xml_parser_feed (parser, tests[i].in_length, tests[i].in, &error))
+      if (dsk_xml_parser_feed (parser,
+                               tests[i].in_length,
+                               (const uint8_t *) tests[i].in,
+                               &error))
         xml = dsk_xml_parser_pop (parser, NULL);
       else
         {
@@ -94,7 +97,10 @@ int main(int argc, char **argv)
       if (tests[i].out != NULL)
         {
           DskXmlParser *oparser = dsk_xml_parser_new (config, tests[i].name);
-          if (dsk_xml_parser_feed (oparser, tests[i].out_length, tests[i].out, &oerror))
+          if (dsk_xml_parser_feed (oparser,
+                                   tests[i].out_length,
+                                   (uint8_t *) tests[i].out,
+                                   &error))
             oxml = dsk_xml_parser_pop (oparser, NULL);
           else
             {
