@@ -83,16 +83,57 @@ typedef struct _Handler Handler;
 typedef enum
 {
   HANDLER_TYPE_STREAMING_POST_DATA,
-  HANDLER_TYPE_CGI
+  HANDLER_TYPE_CGI,
+  HANDLER_TYPE_CONNECT
 } HandlerType;
+typedef enum {
+  HANDLER_PARASITE_UPGRADE,
+  HANDLER_PARASITE_TRY_FUNC
+} HandlerParasiteType;
+typedef struct _HandlerParasite HandlerParasite;
+struct _HandlerParasite
+{
+  HandlerParasiteType type;
+  HandlerParasite *next;
+  union {
+    char *upgrade;
+    DskHttpServerTryFunc try_func;
+  } info;
+};
+
 struct _Handler
 {
   HandlerType handler_type;
   FunctionPointer handler;
   void *handler_data;
   DskHookDestroy handler_destroy;
+  HandlerParasite *parasites;
   Handler *next;
 };
+
+static HandlerParasite *
+handler_add_parasite (Handler *handler,
+                      HandlerParasiteType type)
+{
+  HandlerParasite *para = dsk_malloc (sizeof (HandlerParasite));
+  HandlerParasite **plast = &handler->parasites;
+  para->type = type;
+  para->next = NULL;
+  while (*plast)
+    plast = &((*plast)->next);
+  *plast = para;
+  return para;
+}
+static HandlerParasite *
+handler_find_parasite (Handler *handler,
+                       HandlerParasiteType type)
+{
+  HandlerParasite *para;
+  for (para = handler->parasites; para; para = para->next)
+    if (para->type == type)
+      return para;
+  return NULL;
+}
 
 typedef struct _MatchTestNode MatchTestNode;
 struct _MatchTestNode
@@ -336,7 +377,7 @@ void dsk_http_server_match_restore             (DskHttpServer        *server)
 }
 
 
-static void
+static Handler *
 add_handler_generic (DskHttpServer *server,
                      HandlerType handler_type,
                      FunctionPointer handler_func,
@@ -345,6 +386,7 @@ add_handler_generic (DskHttpServer *server,
 {
   Handler *handler = dsk_malloc (sizeof (Handler));
   handler->handler_type = handler_type;
+  handler->parasites = NULL;
   handler->handler = handler_func;
   handler->handler_data = handler_data;
   handler->handler_destroy = handler_destroy;
@@ -352,6 +394,8 @@ add_handler_generic (DskHttpServer *server,
 
   /* Add to handler list */
   GSK_QUEUE_ENQUEUE (GET_HANDLER_QUEUE (server->current), handler);
+
+  return handler;
 }
 
 void
@@ -374,6 +418,22 @@ dsk_http_server_register_cgi_handler (DskHttpServer *server,
                        (FunctionPointer) func, func_data, destroy);
 }
 
+void
+dsk_http_server_register_connect_handler        (DskHttpServer *server,
+                                                 const char    *upgrade_proto,
+                                                 DskHttpServerTryFunc try_func,
+                                                 DskHttpServerConnectFunc func,
+                                                 void          *func_data,
+                                                 DskHookDestroy destroy)
+{
+  Handler *h;
+  h = add_handler_generic (server, HANDLER_TYPE_CONNECT,
+                           (FunctionPointer) func, func_data, destroy);
+  if (try_func != NULL)
+    handler_add_parasite (h, HANDLER_PARASITE_TRY_FUNC)->info.try_func = try_func;
+  if (upgrade_proto != NULL)
+    handler_add_parasite (h, HANDLER_PARASITE_UPGRADE)->info.upgrade = dsk_strdup (upgrade_proto);
+}
 
 /* === Handling Requests === */
 typedef enum
@@ -946,6 +1006,7 @@ begin_computing_cgi_variables (RealServerRequest *rreq)
 static void
 invoke_handler (RealServerRequest *rreq)
 {
+  DskError *error = NULL;
 restart:
   /* Do the actual handler invocation,
      with 'in_handler' acting as a reentrancy guard,
@@ -958,6 +1019,30 @@ restart:
            || rreq->state == REQUEST_HANDLING_NEED_POST_DATA);
   dsk_assert (!rreq->invoking_handler);
   dsk_assert (!rreq->waiting_for_response);
+
+  /* handle pre-condition func (only needed for Connect, really) */
+  HandlerParasite *para;
+  para = handler_find_parasite (rreq->handler, HANDLER_PARASITE_TRY_FUNC);
+  if (para != NULL)
+    switch (para->info.try_func (&rreq->request,
+                                 rreq->handler->handler_data,
+                                 &error))
+      {
+      case DSK_HTTP_SERVER_TRY_OK:
+        break;
+      case DSK_HTTP_SERVER_TRY_PASS:
+        if (!advance_to_next_handler (rreq))
+          {
+            respond_no_handler_found (&rreq->request);
+            return;
+          }
+        else
+          goto restart;
+      case DSK_HTTP_SERVER_TRY_ERROR:
+        respond_error (&rreq->request, 500, error->message);
+        dsk_error_unref (error);
+        return;
+      }
   rreq->state = REQUEST_HANDLING_INVOKING;
   rreq->invoking_handler = DSK_TRUE;
   switch (rreq->handler->handler_type)
@@ -995,6 +1080,26 @@ restart:
                (ie after waiting for POST data) */
           }
       }
+      break;
+    case HANDLER_TYPE_CONNECT:
+      if (rreq->request.transfer->request->verb != DSK_HTTP_VERB_CONNECT)
+        rreq->state = REQUEST_HANDLING_BLOCKED_PASS;
+      else
+        {
+          DskHttpServerConnectFunc func;
+          DskMemorySink *msink;
+          DskMemorySource *msource;
+          func = (DskHttpServerConnectFunc) rreq->handler->handler;
+
+          /* create response header */
+          para = handler_find_parasite (rreq->handler, HANDLER_PARASITE_UPGRADE);
+          dsk_http_server_stream_respond_switch_protocol (rreq->request.transfer,
+                                                          para ? para->info.upgrade : "other protocol",
+                                                          &msink,
+                                                          &msource);
+          func (&rreq->request, msink, msource, rreq->handler->handler_data);
+        }
+      rreq->state = REQUEST_HANDLING_GOT_RESPONSE_WHILE_INVOKING;
       break;
     }
   rreq->invoking_handler = DSK_FALSE;
