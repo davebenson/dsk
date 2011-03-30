@@ -231,7 +231,7 @@ test_transfer_encoding_chunked (void)
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
-      const char *content;
+      const char *content = NULL;
       DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
       unsigned pass;
       switch (iter)
