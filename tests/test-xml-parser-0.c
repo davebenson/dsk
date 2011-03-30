@@ -74,7 +74,7 @@ load_valid_xml (const char *str,
             {
               unsigned use = rem < *patterns_at ? rem : *patterns_at;
               DskError *error = NULL;
-              if (!dsk_xml_parser_feed (parser, use, str_at, &error))
+              if (!dsk_xml_parser_feed (parser, use, (const uint8_t *) str_at, &error))
                 dsk_die ("error feeding xml to parser: %s", error->message);
               rem -= use;
               str_at += use;
@@ -423,7 +423,7 @@ static void
 feed_string (DskXmlParser *parser, const char *str)
 {
   DskError *error = NULL;
-  if (!dsk_xml_parser_feed (parser, strlen (str), str, &error))
+  if (!dsk_xml_parser_feed (parser, strlen (str), (const uint8_t *) str, &error))
     dsk_die ("feed_string: %s", error->message);
 }
 static void
@@ -432,7 +432,7 @@ feed_string_1by1 (DskXmlParser *parser, const char *str)
   DskError *error = NULL;
   while (*str)
     {
-      if (!dsk_xml_parser_feed (parser, 1, str, &error))
+      if (!dsk_xml_parser_feed (parser, 1, (const uint8_t *) str, &error))
         dsk_die ("feed_string_1by1: %s", error->message);
       str++;
     }
