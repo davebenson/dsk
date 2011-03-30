@@ -1,0 +1,26 @@
+
+namespace wikiformats;
+
+struct Contributor
+{
+  string! username;
+  int! id;
+};
+
+struct Revision
+{
+  int! id;
+  string! timestamp;
+  Contributor? contributor;
+  string! minor;
+  string! comment;
+  string! text;
+};
+
+struct Page
+{
+   string! title;
+   int! id;
+   string! redirect;
+   Revision! revision;
+};
