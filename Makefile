@@ -48,7 +48,7 @@ full: all extra
 
 # For standard initial size:
 CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS)
-LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS)
+LINK_FLAGS = -g -lz -lbz2 $(EXTRA_LDFLAGS)
 
 tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^ -lm
@@ -77,7 +77,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-xml-binding-parser.o \
 	  dsk-json.o dsk-json-parser.o dsk-json-output.o \
 	  dsk-ctoken.o \
-	  dsk-zlib.o \
+	  dsk-zlib.o dsk-bz2lib.o \
 	  dsk-base64.o dsk-base64-encoder.o dsk-base64-decoder.o \
 	  dsk-c-quoter.o dsk-c-unquoter.o \
 	  dsk-unquote-printable.o dsk-quote-printable.o \

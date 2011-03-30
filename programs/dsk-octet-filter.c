@@ -120,6 +120,25 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_gzip_decompress)
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value);
   return handle_generic_decompress (DSK_ZLIB_GZIP, error);
 }
+DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_compress)
+{
+  int level = atoi (arg_value);
+  DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
+  if (level < 0 || level > 9)
+    {
+      dsk_set_error (error, "bad level %s", arg_value);
+      return DSK_FALSE;
+    }
+  add_filter (dsk_bz2lib_compressor_new (level));
+  return DSK_TRUE;
+}
+DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_decompress)
+{
+  DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value);
+  DSK_UNUSED (error);
+  add_filter (dsk_bz2lib_decompressor_new ());
+  return DSK_TRUE;
+}
 DSK_CMDLINE_CALLBACK_DECLARE(handle_c_quote)
 {
   dsk_boolean add_quotes = DSK_TRUE, protect_trigraphs = DSK_FALSE;
@@ -359,6 +378,10 @@ int main(int argc, char **argv)
                         handle_raw_zlib_decompress, NULL);
   dsk_cmdline_add_func ("gzip-decompress", "do gzip decompression", NULL, 0,
                         handle_gzip_decompress, NULL);
+  dsk_cmdline_add_func ("bz2lib-compress", "do bz2 compression", "LEVEL", 0,
+                        handle_bz2lib_compress, NULL);
+  dsk_cmdline_add_func ("bz2lib-decompress", "do bz2 decompression", NULL, 0,
+                        handle_bz2lib_decompress, NULL);
   dsk_cmdline_add_func ("c-quote", "do c quoting", NULL, 0,
                         handle_c_quote, NULL);
   dsk_cmdline_add_func ("c-unquote", "do c unquoting", NULL, 0,
