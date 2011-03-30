@@ -69,3 +69,78 @@ unsigned dsk_utf8_encode_unichar (char *outbuf,
 
   return len;
 }
+
+
+DskUtf8ValidationResult
+dsk_utf8_validate        (unsigned    length,
+                          const char *data,
+                          unsigned   *length_out)
+{
+  const char *start = data;
+  const char *end = data + length;
+  while (data < end)
+    {
+      uint8_t d = *data;
+      if (d < 0x80)
+        {
+          data++;
+        }
+      else if (d < 0xc0)
+        goto invalid;
+      else if (d < 0xe0)
+        {
+          /* two byte sequence */
+          if (data + 1 == end)
+            goto too_short;
+          if ((d & 0x1e) == 0)
+            goto invalid;
+          data += 2;
+        }
+      else if (d < 0xf0)
+        {
+          /* three byte sequence */
+          if (data + 1 == end)
+            goto too_short;
+          if ((d & 0x0f) == 0 && (data[1] & 0x20) == 0)
+            goto invalid;
+          if ((((uint8_t)data[1]) & 0xc0) != 0x80)
+            goto invalid;
+          if (data + 2 == end)
+            goto too_short;
+          if ((((uint8_t)data[2]) & 0xc0) != 0x80)
+            goto invalid;
+          data += 3;
+        }
+      else if (d < 0xf8)
+        {
+          /* four byte sequence */
+          if (data + 1 == end)
+            goto too_short;
+          if ((d & 0x07) == 0 && (data[1] & 0x30) == 0)
+            goto invalid;
+          if ((((uint8_t)data[1]) & 0xc0) != 0x80)
+            goto invalid;
+          if (data + 2 == end)
+            goto too_short;
+          if ((((uint8_t)data[2]) & 0xc0) != 0x80)
+            goto invalid;
+          if (data + 3 == end)
+            goto too_short;
+          if ((((uint8_t)data[3]) & 0xc0) != 0x80)
+            goto invalid;
+          data += 4;
+        }
+      else
+        goto invalid;
+    }
+  *length_out = end - start;
+  return DSK_UTF8_VALIDATION_SUCCESS;
+
+invalid:
+  *length_out = data - start;
+  return DSK_UTF8_VALIDATION_INVALID;
+
+too_short:
+  *length_out = data - start;
+  return DSK_UTF8_VALIDATION_PARTIAL;
+}
