@@ -215,8 +215,6 @@ dsk_xml_binding_namespace_lookup (DskXmlBindingNamespace *ns,
 {
   unsigned start = 0, count = ns->n_types;
   const unsigned *sorted = ns->types_sorted_by_name;
-  dsk_warning ("dsk_xml_binding_namespace_lookup: %s ...",name);
-    {unsigned i;for(i=0;i<ns->n_types;i++)dsk_warning("  checking type %s",ns->types[i]->name);}
   while (count > 0)
     {
       unsigned mid = start + count / 2;
@@ -915,7 +913,6 @@ add_type_to_namespace (DskXmlBindingNamespace *ns,
 #endif
   ns->types_sorted_by_name[ns->n_types] = ns->n_types;
   ns->types[ns->n_types++] = type;
-  dsk_warning ("adding type %s to namespace", type->name);
 
 #define COMPARE_TYPES_BY_NAME(a,b, rv) \
   rv = strcmp (ns->types[a]->name, ns->types[b]->name)

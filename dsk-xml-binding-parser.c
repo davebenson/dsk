@@ -289,11 +289,9 @@ dotted_bareword_to_type (ParseContext *context,
          then look it up in 'use' statements without 'as' clauses. */
       unsigned i;
       DskXmlBindingType *rv = NULL;
-      dsk_warning ("looking up %s in current ns", dotted_type_name);
       for (i = 0; i < context->n_types; i++)
         if (strcmp (dotted_type_name, context->types[i]->name) == 0)
           return context->types[i];
-      dsk_warning ("%s not found current ns", dotted_type_name);
       rv = dsk_xml_binding_namespace_lookup (context->ns, dotted_type_name);
       if (rv)
         return rv;
