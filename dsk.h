@@ -53,6 +53,7 @@
 #include "dsk-ctoken.h"
 
 #include "dsk-zlib.h"
+#include "dsk-bz2lib.h"
 #include "dsk-octet-filter-misc.h"
 #include "dsk-base64.h"
 
