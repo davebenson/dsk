@@ -357,6 +357,23 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_xml_escape)
   return DSK_TRUE;
 }
 
+DSK_CMDLINE_CALLBACK_DECLARE(handle_utf8_fixer)
+{
+  DskUtf8FixerMode mode;
+  DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
+  if (strcmp (arg_value, "drop") == 0)
+    mode = DSK_UTF8_FIXER_DROP;
+  else if (strcmp (arg_value, "latin1") == 0)
+    mode = DSK_UTF8_FIXER_LATIN1;
+  else
+    {
+      dsk_set_error (error, "invalid mode to utf-fixer '%s': only 'drop' and 'latin1' known", arg_value);
+      return DSK_FALSE;
+    }
+  add_filter (dsk_utf8_fixer_new (mode));
+  return DSK_TRUE;
+}
+
 int main(int argc, char **argv)
 {
   DskError *error = NULL;
@@ -411,6 +428,8 @@ int main(int argc, char **argv)
                         handle_byte_undoubler, NULL);
   dsk_cmdline_add_func ("xml-escape", "do XML/HTML escaping", NULL, 0,
                         handle_xml_escape, NULL);
+  dsk_cmdline_add_func ("utf8-fixer", "fix invalid UTF-8 (modes are 'drop' and 'latin1')", "MODE", 0,
+                        handle_utf8_fixer, NULL);
   dsk_cmdline_process_args (&argc, &argv);
 
 

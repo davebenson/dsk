@@ -22,6 +22,13 @@ DskOctetFilter *dsk_byte_doubler_new               (uint8_t c);
 DskOctetFilter *dsk_byte_undoubler_new             (uint8_t c,
                                                     dsk_boolean ignore_errors);
 
+typedef enum
+{
+  DSK_UTF8_FIXER_DROP,
+  DSK_UTF8_FIXER_LATIN1
+} DskUtf8FixerMode;
+DskOctetFilter *dsk_utf8_fixer_new                 (DskUtf8FixerMode mode);
+
 
 DskOctetFilter *dsk_whitespace_trimmer_new         (void);
 /* The "_take" suffix implies the reference-count is passed on all the filters,

@@ -89,6 +89,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-hex-encoder.o dsk-hex-decoder.o dsk-whitespace-trimmer.o \
 	  dsk-url-encoder.o dsk-url-decoder.o \
 	  dsk-byte-doubler.o dsk-byte-undoubler.o \
+	  dsk-utf8-fixer.o \
 	  dsk-mime-multipart.o \
 	  dsk-xml-escaper.o \
 	  dsk-print.o \
