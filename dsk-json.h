@@ -20,6 +20,7 @@ struct _DskJsonValue
     struct {
       unsigned n_members;
       DskJsonMember *members;
+      DskJsonMember **members_sorted_by_name; /* private */
     } v_object;
     struct {
       unsigned n_values;
@@ -64,6 +65,11 @@ DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
 DskJsonValue *dsk_json_value_new_number (double         value);
 
 void          dsk_json_value_free       (DskJsonValue  *value);
+
+DskJsonValue *dsk_json_object_get_value (DskJsonValue  *object,
+                                         const char    *name);
+DskJsonMember*dsk_json_object_get_member(DskJsonValue  *object,
+                                         const char    *name);
 
 /* --- writing --- */
 

@@ -163,4 +163,15 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
                                 DskHttpServerStreamResponseOptions *options,
                                 DskError **error);
 
+/* This is probably only allowed for CONNECT.
+   The 'source' and 'sink' returned should be
+   used by the underlying protocol. */
+void
+dsk_http_server_stream_respond_switch_protocol
+                               (DskHttpServerStreamTransfer *transfer,
+                                const char *upgrade,
+                                DskMemorySink **sink_out,
+                                DskMemorySource **source_out);
+
+
 extern DskHttpServerStreamClass dsk_http_server_stream_class;

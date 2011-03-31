@@ -961,6 +961,55 @@ invalid_arguments:
 
 }
 
+void
+dsk_http_server_stream_respond_switch_protocol
+                               (DskHttpServerStreamTransfer *transfer,
+                                const char *upgrade,
+                                DskMemorySink **sink_out,
+                                DskMemorySource **source_out)
+{
+  DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpResponse *response;
+  DskHttpServerStream *stream = transfer->owner;
+  DskHttpHeaderMisc misc = { "Upgrade", (char*) upgrade };
+  DskOctetConnectionOptions connect_opts = DSK_OCTET_CONNECTION_OPTIONS_DEFAULT;
+  resp_options.status_code = DSK_HTTP_STATUS_SWITCHING_PROTOCOLS;
+  resp_options.n_unparsed_headers = 1;
+  resp_options.unparsed_misc_headers = &misc;
+  response = dsk_http_response_new (&resp_options, NULL);
+  dsk_assert (response != NULL);
+
+  if (transfer->next != NULL)
+    {
+      dsk_warning ("corruption likely: Switching Protocols, even though pipelining occurred");
+    }
+
+  /* create memory source + sink */
+  if (stream->read_trap)
+    {
+      DskHookTrap *trap = stream->read_trap;
+      stream->read_trap = NULL;
+      dsk_hook_trap_destroy (trap);
+    }
+  if (stream->write_trap)
+    {
+      DskHookTrap *trap = stream->write_trap;
+      stream->write_trap = NULL;
+      dsk_hook_trap_destroy (trap);
+    }
+
+
+  *sink_out = dsk_memory_sink_new ();
+  dsk_octet_connect (stream->source, DSK_OCTET_SINK (*sink_out), &connect_opts);
+  dsk_buffer_drain (&(*sink_out)->buffer, &stream->incoming_data);
+
+  *source_out = dsk_memory_source_new ();
+  dsk_octet_connect (DSK_OCTET_SOURCE (*source_out), stream->sink, &connect_opts);
+  dsk_buffer_drain (&(*source_out)->buffer, &stream->outgoing_data);
+  dsk_http_response_print_buffer (response, &(*source_out)->buffer);
+  dsk_memory_source_added_data (*source_out);
+}
+
 static void
 dsk_http_server_stream_init (DskHttpServerStream *stream)
 {
