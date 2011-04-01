@@ -214,4 +214,35 @@ struct _DskHttpClientStreamTransfer
 };
 
 
+/* --- interface to CONNECT --- */
+typedef void (*DskHttpClientStreamConnectFunc) (DskOctetSource  *source,
+                                                DskOctetSink    *sink,
+                                                DskHttpResponse *response,
+                                                void            *data);
+typedef void (*DskHttpClientStreamConnectFail) (DskError        *error,
+                                                DskHttpResponse *response,
+                                                void            *data);
+
+typedef struct _DskHttpClientStreamConnectOptions DskHttpClientStreamConnectOptions;
+struct _DskHttpClientStreamConnectOptions
+{
+  /* HTTP Request header options */
+  const char *path;
+  const char *host;
+
+  /* Raw transport ... */
+  DskOctetSource *source;
+  DskOctetSink *sink;
+  
+  /* ... or Location to connect to. */
+  const char *connect_host;
+  unsigned connect_port;
+  const char *connect_local_path;
+} 
+ 
+void dsk_http_client_stream_connect (DskHttpClientStreamConnectOptions *options,
+                                     DskHttpClientStreamConnectFunc func,
+                                     DskHttpClientStreamConnectFail fail,
+                                     void                          *user_data,
+                                     DskDestroyNotify               destroy);
 
