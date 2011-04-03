@@ -609,7 +609,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
         {
           /* try to setup content-length */
           if (S_ISREG (stat_buf.st_mode))
-            soptions.content_length = stat_buf.st_mode;
+            soptions.content_length = stat_buf.st_size;
         }
       if (!dsk_octet_stream_new_fd (fd,
                                     DSK_FILE_DESCRIPTOR_IS_READABLE
@@ -626,6 +626,16 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
           return;
         }
       soptions.content_stream = (DskOctetSource *) fdsource;
+      must_unref_content_stream = DSK_TRUE;
+    }
+  else if (options->source_buffer != NULL)
+    {
+      DskMemorySource *source = dsk_memory_source_new ();
+      soptions.content_length = options->source_buffer->size;
+      dsk_buffer_drain (&source->buffer, options->source_buffer);
+      dsk_memory_source_added_data (source);
+      dsk_memory_source_done_adding (source);
+      soptions.content_stream = (DskOctetSource *) source;
       must_unref_content_stream = DSK_TRUE;
     }
   header_options.content_type = options->content_type;
