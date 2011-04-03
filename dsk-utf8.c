@@ -112,7 +112,7 @@ dsk_boolean dsk_utf8_decode_unichar (unsigned    buf_len,
       if (buf_len < 4)
         return DSK_FALSE;
       *bytes_used_out = 4;
-      *unicode_value_out = ((d & 0x07) << 17)
+      *unicode_value_out = ((d & 0x07) << 18)
                          | ((((uint8_t*)buf)[1] & 0x3f) << 12)
                          | ((((uint8_t*)buf)[2] & 0x3f) << 6)
                          | ((((uint8_t*)buf)[3] & 0x3f) << 0);
