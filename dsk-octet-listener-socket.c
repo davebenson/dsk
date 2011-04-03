@@ -234,7 +234,14 @@ retry_socket_syscall:
       return NULL;
     }
 
-  /* TODO setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) */
+  {
+    int one = 1;
+    if (setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof (one)) < 0)
+      {
+        dsk_warning ("setsockopt(SO_REUSEADDR) failed: %s", strerror (errno));
+        /* ignore the failure. */
+      }
+  }
 retry_bind_syscall:
   if (bind (fd, addr, addr_len) < 0)
     {
