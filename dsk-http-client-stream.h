@@ -238,7 +238,7 @@ struct _DskHttpClientStreamConnectOptions
   const char *connect_host;
   unsigned connect_port;
   const char *connect_local_path;
-} 
+};
  
 void dsk_http_client_stream_connect (DskHttpClientStreamConnectOptions *options,
                                      DskHttpClientStreamConnectFunc func,
