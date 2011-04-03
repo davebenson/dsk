@@ -663,6 +663,9 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
       rreq->state = REQUEST_HANDLING_GOT_RESPONSE;
       maybe_free_real_server_request (rreq);
     }
+
+  if (must_unref_content_stream)
+    dsk_object_unref (soptions.content_stream);
 }
 
 /* Like the public function, but also works in INIT state */
