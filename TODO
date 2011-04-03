@@ -117,6 +117,14 @@ _ http client
   _ streaming content (from server)
   _ in-memory/on-disk content (from server) based on data-size
   _ max data size limits
+_ JSON implementation
+  x parser
+  _ printer
+  _ object_get_member_by_name
+_ UTF-8 tests
+  _ encode char
+  _ decode char
+  _ utf8_skip_whitespace (fct needs fixin')
 
 _ make XML parser:
   _ obey xml:whitespace="preserve" (in SUPPRESS_WHITESPACE mode)
@@ -278,9 +286,6 @@ _ XML implementation
     _ validation?
     note: there should be a flag to disable/skip this
   _ printer / pretty-printer
-_ JSON implementation
-  _ parser
-  _ printer
 _ dsk_octet_filter_sink()
 
 LATER
