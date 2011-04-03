@@ -70,6 +70,57 @@ unsigned dsk_utf8_encode_unichar (char *outbuf,
   return len;
 }
 
+dsk_boolean dsk_utf8_decode_unichar (unsigned    buf_len,
+                                     const char *buf,
+                                     unsigned   *bytes_used_out,
+                                     uint32_t   *unicode_value_out)
+{
+  if (buf_len == 0)
+    return DSK_FALSE;
+  uint8_t d = *buf;
+  if (d < 0x80)
+    {
+      *bytes_used_out = 1;
+      *unicode_value_out = d;
+      return DSK_TRUE;
+    }
+  else if (d < 0xc0)
+    return DSK_FALSE;
+  else if (d < 0xe0)
+    {
+      /* two byte sequence */
+      if (buf_len < 2)
+        return DSK_FALSE;
+      *bytes_used_out = 2;
+      *unicode_value_out = ((d & 0x1f) << 6) | (((uint8_t*)buf)[1] & 0x3f);
+      return DSK_TRUE;
+    }
+  else if (d < 0xf0)
+    {
+      /* three byte sequence */
+      if (buf_len < 3)
+        return DSK_FALSE;
+      *bytes_used_out = 3;
+      *unicode_value_out = ((d & 0x0f) << 12)
+                         | ((((uint8_t*)buf)[1] & 0x3f) << 6)
+                         | ((((uint8_t*)buf)[2] & 0x3f) << 0);
+      return DSK_TRUE;
+    }
+  else if (d < 0xf8)
+    {
+      /* four byte sequence */
+      if (buf_len < 4)
+        return DSK_FALSE;
+      *bytes_used_out = 4;
+      *unicode_value_out = ((d & 0x07) << 17)
+                         | ((((uint8_t*)buf)[1] & 0x3f) << 12)
+                         | ((((uint8_t*)buf)[2] & 0x3f) << 6)
+                         | ((((uint8_t*)buf)[3] & 0x3f) << 0);
+      return DSK_TRUE;
+    }
+  else
+    return DSK_FALSE;
+}
 
 DskUtf8ValidationResult
 dsk_utf8_validate        (unsigned    length,
