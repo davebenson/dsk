@@ -36,7 +36,7 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
   rv->value.v_object.members = (DskJsonMember *) (rv + 1);
   smembers = (DskJsonMember **) (rv->value.v_object.members + n_members);
   rv->value.v_object.members_sorted_by_name = smembers;
-  str_heap = (char*)(rv->value.v_object.members + n_members);
+  str_heap = (char*)(smembers + n_members);
   for (i = 0; i < n_members; i++)
     {
       rv->value.v_object.members[i].value = members[i].value;
