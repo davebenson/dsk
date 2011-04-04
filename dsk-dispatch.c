@@ -236,6 +236,7 @@ DskDispatch *dsk_dispatch_new (void)
   rv->timer_tree = NULL;
   rv->first_idle = rv->last_idle = NULL;
   rv->base.has_idle = DSK_FALSE;
+  rv->base.has_timeout = DSK_FALSE;
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
 

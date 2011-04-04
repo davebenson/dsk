@@ -647,7 +647,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
   if (!dsk_http_server_stream_respond (request->transfer, &soptions, &error))
     {
       dsk_warning ("dsk_http_server_stream_respond failed: %s", error->message);
-      dsk_http_server_request_respond_error (request, 500, error->message);
+      //dsk_http_server_request_respond_error (request, 500, error->message);
       dsk_error_unref (error);
       if (must_unref_content_stream)
         dsk_object_unref (soptions.content_stream);
