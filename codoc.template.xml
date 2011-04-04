@@ -4,6 +4,7 @@
   <section>
     <h-filename>dsk-ctoken.h</h-filename>
     <title>dsk-ctoken.h</title>
+    <blurb>recursive scanner for a C-like language</blurb>
     <enumeration>
       <name>DskCTokenType</name>
       <value>
@@ -2105,6 +2106,97 @@
         <type>DskHttpClientStreamReadState</type>
       </member>
     </structure>
+    <function-typedef>
+      <name>DskHttpClientStreamConnectFunc</name>
+      <return-type>void</return-type>
+      <parameter>
+        <type>DskOctetSource *</type>
+        <name>source</name>
+      </parameter>
+      <parameter>
+        <type>DskOctetSink *</type>
+        <name>sink</name>
+      </parameter>
+      <parameter>
+        <type>DskHttpResponse *</type>
+        <name>response</name>
+      </parameter>
+      <parameter>
+        <type>void *</type>
+        <name>data</name>
+      </parameter>
+    </function-typedef>
+    <function-typedef>
+      <name>DskHttpClientStreamConnectFail</name>
+      <return-type>void</return-type>
+      <parameter>
+        <type>DskError *</type>
+        <name>error</name>
+      </parameter>
+      <parameter>
+        <type>DskHttpResponse *</type>
+        <name>response</name>
+      </parameter>
+      <parameter>
+        <type>void *</type>
+        <name>data</name>
+      </parameter>
+    </function-typedef>
+    <structure>
+      <name>DskHttpClientStreamConnectOptions</name>
+      <member>
+        <name>path</name>
+        <type>const char *</type>
+      </member>
+      <member>
+        <name>host</name>
+        <type>const char *</type>
+      </member>
+      <member>
+        <name>source</name>
+        <type>DskOctetSource *</type>
+      </member>
+      <member>
+        <name>sink</name>
+        <type>DskOctetSink *</type>
+      </member>
+      <member>
+        <name>connect_host</name>
+        <type>const char *</type>
+      </member>
+      <member>
+        <name>connect_port</name>
+        <type>unsigned</type>
+      </member>
+      <member>
+        <name>connect_local_path</name>
+        <type>const char *</type>
+      </member>
+    </structure>
+    <function>
+      <name>dsk_http_client_stream_connect</name>
+      <return-type>void</return-type>
+      <parameter>
+        <type>DskHttpClientStreamConnectOptions *</type>
+        <name>options</name>
+      </parameter>
+      <parameter>
+        <type>DskHttpClientStreamConnectFunc</type>
+        <name>func</name>
+      </parameter>
+      <parameter>
+        <type>DskHttpClientStreamConnectFail</type>
+        <name>fail</name>
+      </parameter>
+      <parameter>
+        <type>void *</type>
+        <name>user_data</name>
+      </parameter>
+      <parameter>
+        <type>DskDestroyNotify</type>
+        <name>destroy</name>
+      </parameter>
+    </function>
   </section>
   <section>
     <h-filename>dsk-table.h</h-filename>
@@ -3854,6 +3946,18 @@
       <name>_dsk_cmdline_cleanup</name>
       <return-type>void</return-type>
     </function>
+    <function>
+      <name>dsk_cmdline_add_shortcut</name>
+      <return-type>void</return-type>
+      <parameter>
+        <type>char</type>
+        <name>shortcut</name>
+      </parameter>
+      <parameter>
+        <type>const char *</type>
+        <name>option_name</name>
+      </parameter>
+    </function>
   </section>
   <section>
     <h-filename>dsk-ascii.h</h-filename>
@@ -4681,7 +4785,7 @@
         <name>DSK_HTTP_STATUS_FOUND</name>
       </value>
       <value>
-        <name>DSK_HTTP_STATUS_SEE_OTHER</name>
+        <name>DSK_HTTP_STATUS_OK</name>
       </value>
       <value>
         <name>DSK_HTTP_STATUS_SERVICE_UNAVAILABLE</name>
@@ -4705,7 +4809,7 @@
         <name>DSK_HTTP_STATUS_PROXY_AUTH_REQUIRED</name>
       </value>
       <value>
-        <name>DSK_HTTP_STATUS_OK</name>
+        <name>DSK_HTTP_STATUS_SEE_OTHER</name>
       </value>
       <value>
         <name>DSK_HTTP_STATUS_ACCEPTED</name>
@@ -9164,7 +9268,7 @@
     </function>
     <function>
       <name>dsk_json_object_get_member</name>
-      <return-type>DskJsonMember*</return-type>
+      <return-type>DskJsonMember *</return-type>
       <parameter>
         <type>DskJsonValue *</type>
         <name>object</name>
@@ -10717,10 +10821,10 @@
         <name>DSK_ZLANG_INSN_FUNCTION</name>
       </value>
       <value>
-        <name>DSK_ZLANG_TYPE_CATCH</name>
+        <name>DSK_ZLANG_TYPE_UNICODE</name>
       </value>
       <value>
-        <name>DSK_ZLANG_TYPE_UNICODE</name>
+        <name>DSK_ZLANG_TYPE_CATCH</name>
       </value>
       <value>
         <name>DSK_ZLANG_TYPE_STRING</name>
