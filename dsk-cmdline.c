@@ -321,6 +321,20 @@ void dsk_cmdline_add_func    (const char     *option_name,
   arg->func = cmdline_handle_callback;
 }
 
+void dsk_cmdline_add_shortcut(char            shortcut,
+                              const char     *option_name)
+{
+  DskCmdlineArg *arg = try_option (option_name);
+  dsk_return_if_fail (arg != NULL, "option did not exist");
+  dsk_return_if_fail (FIRST_SINGLE_CHAR_CMDLINE_ARG <= shortcut
+                      && shortcut <= LAST_SINGLE_CHAR_CMDLINE_ARG,
+                      "invalid shortcut letter");
+  dsk_return_if_fail (cmdline_args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL,
+                      "shortcut already defined");
+  arg->c = shortcut;
+  cmdline_args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] = arg;
+}
+
 void dsk_cmdline_permit_unknown_options (dsk_boolean permit)
 {
   cmdline_permit_unknown_options = permit;

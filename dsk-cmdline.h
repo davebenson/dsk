@@ -63,6 +63,8 @@ void dsk_cmdline_add_func    (const char     *static_option_name,
                               DskCmdlineFlags flags,
                               DskCmdlineCallback callback,
                               void           *callback_data);
+void dsk_cmdline_add_shortcut(char            shortcut,
+                              const char     *option_name);
 void dsk_cmdline_permit_unknown_options (dsk_boolean permit);
 void dsk_cmdline_permit_extra_arguments (dsk_boolean permit);
 

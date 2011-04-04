@@ -109,7 +109,8 @@ struct _DskDispatchTimer
 
   /* red-black tree stuff */
   DskDispatchTimer *left, *right, *parent;
-  dsk_boolean is_red;
+  unsigned is_red : 1;
+  unsigned expired : 1;
 
   /* user callback */
   DskTimerFunc func;
@@ -626,6 +627,7 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
   gettimeofday (&tv, NULL);
   dispatch->last_dispatch_secs = tv.tv_sec;
   dispatch->last_dispatch_usecs = tv.tv_usec;
+  DskDispatchTimer *expired = NULL;
   while (d->timer_tree != NULL)
     {
       DskDispatchTimer *min_timer;
@@ -634,15 +636,10 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
        || (min_timer->timeout_secs == (unsigned long) tv.tv_sec
         && min_timer->timeout_usecs <= (unsigned) tv.tv_usec))
         {
-          DskTimerFunc func = min_timer->func;
-          void *func_data = min_timer->func_data;
           GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), min_timer);
-          /* Set to NULL as a way to tell dsk_dispatch_remove_timer()
-             that we are in the middle of notifying */
-          min_timer->func = NULL;
-          min_timer->func_data = NULL;
-          func (func_data);
-          free_timer (min_timer);
+          min_timer->left = expired;
+          min_timer->expired = DSK_TRUE;
+          expired = min_timer;
         }
       else
         {
@@ -651,6 +648,14 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
           d->base.timeout_usecs = min_timer->timeout_usecs;
           break;
         }
+    }
+  while (expired != NULL)
+    {
+      DskDispatchTimer *timer = expired;
+      expired = timer->left;
+      if (timer->func != NULL)
+        timer->func (timer->func_data);
+      free_timer (timer);
     }
   if (d->timer_tree == NULL)
     d->base.has_timeout = 0;
@@ -884,9 +889,11 @@ void  dsk_dispatch_remove_timer (DskDispatchTimer *timer)
   dsk_boolean may_be_first;
   RealDispatch *d = timer->dispatch;
 
-  /* ignore mid-notify removal */
-  if (timer->func == NULL)
-    return;
+  if (timer->expired)
+    {
+      timer->func = NULL;
+      return;
+    }
 
   may_be_first = d->base.timeout_usecs == timer->timeout_usecs
               && d->base.timeout_secs == timer->timeout_secs;
@@ -967,6 +974,12 @@ retry_write:
         {
           /* should be give a warning or something?
              i have no idea what error we might get */
+          const char message1[] = "unexpected error doing signal notification (";
+          const char message2[] = ")\n";
+          const char *se = strerror (errno);
+          write (STDERR_FILENO, message1, sizeof (message1)-1);
+          write (STDERR_FILENO, se, strlen (se));
+          write (STDERR_FILENO, message2, sizeof (message2)-1);
         }
     }
 }
