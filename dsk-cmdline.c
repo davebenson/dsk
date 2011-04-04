@@ -548,6 +548,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                           return DSK_FALSE;
                         }
                       skip_or_swallow (argc_inout, argv_inout, &i, 2);
+                      arg->flags |= _DSK_CMDLINE_OPTION_USED;
                     }
                   else
                     {
@@ -557,6 +558,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                           return DSK_FALSE;
                         }
                       skip_or_swallow (argc_inout, argv_inout, &i, 1);
+                      arg->flags |= _DSK_CMDLINE_OPTION_USED;
                     }
                 }
               else
@@ -586,6 +588,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                           dsk_add_error_prefix (error, "processing -%c", argv[i][ci]);
                           return DSK_FALSE;
                         }
+                      arg->flags |= _DSK_CMDLINE_OPTION_USED;
                     }
                   skip_or_swallow (argc_inout, argv_inout, &i, 1);
                 }
