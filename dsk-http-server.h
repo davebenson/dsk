@@ -27,6 +27,7 @@ typedef void (*DskHttpServerStreamingPostFunc) (DskHttpServerRequest *request,
                                                 void                 *func_data);
 typedef void (*DskHttpServerCgiFunc)           (DskHttpServerRequest *request,
                                                 void                 *func_data);
+#if 0
 typedef enum 
 {
   DSK_HTTP_SERVER_TRY_OK,
@@ -37,10 +38,12 @@ typedef DskHttpServerTryResult (*DskHttpServerTryFunc)
                                                (DskHttpServerRequest *request,
                                                 void                *func_data,
                                                 DskError           **error);
-typedef void (*DskHttpServerConnectFunc)       (DskHttpServerRequest*request,
-                                                DskMemorySink       *from_client,
-                                                DskMemorySource     *to_client,
-                                                void                *func_data);
+#endif
+
+/* 
+typedef void (*DskHttpServerWebsocketFunc)   (DskHttpServerRequest*request,
+                                              char               **protocols,
+                                              void                *func_data);
 /* MOST OF THESE FUNCTIONS CAN ONLY BE CALLED BEFORE THE SERVER IS STARTED */
 
 typedef enum
@@ -86,10 +89,9 @@ dsk_http_server_register_cgi_handler            (DskHttpServer *server,
                                                  DskHookDestroy destroy);
 
 void
-dsk_http_server_register_connect_handler        (DskHttpServer *server,
+dsk_http_server_register_websocket_handler      (DskHttpServer *server,
                                                  const char    *upgrade_proto,
-                                                 DskHttpServerTryFunc try_func,
-                                                 DskHttpServerConnectFunc func,
+                                                 DskHttpServerWebsocketFunc func,
                                                  void          *func_data,
                                                  DskHookDestroy destroy);
 
@@ -147,3 +149,5 @@ void dsk_http_server_request_pass             (DskHttpServerRequest *request);
 
 DskCgiVariable *dsk_http_server_request_lookup_cgi (DskHttpServerRequest *request,
                                                const char           *name);
+void dsk_http_server_request_websocket_success(DskHttpServerRequest *request,
+                                               DskWebsocket        **sock_out);
