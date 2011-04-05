@@ -84,22 +84,8 @@ typedef enum
 {
   HANDLER_TYPE_STREAMING_POST_DATA,
   HANDLER_TYPE_CGI,
-  HANDLER_TYPE_CONNECT
+  HANDLER_TYPE_WEBSOCKET
 } HandlerType;
-typedef enum {
-  HANDLER_PARASITE_UPGRADE,
-  HANDLER_PARASITE_TRY_FUNC
-} HandlerParasiteType;
-typedef struct _HandlerParasite HandlerParasite;
-struct _HandlerParasite
-{
-  HandlerParasiteType type;
-  HandlerParasite *next;
-  union {
-    char *upgrade;
-    DskHttpServerTryFunc try_func;
-  } info;
-};
 
 struct _Handler
 {
@@ -107,33 +93,9 @@ struct _Handler
   FunctionPointer handler;
   void *handler_data;
   DskHookDestroy handler_destroy;
-  HandlerParasite *parasites;
   Handler *next;
 };
 
-static HandlerParasite *
-handler_add_parasite (Handler *handler,
-                      HandlerParasiteType type)
-{
-  HandlerParasite *para = dsk_malloc (sizeof (HandlerParasite));
-  HandlerParasite **plast = &handler->parasites;
-  para->type = type;
-  para->next = NULL;
-  while (*plast)
-    plast = &((*plast)->next);
-  *plast = para;
-  return para;
-}
-static HandlerParasite *
-handler_find_parasite (Handler *handler,
-                       HandlerParasiteType type)
-{
-  HandlerParasite *para;
-  for (para = handler->parasites; para; para = para->next)
-    if (para->type == type)
-      return para;
-  return NULL;
-}
 
 typedef struct _MatchTestNode MatchTestNode;
 struct _MatchTestNode
@@ -386,7 +348,6 @@ add_handler_generic (DskHttpServer *server,
 {
   Handler *handler = dsk_malloc (sizeof (Handler));
   handler->handler_type = handler_type;
-  handler->parasites = NULL;
   handler->handler = handler_func;
   handler->handler_data = handler_data;
   handler->handler_destroy = handler_destroy;
@@ -419,20 +380,14 @@ dsk_http_server_register_cgi_handler (DskHttpServer *server,
 }
 
 void
-dsk_http_server_register_connect_handler        (DskHttpServer *server,
-                                                 const char    *upgrade_proto,
-                                                 DskHttpServerTryFunc try_func,
-                                                 DskHttpServerConnectFunc func,
+dsk_http_server_register_websocket_handler      (DskHttpServer *server,
+                                                 DskHttpServerWebsocketFunc func,
                                                  void          *func_data,
                                                  DskHookDestroy destroy)
 {
   Handler *h;
-  h = add_handler_generic (server, HANDLER_TYPE_CONNECT,
+  h = add_handler_generic (server, HANDLER_TYPE_WEBSOCKET,
                            (FunctionPointer) func, func_data, destroy);
-  if (try_func != NULL)
-    handler_add_parasite (h, HANDLER_PARASITE_TRY_FUNC)->info.try_func = try_func;
-  if (upgrade_proto != NULL)
-    handler_add_parasite (h, HANDLER_PARASITE_UPGRADE)->info.upgrade = dsk_strdup (upgrade_proto);
 }
 
 /* === Handling Requests === */
@@ -1016,10 +971,21 @@ begin_computing_cgi_variables (RealServerRequest *rreq)
   return DSK_TRUE;
 }
 
+static dsk_boolean
+is_websocket_request (DskHttpRequest *request)
+{
+  const char *upgrade = dsk_http_request_get (request, "Upgrade");
+  const char *protos = dsk_http_request_get (request, "Sec-WebSocket-Protocol");
+  return upgrade != NULL && protos != NULL
+      && dsk_ascii_strcasecmp (upgrade, "WebSocket") == 0
+      && request->connection_upgrade;
+}
+
 static void
 invoke_handler (RealServerRequest *rreq)
 {
-  DskError *error = NULL;
+  DskHttpRequest *req_header = rreq->request.transfer->request;
+  dsk_boolean is_websocket = is_websocket_request (req_header);
 restart:
   /* Do the actual handler invocation,
      with 'in_handler' acting as a reentrancy guard,
@@ -1033,88 +999,69 @@ restart:
   dsk_assert (!rreq->invoking_handler);
   dsk_assert (!rreq->waiting_for_response);
 
-  /* handle pre-condition func (only needed for Connect, really) */
-  HandlerParasite *para;
-  para = handler_find_parasite (rreq->handler, HANDLER_PARASITE_TRY_FUNC);
-  if (para != NULL)
-    switch (para->info.try_func (&rreq->request,
-                                 rreq->handler->handler_data,
-                                 &error))
-      {
-      case DSK_HTTP_SERVER_TRY_OK:
-        break;
-      case DSK_HTTP_SERVER_TRY_PASS:
-        if (!advance_to_next_handler (rreq))
-          {
-            respond_no_handler_found (&rreq->request);
-            return;
-          }
-        else
-          goto restart;
-      case DSK_HTTP_SERVER_TRY_ERROR:
-        respond_error (&rreq->request, 500, error->message);
-        dsk_error_unref (error);
-        return;
-      }
   rreq->state = REQUEST_HANDLING_INVOKING;
   rreq->invoking_handler = DSK_TRUE;
-  switch (rreq->handler->handler_type)
-    {
-    case HANDLER_TYPE_STREAMING_POST_DATA:
-      {
-        /* Invoke handler immediately */
-        DskHttpServerStreamingPostFunc func = (DskHttpServerStreamingPostFunc) rreq->handler->handler;
-        DskOctetSource *post_data = (DskOctetSource *) rreq->request.transfer->post_data;
-        rreq->waiting_for_response = DSK_TRUE;
-        func (&rreq->request, post_data, rreq->handler->handler_data);
-      }
-      break;
-    case HANDLER_TYPE_CGI:
-      {
-        if (!rreq->request.cgi_variables_computed)
-          {
-            if (!begin_computing_cgi_variables (rreq))
-              {
-                rreq->state = REQUEST_HANDLING_NEED_POST_DATA;
-                break;
-              }
-          }
-
-        if (rreq->request.cgi_variables_computed)
-          {
-            /* Invoke handler immediately */
-            DskHttpServerCgiFunc func = (DskHttpServerCgiFunc) rreq->handler->handler;
-            rreq->waiting_for_response = DSK_TRUE;
-            func (&rreq->request, rreq->handler->handler_data);
-          }
-        else
-          {
-            /* Handler will be invoked once cgi variables are obtained 
-               (ie after waiting for POST data) */
-          }
-      }
-      break;
-    case HANDLER_TYPE_CONNECT:
-      if (rreq->request.transfer->request->verb != DSK_HTTP_VERB_CONNECT)
-        rreq->state = REQUEST_HANDLING_BLOCKED_PASS;
-      else
+  if (is_websocket)
+    { 
+      if (rreq->handler->handler_type == HANDLER_TYPE_WEBSOCKET)
         {
-          DskHttpServerConnectFunc func;
-          DskMemorySink *msink;
-          DskMemorySource *msource;
-          func = (DskHttpServerConnectFunc) rreq->handler->handler;
+          DskHttpServerWebsocketFunc func;
+          const char *value = dsk_http_request_get (req_header, "Sec-WebSocket-Protocol");
+          char **protocols;
+          func = (DskHttpServerWebsocketFunc) rreq->handler->handler;
+
+          /* split up the list of protocols */
+          protocols = dsk_utf8_split_on_whitespace (value);
 
           /* create response header */
-          para = handler_find_parasite (rreq->handler, HANDLER_PARASITE_UPGRADE);
-          dsk_http_server_stream_respond_switch_protocol (rreq->request.transfer,
-                                                          para ? para->info.upgrade : "other protocol",
-                                                          &msink,
-                                                          &msource);
-          func (&rreq->request, msink, msource, rreq->handler->handler_data);
+          func (&rreq->request, protocols, rreq->handler->handler_data);
+
+          dsk_strv_free (protocols);
         }
-      rreq->state = REQUEST_HANDLING_GOT_RESPONSE_WHILE_INVOKING;
-      break;
+      else
+        rreq->state = REQUEST_HANDLING_BLOCKED_PASS;
     }
+  else
+    switch (rreq->handler->handler_type)
+      {
+      case HANDLER_TYPE_STREAMING_POST_DATA:
+        {
+          /* Invoke handler immediately */
+          DskHttpServerStreamingPostFunc func = (DskHttpServerStreamingPostFunc) rreq->handler->handler;
+          DskOctetSource *post_data = (DskOctetSource *) rreq->request.transfer->post_data;
+          rreq->waiting_for_response = DSK_TRUE;
+          func (&rreq->request, post_data, rreq->handler->handler_data);
+        }
+        break;
+      case HANDLER_TYPE_CGI:
+        {
+          if (!rreq->request.cgi_variables_computed)
+            {
+              if (!begin_computing_cgi_variables (rreq))
+                {
+                  rreq->state = REQUEST_HANDLING_NEED_POST_DATA;
+                  break;
+                }
+            }
+
+          if (rreq->request.cgi_variables_computed)
+            {
+              /* Invoke handler immediately */
+              DskHttpServerCgiFunc func = (DskHttpServerCgiFunc) rreq->handler->handler;
+              rreq->waiting_for_response = DSK_TRUE;
+              func (&rreq->request, rreq->handler->handler_data);
+            }
+          else
+            {
+              /* Handler will be invoked once cgi variables are obtained 
+                 (ie after waiting for POST data) */
+            }
+        }
+        break;
+      case HANDLER_TYPE_WEBSOCKET:
+        /* websocket requests handled above */
+        rreq->state = REQUEST_HANDLING_BLOCKED_PASS;
+      }
   rreq->invoking_handler = DSK_FALSE;
   switch (rreq->state)
     {
@@ -1445,6 +1392,17 @@ static void dsk_http_server_finalize (DskHttpServer *server)
 
   /* free matching infrastructure */
   destruct_match_node (&server->top);
+}
+
+void dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
+                                               const char           *protocol,
+                                               DskWebsocket        **sock_out)
+{
+  RealServerRequest *rreq = (RealServerRequest *) request;
+  dsk_http_server_stream_respond_websocket (request->transfer,
+                                            protocol,
+                                            sock_out);
+  maybe_free_real_server_request (rreq);
 }
 
 DskCgiVariable *dsk_http_server_request_lookup_cgi (DskHttpServerRequest *request,

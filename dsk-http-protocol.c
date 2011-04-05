@@ -145,6 +145,42 @@ DskHttpResponseClass dsk_http_response_class =
                            dsk_http_response_finalize),
 };
 
+const char *
+dsk_http_request_get (DskHttpRequest *request,
+                      const char     *header)
+{
+  unsigned i;
+  switch (header[0])
+    {
+    case 'c': case 'C':
+      if (dsk_ascii_strcasecmp (header, "Connection") == 0)
+        {
+          if (request->connection_close)
+            return "close";
+          else if (request->connection_upgrade)
+            return "upgrade";
+          else
+            return NULL;
+        }
+      break;
+    case 'h': case 'H':
+      if (dsk_ascii_strcasecmp (header, "Host") == 0)
+        return request->host;
+      break;
+    case 'u': case 'U':
+      if (dsk_ascii_strcasecmp (header, "User-Agent") == 0)
+        return request->user_agent;
+      break;
+    case 'r': case 'R':
+      if (dsk_ascii_strcasecmp (header, "Referer") == 0)
+        return request->referrer;
+      break;
+    }
+  for (i = 0; i < request->n_unparsed_headers; i++)
+    if (dsk_ascii_strcasecmp (request->unparsed_headers[i].key, header) == 0)
+      return request->unparsed_headers[i].value;
+  return NULL;
+}
 
 /* --- construction --- */
 typedef struct _ToCopy ToCopy;
@@ -382,6 +418,7 @@ is_valid_status_code (int code)
     default: return DSK_FALSE;
     }
 }
+
 
 #define ObjectType DskHttpResponse
 DskHttpResponse *

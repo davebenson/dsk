@@ -36,6 +36,7 @@
 
 #include "dsk-http-protocol.h"
 #include "dsk-cgi.h"
+#include "dsk-websocket.h"
 #include "dsk-http-client-auth.h"
 #include "dsk-http-client-stream.h"
 #include "dsk-http-client.h"
@@ -59,6 +60,7 @@
 
 #include "dsk-ascii.h"
 #include "dsk-utf8.h"
+#include "dsk-strv.h"
 
 #include "dsk-cmdline.h"
 

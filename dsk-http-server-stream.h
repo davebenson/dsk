@@ -163,15 +163,12 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
                                 DskHttpServerStreamResponseOptions *options,
                                 DskError **error);
 
-/* This is probably only allowed for CONNECT.
-   The 'source' and 'sink' returned should be
-   used by the underlying protocol. */
+/* Respond to a websocket connection request. */
 void
-dsk_http_server_stream_respond_switch_protocol
+dsk_http_server_stream_respond_websocket
                                (DskHttpServerStreamTransfer *transfer,
-                                const char *upgrade,
-                                DskMemorySink **sink_out,
-                                DskMemorySource **source_out);
+                                const char        *protocol,
+                                DskWebsocket     **websocket_out);
 
 
 extern DskHttpServerStreamClass dsk_http_server_stream_class;

@@ -1,5 +1,6 @@
 #include "dsk-common.h"
 #include "dsk-utf8.h"
+#include <string.h>
 
 void
 dsk_utf8_skip_whitespace (const char **p_str)
@@ -16,6 +17,22 @@ dsk_utf8_skip_whitespace (const char **p_str)
     }
   *p_str = (const char *) str;
 }
+void
+dsk_utf8_skip_nonwhitespace (const char **p_str)
+{
+  const unsigned char *str = (const unsigned char *) *p_str;
+  while (*str)
+    {
+      switch (*str)
+        {
+        case ' ': case '\t': case '\r': case '\n': *p_str = (char*) str; return;
+        default: str++;
+                 /* TODO: handle other spaces */
+        }
+    }
+  *p_str = (const char *) str;
+}
+
 
 
 unsigned dsk_utf8_encode_unichar (char *outbuf,
@@ -194,4 +211,47 @@ invalid:
 too_short:
   *length_out = data - start;
   return DSK_UTF8_VALIDATION_PARTIAL;
+}
+
+char **
+dsk_utf8_split_on_whitespace(const char *str)
+{
+  unsigned n = 0;
+  char *pad[32];
+  unsigned alloced = DSK_N_ELEMENTS (pad);
+  char **rv = pad;
+  for (;;)
+    {
+      const char *start;
+      dsk_utf8_skip_whitespace (&str);
+      if (*str == 0)
+        break;
+      start = str;
+      dsk_utf8_skip_nonwhitespace (&str);
+      if (n == alloced)
+        {
+          if (rv == pad)
+            {
+              rv = dsk_malloc (sizeof(char*) * alloced * 2);
+              memcpy (rv, pad, sizeof (pad));
+            }
+          else
+            {
+              rv = dsk_realloc (rv, sizeof(char*) * alloced * 2);
+            }
+          alloced *= 2;
+        }
+      rv[n++] = dsk_strdup_slice (start, str);
+    }
+  if (rv == pad)
+    {
+      char **rrv = dsk_malloc (sizeof (char*) * (n+1));
+      memcpy (rrv, rv, sizeof (char*) * n);
+      rrv[n] = NULL;
+      return rrv;
+    }
+  else if (n == alloced)
+    rv = dsk_realloc (rv, sizeof(char*) * (n+1));
+  rv[n] = NULL;
+  return rv;
 }

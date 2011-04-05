@@ -126,6 +126,7 @@ struct _DskHttpRequest
   unsigned transfer_encoding_chunked : 1;       /* for POST data */
   unsigned has_date : 1;           /* Date (see date member) */
   unsigned connection_close : 1;
+  unsigned connection_upgrade : 1;
   unsigned content_encoding_gzip : 1;
   unsigned supports_content_encoding_gzip : 1;
 
@@ -144,6 +145,8 @@ struct _DskHttpRequest
 
   char *_slab;
 };
+const char * dsk_http_request_get (DskHttpRequest *request,
+                                   const char     *header);
 
 struct _DskHttpResponseClass
 {
@@ -159,6 +162,7 @@ struct _DskHttpResponse
   DskHttpStatus status_code;
 
   unsigned connection_close : 1;
+  unsigned connection_upgrade : 1;
   unsigned transfer_encoding_chunked : 1;
   unsigned accept_ranges : 1; /* Accept-Ranges */
   unsigned has_date : 1;           /* Date (see date member) */

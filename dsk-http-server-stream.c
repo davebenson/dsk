@@ -287,7 +287,11 @@ restart_processing:
             has_content = request->verb == DSK_HTTP_VERB_PUT
                        || request->verb == DSK_HTTP_VERB_POST;
 
-            if (has_content)
+            if (dsk_http_request_is_websocket (request))
+              {
+                xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET;
+              }
+            else if (has_content)
               {
                 xfer->post_data = dsk_memory_source_new ();
                 if (ss->wait_for_content_complete)

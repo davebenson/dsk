@@ -40,10 +40,13 @@ typedef DskHttpServerTryResult (*DskHttpServerTryFunc)
                                                 DskError           **error);
 #endif
 
-/* 
+/* callback for websockets.  Must respond with 
+   dsk_http_server_request_websocket_success()
+   or dsk_http_server_request_respond_error(). */
 typedef void (*DskHttpServerWebsocketFunc)   (DskHttpServerRequest*request,
                                               char               **protocols,
                                               void                *func_data);
+
 /* MOST OF THESE FUNCTIONS CAN ONLY BE CALLED BEFORE THE SERVER IS STARTED */
 
 typedef enum
@@ -90,7 +93,6 @@ dsk_http_server_register_cgi_handler            (DskHttpServer *server,
 
 void
 dsk_http_server_register_websocket_handler      (DskHttpServer *server,
-                                                 const char    *upgrade_proto,
                                                  DskHttpServerWebsocketFunc func,
                                                  void          *func_data,
                                                  DskHookDestroy destroy);
@@ -146,8 +148,9 @@ void dsk_http_server_request_redirect         (DskHttpServerRequest *request,
 void dsk_http_server_request_internal_redirect(DskHttpServerRequest *request,
                                                const char           *new_path);
 void dsk_http_server_request_pass             (DskHttpServerRequest *request);
+void dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
+                                               const char           *protocol,
+                                               DskWebsocket        **sock_out);
 
 DskCgiVariable *dsk_http_server_request_lookup_cgi (DskHttpServerRequest *request,
                                                const char           *name);
-void dsk_http_server_request_websocket_success(DskHttpServerRequest *request,
-                                               DskWebsocket        **sock_out);
