@@ -9,12 +9,13 @@ struct _DskWebsocket
 {
   DskObject base_instance;
   DskHook readable;
-  DskHook writable;
   DskHook error_hook;
 
   /* underlying structures */
   DskOctetSource *source;
+  DskHookTrap *read_trap;
   DskOctetSink *sink;
+  DskHookTrap *write_trap;
 
   /* if error_hook triggers, this is the error. */
   DskError *error;
@@ -40,3 +41,9 @@ dsk_boolean dsk_websocket_send     (DskWebsocket *websocket,
                                     DskError    **error);
 
 void        dsk_websocket_shutdown (DskWebsocket *websocket);
+
+
+/* transfers ownership */
+void _dsk_websocket_server_init (DskWebsocket *websocket,
+                                 DskOctetSource *source,
+                                 DskOctetSink *sink);

@@ -1150,9 +1150,8 @@ dsk_http_server_stream_respond_websocket
   dsk_http_response_print_buffer (response, &websocket->outgoing);
   dsk_buffer_append (&websocket->outgoing, 16, ws_response);
 
-  websocket->sink = stream->sink;
+  _dsk_websocket_server_init (websocket, stream->source, stream->sink);
   stream->sink = NULL;
-  websocket->source = stream->source;
   stream->source = NULL;
   *websocket_out = websocket;
   return DSK_TRUE;
