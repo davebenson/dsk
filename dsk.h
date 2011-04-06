@@ -34,6 +34,8 @@
 
 #include "dsk-url.h"
 
+#include "dsk-rand.h"
+
 #include "dsk-http-protocol.h"
 #include "dsk-cgi.h"
 #include "dsk-websocket.h"
