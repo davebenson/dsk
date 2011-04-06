@@ -22,6 +22,7 @@ struct _DskWebsocket
   /* buffers */
   DskBuffer incoming, outgoing;
 };
+extern DskObjectClass dsk_websocket_class;
 
 
 /* Receive returning FALSE means "no packet ready";

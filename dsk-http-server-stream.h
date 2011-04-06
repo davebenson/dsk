@@ -72,6 +72,7 @@ typedef enum
   DSK_HTTP_SERVER_STREAM_READ_AFTER_XFER_CHUNK,
   DSK_HTTP_SERVER_STREAM_READ_XFER_CHUNK_TRAILER,
   DSK_HTTP_SERVER_STREAM_READ_DONE,
+  DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET
 } DskHttpServerStreamReadState;
 struct _DskHttpServerStreamTransfer
 {
@@ -164,7 +165,7 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
                                 DskError **error);
 
 /* Respond to a websocket connection request. */
-void
+dsk_boolean
 dsk_http_server_stream_respond_websocket
                                (DskHttpServerStreamTransfer *transfer,
                                 const char        *protocol,

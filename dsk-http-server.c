@@ -971,21 +971,11 @@ begin_computing_cgi_variables (RealServerRequest *rreq)
   return DSK_TRUE;
 }
 
-static dsk_boolean
-is_websocket_request (DskHttpRequest *request)
-{
-  const char *upgrade = dsk_http_request_get (request, "Upgrade");
-  const char *protos = dsk_http_request_get (request, "Sec-WebSocket-Protocol");
-  return upgrade != NULL && protos != NULL
-      && dsk_ascii_strcasecmp (upgrade, "WebSocket") == 0
-      && request->connection_upgrade;
-}
-
 static void
 invoke_handler (RealServerRequest *rreq)
 {
   DskHttpRequest *req_header = rreq->request.transfer->request;
-  dsk_boolean is_websocket = is_websocket_request (req_header);
+  dsk_boolean is_websocket = req_header->is_websocket_request;
 restart:
   /* Do the actual handler invocation,
      with 'in_handler' acting as a reentrancy guard,
@@ -1394,15 +1384,18 @@ static void dsk_http_server_finalize (DskHttpServer *server)
   destruct_match_node (&server->top);
 }
 
-void dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
-                                               const char           *protocol,
-                                               DskWebsocket        **sock_out)
+dsk_boolean
+dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
+                                         const char           *protocol,
+                                         DskWebsocket        **sock_out)
 {
   RealServerRequest *rreq = (RealServerRequest *) request;
-  dsk_http_server_stream_respond_websocket (request->transfer,
-                                            protocol,
-                                            sock_out);
+  dsk_boolean rv;
+  rv = dsk_http_server_stream_respond_websocket (request->transfer,
+                                                 protocol,
+                                                 sock_out);
   maybe_free_real_server_request (rreq);
+  return rv;
 }
 
 DskCgiVariable *dsk_http_server_request_lookup_cgi (DskHttpServerRequest *request,

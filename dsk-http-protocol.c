@@ -379,7 +379,6 @@ dsk_http_request_new (DskHttpRequestOptions *options,
                                   options->unparsed_headers ? options->unparsed_headers
                                      : (char**)(options->unparsed_misc_headers),
                                   &str_alloc, &aligned_alloc);
-
   /* allocate memory */
   slab = dsk_malloc (aligned_alloc + str_alloc);
   aligned_at = slab;
@@ -400,6 +399,16 @@ dsk_http_request_new (DskHttpRequestOptions *options,
                                   options->unparsed_headers,
                                   &aligned_at,
                                   str_slab + unparsed_headers_start);
+
+  /* Determine if this is a websocket request. */
+  {
+    const char *upgrade = dsk_http_request_get (request, "Upgrade");
+    const char *protos = dsk_http_request_get (request, "Sec-WebSocket-Protocol");
+    if (upgrade != NULL && protos != NULL
+     && dsk_ascii_strcasecmp (upgrade, "WebSocket") == 0
+     && request->connection_upgrade)
+      request->is_websocket_request = 1;
+  }
 
   return request;
 }

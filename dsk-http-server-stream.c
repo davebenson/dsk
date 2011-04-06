@@ -1,4 +1,5 @@
 #include <stdio.h>              /* for snprintf() */
+#include <string.h>
 #include "dsk.h"
 #include "dsk-http-internals.h"
 #include "gsklistmacros.h"
@@ -284,14 +285,15 @@ restart_processing:
               }
             xfer->request = request;
             dsk_buffer_discard (&ss->incoming_data, header_len);
+            if (request->is_websocket_request)
+              {
+                xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET;
+                goto restart_processing;
+              }
             has_content = request->verb == DSK_HTTP_VERB_PUT
                        || request->verb == DSK_HTTP_VERB_POST;
 
-            if (dsk_http_request_is_websocket (request))
-              {
-                xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET;
-              }
-            else if (has_content)
+            if (has_content)
               {
                 xfer->post_data = dsk_memory_source_new ();
                 if (ss->wait_for_content_complete)
@@ -519,6 +521,12 @@ restart_processing:
     case DSK_HTTP_SERVER_STREAM_READ_DONE:
       dsk_assert_not_reached ();
       break;
+    case DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET:
+      if (ss->incoming_data.size < 8)
+        goto return_false;
+      if (ss->first_transfer == xfer)
+        dsk_hook_set_idle_notify (&ss->request_available, DSK_TRUE);
+      break;
     }
 
 return_true:
@@ -534,8 +542,8 @@ return_false:
 
 DskHttpServerStream *
 dsk_http_server_stream_new     (DskOctetSink        *sink,
-                              DskOctetSource      *source,
-                              DskHttpServerStreamOptions *options)
+                                DskOctetSource      *source,
+                                DskHttpServerStreamOptions *options)
 {
   DskHttpServerStream *ss = dsk_object_new (&dsk_http_server_stream_class);
   ss->sink = dsk_object_ref (sink);
@@ -570,6 +578,11 @@ dsk_http_server_stream_get_request (DskHttpServerStream *stream)
   DskHttpServerStreamTransfer *rv = stream->next_request;
   if (rv != NULL)
     {
+      if (rv->request->is_websocket_request
+       && stream->first_transfer != rv)
+        {
+          return NULL;
+        }
       rv->returned = DSK_TRUE;
       stream->next_request = rv->next;
 
@@ -581,12 +594,12 @@ dsk_http_server_stream_get_request (DskHttpServerStream *stream)
            we will see the finalizer handler get called,
            which will in turn set post_data to NULL;
            once post_data is NULL, we discard any further POST data. */
-        if (rv->post_data != NULL)
-          dsk_main_add_idle (dsk_object_unref_f, rv->post_data);
-      }
-    if (stream->next_request == NULL)
-      dsk_hook_set_idle_notify (&stream->request_available, DSK_FALSE);
-    return rv;
+      if (rv->post_data != NULL)
+        dsk_main_add_idle (dsk_object_unref_f, rv->post_data);
+    }
+  if (stream->next_request == NULL)
+    dsk_hook_set_idle_notify (&stream->request_available, DSK_FALSE);
+  return rv;
 }
 
 void
@@ -787,7 +800,10 @@ handle_content_readable (DskOctetSource *content,
       else if (ss->first_transfer != NULL)
         { 
           /* dump header / trap content / trap writable */
-          start_transfer (ss->first_transfer);
+          if (ss->first_transfer->responded)
+            start_transfer (ss->first_transfer);
+          else if (ss->first_transfer->request->is_websocket_request)
+            dsk_hook_set_idle_notify (&ss->request_available, DSK_TRUE);
         }
 
       return DSK_FALSE;
@@ -965,28 +981,144 @@ invalid_arguments:
 
 }
 
-void
-dsk_http_server_stream_respond_switch_protocol
+static void
+get_spaces_and_number (const char *key, 
+                       unsigned   *spaces_out,
+                       unsigned   *number_out)
+{
+  unsigned sp = 0, n = 0;
+  while (*key)
+    {
+      switch (*key)
+        {
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+          n *= 10;
+          n += *key - '0';
+          break;
+        case ' ':
+          sp++;
+          break;
+        }
+      key++;
+    }
+  *spaces_out = sp;
+  *number_out = n;
+}
+static void
+uint32_to_be (uint32_t n, uint8_t *out)
+{
+  out[0] = n>>24;
+  out[1] = n>>16;
+  out[2] = n>>8;
+  out[3] = n;
+}
+
+static dsk_boolean
+compute_websocket_response (const char *key1,  /* NUL-terminated */
+                            const char *key2,  /* NUL-terminated */
+                            const char *key3,  /* 8 bytes long */
+                            uint8_t    *resp,  /* 16 bytes long */
+                            DskError  **error)
+{
+  unsigned spaces_1, spaces_2;
+  unsigned key_number_1, key_number_2;
+  uint8_t challenge[16];
+  DskChecksum *checksum;
+  get_spaces_and_number (key1, &spaces_1, &key_number_1);
+  get_spaces_and_number (key2, &spaces_2, &key_number_2);
+  if (spaces_1 == 0 || spaces_2 == 0)
+    {
+      dsk_set_error (error, "Websocket key did not include spaces");
+      return DSK_FALSE;
+    }
+  if (key_number_1 % spaces_1 != 0
+   || key_number_2 % spaces_2 != 0)
+    {
+      dsk_set_error (error, "Websocket key number not a multiple of spaces");
+      return DSK_FALSE;
+    }
+  uint32_to_be (key_number_1, challenge);
+  uint32_to_be (key_number_2, challenge+4);
+  memcpy (challenge+8, key3, 8);
+
+  /* Compute md5sum */
+  checksum = dsk_checksum_new (DSK_CHECKSUM_MD5);
+  dsk_checksum_feed (checksum, 16, challenge);
+  dsk_checksum_done (checksum);
+  dsk_checksum_get (checksum, resp);
+  dsk_checksum_destroy (checksum);
+  return DSK_TRUE;
+}
+
+dsk_boolean
+dsk_http_server_stream_respond_websocket
                                (DskHttpServerStreamTransfer *transfer,
-                                const char *upgrade,
-                                DskMemorySink **sink_out,
-                                DskMemorySource **source_out)
+                                const char *protocol,
+                                DskWebsocket **websocket_out)
 {
   DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
   DskHttpResponse *response;
   DskHttpServerStream *stream = transfer->owner;
-  DskHttpHeaderMisc misc = { "Upgrade", (char*) upgrade };
-  DskOctetConnectionOptions connect_opts = DSK_OCTET_CONNECTION_OPTIONS_DEFAULT;
+  const char *origin = dsk_http_request_get (transfer->request, "Origin");
+  const char *host = dsk_http_request_get (transfer->request, "Host");
+  const char *key1 = dsk_http_request_get (transfer->request, "Sec-Websocket-Key1");
+  const char *key2 = dsk_http_request_get (transfer->request, "Sec-Websocket-Key2");
+  char *location = NULL;
+  DskHttpHeaderMisc misc[5];
+  unsigned n_misc = 0;
+  const char *msg = NULL;
+  DskError *error = NULL;
+
+  if (host == NULL)
+    {
+      msg = "missing Host";
+      goto handle_error;
+    }
+  if (key1 == NULL || key2 == NULL)
+    {
+      msg = "missing Sec-Websocket-Key1 or -Key2";
+      goto handle_error;
+    }
+
+  misc[n_misc].key = "Upgrade";
+  misc[n_misc].value = "WebSocket";
+  n_misc++;
+
+  if (origin)
+    {
+      misc[n_misc].key = "Sec-Websocket-Origin";
+      misc[n_misc].value = (char*) origin;
+      n_misc++;
+    }
+
+  {
+    unsigned loc_len = 5 + strlen (host) + strlen (transfer->request->path)
+                     + 1;
+    location = dsk_malloc (loc_len);
+    strcpy (location, "ws://");
+    dsk_stpcpy (dsk_stpcpy (location + 5, host), transfer->request->path);
+
+    misc[n_misc].key = "Sec-Websocket-Location";
+    misc[n_misc].value = location;
+    n_misc++;
+  }
+  
+  if (protocol)
+    {
+      misc[n_misc].key = "Sec-Websocket-Protocol";
+      misc[n_misc].value = (char*) protocol;
+      n_misc++;
+    }
+
   resp_options.status_code = DSK_HTTP_STATUS_SWITCHING_PROTOCOLS;
-  resp_options.n_unparsed_headers = 1;
-  resp_options.unparsed_misc_headers = &misc;
+  resp_options.connection_upgrade = 1;
+  resp_options.n_unparsed_headers = n_misc;
+  resp_options.unparsed_misc_headers = misc;
   response = dsk_http_response_new (&resp_options, NULL);
   dsk_assert (response != NULL);
-
-  if (transfer->next != NULL)
-    {
-      dsk_warning ("corruption likely: Switching Protocols, even though pipelining occurred");
-    }
+  dsk_free (location);
+  location = NULL;
 
   /* create memory source + sink */
   if (stream->read_trap)
@@ -1002,16 +1134,36 @@ dsk_http_server_stream_respond_switch_protocol
       dsk_hook_trap_destroy (trap);
     }
 
+  /* compute websocket response */
+  char key3[8];
+  uint8_t ws_response[16];
+  if (dsk_buffer_read (&stream->incoming_data, 8, key3) != 8)
+    dsk_assert_not_reached ();
+  if (!compute_websocket_response (key1, key2, key3, ws_response, &error))
+    {
+      msg = error->message;
+      goto handle_error;
+    }
 
-  *sink_out = dsk_memory_sink_new ();
-  dsk_octet_connect (stream->source, DSK_OCTET_SINK (*sink_out), &connect_opts);
-  dsk_buffer_drain (&(*sink_out)->buffer, &stream->incoming_data);
+  DskWebsocket *websocket;
+  websocket = dsk_object_new (&dsk_websocket_class);
+  dsk_http_response_print_buffer (response, &websocket->outgoing);
+  dsk_buffer_append (&websocket->outgoing, 16, ws_response);
 
-  *source_out = dsk_memory_source_new ();
-  dsk_octet_connect (DSK_OCTET_SOURCE (*source_out), stream->sink, &connect_opts);
-  dsk_buffer_drain (&(*source_out)->buffer, &stream->outgoing_data);
-  dsk_http_response_print_buffer (response, &(*source_out)->buffer);
-  dsk_memory_source_added_data (*source_out);
+  websocket->sink = stream->sink;
+  stream->sink = NULL;
+  websocket->source = stream->source;
+  stream->source = NULL;
+  *websocket_out = websocket;
+  return DSK_TRUE;
+
+handle_error:
+  do_deferred_shutdown (stream);
+  dsk_warning ("invalid handshake in websocket: %s", msg);
+  if (error)
+    dsk_error_unref (error);
+  *websocket_out = NULL;
+  return DSK_FALSE;
 }
 
 static void

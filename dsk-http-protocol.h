@@ -129,6 +129,7 @@ struct _DskHttpRequest
   unsigned connection_upgrade : 1;
   unsigned content_encoding_gzip : 1;
   unsigned supports_content_encoding_gzip : 1;
+  unsigned is_websocket_request : 1;
 
   char *content_type;  /* Content-Type: text/plain or text/plain/UTF-8 */
   char **content_type_kv_pairs;
@@ -323,6 +324,7 @@ struct _DskHttpResponseOptions
   unsigned http_major_version;
   unsigned http_minor_version;
   dsk_boolean connection_close;
+  dsk_boolean connection_upgrade;
 
   /* --- post-data --- */
   /* text/plain or text/plain/utf-8 */
@@ -371,6 +373,7 @@ struct _DskHttpResponseOptions
   1,                            /* http_major_version */        \
   1,                            /* http_minor_version */        \
   DSK_FALSE,                    /* connection_close */          \
+  DSK_FALSE,                    /* connection_upgrade */        \
   NULL,                         /* content_type */              \
   NULL,                         /* content_main_type */         \
   NULL,                         /* content_sub_type */          \

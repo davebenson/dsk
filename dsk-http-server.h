@@ -148,7 +148,8 @@ void dsk_http_server_request_redirect         (DskHttpServerRequest *request,
 void dsk_http_server_request_internal_redirect(DskHttpServerRequest *request,
                                                const char           *new_path);
 void dsk_http_server_request_pass             (DskHttpServerRequest *request);
-void dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
+dsk_boolean
+     dsk_http_server_request_respond_websocket(DskHttpServerRequest *request,
                                                const char           *protocol,
                                                DskWebsocket        **sock_out);
 
