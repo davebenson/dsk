@@ -5,6 +5,7 @@
    binary support.. in fact, it seems likely. */
 
 typedef struct _DskWebsocket DskWebsocket;
+typedef struct _DskWebsocketPacket DskWebsocketPacket;
 struct _DskWebsocket
 {
   DskObject base_instance;
@@ -22,6 +23,11 @@ struct _DskWebsocket
 
   /* buffers */
   DskBuffer incoming, outgoing;
+
+  /* Pending packet-queue */
+  unsigned n_pending;
+  unsigned first_pending;
+  DskWebsocketPacket *pending;
 };
 extern DskObjectClass dsk_websocket_class;
 
@@ -32,13 +38,10 @@ dsk_boolean dsk_websocket_retrieve (DskWebsocket *websocket,
                                     unsigned     *length_out,
                                     uint8_t     **data_out);
 
-/* Send returns FALSE if packet isn't UTF-8, which is required
- * at the moment.  Use 0 for DskWebsocketSendFlags until we have some.
- */
-dsk_boolean dsk_websocket_send     (DskWebsocket *websocket,
+/* Data is supposed to be UTF-8, but it's not a fatal error if not. */
+void        dsk_websocket_send     (DskWebsocket *websocket,
                                     unsigned      length,
-                                    uint8_t      *data,
-                                    DskError    **error);
+                                    uint8_t      *data);
 
 void        dsk_websocket_shutdown (DskWebsocket *websocket);
 
