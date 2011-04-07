@@ -108,6 +108,8 @@ int      dsk_buffer_readv               (DskBuffer       *write_to,
  * for the allocation and deallocation of the DskBuffer itself. */
 void     dsk_buffer_clear               (DskBuffer    *to_destroy);
 
+/* Same as calling clear/init */
+void     dsk_buffer_reset               (DskBuffer    *to_reset);
 
 /* Return a string and clear the buffer. */
 char *dsk_buffer_clear_to_string (DskBuffer *buffer);

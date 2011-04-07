@@ -720,9 +720,20 @@ dsk_buffer_clear(DskBuffer *to_destroy)
       recycle (at);
       at = next;
     }
+
+  /* TODO: remove these */
   to_destroy->first_frag = to_destroy->last_frag = NULL;
   to_destroy->size = 0;
 }
+
+void
+dsk_buffer_reset(DskBuffer *to_destroy)
+{
+  dsk_buffer_clear (to_destroy);
+  to_destroy->first_frag = to_destroy->last_frag = NULL;
+  to_destroy->size = 0;
+}
+
 
 /**
  * dsk_buffer_index_of:

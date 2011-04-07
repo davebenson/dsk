@@ -2,6 +2,7 @@
 #define DSK_H__INCLUDED
 
 #include "dsk-common.h"
+#include "dsk-endian.h"
 #include "dsk-fd.h"
 #include "dsk-dispatch.h"
 #include "dsk-main.h"
@@ -74,6 +75,7 @@
 
 #include "dsk-table.h"
 #include "dsk-table-file.h"
+
 
 #undef _dsk_inline_assert
 

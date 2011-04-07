@@ -28,6 +28,7 @@ struct _DskWebsocket
   unsigned n_pending;
   unsigned first_pending;
   DskWebsocketPacket *pending;
+  unsigned max_pending;
 };
 extern DskObjectClass dsk_websocket_class;
 
