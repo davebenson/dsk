@@ -6,6 +6,7 @@ BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
 		dsk-pattern-char-classes.inc
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
+		tests/test-endian \
 		tests/test-url-0 \
 	        tests/test-http-client-stream-0 \
 		tests/test-http-server-stream-0 \
