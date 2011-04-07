@@ -6,11 +6,18 @@
 
 typedef struct _DskWebsocket DskWebsocket;
 typedef struct _DskWebsocketPacket DskWebsocketPacket;
+
+typedef enum
+{
+  DSK_WEBSOCKET_MODE_RETURN_ERROR,
+  DSK_WEBSOCKET_MODE_SHUTDOWN,
+  DSK_WEBSOCKET_MODE_DROP
+} DskWebsocketMode;
+
 struct _DskWebsocket
 {
   DskObject base_instance;
   DskHook readable;
-  DskHook error_hook;
 
   /* underlying structures */
   DskOctetSource *source;
@@ -18,26 +25,26 @@ struct _DskWebsocket
   DskOctetSink *sink;
   DskHookTrap *write_trap;
 
-  /* if error_hook triggers, this is the error. */
-  DskError *error;
-
   /* buffers */
   DskBuffer incoming, outgoing;
 
-  /* Pending packet-queue */
-  unsigned n_pending;
-  unsigned first_pending;
-  DskWebsocketPacket *pending;
-  unsigned max_pending;
+  uint64_t to_discard;
+  unsigned is_deferred_shutdown : 1;
+  unsigned is_shutdown : 1;
+
+  /* tunable:  these parameters may be changed at any time. */
+  DskWebsocketMode bad_packet_type_mode;
+  DskWebsocketMode too_long_mode;
+  unsigned max_length;
 };
 extern DskObjectClass dsk_websocket_class;
 
-
 /* Receive returning FALSE means "no packet ready";
    you might check if 'websocket->error' is set. */
-dsk_boolean dsk_websocket_retrieve (DskWebsocket *websocket,
+DskIOResult dsk_websocket_receive  (DskWebsocket *websocket,
                                     unsigned     *length_out,
-                                    uint8_t     **data_out);
+                                    uint8_t     **data_out,
+                                    DskError    **error);
 
 /* Data is supposed to be UTF-8, but it's not a fatal error if not. */
 void        dsk_websocket_send     (DskWebsocket *websocket,
