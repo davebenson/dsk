@@ -100,7 +100,7 @@ int main(int argc, char **argv)
           if (dsk_xml_parser_feed (oparser,
                                    tests[i].out_length,
                                    (uint8_t *) tests[i].out,
-                                   &error))
+                                   &oerror))
             oxml = dsk_xml_parser_pop (oparser, NULL);
           else
             {
