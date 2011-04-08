@@ -145,17 +145,6 @@ run_idle_notifications (void *data)
 {
   DskHook idle_notify_guard;
   DSK_UNUSED (data);
-#if 0
-  if (dsk_hook_idle_first == NULL)
-    {
-      if (idle_handler)
-        {
-          dsk_dispatch_remove_idle (idle_handler);
-          idle_handler = NULL;
-        }
-      return;
-    }
-#endif
   if (dsk_hook_idle_first == NULL)
     return;
   idle_handler = NULL;
