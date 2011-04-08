@@ -20,3 +20,4 @@ test-url-0
 test-xml-binding-0
 test-xml-parser-0
 test-xml-validation-suite
+test-endian
