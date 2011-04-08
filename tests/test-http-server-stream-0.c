@@ -851,6 +851,135 @@ test_simple_post (void)
       }
 }
 
+static void
+test_simple_websocket (void)
+{
+  static const char *headers[] =
+    {
+      "GET / HTTP/1.1\r\n"
+      "Upgrade: Websocket\r\n"
+      "Origin: whereever\r\n"
+      "Host: this-host\r\n"
+      "Sec-Websocket-Key1: ...\r\n"
+      "Sec-Websocket-Key2: ...\r\n"
+      "\r\n"
+      "........",
+    };
+  static const char *header_blurbs[] = { "simple" };
+  static const char *iter_blurbs[] = { "byte-by-byte", "one-chunk" };
+  unsigned header_i, iter;
+
+  for (header_i = 0; header_i < DSK_N_ELEMENTS (headers); header_i++)
+    for (iter = 0; iter < 2; iter++)
+      {
+        const char *hdr = headers[header_i];
+        unsigned hdr_len = strlen (hdr);
+        DskError *error = NULL;
+        DskMemorySource *csource = dsk_memory_source_new ();
+        DskMemorySink *csink = dsk_memory_sink_new ();
+        DskHttpServerStream *stream;
+        DskHttpServerStreamOptions server_opts 
+          = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+        dsk_boolean got_notify;
+        DskHttpServerStreamTransfer *xfer;
+        DskWebsocket *websocket;
+        csink->max_buffer_size = 128*1024;
+        if (cmdline_verbose)
+          dsk_warning ("request style: %s; writing data mode: %s",
+                       header_blurbs[header_i], iter_blurbs[iter]);
+        else
+          fprintf (stderr, ".");
+        stream = dsk_http_server_stream_new (DSK_OCTET_SINK (csink),
+                                             DSK_OCTET_SOURCE (csource),
+                                             &server_opts);
+        if (iter == 0)
+          {
+            /* Feed data to server in one bite */
+            dsk_buffer_append (&csource->buffer, hdr_len, hdr);
+            dsk_memory_source_added_data (csource);
+            //dsk_memory_source_done_adding (csource);
+          }
+        else
+          {
+            /* Feed data to server byte-by-byte */
+            unsigned rem = hdr_len;
+            const char *at = hdr;
+            while (rem--)
+              {
+                dsk_buffer_append_byte (&csource->buffer, *at++);
+                dsk_memory_source_added_data (csource);
+                while (csource->buffer.size > 0)
+                  dsk_main_run_once ();
+              }
+            //dsk_memory_source_done_adding (csource);
+          }
+        /* wait til we receive the request */
+        got_notify = DSK_FALSE;
+        dsk_hook_trap (&stream->request_available,
+                       set_boolean_true,
+                       &got_notify,
+                       NULL);
+        while (!got_notify)
+          dsk_main_run_once ();
+        xfer = dsk_http_server_stream_get_request (stream);
+        dsk_assert (xfer != NULL);
+        dsk_assert (dsk_http_server_stream_get_request (stream) == NULL);
+        dsk_assert (xfer->request->is_websocket_request);
+
+        switch (header_i)
+          {
+          case 0:
+            dsk_assert (xfer->request->verb == DSK_HTTP_VERB_GET);
+            dsk_assert (xfer->request->content_length == -1LL);
+            break;
+          }
+
+
+        /* send a response */
+        dsk_http_server_stream_respond_websocket (xfer, "proto", &websocket);
+
+        /* send a packet server -> client */
+        dsk_websocket_send (websocket, 6, (const uint8_t *) "hi mom");
+        while (csink->buffer.size == 0)
+          dsk_main_run_once ();
+        dsk_assert (csink->buffer.size == 1 + 8 + 6);
+        {
+          uint8_t tmp[1+8+6];
+          dsk_buffer_read (&csink->buffer, 1+8+6, tmp);
+          dsk_assert (memcmp ("\0\0\0\0\0\0\0\0\6hi mom", tmp, 1+8+6) == 0);
+        }
+        dsk_memory_sink_drained (csink);
+
+        /* send a packet client -> server */
+        got_notify = DSK_FALSE;
+        DskHookTrap *trap;
+        trap = dsk_hook_trap (&websocket->readable,
+                              set_boolean_true,
+                              &got_notify,
+                              NULL);
+        dsk_buffer_append (&csource->buffer, 15, "\0\0\0\0\0\0\0\0\6hi dad");
+        dsk_memory_source_added_data (csource);
+        while (!got_notify)
+          dsk_main_run_once ();
+        dsk_hook_trap_destroy (trap);
+        unsigned len;
+        uint8_t *data;
+
+        dsk_assert (dsk_websocket_receive (websocket, &len, &data, &error) == DSK_IO_RESULT_SUCCESS);
+        dsk_assert (memcmp (data, "hi dad", 6) == 0);
+        dsk_free (data);
+
+        /* shutdown from server */
+        dsk_websocket_shutdown (websocket);
+
+        /* cleanup */
+        dsk_object_unref (csource);
+        dsk_object_unref (csink);
+        dsk_object_unref (stream);
+        dsk_object_unref (websocket);
+      }
+}
+
 static struct 
 {
   const char *name;
@@ -864,6 +993,7 @@ static struct
   //{ "transfer-encoding chunked content", test_transfer_encoding_chunked },
   //{ "transfer-encoding chunked POST", test_transfer_encoding_chunked_post },
   //{ "content-encoding gzip", test_content_encoding_gzip },
+  { "simple websocket", test_simple_websocket }
 };
 
 int main(int argc, char **argv)
