@@ -156,6 +156,8 @@ run_idle_notifications (void *data)
       return;
     }
 #endif
+  if (dsk_hook_idle_first == NULL)
+    return;
   idle_handler = NULL;
   idle_notify_guard.idle_prev = dsk_hook_idle_last;
   idle_notify_guard.idle_next = NULL;
