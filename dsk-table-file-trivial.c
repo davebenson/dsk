@@ -1,5 +1,4 @@
 #include "dsk.h"
-#include <endian.h>
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -10,10 +9,10 @@
 
 #include "dsk-table-helper.h"
 
-#if (BYTE_ORDER == LITTLE_ENDIAN)
+#if DSK_IS_LITTLE_ENDIAN
 #  define UINT64_TO_LE(val)  (val)
 #  define UINT32_TO_LE(val)  (val)
-#elif (BYTE_ORDER == BIG_ENDIAN)
+#elif DSK_IS_BIG_ENDIAN
 #  define UINT64_TO_LE(val)  bswap64(val)
 #  define UINT32_TO_LE(val)  bswap32(val)
 #else
