@@ -198,7 +198,7 @@ restart:
 void
 dsk_websocket_send     (DskWebsocket *websocket,
                         unsigned      length,
-                        uint8_t      *data)
+                        const uint8_t*data)
 {
   uint8_t header[9] = { 0xff,
                         0, 0, 0, 0,

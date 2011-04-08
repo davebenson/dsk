@@ -5,7 +5,6 @@
    binary support.. in fact, it seems likely. */
 
 typedef struct _DskWebsocket DskWebsocket;
-typedef struct _DskWebsocketPacket DskWebsocketPacket;
 
 typedef enum
 {
@@ -49,7 +48,7 @@ DskIOResult dsk_websocket_receive  (DskWebsocket *websocket,
 /* Data is supposed to be UTF-8, but it's not a fatal error if not. */
 void        dsk_websocket_send     (DskWebsocket *websocket,
                                     unsigned      length,
-                                    uint8_t      *data);
+                                    const uint8_t*data);
 
 void        dsk_websocket_shutdown (DskWebsocket *websocket);
 
