@@ -111,6 +111,8 @@ void             dsk_http_request_print_buffer  (DskHttpRequest *request,
     }
   if (request->connection_close)
     dsk_buffer_append_string (buffer, "Connection: close\r\n");
+  else if (request->connection_upgrade)
+    dsk_buffer_append_string (buffer, "Connection: upgrade\r\n");
   if (request->content_encoding_gzip)
     dsk_buffer_append_string (buffer, "Content-Encoding: gzip\r\n");
   if (request->supports_content_encoding_gzip)

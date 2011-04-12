@@ -411,8 +411,10 @@ test_various_write_seek_1 (const char *name,
           else
             dsk_die ("not found doing find that should have succeeded");
         }
+#if 0
       dsk_warning ("test=%s, got result %.*s", entries[test_i].key,
                    (int) key_len, key_data);
+#endif
       dsk_assert (key_len == strlen (entries[test_i].key));
       dsk_assert (value_len == strlen (entries[test_i].value));
       dsk_assert (memcmp (key_data, entries[test_i].key, key_len) == 0);

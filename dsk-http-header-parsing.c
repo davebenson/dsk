@@ -526,6 +526,11 @@ parse_http_version (char **at_inout,
                     options.parsed_connection_close = 1;         \
                     continue;                                    \
                   }                                              \
+                else if (ascii_caseless_equals (value, "upgrade"))\
+                  {                                              \
+                    options.connection_upgrade = 1;              \
+                    continue;                                    \
+                  }                                              \
               }                                                  \
             break;
 #define HANDLE_CONTENT_ENCODING_CASE                             \

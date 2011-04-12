@@ -373,6 +373,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
         }
     }
   request->content_encoding_gzip = options->content_encoding_gzip ? 1 : 0;
+  request->connection_upgrade = options->connection_upgrade;
 
   unparsed_headers_start
     = phase1_handle_unparsed_headers (options->n_unparsed_headers,
@@ -401,14 +402,13 @@ dsk_http_request_new (DskHttpRequestOptions *options,
                                   str_slab + unparsed_headers_start);
 
   /* Determine if this is a websocket request. */
-  {
-    const char *upgrade = dsk_http_request_get (request, "Upgrade");
-    const char *protos = dsk_http_request_get (request, "Sec-WebSocket-Protocol");
-    if (upgrade != NULL && protos != NULL
-     && dsk_ascii_strcasecmp (upgrade, "WebSocket") == 0
-     && request->connection_upgrade)
-      request->is_websocket_request = 1;
-  }
+  if (request->connection_upgrade)
+    {
+      const char *upgrade = dsk_http_request_get (request, "Upgrade");
+      if (upgrade != NULL
+       && dsk_ascii_strcasecmp (upgrade, "WebSocket") == 0)
+        request->is_websocket_request = 1;
+    }
 
   return request;
 }

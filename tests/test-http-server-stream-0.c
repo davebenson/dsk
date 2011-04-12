@@ -859,11 +859,12 @@ test_simple_websocket (void)
       "GET / HTTP/1.1\r\n"
       "Upgrade: Websocket\r\n"
       "Origin: whereever\r\n"
+      "Connection: upgrade\r\n"
       "Host: this-host\r\n"
-      "Sec-Websocket-Key1: ...\r\n"
-      "Sec-Websocket-Key2: ...\r\n"
+      "Sec-Websocket-Key1: 4 @1  46546xW%0l 1 5\r\n"
+      "Sec-Websocket-Key2: 12998 5 Y3 1  .P00\r\n"
       "\r\n"
-      "........",
+      "^n:ds[4U",
     };
   static const char *header_blurbs[] = { "simple" };
   static const char *iter_blurbs[] = { "byte-by-byte", "one-chunk" };
@@ -914,15 +915,19 @@ test_simple_websocket (void)
             //dsk_memory_source_done_adding (csource);
           }
         /* wait til we receive the request */
-        got_notify = DSK_FALSE;
-        dsk_hook_trap (&stream->request_available,
-                       set_boolean_true,
-                       &got_notify,
-                       NULL);
-        while (!got_notify)
-          dsk_main_run_once ();
-        xfer = dsk_http_server_stream_get_request (stream);
-        dsk_assert (xfer != NULL);
+        do
+          {
+            got_notify = DSK_FALSE;
+            dsk_hook_trap (&stream->request_available,
+                           set_boolean_true,
+                           &got_notify,
+                           NULL);
+            while (!got_notify)
+              dsk_main_run_once ();
+            xfer = dsk_http_server_stream_get_request (stream);
+          }
+        while (xfer == NULL);
+
         dsk_assert (dsk_http_server_stream_get_request (stream) == NULL);
         dsk_assert (xfer->request->is_websocket_request);
 

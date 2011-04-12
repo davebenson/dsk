@@ -275,6 +275,9 @@ struct _DskHttpRequestOptions
   char *referrer;
   char *user_agent;
 
+  /* --- needed for websockets --- */
+  dsk_boolean connection_upgrade;
+
   /* --- unparsed headers --- */
   unsigned n_unparsed_headers;
   char **unparsed_headers;          /* key-value pairs */
@@ -310,6 +313,7 @@ void            dsk_http_request_init_options (DskHttpRequest *request,
   DSK_FALSE, 0LL,               /* has_date, date */            \
   NULL,                         /* referrer */                  \
   NULL,                         /* user_agent */                \
+  DSK_FALSE,                    /* connection_upgrade */        \
   0, NULL,                      /* n_unparsed_headers, unparsed_headers  */\
   NULL,                         /* unparsed_misc_headers */     \
   DSK_FALSE,                    /* parsed */                    \
