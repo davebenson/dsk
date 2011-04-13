@@ -292,6 +292,11 @@ has_request_body (DskHttpVerb verb)
 #define STR_DEFAULT(opt_str, default_value)                                  \
    ((opt_str) == NULL ? (default_value) : (opt_str))
 
+#define GET_OPTIONS_UNPARSED_HEADER(options) \
+      ((options)->unparsed_headers \
+           ? (options)->unparsed_headers \
+           : (char**)(options)->unparsed_misc_headers)
+
 #define ObjectType DskHttpRequest
 DskHttpRequest *
 dsk_http_request_new (DskHttpRequestOptions *options,
@@ -339,6 +344,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
     }
   MAYBE_ADD_STR (options->referrer, referrer);
   MAYBE_ADD_STR (options->user_agent, user_agent);
+  MAYBE_ADD_STR (options->host, host);
   request->http_major_version = options->http_major_version;
   request->http_minor_version = options->http_minor_version;
 
@@ -377,8 +383,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
 
   unparsed_headers_start
     = phase1_handle_unparsed_headers (options->n_unparsed_headers,
-                                  options->unparsed_headers ? options->unparsed_headers
-                                     : (char**)(options->unparsed_misc_headers),
+                                  GET_OPTIONS_UNPARSED_HEADER (options),
                                   &str_alloc, &aligned_alloc);
   /* allocate memory */
   slab = dsk_malloc (aligned_alloc + str_alloc);
@@ -397,7 +402,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
   request->n_unparsed_headers = options->n_unparsed_headers;
   request->unparsed_headers
     = phase2_handle_unparsed_headers (options->n_unparsed_headers,
-                                  options->unparsed_headers,
+                                  GET_OPTIONS_UNPARSED_HEADER (options),
                                   &aligned_at,
                                   str_slab + unparsed_headers_start);
 
@@ -427,7 +432,6 @@ is_valid_status_code (int code)
     default: return DSK_FALSE;
     }
 }
-
 
 #define ObjectType DskHttpResponse
 DskHttpResponse *
@@ -521,7 +525,7 @@ dsk_http_response_new (DskHttpResponseOptions *options,
 
   unparsed_headers_start
     = phase1_handle_unparsed_headers (options->n_unparsed_headers,
-                                  options->unparsed_headers,
+                                  GET_OPTIONS_UNPARSED_HEADER (options),
                                   &str_alloc, &aligned_alloc);
 
   /* allocate memory */
@@ -541,7 +545,7 @@ dsk_http_response_new (DskHttpResponseOptions *options,
   response->n_unparsed_headers = options->n_unparsed_headers;
   response->unparsed_headers
     = phase2_handle_unparsed_headers (options->n_unparsed_headers,
-                                  options->unparsed_headers,
+                                  options->unparsed_headers ? options->unparsed_headers : (char**)options->unparsed_misc_headers,
                                   &aligned_at,
                                   str_slab + unparsed_headers_start);
 

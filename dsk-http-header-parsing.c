@@ -27,6 +27,7 @@ parse_info_clear (ParseInfo *pi)
       at = next;
     }
 }
+
 static void *
 parse_info_alloc (ParseInfo *pi, unsigned size)
 {
@@ -53,51 +54,24 @@ normalize_whitespace (char *inout)
 {
   const char *in = inout;
   char *out = inout;
-  dsk_boolean allow_space = DSK_FALSE;
+  char *first;
+  char *end;
   while (dsk_ascii_isspace (*in))
     in++;
-  while (in == out)
-    {
-      if (dsk_ascii_isspace (*in))
-        {
-          if (allow_space)
-            {
-              in++;
-              *out++ = ' ';
-              allow_space = DSK_FALSE;
-            }
-          else
-            in++;
-        }
-      else if (*in == 0)
-        break;
-      else
-        {
-          allow_space = DSK_TRUE;
-          in++;
-          out++;
-        }
-    }
+  first = end = in;
   while (*in)
     {
-      if (dsk_ascii_isspace (*in))
-        {
-          if (allow_space)
-            {
-              in++;
-              *out++ = ' ';
-              allow_space = DSK_FALSE;
-            }
-          else
-            in++;
-        }
-      else
-        {
-          allow_space = DSK_TRUE;
-          *out++ = *in++;
-        }
+      if (!dsk_ascii_isspace (*in))
+        end = in + 1;
+      in++;
     }
-  *out = 0;
+  if (in == out)
+    *end = 0;
+  else
+    {
+      memmove (out, first, end - first);
+      out[end - first] = 0;
+    }
 }
 
 static dsk_boolean
@@ -420,6 +394,7 @@ handle_date (const char *header_name,
   DskDate date;
   if (!dsk_date_parse (value, NULL, &date, error))
     {
+      dsk_warning ("date=%s",value);
       dsk_add_error_prefix (error, "in %s header", header_name);
       return DSK_FALSE;
     }
@@ -788,7 +763,7 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
           options.unparsed_headers = unparsed_headers;
         }
       options.unparsed_headers[options.n_unparsed_headers*2] = name;
-      options.unparsed_headers[options.n_unparsed_headers*2+1] = strip_string (value);
+      options.unparsed_headers[options.n_unparsed_headers*2+1] = value;
       options.n_unparsed_headers++;
     }
 
@@ -893,7 +868,7 @@ dsk_http_response_parse_buffer  (DskBuffer *buffer,
           options.unparsed_headers = unparsed_headers;
         }
       options.unparsed_headers[options.n_unparsed_headers*2] = name;
-      options.unparsed_headers[options.n_unparsed_headers*2+1] = strip_string (value);
+      options.unparsed_headers[options.n_unparsed_headers*2+1] = value;
       options.n_unparsed_headers++;
     }
 

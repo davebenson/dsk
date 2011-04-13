@@ -522,12 +522,14 @@ restart_processing:
       dsk_assert_not_reached ();
       break;
     case DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET:
-      dsk_warning ("DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET: incoming_data.size=%u",ss->incoming_data.size );
       if (ss->incoming_data.size < 8)
         goto return_false;
-      dsk_warning ("first_transfer,xfer=%p,%p", ss->first_transfer , xfer);
       if (ss->first_transfer == xfer)
-        dsk_hook_set_idle_notify (&ss->request_available, DSK_TRUE);
+        {
+          if (ss->next_request == NULL)
+            ss->next_request = xfer;
+          dsk_hook_set_idle_notify (&ss->request_available, DSK_TRUE);
+        }
       break;
     }
 
@@ -1040,8 +1042,8 @@ compute_websocket_response (const char *key1,  /* NUL-terminated */
       dsk_set_error (error, "Websocket key number not a multiple of spaces");
       return DSK_FALSE;
     }
-  uint32_to_be (key_number_1, challenge);
-  uint32_to_be (key_number_2, challenge+4);
+  uint32_to_be (key_number_1 / spaces_1, challenge);
+  uint32_to_be (key_number_2 / spaces_2, challenge+4);
   memcpy (challenge+8, key3, 8);
 
   /* Compute md5sum */
@@ -1150,6 +1152,7 @@ dsk_http_server_stream_respond_websocket
   DskWebsocket *websocket;
   websocket = dsk_object_new (&dsk_websocket_class);
   dsk_http_response_print_buffer (response, &websocket->outgoing);
+  dsk_buffer_append (&websocket->outgoing, 2, "\r\n");
   dsk_buffer_append (&websocket->outgoing, 16, ws_response);
 
   _dsk_websocket_server_init (websocket, stream->source, stream->sink);

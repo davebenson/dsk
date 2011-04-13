@@ -7,6 +7,7 @@ static void
 dsk_websocket_init (DskWebsocket *websocket)
 {
   dsk_hook_init (&websocket->readable, websocket);
+  websocket->max_length = 1 << 16;
 }
 
 static void
@@ -96,8 +97,6 @@ update_hooks_with_buffer (DskWebsocket *websocket)
   uint8_t header[9];
   uint64_t len;
 
-  dsk_warning ("update_hooks_with_buffer: to_discard=%llu, buffer.size=%u", websocket->to_discard, websocket->incoming.size);
-
   if (websocket->is_shutdown || websocket->is_deferred_shutdown)
     return;
 
@@ -122,7 +121,6 @@ restart_processing:
 
   dsk_buffer_peek (&websocket->incoming, 9, header);
   len = dsk_uint64be_parse (header + 1);
-  dsk_warning ("   websocket: len=%llu",len);
 
   if (len > websocket->max_length)
     {
@@ -138,7 +136,7 @@ restart_processing:
           goto error_do_shutdown;
         }
     }
-  else if (websocket->incoming.size >= 9 + websocket->max_length)
+  else if (websocket->incoming.size >= 9 + len)
     goto set_packet_readable;
   else
     goto unset_packet_readable;
@@ -201,12 +199,12 @@ restart:
     }
   switch (header[0])
     {
-    case 0xff:
+    case 0x00:
       /* uh oh - shutdown packet */
       dsk_buffer_discard (&websocket->incoming, 9 + length);
       do_deferred_shutdown (websocket);
       return DSK_IO_RESULT_EOF;
-    case 0x00:
+    case 0xff:
       if (websocket->incoming.size - 9 < length)
         return DSK_IO_RESULT_AGAIN;
       *length_out = length;
@@ -316,7 +314,6 @@ handle_source_readable (DskOctetSource *source,
                         DskWebsocket   *websocket)
 {
   DskError *error = NULL;
-  dsk_warning ("handle_source_readable");
   switch (dsk_octet_source_read_buffer (source, &websocket->incoming, &error))
     {
     case DSK_IO_RESULT_SUCCESS:
@@ -363,7 +360,6 @@ _dsk_websocket_server_init (DskWebsocket *websocket,
                             DskOctetSource *source,
                             DskOctetSink *sink)
 {
-  dsk_warning ("_dsk_websocket_server_init");
   websocket->source = source;
   websocket->sink = sink;
   if (websocket->outgoing.size > 0)

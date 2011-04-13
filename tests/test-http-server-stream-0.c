@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../dsk.h"
+#include "../dsk-http-internals.h"
 
 static dsk_boolean cmdline_verbose = DSK_FALSE;
 
@@ -884,6 +885,7 @@ test_simple_websocket (void)
         dsk_boolean got_notify;
         DskHttpServerStreamTransfer *xfer;
         DskWebsocket *websocket;
+        unsigned length;
         csink->max_buffer_size = 128*1024;
         if (cmdline_verbose)
           dsk_warning ("request style: %s; writing data mode: %s",
@@ -925,6 +927,7 @@ test_simple_websocket (void)
             while (!got_notify)
               dsk_main_run_once ();
             xfer = dsk_http_server_stream_get_request (stream);
+            dsk_warning ("dsk_http_server_stream_get_request returned %p",xfer);
           }
         while (xfer == NULL);
 
@@ -942,6 +945,26 @@ test_simple_websocket (void)
 
         /* send a response */
         dsk_http_server_stream_respond_websocket (xfer, "proto", &websocket);
+        dsk_assert (websocket != NULL);
+        length = 0;
+        while (!_dsk_http_scan_for_end_of_header (&csink->buffer,
+                                                  &length,
+                                                  DSK_FALSE))
+          dsk_main_run_once ();
+
+        DskHttpResponse *response;
+        response = dsk_http_response_parse_buffer (&csink->buffer, length, &error);
+        if (response == NULL)
+          dsk_die ("error parsing websocket response: %s", error->message);
+        dsk_buffer_discard (&csink->buffer, length);
+        dsk_assert (csink->buffer.size == 16);
+        {
+          uint8_t md5[16];
+          dsk_buffer_read (&csink->buffer, 16, md5);
+          dsk_assert (memcmp (md5, "8jKS'y:G*Co,Wxa-", 16) == 0);
+        }
+        dsk_memory_sink_drained (csink);
+
 
         /* send a packet server -> client */
         dsk_websocket_send (websocket, 6, (const uint8_t *) "hi mom");
@@ -951,7 +974,7 @@ test_simple_websocket (void)
         {
           uint8_t tmp[1+8+6];
           dsk_buffer_read (&csink->buffer, 1+8+6, tmp);
-          dsk_assert (memcmp ("\0\0\0\0\0\0\0\0\6hi mom", tmp, 1+8+6) == 0);
+          dsk_assert (memcmp ("\377\0\0\0\0\0\0\0\6hi mom", tmp, 1+8+6) == 0);
         }
         dsk_memory_sink_drained (csink);
 
@@ -962,7 +985,7 @@ test_simple_websocket (void)
                               set_boolean_true,
                               &got_notify,
                               NULL);
-        dsk_buffer_append (&csource->buffer, 15, "\0\0\0\0\0\0\0\0\6hi dad");
+        dsk_buffer_append (&csource->buffer, 15, "\377\0\0\0\0\0\0\0\6hi dad");
         dsk_memory_source_added_data (csource);
         while (!got_notify)
           dsk_main_run_once ();
