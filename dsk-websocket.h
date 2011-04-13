@@ -31,7 +31,7 @@ struct _DskWebsocket
   unsigned is_deferred_shutdown : 1;
   unsigned is_shutdown : 1;
 
-  /* tunable:  these parameters may be changed at any time. */
+  /* tunable:  set be dsk_websocket_tune() */
   DskWebsocketMode bad_packet_type_mode;
   DskWebsocketMode too_long_mode;
   unsigned max_length;
@@ -49,6 +49,13 @@ DskIOResult dsk_websocket_receive  (DskWebsocket *websocket,
 void        dsk_websocket_send     (DskWebsocket *websocket,
                                     unsigned      length,
                                     const uint8_t*data);
+
+/* to be called whenever any of the 'tunable' parameters above are
+   changed. */
+void        dsk_websocket_tune      (DskWebsocket *websocket,
+                                     DskWebsocketMode bad_packet_type_mode,
+                                     DskWebsocketMode too_long_mode,
+                                     unsigned max_length);
 
 void        dsk_websocket_shutdown (DskWebsocket *websocket);
 

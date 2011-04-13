@@ -90,39 +90,81 @@ maybe_discard_data (DskWebsocket *websocket)
     }
 }
 
-static void
+void
 update_hooks_with_buffer (DskWebsocket *websocket)
 {
   uint8_t header[9];
   uint64_t len;
 
+  dsk_warning ("update_hooks_with_buffer: to_discard=%llu, buffer.size=%u", websocket->to_discard, websocket->incoming.size);
+
   if (websocket->is_shutdown || websocket->is_deferred_shutdown)
     return;
 
-  if (websocket->to_discard > 0
-   || websocket->incoming.size < 9)
+restart_processing:
+  if (websocket->to_discard > 0)
     {
-      dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
-      ensure_has_read_trap (websocket);
-      return;
+      if (websocket->to_discard > websocket->incoming.size)
+        {
+          websocket->to_discard -= websocket->incoming.size;
+          dsk_buffer_reset (&websocket->incoming);
+          goto unset_packet_readable;
+        }
+      else
+        {
+          dsk_buffer_discard (&websocket->incoming, websocket->to_discard);
+          websocket->to_discard = 0;
+          goto restart_processing;
+        }
     }
+  if (websocket->incoming.size < 9)
+    goto unset_packet_readable;
 
   dsk_buffer_peek (&websocket->incoming, 9, header);
   len = dsk_uint64be_parse (header + 1);
+  dsk_warning ("   websocket: len=%llu",len);
 
   if (len > websocket->max_length)
     {
-      dsk_hook_set_idle_notify (&websocket->readable, DSK_TRUE);
+      switch (websocket->too_long_mode)
+        {
+        case DSK_WEBSOCKET_MODE_DROP:
+          websocket->to_discard -= len + 9;
+          goto restart_processing;
+        case DSK_WEBSOCKET_MODE_RETURN_ERROR:
+          goto set_packet_readable;
+          return;
+        case DSK_WEBSOCKET_MODE_SHUTDOWN:
+          goto error_do_shutdown;
+        }
     }
   else if (websocket->incoming.size >= 9 + websocket->max_length)
-    {
-      dsk_hook_set_idle_notify (&websocket->readable, DSK_TRUE);
-    }
+    goto set_packet_readable;
   else
+    goto unset_packet_readable;
+
+set_packet_readable:
+  dsk_hook_set_idle_notify (&websocket->readable, DSK_TRUE);
+  if (websocket->read_trap != NULL)
     {
-      dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
-      ensure_has_read_trap (websocket);
+      dsk_hook_trap_destroy (websocket->read_trap);
+      websocket->read_trap = NULL;
     }
+  return;
+
+unset_packet_readable:
+  dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
+  ensure_has_read_trap (websocket);
+  return;
+
+error_do_shutdown:
+  dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
+  if (websocket->read_trap != NULL)
+    {
+      dsk_hook_trap_destroy (websocket->read_trap);
+      websocket->read_trap = NULL;
+    }
+  dsk_websocket_shutdown (websocket);
 }
 
 
@@ -205,6 +247,7 @@ dsk_websocket_send     (DskWebsocket *websocket,
                         length>>24, length>>16, length>>8, length };
   dsk_buffer_append_small (&websocket->outgoing, 9, header);
   dsk_buffer_append (&websocket->outgoing, length, data);
+  ensure_has_write_trap (websocket);
 }
 
 
@@ -217,6 +260,18 @@ dsk_websocket_shutdown (DskWebsocket *websocket)
       ensure_has_write_trap (websocket);
       do_deferred_shutdown (websocket);
     }
+}
+
+void
+dsk_websocket_tune      (DskWebsocket *websocket,
+                         DskWebsocketMode bad_packet_type_mode,
+                         DskWebsocketMode too_long_mode,
+                         unsigned max_length)
+{
+  websocket->bad_packet_type_mode = bad_packet_type_mode;
+  websocket->too_long_mode = too_long_mode;
+  websocket->max_length = max_length;
+  update_hooks_with_buffer (websocket);
 }
 
 static dsk_boolean
@@ -261,6 +316,7 @@ handle_source_readable (DskOctetSource *source,
                         DskWebsocket   *websocket)
 {
   DskError *error = NULL;
+  dsk_warning ("handle_source_readable");
   switch (dsk_octet_source_read_buffer (source, &websocket->incoming, &error))
     {
     case DSK_IO_RESULT_SUCCESS:
@@ -307,6 +363,7 @@ _dsk_websocket_server_init (DskWebsocket *websocket,
                             DskOctetSource *source,
                             DskOctetSink *sink)
 {
+  dsk_warning ("_dsk_websocket_server_init");
   websocket->source = source;
   websocket->sink = sink;
   if (websocket->outgoing.size > 0)

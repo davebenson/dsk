@@ -864,7 +864,7 @@ test_simple_websocket (void)
       "Sec-Websocket-Key1: 4 @1  46546xW%0l 1 5\r\n"
       "Sec-Websocket-Key2: 12998 5 Y3 1  .P00\r\n"
       "\r\n"
-      "^n:ds[4U",
+      "^n:ds[4U"
     };
   static const char *header_blurbs[] = { "simple" };
   static const char *iter_blurbs[] = { "byte-by-byte", "one-chunk" };
