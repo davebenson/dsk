@@ -117,6 +117,10 @@ struct _DskHttpClientStreamRequestOptions
   unsigned n_cookies;
   DskHttpCookie *cookies;
 
+  /* websocket support */
+  dsk_boolean is_websocket_request;
+  const char *websocket_protocols;
+
   /* functions and user-data */
   DskHttpClientStreamFuncs *funcs;
   void *user_data;
@@ -137,6 +141,8 @@ struct _DskHttpClientStreamRequestOptions
   DSK_TRUE,            /* uncompress_content */        \
   0,                   /* n_cookies */                 \
   NULL,                /* cookies */                   \
+  DSK_FALSE,           /* is_websocket_request */      \
+  NULL,                /* websocket_protocols */       \
   NULL,                /* funcs */                     \
   NULL                 /* user_data */                 \
 }
@@ -163,7 +169,8 @@ typedef enum
   DSK_HTTP_CLIENT_STREAM_READ_AFTER_XFER_CHUNKED, /* after final chunk */
   DSK_HTTP_CLIENT_STREAM_READ_XFER_CHUNK_TRAILER,
   //DSK_HTTP_CLIENT_STREAM_READ_XFER_CHUNK_FINAL_NEWLINE,
-  DSK_HTTP_CLIENT_STREAM_READ_DONE
+  DSK_HTTP_CLIENT_STREAM_READ_DONE,
+  DSK_HTTP_CLIENT_STREAM_READ_WEBSOCKET
 } DskHttpClientStreamReadState;
 typedef enum
 {
@@ -182,6 +189,7 @@ struct _DskHttpClientStreamTransfer
   DskMemorySource *content;      
   DskHttpClientStreamTransfer *next;
   DskHttpClientStreamFuncs *funcs;
+  DskWebsocket *websocket;
   void *user_data;
   unsigned failed : 1;
   unsigned uncompress_content : 1;
@@ -211,6 +219,11 @@ struct _DskHttpClientStreamTransfer
   union {
     struct { DskHookTrap *post_data_trap; uint64_t bytes; } in_content;
   } write_info;
+
+  struct {
+    uint8_t key3[8];
+    uint8_t response[8];
+  } websocket_info;
 };
 
 
@@ -222,27 +235,4 @@ typedef void (*DskHttpClientStreamConnectFunc) (DskOctetSource  *source,
 typedef void (*DskHttpClientStreamConnectFail) (DskError        *error,
                                                 DskHttpResponse *response,
                                                 void            *data);
-
-typedef struct _DskHttpClientStreamConnectOptions DskHttpClientStreamConnectOptions;
-struct _DskHttpClientStreamConnectOptions
-{
-  /* HTTP Request header options */
-  const char *path;
-  const char *host;
-
-  /* Raw transport ... */
-  DskOctetSource *source;
-  DskOctetSink *sink;
-  
-  /* ... or Location to connect to. */
-  const char *connect_host;
-  unsigned connect_port;
-  const char *connect_local_path;
-};
- 
-void dsk_http_client_stream_connect (DskHttpClientStreamConnectOptions *options,
-                                     DskHttpClientStreamConnectFunc func,
-                                     DskHttpClientStreamConnectFail fail,
-                                     void                          *user_data,
-                                     DskDestroyNotify               destroy);
 

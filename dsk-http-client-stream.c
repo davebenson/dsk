@@ -1,6 +1,8 @@
 #include "dsk.h"
 #include "dsk-http-internals.h"
 #include "gsklistmacros.h"
+#include <stdio.h>
+#include <string.h>
 
 #define GET_STREAM_XFER_QUEUE(stream) \
         DskHttpClientStreamTransfer *, \
@@ -717,6 +719,12 @@ handle_writable (DskOctetSink *sink,
               xfer->write_info.in_content.bytes = 0;
               xfer->write_info.in_content.post_data_trap = NULL;
             }
+          else if (xfer->request->is_websocket_request)
+            {
+              dsk_buffer_append (&stream->outgoing_data,
+                                 8, xfer->websocket_info.key3);
+              xfer->write_state = DSK_HTTP_CLIENT_STREAM_WRITE_DONE;
+            }
           else
             xfer->write_state = DSK_HTTP_CLIENT_STREAM_WRITE_DONE;
           break;
@@ -911,6 +919,145 @@ request_body_is_acceptable (DskHttpVerb verb)
 #endif
 }
 
+#define WEBSOCKET_KEY_MAX_LENGTH               64
+
+static inline unsigned
+pick_threeway (unsigned a, unsigned b, unsigned c)
+{
+  unsigned r = dsk_random_int_range (0, a+b+c);
+  if (r < a) return 0;
+  if (r < a + b) return 1;
+  return 2;
+}
+static void
+generate_websocket_key (char *out, uint32_t *key_out)
+{
+  unsigned n_spaces = dsk_random_int_range (1, 13);
+  unsigned number = dsk_random_uint32 ();
+  char rchars[12];
+  unsigned rchars_rem = dsk_random_int_range (1, 13);
+  char number_chars[11];
+  unsigned number_rem;
+  unsigned i;
+  char *rchars_at, *num_at;
+  number -= number % n_spaces;
+  for (i = 0; i < rchars_rem; i++)
+    rchars[i] = "!\"#$%&'()*+,-./:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"[dsk_random_int_range (0, 84)];
+  snprintf (number_chars, sizeof (number_chars), "%u", number);
+  number_rem = strlen (number_chars);
+
+  rchars_at = rchars;
+  num_at = number_chars;
+  if (pick_threeway (number_rem, rchars_rem, 0))
+    {
+      *out++ = *rchars_at++;
+      rchars_rem -= 1;
+    }
+  else
+    {
+      *out++ = *num_at++;
+      number_rem -= 1;
+    }
+  unsigned spaces_rem;
+  spaces_rem = n_spaces;
+  while (number_rem + rchars_rem > 1)
+    switch (pick_threeway (number_rem, rchars_rem, spaces_rem))
+      {
+      case 0:
+        *out++ = *num_at++;
+        number_rem -= 1;
+        break;
+      case 1:
+        *out++ = *rchars_at++;
+        rchars_rem -= 1;
+        break;
+      case 2:
+        *out++ = ' ';
+        spaces_rem -= 1;
+        break;
+      }
+  while (spaces_rem > 0)
+    {
+      *out++ = ' ';
+      spaces_rem -= 1;
+    }
+  if (number_rem)
+    *out++ = *num_at;
+  else
+    *out++ = *rchars_at;
+  *out = 0;
+  *key_out = number * n_spaces;
+}
+
+static DskHttpRequest *
+make_websocket_request (DskHttpRequestOptions *ropts,
+                        const char            *protocols,
+                        uint8_t               *key3_out,        /* length 8 */
+                        uint8_t               *response_out,    /* length 16 */
+                        DskError             **error)
+{
+  unsigned old_n = ropts->n_unparsed_headers;
+  DskHttpHeaderMisc *old_misc = ropts->unparsed_misc_headers;
+  DskHttpHeaderMisc *misc;
+  DskHttpRequest *rv;
+  uint32_t key3_array[2];
+  if (old_misc == NULL)
+    old_misc = (DskHttpHeaderMisc*) ropts->unparsed_headers;
+  misc = dsk_malloc (sizeof (DskHttpHeaderMisc) * (old_n + 4));
+  memcpy (misc, old_misc, old_n * sizeof (DskHttpHeaderMisc));
+  misc[old_n].key = "Upgrade";
+  misc[old_n].value = "Websocket";
+
+  /* generate key1, key2 */
+  char key1[WEBSOCKET_KEY_MAX_LENGTH];
+  char key2[WEBSOCKET_KEY_MAX_LENGTH];
+  uint32_t num1, num2;
+  unsigned n;
+  generate_websocket_key (key1, &num1);
+  generate_websocket_key (key2, &num2);
+
+  misc[old_n+1].key = "Sec-WebSocket-Key1";
+  misc[old_n+1].value = key1;
+  misc[old_n+2].key = "Sec-WebSocket-Key2";
+  misc[old_n+2].value = key2;
+  n = old_n + 3;
+
+  /* generate key3 */
+  key3_array[0] = dsk_random_uint32 ();
+  key3_array[1] = dsk_random_uint32 ();
+  memcpy (key3_out, key3_array, 8);
+
+  /* compute challenge response */
+  {
+    uint8_t challenge[16];
+    DskChecksum *hash;
+    dsk_uint32be_pack (num1, challenge + 0);
+    dsk_uint32be_pack (num2, challenge + 4);
+    memcpy (challenge + 8, key3_out, 8);
+    hash = dsk_checksum_new (DSK_CHECKSUM_MD5);
+    dsk_checksum_feed (hash, 16, challenge);
+    dsk_checksum_done (hash);
+    dsk_checksum_get (hash, response_out);
+    dsk_object_unref (hash);
+  }
+
+  if (protocols)
+    {
+      misc[n].key = "Sec-WebSocket-Protocol";
+      misc[n].value = (char*) protocols;
+      n++;
+    }
+
+  ropts->connection_upgrade = DSK_TRUE;
+  ropts->n_unparsed_headers = n;
+  ropts->unparsed_misc_headers = misc;
+  ropts->unparsed_headers = NULL;
+
+  rv = dsk_http_request_new (ropts, error);
+  dsk_free (misc);
+  return rv;
+}
+
 DskHttpClientStreamTransfer *
 dsk_http_client_stream_request (DskHttpClientStream      *stream,
                                 DskHttpClientStreamRequestOptions *options,
@@ -933,6 +1080,12 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
           dsk_object_unref (filter);
           return NULL;
         }
+    }
+  if (stream->last_transfer != NULL
+   && stream->last_transfer->request->connection_close)
+    {
+      dsk_set_error (error, "no keepalive after Connection: close");
+      return NULL;
     }
   if (options->request != NULL)
     {
@@ -976,10 +1129,41 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
         {
           ropts.transfer_encoding_chunked = 1;
         }
-      request = dsk_http_request_new (&ropts, error);
+      if (options->is_websocket_request)
+        request = make_websocket_request (&ropts, options->websocket_protocols, xfer->websocket_info.key3, xfer->websocket_info.response, error);
+      else
+        request = dsk_http_request_new (&ropts, error);
       if (request == NULL)
         return NULL;
     }
+  if (request->is_websocket_request && !options->is_websocket_request)
+    {
+      dsk_set_error (error, "websocket request header on non-websocket request");
+      dsk_object_unref (request);
+      return NULL;
+    }
+  else if (!request->is_websocket_request && options->is_websocket_request)
+    {
+      dsk_set_error (error, "non-websocket request header on websocket request");
+      dsk_object_unref (request);
+      return NULL;
+    }
+  if (request->is_websocket_request)
+    {
+      if (options->post_data != NULL || options->post_data_length >= 0)
+        {
+          dsk_set_error (error, "POST data not allowed on websocket request");
+          dsk_object_unref (request);
+          return NULL;
+        }
+      if (request->verb != DSK_HTTP_VERB_GET)
+        {
+          dsk_set_error (error, "Websocket request must use GET");
+          dsk_object_unref (request);
+          return NULL;
+        }
+    }
+
   if (options->post_data != NULL)
     {
       if (options->gzip_compress_post_data)
