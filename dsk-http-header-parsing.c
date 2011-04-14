@@ -52,7 +52,7 @@ parse_info_alloc (ParseInfo *pi, unsigned size)
 static void
 normalize_whitespace (char *inout)
 {
-  const char *in = inout;
+  char *in = inout;
   char *out = inout;
   char *first;
   char *end;
