@@ -523,7 +523,7 @@ restart_processing:
       break;
     case DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET:
       if (ss->incoming_data.size < 8)
-        goto return_false;
+        goto return_true;
       if (ss->first_transfer == xfer)
         {
           if (ss->next_request == NULL)
