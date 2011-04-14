@@ -79,7 +79,6 @@ test_simple (void)
               /* Feed data to server in one bite */
               dsk_buffer_append (&csource->buffer, hdr_len, hdr);
               dsk_memory_source_added_data (csource);
-              //dsk_memory_source_done_adding (csource);
             }
           else
             {
@@ -93,7 +92,6 @@ test_simple (void)
                   while (csource->buffer.size > 0)
                     dsk_main_run_once ();
                 }
-              //dsk_memory_source_done_adding (csource);
             }
           /* wait til we receive the request */
           got_notify = DSK_FALSE;
@@ -273,7 +271,6 @@ test_response_keepalive (void)
                   /* Feed data to server in one bite */
                   dsk_buffer_append (&csource->buffer, hdr_len, hdr);
                   dsk_memory_source_added_data (csource);
-                  //dsk_memory_source_done_adding (csource);
                 }
               else
                 {
@@ -287,7 +284,6 @@ test_response_keepalive (void)
                       while (csource->buffer.size > 0)
                         dsk_main_run_once ();
                     }
-                  //dsk_memory_source_done_adding (csource);
                 }
               /* wait til we receive the request */
               got_notify = DSK_FALSE;
@@ -488,7 +484,6 @@ test_pipelining (void)
               /* Feed data to server in one bite */
               dsk_buffer_append (&csource->buffer, hdr_len, hdr);
               dsk_memory_source_added_data (csource);
-              //dsk_memory_source_done_adding (csource);
             }
           else
             {
@@ -502,7 +497,6 @@ test_pipelining (void)
                   while (csource->buffer.size > 0)
                     dsk_main_run_once ();
                 }
-              //dsk_memory_source_done_adding (csource);
             }
           /* wait til we receive the request */
           got_notify = DSK_FALSE;
@@ -737,7 +731,6 @@ test_simple_post (void)
             /* Feed data to server in one bite */
             dsk_buffer_append (&csource->buffer, hdr_len, hdr);
             dsk_memory_source_added_data (csource);
-            //dsk_memory_source_done_adding (csource);
           }
         else
           {
@@ -751,7 +744,6 @@ test_simple_post (void)
                 while (csource->buffer.size > 0)
                   dsk_main_run_once ();
               }
-            //dsk_memory_source_done_adding (csource);
           }
         /* wait til we receive the request */
         got_notify = DSK_FALSE;
@@ -900,7 +892,6 @@ test_simple_websocket (void)
             /* Feed data to server in one bite */
             dsk_buffer_append (&csource->buffer, hdr_len, hdr);
             dsk_memory_source_added_data (csource);
-            //dsk_memory_source_done_adding (csource);
           }
         else
           {
@@ -914,22 +905,17 @@ test_simple_websocket (void)
                 while (csource->buffer.size > 0)
                   dsk_main_run_once ();
               }
-            //dsk_memory_source_done_adding (csource);
           }
         /* wait til we receive the request */
-        do
-          {
-            got_notify = DSK_FALSE;
-            dsk_hook_trap (&stream->request_available,
-                           set_boolean_true,
-                           &got_notify,
-                           NULL);
-            while (!got_notify)
-              dsk_main_run_once ();
-            xfer = dsk_http_server_stream_get_request (stream);
-            dsk_warning ("dsk_http_server_stream_get_request returned %p",xfer);
-          }
-        while (xfer == NULL);
+        got_notify = DSK_FALSE;
+        dsk_hook_trap (&stream->request_available,
+                       set_boolean_true,
+                       &got_notify,
+                       NULL);
+        while (!got_notify)
+          dsk_main_run_once ();
+        xfer = dsk_http_server_stream_get_request (stream);
+        dsk_assert (xfer != NULL);
 
         dsk_assert (dsk_http_server_stream_get_request (stream) == NULL);
         dsk_assert (xfer->request->is_websocket_request);
