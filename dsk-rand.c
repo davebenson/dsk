@@ -218,3 +218,42 @@ dsk_rand_double_range (DskRand* rand, double begin, double end)
 {
   return dsk_rand_double (rand) * (end - begin) + begin;
 }
+
+
+
+/* NOTE: in future, may return a thread-local rand */
+static inline DskRand *
+get_global_rand ()
+{
+  static DskRand global;
+  static dsk_boolean global_initialized = DSK_FALSE;
+  if (!global_initialized)
+    {
+      global_initialized = DSK_TRUE;
+      dsk_rand_init (&global);
+    }
+  return &global;
+}
+
+uint32_t dsk_random_uint32       (void)
+{
+  return dsk_rand_uint32 (get_global_rand ());
+}
+
+int32_t  dsk_random_int_range    (int32_t begin,
+                                  int32_t end)
+{
+  return dsk_rand_int_range (get_global_rand (), begin, end);
+}
+
+double   dsk_random_double       (void)
+{
+  return dsk_rand_double (get_global_rand ());
+}
+
+double   dsk_random_double_range (double begin,
+                                  double end)
+{
+  return dsk_rand_double_range (get_global_rand (), begin, end);
+}
+
