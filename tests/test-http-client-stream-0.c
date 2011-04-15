@@ -9,13 +9,14 @@ struct _RequestData
   DskMemorySink *sink;
   DskHttpResponse *response_header;
   DskError *error;
+  DskWebsocket *websocket;
   dsk_boolean content_complete;
   DskBuffer content;
   dsk_boolean destroyed;
 };
 static dsk_boolean cmdline_verbose = DSK_FALSE;
 static dsk_boolean cmdline_print_error_messages = DSK_FALSE;
-#define REQUEST_DATA_DEFAULT { NULL, NULL, NULL, NULL,      \
+#define REQUEST_DATA_DEFAULT { NULL, NULL, NULL, NULL, NULL,    \
                                DSK_FALSE,       /* content_complete */ \
                                DSK_BUFFER_STATIC_INIT, \
                                DSK_FALSE,       /* destroyed */ \
@@ -50,6 +51,13 @@ request_data__destroy (DskHttpClientStreamTransfer *xfer)
 }
 
 static void
+request_data__handle_response_websocket (DskHttpClientStreamTransfer *xfer)
+{
+  RequestData *rd = xfer->user_data;
+  rd->websocket = dsk_object_ref (xfer->websocket);
+}
+
+static void
 request_data_clear (RequestData *rd)
 {
   dsk_object_unref (rd->source);
@@ -58,6 +66,8 @@ request_data_clear (RequestData *rd)
     dsk_error_unref (rd->error);
   if (rd->response_header)
     dsk_object_unref (rd->response_header);
+  if (rd->websocket)
+    dsk_object_unref (rd->websocket);
   dsk_buffer_clear (&rd->content);
 }
 
@@ -1861,6 +1871,116 @@ test_head_transfer_encoding_chunked (void)
     }
 }
 
+static void
+test_simple_websocket (void)
+{
+  unsigned iter;
+  for (iter = 0; iter < 3; iter++)
+    {
+      DskHttpClientStream *stream;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      RequestData request_data = REQUEST_DATA_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamTransfer *xfer;
+      DskHttpClientStreamFuncs request_funcs_websocket;
+      DskError *error = NULL;
+      const char *content;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      unsigned pass;
+      switch (iter)
+        {
+        case 0:
+          content = "HTTP/1.1 200 OK\r\n"
+                    "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Transfer-Encoding: chunked\r\n"
+                    "\r\n";
+          break;
+        case 1:
+          content = "HTTP/1.1 200 OK\r\n"
+                    "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Transfer-Encoding: chunked\r\n"
+                    "\r\n";
+          break;
+        case 2:
+          content = "HTTP/1.1 200 OK\r\n"
+                    "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Transfer-Encoding: chunked\r\n"
+                    "\r\n";
+          break;
+        }
+      memset (&request_funcs_websocket, 0, sizeof (request_funcs_websocket));
+      request_funcs_websocket.handle_response = request_data__handle_response_websocket;
+      request_funcs_websocket.handle_content_complete = NULL;
+      request_funcs_websocket.destroy = request_data__destroy;
+      request_data.source = dsk_memory_source_new ();
+      request_data.sink = dsk_memory_sink_new ();
+      request_data.sink->max_buffer_size = 100000000;
+      stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
+                                           DSK_OCTET_SOURCE (request_data.source),
+                                           &options);
+      req_options.host = "localhost";
+      req_options.full_path = "/hello.txt";
+      cr_options.request_options = &req_options;
+      cr_options.funcs = &request_funcs_websocket;
+      cr_options.user_data = &request_data;
+
+      /* write response */
+      for (pass = 0; pass < 2; pass++)
+        {
+          fprintf (stderr, ".");
+          xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+
+          /* read data from sink */
+          while (!is_http_request_complete (&request_data.sink->buffer, NULL))
+            dsk_main_run_once ();
+
+          switch (pass)
+            {
+            case 0:
+              dsk_buffer_append_string (&request_data.source->buffer, content);
+              dsk_memory_source_added_data (request_data.source);
+              break;
+            case 1:
+              {
+                const char *at = content;
+                while (*at)
+                  {
+                    dsk_buffer_append_byte (&request_data.source->buffer, *at++);
+                    dsk_memory_source_added_data (request_data.source);
+                    while (request_data.source->buffer.size)
+                      dsk_main_run_once ();
+                  }
+              }
+              break;
+            }
+
+          while (request_data.response_header == NULL)
+            dsk_main_run_once ();
+
+          while (request_data.response_header == NULL)
+            dsk_main_run_once ();
+          dsk_assert (request_data.response_header->http_major_version == 1);
+          dsk_assert (request_data.response_header->http_minor_version == 1);
+          dsk_assert (request_data.response_header->content_length == -1LL);
+          dsk_assert (request_data.response_header->connection_upgrade);
+          dsk_assert (request_data.websocket != NULL);
+
+          request_data.content_complete = 0;
+          request_data.destroyed = 0;
+          dsk_object_unref (request_data.response_header);
+          request_data.response_header = NULL;
+          dsk_buffer_clear (&request_data.sink->buffer);
+
+          /* play with websocket */
+          dsk_warning ("TODO: need more websocket testing");
+        }
+      dsk_object_unref (stream);
+      request_data_clear (&request_data);
+    }
+}
 
 static struct 
 {
@@ -1891,6 +2011,7 @@ static struct
   //{ "HEAD pipelining and keepalive, on old HTTP servers", test_head_keepalive_old_broken_clients },
   //{ "HEAD bad responses", test_head_bad_responses },
   //{ "HEAD gzip uncompression", test_head_gzip_download },
+  { "simple websocket", test_simple_websocket },
 };
 
 int main(int argc, char **argv)
