@@ -1926,12 +1926,16 @@ test_simple_websocket (void)
       cr_options.request_options = &req_options;
       cr_options.funcs = &request_funcs_websocket;
       cr_options.user_data = &request_data;
+      cr_options.is_websocket_request = DSK_TRUE;
+      cr_options.websocket_protocols = "myproto";
 
       /* write response */
       for (pass = 0; pass < 2; pass++)
         {
           fprintf (stderr, ".");
           xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+          if (xfer == NULL)
+            dsk_die ("error making websocket request: %s", error->message);
 
           /* read data from sink */
           while (!is_http_request_complete (&request_data.sink->buffer, NULL))

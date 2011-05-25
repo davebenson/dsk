@@ -103,8 +103,11 @@ transfer_done (DskHttpClientStreamTransfer *xfer)
   if (xfer->content)
     dsk_memory_source_done_adding (xfer->content);
 
-  if (xfer->funcs->handle_content_complete != NULL)
+  if (xfer->websocket == NULL
+   && xfer->funcs->handle_content_complete != NULL)
     xfer->funcs->handle_content_complete (xfer);
+  if (xfer->websocket)
+    dsk_object_unref (xfer->websocket);
   if (xfer->funcs->destroy != NULL)
     xfer->funcs->destroy (xfer);
 
@@ -359,6 +362,38 @@ restart_processing:
                 xfer->read_info.need_header.checked = 0;
                 dsk_object_unref (response);
                 goto restart_processing;
+              }
+            if (response->status_code == DSK_HTTP_STATUS_SWITCHING_PROTOCOLS)
+              {
+                if (!xfer->is_websocket_request)
+                  {
+                    /* SWITCHING_PROTOCOLS only understood for websocket */
+                    ...
+                  }
+                if (stream->incoming_data.size < ...)
+                  {
+                    xfer->read_state = DSK_HTTP_CLIENT_STREAM_READ_WAITING_FOR_WEBSOCKET_HEADER;
+                    return;
+                  }
+
+                if (!make_websocket (stream, xfer, &error))
+                  {
+                    client_stream_set_error (stream, xfer,
+                                             "parsing response header: %s",
+                                             error->message);
+                    do_shutdown (stream);
+                    dsk_error_unref (error);
+                    return;
+                  }
+                dsk_assert (xfer->websocket != NULL);
+                xfer->funcs->handle_response (xfer);
+                transfer_done (xfer);
+                return;
+              }
+            else if (xfer->is_websocket_request)
+              {
+                /* non-websocket response to websocket request */
+                ...
               }
             xfer->response = response;
             if (has_response_body (xfer->request, xfer->response))
@@ -1038,7 +1073,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
     dsk_checksum_feed (hash, 16, challenge);
     dsk_checksum_done (hash);
     dsk_checksum_get (hash, response_out);
-    dsk_object_unref (hash);
+    dsk_checksum_destroy (hash);
   }
 
   if (protocols)
@@ -1053,6 +1088,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   ropts->unparsed_misc_headers = misc;
   ropts->unparsed_headers = NULL;
 
+  dsk_warning ("make_websocket_request: n_unparsed_headers=%u",n);
   rv = dsk_http_request_new (ropts, error);
   dsk_free (misc);
   return rv;
@@ -1225,6 +1261,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
   xfer->write_state = DSK_HTTP_CLIENT_STREAM_WRITE_INIT;
   xfer->failed = 0;
   xfer->uncompress_content = options->uncompress_content;
+  xfer->websocket = NULL;
   maybe_add_write_hook (stream);
   return xfer;
 }
