@@ -16,3 +16,7 @@ message Blather
   required int32 timestamp = 4;
 }
 
+message Feed
+{
+  repeated int64 blatherids = 1 [packed=true];
+};
