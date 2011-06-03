@@ -1,0 +1,18 @@
+
+namespace socnet;
+
+message User
+{
+  required int64 id = 1;
+  required string name = 2;
+  repeated int64 friends = 3 [packed=true];
+}
+
+message Blather
+{
+  required int64 id = 1;
+  required int64 author_id = 2;
+  required string text = 3;
+  required int32 timestamp = 4;
+}
+
