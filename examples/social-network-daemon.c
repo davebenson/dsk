@@ -2,6 +2,7 @@
 #include "generated/socnet.pb-c.h"
 #include "../gskrbtreemacros.h"
 #include "../gsklistmacros.h"
+#include "../gskqsortmacro.h"
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -13,7 +14,7 @@ typedef Socnet__Feed Feed;
 /* --- globals --- */
 static DskTable *name_to_user;
 static DskTable *userid_to_user;
-static DskTable *word_userid_to_feed;
+static DskTable *userid_word_to_feed;
 static DskTable *blatherid_to_blather;
 static uint64_t *next_user_id;          /* mmapped */
 static uint64_t *next_blather_id;          /* mmapped */
@@ -425,6 +426,98 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
   dsk_http_server_respond (request, &options);
 }
 
+#define MAX_WORD_SIZE                1024
+
+typedef void (*TokenCallback) (const char *token,
+                               void       *callback_data);
+
+static char **
+tokenize_message (const char   *message,
+                  DskMemPool   *pool,
+                  unsigned     *n_tokens_out)
+{
+  /* TODO: handle non-ascii */
+  unsigned rv_alloced = 16;
+  char **rv = dsk_malloc (sizeof (char*) * rv_alloced);
+  unsigned n_rv = 0;
+  while (*message)
+    {
+      if (dsk_ascii_is_alnum (*message))
+        {
+          const char *start = message;
+          ++message;
+          while (dsk_ascii_isalnum (*message))
+            message++;
+          if (message - start < MAX_WORD_SIZE)
+            {
+              const char *in = start;
+              char *word = dsk_mem_pool_alloc_unaligned (pool, message - start + 1);
+              char *out = word;
+              while (in < message)
+                {
+                  if (dsk_ascii_isupper (*in))
+                    *out = *in + ('a' - 'A');
+                  else
+                    *out = *in;
+                  out++;
+                  in++;
+                }
+              *out = 0;
+              if (rv_alloced == n_rv)
+                {
+                  rv = dsk_realloc (rv, rv_alloced * 2 * sizeof (char**));
+                  rv_alloced *= 2;
+                }
+              rv[n_rv++] = word;
+            }
+        }
+      else
+        message++;
+    }
+  *n_tokens_out = n_rv;
+  return rv;
+}
+
+
+static void
+handle_message_token (const char *word,
+                      uint64_t    blather_id,
+                      User       *user)
+{
+  DskError *error = NULL;
+  unsigned word_len = strlen (word);
+  uint8_t buf[MAX_WORD_SIZE + 8];
+  uint8_t feed_packed[256];
+  unsigned feed_packed_len;
+  Feed feed = SOCNET__FEED__INIT;
+  unsigned i;
+  char mem_pool_slab[1024];
+  feed.n_blatherids = 1;
+  feed.blatherids = &blather_id;
+  feed_packed_len = socnet__feed__pack (&feed, feed_packed);
+
+  for (i = 0; i < user->n_friends; i++)
+    {
+      memcpy (buf, user->friends + i, 8);
+      if (!dsk_table_add (userid_word_to_feed,
+                          word_len + 8, buf, feed_packed_len, feed_packed,
+                          &error))
+        {
+          dsk_warning ("index table-add: %s", error->message);
+          dsk_error_unref (error);
+          error = NULL;
+        }
+    }
+  memcpy (buf, user->friends + i, 8);
+  if (!dsk_table_add (userid_word_to_feed,
+                      word_len + 8, buf, feed_packed_len, feed_packed,
+                      &error))
+    {
+      dsk_warning ("index table-add: %s", error->message);
+      dsk_error_unref (error);
+      error = NULL;
+    }
+}
 
 static void
 cgi_handler__blather        (DskHttpServerRequest *request,
@@ -460,21 +553,70 @@ cgi_handler__blather        (DskHttpServerRequest *request,
   write_blather (&blather);
 
   /* break message into words (maybe some bigrams);
-     always include empty string */
-  ...
+   * always include empty string;
+   * add all friend/word pairs to index */
+  char mem_pool_slab[1024];
+  DskMemPool mem_pool;
+  dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_slab), mem_pool_slab);
+  unsigned n_tokens;
+  char **tokens = tokenize_message (text, &mem_pool, &n_tokens);
+#define COMPARE_STRINGS(a,b,rv) rv = strcmp (a,b)
+  GSK_QSORT (tokens, char *, n_tokens, COMPARE_STRINGS);
+#undef COMPARE_STRINGS
+  unsigned i;
+  if (n_tokens > 1)
+    {
+      unsigned o = 0;
+      for (i = 1; i < n_tokens; i++)
+        {
+          if (strcmp (tokens[o], tokens[i]) != 0)
+            tokens[++o] = tokens[i];
+        }
+      n_tokens = o + 1;
+    }
+  handle_message_token ("", blather.id, author);
+  for (i = 0; i < n_tokens; i++)
+    handle_message_token (tokens[i], blather.id, author);
 
-  /* add all friend/word pairs to index */
-  ...
+  /* respond with blather id */
+  char resp_buf[64];
+  snprintf (resp_buf, sizeof (resp_buf), "%llu", blather.id);
 
-  /* respond with message id */
-  ...
+  DskHttpServerResponseOptions options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
+  options.content_type = "text/plain";
+  options.content_body = resp_buf;
+  options.content_length = strlen (resp_buf);
+  dsk_http_server_respond (request, &options);
+  dsk_free (tokens);
+  dsk_mem_pool_clear (&mem_pool);
 }
 
 static void
 cgi_handler__search    (DskHttpServerRequest *request,
                         void                 *func_data)
 {
+  const char *user_id_str, *text;
+  user_id_str = get_cgi_var (request, "userid", DSK_TRUE);
+  if (user_id_str == NULL)
+    return;
+  text = get_cgi_var (request, "text", DSK_TRUE);
+  if (text == NULL)
+    return;
+  User *user = lookup_user_by_id (strtoull (user_id_str, NULL, 10));
+  if (user == NULL)
+    {
+      ...
+    }
+  DskMemPool mem_pool;
+  dsk_mem_pool_init_buf (&mem_pool, sizeof (slab), slab);
+  char **terms = tokenize_message (text, &pool, &n_terms);
+
+  /* lookup all terms */
   ...
+
+
+  dsk_free (terms);
+  dsk_mem_pool_clear (&mem_pool);
 }
 
 static DskTable *
