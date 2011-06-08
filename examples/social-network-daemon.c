@@ -4,6 +4,7 @@
 #include "../gsklistmacros.h"
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 typedef Socnet__User User;
 typedef Socnet__Blather Blather;
@@ -194,6 +195,24 @@ write_user (User *user)
   dsk_free (user_data);
 }
 
+static void
+write_blather (Blather *blather)
+{
+  /* serialize */
+  unsigned blather_len = socnet__blather__get_packed_size (blather);
+  uint8_t *blather_data = dsk_malloc (blather_len);
+  socnet__blather__pack (blather, blather_data);
+
+  /* add to table */
+  dsk_table_insert (blatherid_to_blather,
+                    8, (const uint8_t *) (&blather->id),  /* ENDIANNESS ISSUE */
+                    blather_len, blather_data,
+                    NULL);
+
+  dsk_free (blather_data);
+}
+
+
 
 /* --- CGI handlers --- */
 
@@ -249,12 +268,13 @@ cgi_handler__add_user (DskHttpServerRequest *request,
   user->friends = NULL;
 
   /* allocate user-id */
-  user->user_id = *next_user_id;
+  user->id = *next_user_id;
   *next_user_id += 1;
 
   /* respond with user-id */
   DskHttpServerResponseOptions options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
   options.content_type = "text/plain";
+  char buf[256];
   snprintf (buf, sizeof (buf), "%llu", user->id);
   options.content_body = buf;
   options.content_length = strlen (buf);
@@ -276,6 +296,7 @@ cgi_handler__lookup_user (DskHttpServerRequest *request,
       if (id == NULL)
         return;
     }
+  User *user;
   if (name)
     user = lookup_user_by_name (name);
   else
@@ -296,13 +317,23 @@ cgi_handler__lookup_user (DskHttpServerRequest *request,
   DskHttpServerResponseOptions resp_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
   dsk_buffer_append_string (&buffer, "{\"user\":\"");
 
-  /* quote name */
-  ...
+  /* quote name (ADD DskBuffer function!!!) */
+  {
+    const char *at = user->name;
+    while (*at)
+      {
+        if (*at == '"' || *at == '\\')
+          dsk_buffer_append_byte (&buffer, '\\');
+        dsk_buffer_append_byte (&buffer, *at);
+        at++;
+      }
+  }
   
   dsk_buffer_printf (&buffer, ",\"id\":%llu, friends:[", user->id);
-  for (i = 0; i + 1 < users->n_friends; i++)
+  unsigned i;
+  for (i = 0; i + 1 < user->n_friends; i++)
     dsk_buffer_printf (&buffer, "%llu,", user->friends[i]);
-  if (i < users->n_friends)
+  if (i < user->n_friends)
     dsk_buffer_printf (&buffer, "%llu", user->friends[i]);
   dsk_buffer_printf (&buffer, "]}\n");
   resp_options.source_buffer = &buffer;
@@ -315,17 +346,57 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
                              void                 *func_data)
 {
   /* ensure both userids are valid */
-  User *a,*b;
-  ...
+  User *users[2];
+  const char *id_cgis[2] = {"a_id", "b_id"};
+  const char *name_cgis[2] = {"a_name", "b_name"};
+  unsigned i;
+  for (i = 0; i < 2; i++)
+    {
+      const char *str;
+      if ((str=get_cgi_var (request, id_cgis[i], DSK_FALSE)) != NULL)
+        {
+          uint64_t id = strtoull (str, NULL, 10);
+          users[i] = lookup_user_by_id (id);
+          if (users[i] == NULL)
+            {
+              dsk_http_server_request_respond_error (request,
+                                                     DSK_HTTP_STATUS_NOT_FOUND,
+                                                     "user id not found");
+              return;
+            }
+        }
+      else if ((str=get_cgi_var (request, name_cgis[i], DSK_TRUE)) != NULL)
+        {
+          users[i] = lookup_user_by_name (str);
+          if (users[i] == NULL)
+            {
+              dsk_http_server_request_respond_error (request,
+                                                     DSK_HTTP_STATUS_NOT_FOUND,
+                                                     "user name not found");
+              return;
+            }
+        }
+      else
+        return;
+    }
 
   /* find out if they are already friends with eachother. */
   dsk_boolean a_friendswith_b, b_friendswith_a;
-  ...
+  for (i = 0; i < users[0]->n_friends; i++)
+    if (users[0]->friends[i] == users[1]->id)
+      break;
+  a_friendswith_b = (i < users[0]->n_friends);
+  for (i = 0; i < users[1]->n_friends; i++)
+    if (users[1]->friends[i] == users[0]->id)
+      break;
+  b_friendswith_a = (i < users[1]->n_friends);
 
   if (a_friendswith_b && b_friendswith_a)
     {
       /* error: already friends */
-      ...
+      dsk_http_server_request_respond_error (request,
+                                             DSK_HTTP_STATUS_NOT_FOUND,
+                                             "already friends");
       return;
     }
   dsk_warn_if_fail(!a_friendswith_b, "friendship in this network is symmetric");
@@ -334,12 +405,16 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
   if (!a_friendswith_b)
     {
       /* insert user */
-      ...
+      users[0]->friends = dsk_realloc (users[0]->friends, 8 * (users[0]->n_friends+1));
+      users[0]->friends[users[0]->n_friends++] = users[1]->id;
+      write_user (users[0]);
     }
   if (!b_friendswith_a)
     {
       /* insert user */
-      ...
+      users[1]->friends = dsk_realloc (users[1]->friends, 8 * (users[1]->n_friends+1));
+      users[1]->friends[users[1]->n_friends++] = users[0]->id;
+      write_user (users[1]);
     }
 
   /* respond vapidly, but successfully */
@@ -355,8 +430,34 @@ static void
 cgi_handler__blather        (DskHttpServerRequest *request,
                              void                 *func_data)
 {
+  const char *author_id_str, *text;
+  author_id_str = get_cgi_var (request, "authorid", DSK_TRUE);
+  if (author_id_str == NULL)
+    return;
+  text = get_cgi_var (request, "text", DSK_TRUE);
+  if (text == NULL)
+    return;
+
+  uint64_t author_id;
+  author_id = strtoull (author_id_str, NULL, 10);
+  User *author;
+  author = lookup_user_by_id (author_id);
+  if (author == NULL)
+    {
+      dsk_http_server_request_respond_error (request,
+                                             DSK_HTTP_STATUS_NOT_FOUND,
+                                             "author not found");
+      return;
+    }
+
   /* add message to message index and assign ID */
-  ...
+  Blather blather = SOCNET__BLATHER__INIT;
+  blather.id = *next_blather_id;
+  *next_blather_id += 1;
+  blather.author_id = strtoull (author, NULL, 10);
+  blather.text = (char*) text;
+  blather.timestamp = time (NULL);
+  write_blather (&blather);
 
   /* break message into words (maybe some bigrams);
      always include empty string */
