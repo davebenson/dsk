@@ -213,28 +213,29 @@ write_blather (Blather *blather)
   dsk_free (blather_data);
 }
 
+typedef struct _FeedCacheNode FeedCacheNode;
 struct _FeedCacheNode
 {
   uint64_t user_id;
   char *term;
   Feed *feed;
 
-  UserCacheNode *left, *right, *parent;
+  FeedCacheNode *left, *right, *parent;
   uint8_t is_red;
 
   unsigned lock_count;
 
   FeedCacheNode *older, *newer;
 };
-UserCacheNode *feedcache_tree = NULL;
+FeedCacheNode *feedcache_tree = NULL;
 #define FEEDCACHE_GET_IS_RED(u)  (u)->is_red
 #define FEEDCACHE_SET_IS_RED(u,v)  (u)->is_red=v
-#define FEEDCACHE_CMP(a,b, rv) rv = (a->user->id < b->user->id) ? -1 \
-                                       : (a->user->id > b->user->id) ? 1 \
+#define FEEDCACHE_CMP(a,b, rv) rv = (a->user_id < b->user_id) ? -1 \
+                                       : (a->user_id > b->user_id) ? 1 \
                                        : strcmp(a->term, b->term)
  
 #define GET_FEEDCACHE_TREE() \
-  feedcache_tree, UserCacheNode *, FEEDCACHE_GET_IS_RED, \
+  feedcache_tree, FeedCacheNode *, FEEDCACHE_GET_IS_RED, \
   FEEDCACHE_SET_IS_RED, parent, left, right, \
   FEEDCACHE_CMP
 
@@ -250,11 +251,46 @@ lock_term_userid_feed (const char *term,
                        uint64_t    user_id)
 {
 
-  ...
+  FeedCacheNode tmp;
+  FeedCacheNode *node;
+  DskError *error = NULL;
+  tmp.user_id = user_id;
+  tmp.term = (char*) term;
+  GSK_RBTREE_LOOKUP (GET_FEEDCACHE_TREE(), &tmp, node);
+  if (node != NULL)
+    {
+      if (node->lock_count == 0)
+        GSK_LIST_REMOVE (GET_FEED_CACHE_LIST (), node);
+      node->lock_count += 1;
+    }
+  else
+    {
+      node = dsk_malloc (sizeof (FeedCacheNode) + strlen (term) + 1);
+      node->term = (char*)(node+1);
+      strcpy (node->term, term);
+      node->user_id = user_id;
+      ... user_id concat word (no term NUL) ...
+      if (!dsk_table_lookup (userid_word_to_feed, 
+                             key_len, key_data,
+                             &value_len, &value_data,
+                             &error))
+        {
+          if (error)
+            {
+              dsk_warning ("error looking up feed for user %llu, keyword %s",
+                           user_id, term);
+              dsk_error_unref (error);
+              error = NULL;
+            }
+          node->feed = NULL;
+        }
+      node->feed = socnet__feed__unpack (value_len, value_data, NULL);
+      node->lock_count = 1;
+      GSK_RBTREE_INSERT (GET_FEEDCACHE_TREE (), node, conflict);
+      dsk_assert (conflict == NULL);
+    }
+  return node;
 }
-                       
-
-
 
 /* --- CGI handlers --- */
 
@@ -537,6 +573,7 @@ handle_message_token (const char *word,
   feed.blatherids = &blather_id;
   feed_packed_len = socnet__feed__pack (&feed, feed_packed);
 
+  memcpy (buf + 8, word, word_len);
   for (i = 0; i < user->n_friends; i++)
     {
       memcpy (buf, user->friends + i, 8);
