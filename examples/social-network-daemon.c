@@ -213,6 +213,47 @@ write_blather (Blather *blather)
   dsk_free (blather_data);
 }
 
+struct _FeedCacheNode
+{
+  uint64_t user_id;
+  char *term;
+  Feed *feed;
+
+  UserCacheNode *left, *right, *parent;
+  uint8_t is_red;
+
+  unsigned lock_count;
+
+  FeedCacheNode *older, *newer;
+};
+UserCacheNode *feedcache_tree = NULL;
+#define FEEDCACHE_GET_IS_RED(u)  (u)->is_red
+#define FEEDCACHE_SET_IS_RED(u,v)  (u)->is_red=v
+#define FEEDCACHE_CMP(a,b, rv) rv = (a->user->id < b->user->id) ? -1 \
+                                       : (a->user->id > b->user->id) ? 1 \
+                                       : strcmp(a->term, b->term)
+ 
+#define GET_FEEDCACHE_TREE() \
+  feedcache_tree, UserCacheNode *, FEEDCACHE_GET_IS_RED, \
+  FEEDCACHE_SET_IS_RED, parent, left, right, \
+  FEEDCACHE_CMP
+
+
+FeedCacheNode *feedcache_oldest, *feedcache_newest;
+#define GET_FEED_CACHE_LIST() \
+  FeedCacheNode *, feedcache_oldest, feedcache_newest, older, newer
+unsigned feedcache_size = 0;
+unsigned feedcache_max_size = 512;
+
+static FeedCacheNode *
+lock_term_userid_feed (const char *term,
+                       uint64_t    user_id)
+{
+
+  ...
+}
+                       
+
 
 
 /* --- CGI handlers --- */
@@ -605,18 +646,71 @@ cgi_handler__search    (DskHttpServerRequest *request,
   User *user = lookup_user_by_id (strtoull (user_id_str, NULL, 10));
   if (user == NULL)
     {
-      ...
+      dsk_http_server_request_respond_error (request,
+                                             DSK_HTTP_STATUS_NOT_FOUND,
+                                             "user not found");
+      return;
     }
   DskMemPool mem_pool;
+  uint8_t slab[1024];
   dsk_mem_pool_init_buf (&mem_pool, sizeof (slab), slab);
-  char **terms = tokenize_message (text, &pool, &n_terms);
+  unsigned n_terms;
+  char **terms = tokenize_message (text, &mem_pool, &n_terms);
 
   /* lookup all terms */
-  ...
+  FeedCacheNode **term_feeds = alloca (sizeof(FeedCacheNode*) * n_terms);
+  for (i = 0; i < n_terms; i++)
+    {
+      term_feeds[i] = lock_term_userid_feed (user->id, terms[i]);
+      if (term_feeds[i]->feed != NULL)
+        total_n_blatherids += term_feeds[i]->n_blatherids;
+    }
+  uint64_t *all_blaterids = dsk_malloc (total_n_blatherids * sizeof(uint64_t));
+  unsigned at = 0;
+  for (i = 0; i < n_terms; i++)
+    if (term_feeds[i]->feed != NULL)
+      {
+        unsigned N = term_feeds[i]->n_blatherids;
+        memcpy (all_blaterids + at, term_feeds[i]->blatherids, N * sizeof (uint64_t));
+        at += N;
+      }
 
+
+  /* Sort descending the blatherids */
+#define COMPARE_UINT64_DESC(a,b,rv) rv = a<b ? +1 : a>b ? -1 : 0;
+  GSK_QSORT (all_blaterids, uint64_t, at, COMPARE_UINT64_DESC);
+#undef COMPARE_UINT64_DESC
+
+  /* unique blatherids */
+  if (at > 0)
+    {
+      unsigned o = 0;
+      for (i = 1; i < at; i++)
+        if (all_blaters[o] != all_blaters[i])
+          all_blaters[++o] = all_blaters[i];
+      at = o + 1;
+    }
+
+  /* lookup blathers until we have enough */
+  DskBuffer response = DSK_BUFFER_STATIC_INIT;
+  for (i = 0; i < at; i++)
+    {
+      Blather *blather = get_blather (all_blaters[i]);
+      if (blather == NULL)
+        continue;
+      ...
+    }
+
+  for (i = 0; i < n_terms; i++)
+    unlock_term_userid_feed (term_feeds[i]);
 
   dsk_free (terms);
   dsk_mem_pool_clear (&mem_pool);
+
+  DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  resp_options.content_type = "application/json";
+  resp_options.source_buffer = &buffer;
+  dsk_http_server_respond (request, &options);
 }
 
 static DskTable *
