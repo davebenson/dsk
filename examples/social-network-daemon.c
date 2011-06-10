@@ -769,6 +769,16 @@ struct _ScoredBlather
   DskJsonValue *listing;
 };
 
+static dsk_boolean
+score_blather (Blather       *blather,
+               double        *score_out,
+               DskJsonValue **json_out,
+               Query         *query)
+{
+  /* find words */
+  ...
+}
+
 static void
 cgi_handler__search    (DskHttpServerRequest *request,
                         void                 *func_data)
