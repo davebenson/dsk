@@ -1,3 +1,5 @@
+/* TODO: handle big-endian machines (search for ENDIANNESS ISSUE) */
+#include <alloca.h>
 #include "../dsk.h"
 #include "generated/socnet.pb-c.h"
 #include "../gskrbtreemacros.h"
@@ -19,6 +21,11 @@ static DskTable *blatherid_to_blather;
 static uint64_t *next_user_id;          /* mmapped */
 static uint64_t *next_blather_id;          /* mmapped */
 
+
+/* --- sanity limits --- */
+#define MAX_TERMS_IN_QUERY                      16
+
+
 /* --- user methods & caching --- */
 typedef struct _UserCacheNode UserCacheNode;
 struct _UserCacheNode
@@ -31,22 +38,22 @@ struct _UserCacheNode
   UserCacheNode *older, *newer;
 };
 UserCacheNode *usercache_byid_tree = NULL, *usercache_byname_tree = NULL;
-#define USERCACHE_BYID_GET_IS_RED(u)  (u)->byid_is_red
-#define USERCACHE_BYID_SET_IS_RED(u,v)  (u)->byid_is_red=v
-#define USERCACHE_BYID_CMP(a,b, rv) rv = (a->user->id < b->user->id) ? -1 \
+#define USER_CACHE_BYID_GET_IS_RED(u)  (u)->byid_is_red
+#define USER_CACHE_BYID_SET_IS_RED(u,v)  (u)->byid_is_red=v
+#define USER_CACHE_BYID_CMP(a,b, rv) rv = (a->user->id < b->user->id) ? -1 \
                                        : (a->user->id > b->user->id) ? 1 : 0
-#define GET_USERCACHE_BYID_TREE() \
-  usercache_byid_tree, UserCacheNode *, USERCACHE_BYID_GET_IS_RED, \
-  USERCACHE_BYID_SET_IS_RED, byid_parent, byid_left, byid_right, \
-  USERCACHE_BYID_CMP
+#define GET_USER_CACHE_BYID_TREE() \
+  usercache_byid_tree, UserCacheNode *, USER_CACHE_BYID_GET_IS_RED, \
+  USER_CACHE_BYID_SET_IS_RED, byid_parent, byid_left, byid_right, \
+  USER_CACHE_BYID_CMP
 
-#define USERCACHE_BYNAME_GET_IS_RED(u)  (u)->byname_is_red
-#define USERCACHE_BYNAME_SET_IS_RED(u,v)  (u)->byname_is_red=v
-#define USERCACHE_BYNAME_CMP(a,b, rv) rv = strcmp(a->user->name,b->user->name)
-#define GET_USERCACHE_BYNAME_TREE() \
-  usercache_byname_tree, UserCacheNode *, USERCACHE_BYNAME_GET_IS_RED, \
-  USERCACHE_BYNAME_SET_IS_RED, byname_parent, byname_left, byname_right, \
-  USERCACHE_BYNAME_CMP
+#define USER_CACHE_BYNAME_GET_IS_RED(u)  (u)->byname_is_red
+#define USER_CACHE_BYNAME_SET_IS_RED(u,v)  (u)->byname_is_red=v
+#define USER_CACHE_BYNAME_CMP(a,b, rv) rv = strcmp(a->user->name,b->user->name)
+#define GET_USER_CACHE_BYNAME_TREE() \
+  usercache_byname_tree, UserCacheNode *, USER_CACHE_BYNAME_GET_IS_RED, \
+  USER_CACHE_BYNAME_SET_IS_RED, byname_parent, byname_left, byname_right, \
+  USER_CACHE_BYNAME_CMP
 
 UserCacheNode *usercache_oldest, *usercache_newest;
 #define GET_USER_CACHE_LIST() \
@@ -60,9 +67,9 @@ add_user_to_cache (User *user)
   UserCacheNode *ucn = dsk_malloc (sizeof (UserCacheNode));
   ucn->user = user;
   UserCacheNode *conflict;
-  GSK_RBTREE_INSERT (GET_USERCACHE_BYID_TREE (), ucn, conflict);
+  GSK_RBTREE_INSERT (GET_USER_CACHE_BYID_TREE (), ucn, conflict);
   dsk_assert (conflict == NULL);
-  GSK_RBTREE_INSERT (GET_USERCACHE_BYNAME_TREE (), ucn, conflict);
+  GSK_RBTREE_INSERT (GET_USER_CACHE_BYNAME_TREE (), ucn, conflict);
   dsk_assert (conflict == NULL);
   GSK_LIST_APPEND (GET_USER_CACHE_LIST (), ucn);
   usercache_size += 1;
@@ -71,8 +78,8 @@ add_user_to_cache (User *user)
       /* drop oldest */
       UserCacheNode *kill = usercache_oldest;
       GSK_LIST_REMOVE_FIRST (GET_USER_CACHE_LIST ());
-      GSK_RBTREE_REMOVE (GET_USERCACHE_BYID_TREE (), kill);
-      GSK_RBTREE_REMOVE (GET_USERCACHE_BYNAME_TREE (), kill);
+      GSK_RBTREE_REMOVE (GET_USER_CACHE_BYID_TREE (), kill);
+      GSK_RBTREE_REMOVE (GET_USER_CACHE_BYNAME_TREE (), kill);
       socnet__user__free_unpacked (kill->user, NULL);
       usercache_size -= 1;
     }
@@ -85,7 +92,7 @@ lookup_user_by_id (uint64_t userid)
   DskError *error = NULL;
 #define BYID_CMP(id_, ucn, rv)  rv = id_ < ucn->user->id ? -1 \
                                    : id_ > ucn->user->id ? +1 : 0
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_USERCACHE_BYID_TREE (), userid, BYID_CMP,
+  GSK_RBTREE_LOOKUP_COMPARATOR (GET_USER_CACHE_BYID_TREE (), userid, BYID_CMP,
                                 cache_node);
 #undef BYID_CMP
   if (cache_node != NULL)
@@ -133,7 +140,7 @@ lookup_user_by_name (const char *name)
 {
   UserCacheNode *cache_node;
 #define BYNAME_CMP(nme, ucn, rv)  rv = strcmp (nme, ucn->user->name)
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_USERCACHE_BYNAME_TREE (), name, BYNAME_CMP,
+  GSK_RBTREE_LOOKUP_COMPARATOR (GET_USER_CACHE_BYNAME_TREE (), name, BYNAME_CMP,
                                 cache_node);
 #undef BYNAME_CMP
   if (cache_node != NULL)
@@ -213,7 +220,169 @@ write_blather (Blather *blather)
   dsk_free (blather_data);
 }
 
+typedef struct _FeedCacheNode FeedCacheNode;
+struct _FeedCacheNode
+{
+  uint64_t user_id;
+  char *term;
+  Feed *feed;
 
+  FeedCacheNode *left, *right, *parent;
+  uint8_t is_red;
+
+  unsigned lock_count;
+
+  FeedCacheNode *older, *newer;
+};
+FeedCacheNode *feedcache_tree = NULL;
+#define FEED_CACHE_GET_IS_RED(u)  (u)->is_red
+#define FEED_CACHE_SET_IS_RED(u,v)  (u)->is_red=v
+#define FEED_CACHE_CMP(a,b, rv) rv = (a->user_id < b->user_id) ? -1 \
+                                       : (a->user_id > b->user_id) ? 1 \
+                                       : strcmp(a->term, b->term)
+ 
+#define GET_FEED_CACHE_TREE() \
+  feedcache_tree, FeedCacheNode *, FEED_CACHE_GET_IS_RED, \
+  FEED_CACHE_SET_IS_RED, parent, left, right, \
+  FEED_CACHE_CMP
+
+
+FeedCacheNode *feedcache_oldest, *feedcache_newest;
+#define GET_FEED_CACHE_LIST() \
+  FeedCacheNode *, feedcache_oldest, feedcache_newest, older, newer
+unsigned feedcache_size = 0;
+unsigned feedcache_max_size = 512;
+
+static FeedCacheNode *
+lock_term_userid_feed (uint64_t    user_id,
+                       const char *term)
+{
+
+  FeedCacheNode tmp;
+  FeedCacheNode *node;
+  DskError *error = NULL;
+  tmp.user_id = user_id;
+  tmp.term = (char*) term;
+  GSK_RBTREE_LOOKUP (GET_FEED_CACHE_TREE(), &tmp, node);
+  if (node != NULL)
+    {
+      if (node->lock_count == 0)
+        GSK_LIST_REMOVE (GET_FEED_CACHE_LIST (), node);
+      node->lock_count += 1;
+    }
+  else
+    {
+      unsigned term_len = strlen (term);
+      unsigned key_len = 8 + term_len;
+      uint8_t *key_data = alloca (key_len);
+      unsigned value_len;
+      const uint8_t *value_data;
+
+      node = dsk_malloc (sizeof (FeedCacheNode) + term_len + 1);
+      node->term = (char*)(node+1);
+      strcpy (node->term, term);
+      node->user_id = user_id;
+      memcpy (key_data, &user_id, 8);           /* ENDIANNESS ISSUE */
+      memcpy (key_data + 8, term, term_len);
+      if (!dsk_table_lookup (userid_word_to_feed, 
+                             key_len, key_data,
+                             &value_len, &value_data,
+                             &error))
+        {
+          if (error)
+            {
+              dsk_warning ("error looking up feed for user %llu, keyword %s",
+                           user_id, term);
+              dsk_error_unref (error);
+              error = NULL;
+            }
+          node->feed = NULL;
+        }
+      node->feed = socnet__feed__unpack (NULL, value_len, value_data);
+      node->lock_count = 1;
+      FeedCacheNode *conflict;
+      GSK_RBTREE_INSERT (GET_FEED_CACHE_TREE (), node, conflict);
+      dsk_assert (conflict == NULL);
+    }
+  return node;
+}
+
+/* --- blather cache --- */
+typedef struct _BlatherCacheNode BlatherCacheNode;
+struct _BlatherCacheNode
+{
+  Blather *blather;
+
+  BlatherCacheNode *left, *right, *parent;
+  uint8_t is_red;
+
+  unsigned lock_count;
+
+  BlatherCacheNode *older, *newer;
+};
+BlatherCacheNode *blathercache_tree = NULL;
+#define BLATHER_CACHE_GET_IS_RED(u)  (u)->is_red
+#define BLATHER_CACHE_SET_IS_RED(u,v)  (u)->is_red=v
+#define BLATHER_CACHE_CMP(a,b, rv) rv = (a->blather->id < b->blather->id) ? -1 \
+                                       : (a->blather->id > b->blather->id) ? 1 \
+                                       : 0
+ 
+#define GET_BLATHER_CACHE_TREE() \
+  blathercache_tree, BlatherCacheNode *, BLATHER_CACHE_GET_IS_RED, \
+  BLATHER_CACHE_SET_IS_RED, parent, left, right, \
+  BLATHER_CACHE_CMP
+
+
+BlatherCacheNode *blathercache_oldest, *blathercache_newest;
+#define GET_BLATHER_CACHE_LIST() \
+  BlatherCacheNode *, blathercache_oldest, blathercache_newest, older, newer
+unsigned blathercache_size = 0;
+unsigned blathercache_max_size = 512;
+
+static Blather *
+lock_blather (uint64_t blather_id)
+{
+  BlatherCacheNode *node;
+#define BYID_CMP(bid, bcn, rv)  rv = bid < bcn->blather->id ? -1 : bid > bcn->blather->id ? 1 : 0
+  GSK_RBTREE_LOOKUP_COMPARATOR (GET_BLATHER_CACHE_TREE(), blather_id, BYID_CMP, node);
+#undef BYID_CMP
+  if (node != NULL)
+    {
+      if (node->lock_count == 0)
+        GSK_LIST_REMOVE (GET_BLATHER_CACHE_LIST (), node);
+      node->lock_count += 1;
+    }
+  else
+    {
+      unsigned key_len = 8;
+      uint8_t *key_data = (uint8_t *) &blather_id; /* ENDIANNESS ISSUE */
+      unsigned value_len;
+      const uint8_t *value_data;
+      DskError *error = NULL;
+
+      if (!dsk_table_lookup (userid_word_to_feed, 
+                             key_len, key_data,
+                             &value_len, &value_data,
+                             &error))
+        {
+          if (error)
+            {
+              dsk_warning ("error looking up blather %llu", blather_id);
+              dsk_error_unref (error);
+              error = NULL;
+            }
+          return NULL;
+        }
+      Blather *blather = socnet__blather__unpack (NULL, value_len, value_data);
+      node = dsk_malloc (sizeof (BlatherCacheNode));
+      node->blather = blather;
+      node->lock_count = 1;
+      BlatherCacheNode *conflict;
+      GSK_RBTREE_INSERT (GET_BLATHER_CACHE_TREE (), node, conflict);
+      dsk_assert (conflict == NULL);
+    }
+  return node->blather;
+}
 
 /* --- CGI handlers --- */
 
@@ -496,6 +665,7 @@ handle_message_token (const char *word,
   feed.blatherids = &blather_id;
   feed_packed_len = socnet__feed__pack (&feed, feed_packed);
 
+  memcpy (buf + 8, word, word_len);
   for (i = 0; i < user->n_friends; i++)
     {
       memcpy (buf, user->friends + i, 8);
@@ -591,6 +761,24 @@ cgi_handler__blather        (DskHttpServerRequest *request,
   dsk_mem_pool_clear (&mem_pool);
 }
 
+typedef struct _ScoredBlather ScoredBlather;
+struct _ScoredBlather
+{
+  double score;
+  Blather *blather;
+  DskJsonValue *listing;
+};
+
+static dsk_boolean
+score_blather (Blather       *blather,
+               double        *score_out,
+               DskJsonValue **json_out,
+               Query         *query)
+{
+  /* find words */
+  ...
+}
+
 static void
 cgi_handler__search    (DskHttpServerRequest *request,
                         void                 *func_data)
@@ -611,19 +799,155 @@ cgi_handler__search    (DskHttpServerRequest *request,
       return;
     }
   DskMemPool mem_pool;
-  char slab[1024];
+  uint8_t slab[1024];
   dsk_mem_pool_init_buf (&mem_pool, sizeof (slab), slab);
   unsigned n_terms;
   char **terms = tokenize_message (text, &mem_pool, &n_terms);
+  unsigned i;
 
   /* lookup all terms */
+  FeedCacheNode **term_feeds = alloca (sizeof(FeedCacheNode*) * n_terms);
+  unsigned total_n_blatherids = 0;
   for (i = 0; i < n_terms; i++)
     {
-      ...
+      term_feeds[i] = lock_term_userid_feed (user->id, terms[i]);
+      if (term_feeds[i]->feed != NULL)
+        total_n_blatherids += term_feeds[i]->feed->n_blatherids;
     }
+  uint64_t *all_blatherids = dsk_malloc (total_n_blatherids * sizeof(uint64_t));
+  unsigned at = 0;
+  for (i = 0; i < n_terms; i++)
+    if (term_feeds[i]->feed != NULL)
+      {
+        unsigned N = term_feeds[i]->feed->n_blatherids;
+        memcpy (all_blatherids + at,
+                term_feeds[i]->feed->blatherids,
+                N * sizeof (uint64_t));
+        at += N;
+      }
+
+
+  /* Sort descending the blatherids */
+#define COMPARE_UINT64_DESC(a,b,rv) rv = a<b ? +1 : a>b ? -1 : 0;
+  GSK_QSORT (all_blatherids, uint64_t, at, COMPARE_UINT64_DESC);
+#undef COMPARE_UINT64_DESC
+
+  /* unique blatherids */
+  if (at > 0)
+    {
+      unsigned o = 0;
+      for (i = 1; i < at; i++)
+        if (all_blatherids[o] != all_blatherids[i])
+          all_blatherids[++o] = all_blatherids[i];
+      at = o + 1;
+    }
+
+  total_n_blatherids = at;
+  ScoredBlather *scored_blathers = dsk_malloc (sizeof (ScoredBlather) * at);
+  at = 0;
+  unsigned n_scored = 0;
+
+  /* lookup blathers until we have enough */
+  DskBuffer response = DSK_BUFFER_STATIC_INIT;
+  unsigned n_blathers_scored;
+  for (n_blathers_scored = 0; n_blathers_scored < at; n_blathers_scored++)
+    {
+      Blather *blather = lock_blather (all_blatherids[n_blathers_scored]);
+      if (blather == NULL)
+        continue;
+      if (!score_blather (blather, &score, &json_node, query))
+        {
+          unlock_blather (blather);
+        }
+      else
+        {
+          scored_blathers[n_scored].score = score;
+          scored_blathers[n_scored].blather = blather;
+          scored_blathers[n_scored].json_node = json_node;
+          n_scored++;
+        }
+
+      if (n_scored > n_desired && i > min_examine)
+        {
+          sort_scored_blathers_desc (n_scored, scored_blathers);
+          // TODO: dedup
+          if (n_scored > n_desired)
+            {
+              n_blathers_scored++;
+              goto found_results;
+            }
+        }
+    }
+  sort_scored_blathers_desc (n_scored, scored_blathers);
+found_results:
+  DskJsonMember members[2];
+  unsigned n_members = 0;
+  if (debug)
+    {
+      DskJsonMember debmems[10];
+      unsigned n_debmems = 0;
+      DskJsonValue **terminfos = alloca (sizeof (DskJsonMember) * n_terms);
+      debmems[n_debmems].name = "blathers_from_all_terms";
+      debmems[n_debmems].value = dsk_json_value_new_number (orig_total_n_blathers);
+      n_debmems++;
+      debmems[n_debmems].name = "unique_blathers_from_all_terms";
+      debmems[n_debmems].value = dsk_json_value_new_number (total_n_blathers);
+      n_debmems++;
+      debmems[n_debmems].name = "blathers_scored";
+      debmems[n_debmems].value = dsk_json_value_new_number (n_blathers_scored);
+      n_debmems++;
+      for (i = 0; i < n_terms; i++)
+        {
+          DskJsonMember terminfo[3];
+          terminfo[0].name = "term";
+          terminfo[0].value = dsk_json_value_new_string (term_feeds[i].term);
+          terminfo[1].name = "found";
+          terminfo[1].value = dsk_json_value_new_boolean (term_feeds[i].feed != NULL);
+          terminfo[2].name = "n";
+          terminfo[2].value = dsk_json_value_new_number (term_feeds[i].feed ? term_feeds[i].feed->n_blatherids : 0);
+          terminfos[i] = dsk_json_value_new_object (3, terminfo);
+        }
+      debmems[n_debmems].name = "term_infos";
+      debmems[n_debmems].value = dsk_json_value_new_array (n_terms, terminfos);
+      n_debmems++;
+      members[n_members].name = "debug";
+      members[n_members].value = dsk_json_value_new_object (n_debmems, debmems);
+      n_members++;
+    }
+  {
+    /* render json array */
+    unsigned n = DSK_MIN (n_desired, n_scored);
+    DskJsonValue **listings = dsk_malloc (sizeof(DskJsonValue*) * n);
+    for (i = 0; i < n; i++)
+      listings[i] = scored_blathers[i].json_node;
+    members[n_members].name = "results";
+    members[n_members].value = dsk_json_value_new_array (n, listings);
+    n_members++;
+    dsk_free (listings);
+  }
+
+  /* Create total result object. */
+  DskJsonValue *value = dsk_json_value_new_object (n_members, members);
+  dsk_json_value_to_buffer (value, &buffer);
+  dsk_json_value_free (value);
+  dsk_buffer_append_byte (&buffer, '\n');
+
+  /* cleanup */
+  for (i = 0; i < n_terms; i++)
+    unlock_term_userid_feed (term_feeds[i]);
+  for (i = 0; i < n_scored; i++)
+    unlock_blather (scored_blathers[i].blather);
+  dsk_free (scored_blathers);
 
   dsk_free (terms);
   dsk_mem_pool_clear (&mem_pool);
+  dsk_free (all_blatherids);
+
+  /* do HTTP response */
+  DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  resp_options.content_type = "application/json";
+  resp_options.source_buffer = &buffer;
+  dsk_http_server_respond (request, &options);
 }
 
 static DskTable *
