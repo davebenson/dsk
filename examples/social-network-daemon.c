@@ -605,15 +605,22 @@ cgi_handler__search    (DskHttpServerRequest *request,
   User *user = lookup_user_by_id (strtoull (user_id_str, NULL, 10));
   if (user == NULL)
     {
-      ...
+      dsk_http_server_request_respond_error (request,
+                                             DSK_HTTP_STATUS_NOT_FOUND,
+                                             "user id not found");
+      return;
     }
   DskMemPool mem_pool;
+  char slab[1024];
   dsk_mem_pool_init_buf (&mem_pool, sizeof (slab), slab);
-  char **terms = tokenize_message (text, &pool, &n_terms);
+  unsigned n_terms;
+  char **terms = tokenize_message (text, &mem_pool, &n_terms);
 
   /* lookup all terms */
-  ...
-
+  for (i = 0; i < n_terms; i++)
+    {
+      ...
+    }
 
   dsk_free (terms);
   dsk_mem_pool_clear (&mem_pool);
