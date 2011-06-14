@@ -600,15 +600,26 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
 typedef void (*TokenCallback) (const char *token,
                                void       *callback_data);
 
-static char **
-tokenize_message (const char   *message,
+typedef struct _BlatherToken BlatherToken;
+struct _BlatherToken
+{
+  char *normalized;
+
+  /* location w/i the original message (byte offsets) */
+  unsigned start, length;
+};
+
+
+static BlatherToken *
+tokenize_blather (const char   *message,
                   DskMemPool   *pool,
                   unsigned     *n_tokens_out)
 {
   /* TODO: handle non-ascii */
   unsigned rv_alloced = 16;
-  char **rv = dsk_malloc (sizeof (char*) * rv_alloced);
+  BlatherToken *rv = dsk_malloc (sizeof (BlatherToken) * rv_alloced);
   unsigned n_rv = 0;
+  const char *message_begin = message;
   while (*message)
     {
       if (dsk_ascii_is_alnum (*message))
@@ -637,7 +648,10 @@ tokenize_message (const char   *message,
                   rv = dsk_realloc (rv, rv_alloced * 2 * sizeof (char**));
                   rv_alloced *= 2;
                 }
-              rv[n_rv++] = word;
+              rv[n_rv].normalized = word;
+              rv[n_rv].start = start - message_begin;
+              rv[n_rv].length = in - start;
+              n_rv++;
             }
         }
       else
@@ -729,9 +743,9 @@ cgi_handler__blather        (DskHttpServerRequest *request,
   DskMemPool mem_pool;
   dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_slab), mem_pool_slab);
   unsigned n_tokens;
-  char **tokens = tokenize_message (text, &mem_pool, &n_tokens);
-#define COMPARE_STRINGS(a,b,rv) rv = strcmp (a,b)
-  GSK_QSORT (tokens, char *, n_tokens, COMPARE_STRINGS);
+  BlatherToken *tokens = tokenize_blather (text, &mem_pool, &n_tokens);
+#define COMPARE_STRINGS(a,b,rv) rv = strcmp (a.normalized,b.normalized)
+  GSK_QSORT (tokens, BlatherToken, n_tokens, COMPARE_STRINGS);
 #undef COMPARE_STRINGS
   unsigned i;
   if (n_tokens > 1)
@@ -739,14 +753,14 @@ cgi_handler__blather        (DskHttpServerRequest *request,
       unsigned o = 0;
       for (i = 1; i < n_tokens; i++)
         {
-          if (strcmp (tokens[o], tokens[i]) != 0)
+          if (strcmp (tokens[o].normalized, tokens[i].normalized) != 0)
             tokens[++o] = tokens[i];
         }
       n_tokens = o + 1;
     }
   handle_message_token ("", blather.id, author);
   for (i = 0; i < n_tokens; i++)
-    handle_message_token (tokens[i], blather.id, author);
+    handle_message_token (tokens[i].normalized, blather.id, author);
 
   /* respond with blather id */
   char resp_buf[64];
@@ -790,7 +804,9 @@ score_blather (Blather       *blather,
                Query         *query)
 {
   /* find words */
-  ...
+  BlatherToken *words = tokenize_blather (blather->text, &mem_pool, &n_tokens);
+  if (words == NULL)
+    return DSK_FALSE;
 
   /* tf/idf */
   ...
@@ -825,7 +841,7 @@ cgi_handler__search    (DskHttpServerRequest *request,
   uint8_t slab[1024];
   dsk_mem_pool_init_buf (&mem_pool, sizeof (slab), slab);
   unsigned n_terms;
-  char **terms = tokenize_message (text, &mem_pool, &n_terms);
+  BlatherToken *terms = tokenize_blather (text, &mem_pool, &n_terms);
   unsigned i;
 
   /* lookup all terms */
