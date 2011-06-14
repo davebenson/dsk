@@ -769,6 +769,20 @@ struct _ScoredBlather
   DskJsonValue *listing;
 };
 
+typedef struct _QueryPart QueryPart;
+struct _QueryPart
+{
+  char *normalized;             /* lowercased, no punctuation */
+  uint64_t total_occurances;
+};
+
+typedef struct _Query Query;
+struct _Query
+{
+  unsigned n_parts;
+  QueryPart *parts;
+};
+
 static dsk_boolean
 score_blather (Blather       *blather,
                double        *score_out,
@@ -776,6 +790,15 @@ score_blather (Blather       *blather,
                Query         *query)
 {
   /* find words */
+  ...
+
+  /* tf/idf */
+  ...
+
+  /* compute boldfaced blather */
+  ...
+
+  /* make json */
   ...
 }
 
@@ -989,16 +1012,18 @@ main (int argc, char **argv)
     {
       if (errno != ENOENT)
         {
-          ...
+          dsk_error ("%s could not be accessed: %s",
+                     state_dir, strerror (errno));
         }
-      if (!dsk_mkdir_recursive (dir, 0777, &error))
+      if (!dsk_mkdir_recursive (state_dir, 0777, &error))
         {
-          ...
+          dsk_error ("%s could not be make: %s",
+                     state_dir, error->message);
         }
     }
   else if (!S_ISDIR (stat_buf.st_mode))
     {
-      ...
+      dsk_error ("%s was not a directory", state_dir);
     }
 
   /* create / open tables */
