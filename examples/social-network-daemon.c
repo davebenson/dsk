@@ -788,6 +788,7 @@ struct _QueryPart
 {
   char *normalized;             /* lowercased, no punctuation */
   uint64_t total_occurances;
+  Socnet__WordInfo *word_info;  /* may be NULL if unknown */
 };
 
 typedef struct _Query Query;
@@ -804,7 +805,12 @@ score_blather (Blather       *blather,
                Query         *query)
 {
   /* find words */
-  BlatherToken *words = tokenize_blather (blather->text, &mem_pool, &n_tokens);
+  char mem_pool_slab[2048];
+  DskMemPool mem_pool;
+  BlatherToken *words;
+  unsigned n_tokens;
+  dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_slab), mem_pool_slab);
+  words = tokenize_blather (blather->text, &mem_pool, &n_tokens);
   if (words == NULL)
     return DSK_FALSE;
 
