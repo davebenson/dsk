@@ -365,10 +365,15 @@ restart_processing:
               }
             if (response->status_code == DSK_HTTP_STATUS_SWITCHING_PROTOCOLS)
               {
-                if (!xfer->is_websocket_request)
+                if (!xfer->request->is_websocket_request)
                   {
                     /* SWITCHING_PROTOCOLS only understood for websocket */
-                    ...
+                    client_stream_set_error (stream, xfer,
+                                 "Switch Protocols (Status 101) only understood for websocket requests (path is %s)",
+                                             xfer->request->path);
+                    do_shutdown (stream);
+                    dsk_error_unref (error);
+                    return DSK_FALSE;
                   }
                 if (stream->incoming_data.size < ...)
                   {
@@ -390,10 +395,15 @@ restart_processing:
                 transfer_done (xfer);
                 return;
               }
-            else if (xfer->is_websocket_request)
+            else if (xfer->request->is_websocket_request)
               {
                 /* non-websocket response to websocket request */
-                ...
+                client_stream_set_error (stream, xfer,
+                             "Non-Websocket response to websocket request (%s)",
+                                         xfer->request->path);
+                do_shutdown (stream);
+                dsk_error_unref (error);
+                return DSK_FALSE;
               }
             xfer->response = response;
             if (has_response_body (xfer->request, xfer->response))
