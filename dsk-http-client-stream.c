@@ -14,6 +14,25 @@
 
 /* 16-hex digits + CRLF */
 #define MAX_CHUNK_HEADER_SIZE                   18
+static void
+client_stream_take_error_literal (DskHttpClientStream         *stream,
+                                 DskHttpClientStreamTransfer *xfer,
+                                 DskError                    *error)
+{
+  /* set latest error */
+  if (stream->latest_error)
+    dsk_error_unref (stream->latest_error);
+  stream->latest_error = error;
+
+  /* notifications */
+  if (xfer != NULL)
+    {
+      xfer->failed = DSK_TRUE;
+      if (xfer != NULL && xfer->funcs->handle_error != NULL)
+        xfer->funcs->handle_error (xfer);
+    }
+  dsk_hook_notify (&stream->error_hook);
+}
 
 static void
 client_stream_set_error (DskHttpClientStream *stream,
@@ -31,19 +50,7 @@ client_stream_set_error (DskHttpClientStream *stream,
     dsk_warning ("client_stream_set_error: %s [xfer=%p]",
                  error->message, xfer);
 
-  /* set latest error */
-  if (stream->latest_error)
-    dsk_error_unref (stream->latest_error);
-  stream->latest_error = error;
-
-  /* notifications */
-  if (xfer != NULL)
-    {
-      xfer->failed = DSK_TRUE;
-      if (xfer != NULL && xfer->funcs->handle_error != NULL)
-        xfer->funcs->handle_error (xfer);
-    }
-  dsk_hook_notify (&stream->error_hook);
+  client_stream_take_error_literal (stream, xfer, error);
 }
 
 static void
@@ -245,6 +252,35 @@ transfer_content (DskHttpClientStreamTransfer *xfer,
   dsk_memory_source_added_data (xfer->content);
 }
 
+/* Assume we already have 16 bytes in stream->incoming.buffer;
+   validate its ok and find a handler. */
+static dsk_boolean
+make_websocket (DskHttpClientStream         *stream,
+                DskHttpClientStreamTransfer *xfer,
+                DskError                   **error)
+{
+  uint8_t response[16];
+  dsk_buffer_read (&stream->incoming_data, 16, response);
+  if (memcmp (response, xfer->websocket_info.response, 16) != 0)
+    {
+      dsk_set_error (error, "bad websocket handshake from server");
+      return DSK_FALSE;
+    }
+  if (stream->outgoing_data.size > 0)
+    {
+      dsk_set_error (error, "extra outgoing data after websocket startup: internal error");
+      return DSK_FALSE;
+    }
+  xfer->websocket = dsk_object_new (&dsk_websocket_class);
+  _dsk_websocket_client_init (xfer->websocket,
+                              stream->source,
+                              stream->sink,
+                              &stream->incoming_data);
+  stream->source = NULL;
+  stream->sink = NULL;
+  return DSK_TRUE;
+}
+
 static dsk_boolean
 handle_transport_source_readable (DskOctetSource *source,
                                   void           *data)
@@ -375,10 +411,10 @@ restart_processing:
                     dsk_error_unref (error);
                     return DSK_FALSE;
                   }
-                if (stream->incoming_data.size < ...)
+                if (stream->incoming_data.size < 16)
                   {
                     xfer->read_state = DSK_HTTP_CLIENT_STREAM_READ_WAITING_FOR_WEBSOCKET_HEADER;
-                    return;
+                    return DSK_TRUE;
                   }
 
                 if (!make_websocket (stream, xfer, &error))
@@ -388,12 +424,13 @@ restart_processing:
                                              error->message);
                     do_shutdown (stream);
                     dsk_error_unref (error);
-                    return;
+                    return DSK_FALSE;
                   }
                 dsk_assert (xfer->websocket != NULL);
                 xfer->funcs->handle_response (xfer);
                 transfer_done (xfer);
-                return;
+                stream->read_trap = NULL;
+                return DSK_FALSE;
               }
             else if (xfer->request->is_websocket_request)
               {
@@ -627,6 +664,17 @@ restart_processing:
           }
           break;
 #endif
+        case DSK_HTTP_CLIENT_STREAM_READ_WAITING_FOR_WEBSOCKET_HEADER:
+          if (stream->incoming_data.size < 16)
+            return DSK_TRUE;
+          if (!make_websocket (stream, xfer, &error))
+            {
+              client_stream_take_error_literal (stream, xfer, error);
+              do_shutdown (stream);
+              dsk_error_unref (error);
+              return DSK_FALSE;
+            }
+          return DSK_FALSE;   /* websocket will take care of hook */
         default:
           /* INIT already handled when checking if incoming_data_transfer==NULL;
              DONE should never be encountered for incoming_data_transfer */

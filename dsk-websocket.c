@@ -367,3 +367,17 @@ _dsk_websocket_server_init (DskWebsocket *websocket,
   ensure_has_read_trap (websocket);
 }
 
+void
+_dsk_websocket_client_init (DskWebsocket *websocket,
+                            DskOctetSource *source,
+                            DskOctetSink *sink,
+                            DskBuffer    *extra_incoming_data)
+{
+  websocket->source = source;
+  websocket->sink = sink;
+  dsk_buffer_drain (&websocket->incoming.size, extra_incoming_data);
+  if (websocket->outgoing.size > 0)
+    ensure_has_write_trap (websocket);
+  ensure_has_read_trap (websocket);
+}
+

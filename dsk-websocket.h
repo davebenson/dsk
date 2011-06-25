@@ -64,3 +64,7 @@ void        dsk_websocket_shutdown (DskWebsocket *websocket);
 void _dsk_websocket_server_init (DskWebsocket *websocket,
                                  DskOctetSource *source,
                                  DskOctetSink *sink);
+void _dsk_websocket_client_init (DskWebsocket *websocket,
+                                 DskOctetSource *source,
+                                 DskOctetSink *sink,
+                                 DskBuffer    *extra_incoming_data);
