@@ -68,3 +68,12 @@ void _dsk_websocket_client_init (DskWebsocket *websocket,
                                  DskOctetSource *source,
                                  DskOctetSink *sink,
                                  DskBuffer    *extra_incoming_data);
+
+/* used by the server to compute a response to the client.
+   semi-public b/c it is useful for test code. */
+dsk_boolean
+_dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
+                                 const char *key2,  /* NUL-terminated */
+                                 const uint8_t *key3,  /* 8 bytes long */
+                                 uint8_t    *resp,  /* 16 bytes long */
+                                 DskError  **error);

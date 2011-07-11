@@ -1875,7 +1875,7 @@ static void
 test_simple_websocket (void)
 {
   unsigned iter;
-  for (iter = 0; iter < 3; iter++)
+  for (iter = 0; iter < 1; iter++)
     {
       DskHttpClientStream *stream;
       DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
@@ -1890,24 +1890,13 @@ test_simple_websocket (void)
       switch (iter)
         {
         case 0:
-          content = "HTTP/1.1 200 OK\r\n"
+          content = "HTTP/1.1 101 Websocket Protocol Handshake\r\n"
                     "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Transfer-Encoding: chunked\r\n"
-                    "\r\n";
-          break;
-        case 1:
-          content = "HTTP/1.1 200 OK\r\n"
-                    "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Transfer-Encoding: chunked\r\n"
-                    "\r\n";
-          break;
-        case 2:
-          content = "HTTP/1.1 200 OK\r\n"
-                    "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Transfer-Encoding: chunked\r\n"
+                    "Upgrade: WebSocket\r\n"
+                    "Connection: Upgrade\r\n"
+                    "Sec-WebSocket-Origin: http://example.com\r\n"
+                    "Sec-WebSocket-Location: ws://example.com/demo\r\n"
+                    "Sec-WebSocket-Protocol: sample\r\n"
                     "\r\n";
           break;
         }
@@ -1932,37 +1921,81 @@ test_simple_websocket (void)
       /* write response */
       for (pass = 0; pass < 2; pass++)
         {
+          uint8_t response_handshake[16];
+          const char key1[256], key2[256];
+          uint8_t key3[8];
+
           fprintf (stderr, ".");
           xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
           if (xfer == NULL)
             dsk_die ("error making websocket request: %s", error->message);
 
           /* read data from sink */
-          while (!is_http_request_complete (&request_data.sink->buffer, NULL))
+          unsigned request_len;
+          while (!is_http_request_complete (&request_data.sink->buffer,
+                                            &request_len))
             dsk_main_run_once ();
+
+          /* parse request; extract key1 and key2 from request header */
+          {
+            DskHttpRequest *req = dsk_http_request_parse_buffer (&request_data.sink->buffer,
+                                                                 request_len,
+                                                                 &error);
+            dsk_assert (req != NULL);
+
+            /* hunt down key1 and key2 (and verify their length) */
+            ...
+
+            dsk_object_unref (req);
+          }
+
+          /* read out key3 */
+          dsk_buffer_discard (&request_data.sink->buffer, request_len);
+          dsk_memory_sink_drained (request_data.sink);
+          while (request_data.sink->buffer.size < 8)
+            dsk_main_run_once ();
+          dsk_buffer_read (&request_data.size->buffer, 8, key3);
+
+          /* compute websocket handshake response */
+          if (!_dsk_websocket_compute_response (key1, key2, key3,
+                                                response_handshake))
+            dsk_assert_not_reached ();
 
           switch (pass)
             {
             case 0:
               dsk_buffer_append_string (&request_data.source->buffer, content);
+              dsk_buffer_append (&request_data.source->buffer, 16, handshake);
               dsk_memory_source_added_data (request_data.source);
               break;
             case 1:
               {
-                const char *at = content;
-                while (*at)
+                unsigned part;
+                for (part = 0; part < 2; part++)
                   {
-                    dsk_buffer_append_byte (&request_data.source->buffer, *at++);
-                    dsk_memory_source_added_data (request_data.source);
-                    while (request_data.source->buffer.size)
-                      dsk_main_run_once ();
+                    const char *at = content;
+                    unsigned rem;
+                    if (part == 0)
+                      {
+                        at = content;
+                        rem = strlen (content);
+                      }
+                    else
+                      {
+                        at = handshake;
+                        rem = 16;
+                      }
+                    while (rem--)
+                      {
+                        dsk_buffer_append_byte (&request_data.source->buffer, *at++);
+                        dsk_memory_source_added_data (request_data.source);
+                        while (request_data.source->buffer.size)
+                          dsk_main_run_once ();
+                      }
                   }
               }
               break;
             }
-
-          while (request_data.response_header == NULL)
-            dsk_main_run_once ();
 
           while (request_data.response_header == NULL)
             dsk_main_run_once ();

@@ -381,3 +381,74 @@ _dsk_websocket_client_init (DskWebsocket *websocket,
   ensure_has_read_trap (websocket);
 }
 
+/* --- computing the webserver response --- */
+static void
+get_spaces_and_number (const char *key, 
+                       unsigned   *spaces_out,
+                       unsigned   *number_out)
+{
+  unsigned sp = 0, n = 0;
+  while (*key)
+    {
+      switch (*key)
+        {
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+          n *= 10;
+          n += *key - '0';
+          break;
+        case ' ':
+          sp++;
+          break;
+        }
+      key++;
+    }
+  *spaces_out = sp;
+  *number_out = n;
+}
+
+static void
+uint32_to_be (uint32_t n, uint8_t *out)
+{
+  out[0] = n>>24;
+  out[1] = n>>16;
+  out[2] = n>>8;
+  out[3] = n;
+}
+
+dsk_boolean
+_dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
+                                 const char *key2,  /* NUL-terminated */
+                                 const char *key3,  /* 8 bytes long */
+                                 uint8_t    *resp,  /* 16 bytes long */
+                                 DskError  **error)
+{
+  unsigned spaces_1, spaces_2;
+  unsigned key_number_1, key_number_2;
+  uint8_t challenge[16];
+  DskChecksum *checksum;
+  get_spaces_and_number (key1, &spaces_1, &key_number_1);
+  get_spaces_and_number (key2, &spaces_2, &key_number_2);
+  if (spaces_1 == 0 || spaces_2 == 0)
+    {
+      dsk_set_error (error, "Websocket key did not include spaces");
+      return DSK_FALSE;
+    }
+  if (key_number_1 % spaces_1 != 0
+   || key_number_2 % spaces_2 != 0)
+    {
+      dsk_set_error (error, "Websocket key number not a multiple of spaces");
+      return DSK_FALSE;
+    }
+  uint32_to_be (key_number_1 / spaces_1, challenge);
+  uint32_to_be (key_number_2 / spaces_2, challenge+4);
+  memcpy (challenge+8, key3, 8);
+
+  /* Compute md5sum */
+  checksum = dsk_checksum_new (DSK_CHECKSUM_MD5);
+  dsk_checksum_feed (checksum, 16, challenge);
+  dsk_checksum_done (checksum);
+  dsk_checksum_get (checksum, resp);
+  dsk_checksum_destroy (checksum);
+  return DSK_TRUE;
+}

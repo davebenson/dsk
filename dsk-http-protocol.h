@@ -9,9 +9,9 @@ typedef struct _DskHttpResponseClass DskHttpResponseClass;
 typedef struct _DskHttpResponse DskHttpResponse;
 
 /* The status is the numerically status code, so
-   often (for example, 200 or 404) it's almost
+   often for well-known codes like 200 or 404, it's
    easier just to use the code... but i recommend the
-   enum even in those cases. */
+   enum even in those cases, to make your intent clear. */
 typedef enum
 {
   DSK_HTTP_STATUS_CONTINUE                      = 100,

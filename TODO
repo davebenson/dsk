@@ -119,12 +119,20 @@ _ http client
   _ max data size limits
 _ JSON implementation
   x parser
-  _ printer
+  x printer
+    x dense
+    x pretty
+    _ dsk-json-format (program)
   _ object_get_member_by_name
 _ UTF-8 tests
   _ encode char
   _ decode char
   _ utf8_skip_whitespace (fct needs fixin')
+_ Websocket support:
+  _ compute_response
+  _ client-stream support
+  _ server-stream support
+  _ server support
 
 _ make XML parser:
   _ obey xml:whitespace="preserve" (in SUPPRESS_WHITESPACE mode)
@@ -148,6 +156,11 @@ _ content_type_kv_pairs
   _ in request_init_options
 
 _ Range-support in HTTP (client & server)
+
+_ websocket support
+  _ test computing response hash (in spec)
+  _ http-server-stream
+  _ http-client-stream
 
 WORK ON LUSK - the LUA/DSK HTTP Server
 
