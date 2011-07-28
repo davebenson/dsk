@@ -435,14 +435,15 @@ void dsk_print_set_filtered_string   (DskPrint    *context,
                                     DskOctetFilter *filter)
 {
   dsk_print_set_filtered_binary (context, variable_name,
-                               strlen (raw_string), raw_string,
+                               strlen (raw_string),
+                               (const uint8_t *) raw_string,
                                filter);
 }
 
 void dsk_print_set_filtered_binary   (DskPrint    *context,
                                     const char  *variable_name,
                                     size_t       raw_string_length,
-			            const char  *raw_string,
+			            const uint8_t*raw_string,
                                     DskOctetFilter *filter)
 {
   DskBuffer buf;

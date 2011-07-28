@@ -263,6 +263,18 @@ make_websocket (DskHttpClientStream         *stream,
   dsk_buffer_read (&stream->incoming_data, 16, response);
   if (memcmp (response, xfer->websocket_info.response, 16) != 0)
     {
+#if 1
+      dsk_print_push (NULL);
+      dsk_print_set_filtered_binary (NULL, "incoming",
+                                     16, response, dsk_hex_encoder_new (0,0));
+      dsk_warning ("expected=%p",xfer->websocket_info.response);
+      dsk_print_set_filtered_binary (NULL, "expected",
+                                     16, xfer->websocket_info.response,
+                                     dsk_hex_encoder_new (0,0));
+      dsk_print (NULL, "make_websocket: bad header: incoming=$incoming, expected=$expected");
+      dsk_print_pop (NULL);
+#endif
+
       dsk_set_error (error, "bad websocket handshake from server");
       return DSK_FALSE;
     }
@@ -814,6 +826,15 @@ handle_writable (DskOctetSink *sink,
             }
           else if (xfer->request->is_websocket_request)
             {
+              dsk_warning ("client: appending key3=%02x %02x %02x %02x %02x %02x %02x %02x",
+                                 xfer->websocket_info.key3[0],
+                                 xfer->websocket_info.key3[1],
+                                 xfer->websocket_info.key3[2],
+                                 xfer->websocket_info.key3[3],
+                                 xfer->websocket_info.key3[4],
+                                 xfer->websocket_info.key3[5],
+                                 xfer->websocket_info.key3[6],
+                                 xfer->websocket_info.key3[7]);
               dsk_buffer_append (&stream->outgoing_data,
                                  8, xfer->websocket_info.key3);
               xfer->write_state = DSK_HTTP_CLIENT_STREAM_WRITE_DONE;
@@ -1079,7 +1100,9 @@ generate_websocket_key (char *out, uint32_t *key_out)
   else
     *out++ = *rchars_at;
   *out = 0;
-  *key_out = number * n_spaces;
+  *key_out = number / n_spaces;
+  dsk_warning ("generate_websocket_key: number=%u, n_spaces=%u, key=%u",
+               number, n_spaces, *key_out);
 }
 
 static DskHttpRequest *
@@ -1094,6 +1117,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   DskHttpHeaderMisc *misc;
   DskHttpRequest *rv;
   uint32_t key3_array[2];
+  dsk_warning ("make_websocket_request: response_out=%p", response_out);
   if (old_misc == NULL)
     old_misc = (DskHttpHeaderMisc*) ropts->unparsed_headers;
   misc = dsk_malloc (sizeof (DskHttpHeaderMisc) * (old_n + 4));
@@ -1119,6 +1143,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   key3_array[0] = dsk_random_uint32 ();
   key3_array[1] = dsk_random_uint32 ();
   memcpy (key3_out, key3_array, 8);
+  dsk_warning ("key3_array=%08x %08x", key3_array[0], key3_array[1]);
 
   /* compute challenge response */
   {
@@ -1128,10 +1153,21 @@ make_websocket_request (DskHttpRequestOptions *ropts,
     dsk_uint32be_pack (num2, challenge + 4);
     memcpy (challenge + 8, key3_out, 8);
     hash = dsk_checksum_new (DSK_CHECKSUM_MD5);
+  dsk_warning ("client-challenge: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+               challenge[0], challenge[1], challenge[2], challenge[3],
+               challenge[4], challenge[5], challenge[6], challenge[7],
+               challenge[8], challenge[9], challenge[10], challenge[11],
+               challenge[12], challenge[13], challenge[14], challenge[15]);
     dsk_checksum_feed (hash, 16, challenge);
     dsk_checksum_done (hash);
     dsk_checksum_get (hash, response_out);
     dsk_checksum_destroy (hash);
+
+    dsk_warning ("reponse begins %02x%02x%02x%02x",
+                 response_out[0],
+                 response_out[1],
+                 response_out[2],
+                 response_out[3]);
   }
 
   if (protocols)

@@ -222,7 +222,7 @@ struct _DskHttpClientStreamTransfer
 
   struct {
     uint8_t key3[8];
-    uint8_t response[8];
+    uint8_t response[16];
   } websocket_info;
 };
 

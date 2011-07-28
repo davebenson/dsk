@@ -430,6 +430,11 @@ _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
   DskChecksum *checksum;
   get_spaces_and_number (key1, &spaces_1, &key_number_1);
   get_spaces_and_number (key2, &spaces_2, &key_number_2);
+  dsk_warning ("key1 (%s): spaces=%u, number=%u", key1, spaces_1, key_number_1);
+  dsk_warning ("key2 (%s): spaces=%u, number=%u", key2, spaces_2, key_number_2);
+  dsk_warning ("key3: %02x%02x%02x%02x%02x%02x%02x%02x",
+               key3[0], key3[1], key3[2], key3[3],
+               key3[4], key3[5], key3[6], key3[7]);
   if (spaces_1 == 0 || spaces_2 == 0)
     {
       dsk_set_error (error, "Websocket key did not include spaces");
@@ -444,6 +449,11 @@ _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
   uint32_to_be (key_number_1 / spaces_1, challenge);
   uint32_to_be (key_number_2 / spaces_2, challenge+4);
   memcpy (challenge+8, key3, 8);
+  dsk_warning ("challenge: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+               challenge[0], challenge[1], challenge[2], challenge[3],
+               challenge[4], challenge[5], challenge[6], challenge[7],
+               challenge[8], challenge[9], challenge[10], challenge[11],
+               challenge[12], challenge[13], challenge[14], challenge[15]);
 
   /* Compute md5sum */
   checksum = dsk_checksum_new (DSK_CHECKSUM_MD5);
@@ -451,5 +461,10 @@ _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
   dsk_checksum_done (checksum);
   dsk_checksum_get (checksum, resp);
   dsk_checksum_destroy (checksum);
+  dsk_warning ("response: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+               resp[0], resp[1], resp[2], resp[3],
+               resp[4], resp[5], resp[6], resp[7],
+               resp[8], resp[9], resp[10], resp[11],
+               resp[12], resp[13], resp[14], resp[15]);
   return DSK_TRUE;
 }

@@ -67,7 +67,7 @@ void dsk_print_set_filtered_string   (DskPrint    *context,
 void dsk_print_set_filtered_binary   (DskPrint    *context,
                                       const char  *variable_name,
                                       size_t       raw_string_length,
-			              const char  *raw_string,
+			              const uint8_t *raw_string,
                                       DskOctetFilter *filter);
 void dsk_print_set_filtered_buffer   (DskPrint    *context,
                                       const char  *variable_name,

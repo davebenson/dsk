@@ -1922,7 +1922,8 @@ test_simple_websocket (void)
       for (pass = 0; pass < 2; pass++)
         {
           uint8_t response_handshake[16];
-          const char key1[256], key2[256];
+          DskHttpRequest *req;
+          const char *key1 = NULL, *key2 = NULL;
           uint8_t key3[8];
 
           fprintf (stderr, ".");
@@ -1938,15 +1939,22 @@ test_simple_websocket (void)
 
           /* parse request; extract key1 and key2 from request header */
           {
-            DskHttpRequest *req = dsk_http_request_parse_buffer (&request_data.sink->buffer,
+            unsigned uh;
+            req = dsk_http_request_parse_buffer (&request_data.sink->buffer,
                                                                  request_len,
                                                                  &error);
             dsk_assert (req != NULL);
 
             /* hunt down key1 and key2 (and verify their length) */
-            ...
-
-            dsk_object_unref (req);
+            for (uh = 0; uh < req->n_unparsed_headers; uh++)
+              if (dsk_ascii_strcasecmp (req->unparsed_headers[uh].key,
+                                        "Sec-WebSocket-Key1") == 0)
+                key1 = req->unparsed_headers[uh].value;
+              else if (dsk_ascii_strcasecmp (req->unparsed_headers[uh].key,
+                                             "Sec-WebSocket-Key2") == 0)
+                key2 = req->unparsed_headers[uh].value;
+            dsk_assert (key1 != NULL);
+            dsk_assert (key1 != NULL);
           }
 
           /* read out key3 */
@@ -1954,18 +1962,24 @@ test_simple_websocket (void)
           dsk_memory_sink_drained (request_data.sink);
           while (request_data.sink->buffer.size < 8)
             dsk_main_run_once ();
-          dsk_buffer_read (&request_data.size->buffer, 8, key3);
+          dsk_buffer_read (&request_data.sink->buffer, 8, key3);
 
           /* compute websocket handshake response */
+          dsk_warning ("%s:%u: computing handshake response", __FILE__, __LINE__);
           if (!_dsk_websocket_compute_response (key1, key2, key3,
-                                                response_handshake))
+                                                response_handshake,
+                                                &error))
             dsk_assert_not_reached ();
+
+          dsk_object_unref (req);
+          req = NULL;
+          key1 = key2 = NULL;
 
           switch (pass)
             {
             case 0:
               dsk_buffer_append_string (&request_data.source->buffer, content);
-              dsk_buffer_append (&request_data.source->buffer, 16, handshake);
+              dsk_buffer_append (&request_data.source->buffer, 16, response_handshake);
               dsk_memory_source_added_data (request_data.source);
               break;
             case 1:
@@ -1982,7 +1996,8 @@ test_simple_websocket (void)
                       }
                     else
                       {
-                        at = handshake;
+                        const uint8_t *handshake = response_handshake;
+                        at = (const char *) handshake;
                         rem = 16;
                       }
                     while (rem--)
