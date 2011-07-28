@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsk.h"
 
 static uint8_t close_packet[9] = { 0xff, 0,0,0,0, 0,0,0,0 };
@@ -375,7 +376,7 @@ _dsk_websocket_client_init (DskWebsocket *websocket,
 {
   websocket->source = source;
   websocket->sink = sink;
-  dsk_buffer_drain (&websocket->incoming.size, extra_incoming_data);
+  dsk_buffer_drain (&websocket->incoming, extra_incoming_data);
   if (websocket->outgoing.size > 0)
     ensure_has_write_trap (websocket);
   ensure_has_read_trap (websocket);
@@ -419,7 +420,7 @@ uint32_to_be (uint32_t n, uint8_t *out)
 dsk_boolean
 _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
                                  const char *key2,  /* NUL-terminated */
-                                 const char *key3,  /* 8 bytes long */
+                                 const uint8_t *key3,  /* 8 bytes long */
                                  uint8_t    *resp,  /* 16 bytes long */
                                  DskError  **error)
 {

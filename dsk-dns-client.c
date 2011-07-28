@@ -430,6 +430,8 @@ dsk_dns_try_init (DskError **error)
       DSK_ASCII_SKIP_SPACE (at);
       if (*at == '#')
         continue;
+      if (*at == 0)
+        continue;
       ip = at;
       DSK_ASCII_SKIP_NONSPACE (at);
       *at++ = 0;
