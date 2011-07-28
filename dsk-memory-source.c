@@ -9,6 +9,8 @@ dsk_memory_source_init (DskMemorySource *source)
 static void
 dsk_memory_source_finalize (DskMemorySource *source)
 {
+  if (source->error)
+    dsk_error_unref (source->error);
   dsk_buffer_clear (&source->buffer);
   dsk_hook_clear (&source->buffer_low);
 }

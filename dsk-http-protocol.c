@@ -471,6 +471,8 @@ dsk_http_response_new (DskHttpResponseOptions *options,
   if (options->connection_close
    || (options->request != NULL && options->request->connection_close))
     response->connection_close = DSK_TRUE;
+  if (options->connection_upgrade)
+    response->connection_upgrade = options->connection_upgrade;
   response->http_major_version = options->http_major_version;
   response->http_minor_version = options->http_minor_version;
   if (!is_valid_status_code (options->status_code))

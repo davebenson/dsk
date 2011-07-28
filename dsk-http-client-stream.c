@@ -101,9 +101,10 @@ transfer_done (DskHttpClientStreamTransfer *xfer)
                                    "http-client: error decompressing content: %s",
                                    error->message);
           dsk_memory_source_take_error (xfer->content, error);
-          return;
         }
-      dsk_memory_source_added_data (xfer->content);
+      else
+        dsk_memory_source_added_data (xfer->content);
+      dsk_object_unref (xfer->content_decoder);
     }
 
   /* EOF for content */
@@ -128,8 +129,6 @@ transfer_done (DskHttpClientStreamTransfer *xfer)
   dsk_object_unref (xfer->request);
   if (xfer->response != NULL)
     dsk_object_unref (xfer->response);
-  if (xfer->content_decoder != NULL)
-    dsk_object_unref (xfer->content_decoder);
   dsk_free (xfer);
 }
 
@@ -411,6 +410,7 @@ restart_processing:
                 dsk_object_unref (response);
                 goto restart_processing;
               }
+            xfer->response = response;
             if (response->status_code == DSK_HTTP_STATUS_SWITCHING_PROTOCOLS)
               {
                 if (!xfer->request->is_websocket_request)
@@ -439,7 +439,8 @@ restart_processing:
                     return DSK_FALSE;
                   }
                 dsk_assert (xfer->websocket != NULL);
-                xfer->funcs->handle_response (xfer);
+                if (xfer->funcs->handle_response != NULL)
+                  xfer->funcs->handle_response (xfer);
                 transfer_done (xfer);
                 stream->read_trap = NULL;
                 return DSK_FALSE;
@@ -454,7 +455,6 @@ restart_processing:
                 dsk_error_unref (error);
                 return DSK_FALSE;
               }
-            xfer->response = response;
             if (has_response_body (xfer->request, xfer->response))
               {
                 /* setup (empty) response stream */
@@ -686,6 +686,10 @@ restart_processing:
               dsk_error_unref (error);
               return DSK_FALSE;
             }
+          if (xfer->funcs->handle_response != NULL)
+            xfer->funcs->handle_response (xfer);
+          transfer_done (xfer);
+          stream->read_trap = NULL;
           return DSK_FALSE;   /* websocket will take care of hook */
         default:
           /* INIT already handled when checking if incoming_data_transfer==NULL;
@@ -1158,7 +1162,6 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   ropts->unparsed_misc_headers = misc;
   ropts->unparsed_headers = NULL;
 
-  dsk_warning ("make_websocket_request: n_unparsed_headers=%u",n);
   rv = dsk_http_request_new (ropts, error);
   dsk_free (misc);
   return rv;

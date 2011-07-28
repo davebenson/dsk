@@ -55,6 +55,7 @@ request_data__handle_response_websocket (DskHttpClientStreamTransfer *xfer)
 {
   RequestData *rd = xfer->user_data;
   rd->websocket = dsk_object_ref (xfer->websocket);
+  rd->response_header = dsk_object_ref (xfer->response);
 }
 
 static void
@@ -1879,7 +1880,6 @@ test_simple_websocket (void)
     {
       DskHttpClientStream *stream;
       DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-      RequestData request_data = REQUEST_DATA_DEFAULT;
       DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_websocket;
@@ -1904,17 +1904,10 @@ test_simple_websocket (void)
       request_funcs_websocket.handle_response = request_data__handle_response_websocket;
       request_funcs_websocket.handle_content_complete = NULL;
       request_funcs_websocket.destroy = request_data__destroy;
-      request_data.source = dsk_memory_source_new ();
-      request_data.sink = dsk_memory_sink_new ();
-      request_data.sink->max_buffer_size = 100000000;
-      stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
-                                           DSK_OCTET_SOURCE (request_data.source),
-                                           &options);
       req_options.host = "localhost";
       req_options.full_path = "/hello.txt";
       cr_options.request_options = &req_options;
       cr_options.funcs = &request_funcs_websocket;
-      cr_options.user_data = &request_data;
       cr_options.is_websocket_request = DSK_TRUE;
       cr_options.websocket_protocols = "myproto";
 
@@ -1925,6 +1918,14 @@ test_simple_websocket (void)
           DskHttpRequest *req;
           const char *key1 = NULL, *key2 = NULL;
           uint8_t key3[8];
+          RequestData request_data = REQUEST_DATA_DEFAULT;
+          request_data.source = dsk_memory_source_new ();
+          request_data.sink = dsk_memory_sink_new ();
+          request_data.sink->max_buffer_size = 100000000;
+          cr_options.user_data = &request_data;
+          stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
+                                               DSK_OCTET_SOURCE (request_data.source),
+                                               &options);
 
           fprintf (stderr, ".");
           xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
@@ -1965,7 +1966,6 @@ test_simple_websocket (void)
           dsk_buffer_read (&request_data.sink->buffer, 8, key3);
 
           /* compute websocket handshake response */
-          dsk_warning ("%s:%u: computing handshake response", __FILE__, __LINE__);
           if (!_dsk_websocket_compute_response (key1, key2, key3,
                                                 response_handshake,
                                                 &error))
@@ -2028,9 +2028,10 @@ test_simple_websocket (void)
 
           /* play with websocket */
           dsk_warning ("TODO: need more websocket testing");
+
+          dsk_object_unref (stream);
+          request_data_clear (&request_data);
         }
-      dsk_object_unref (stream);
-      request_data_clear (&request_data);
     }
 }
 

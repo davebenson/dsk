@@ -139,6 +139,7 @@ dsk_hook_trap         (DskHook       *hook,
   trap->owner = hook;
   trap->is_notifying = 0;
   trap->block_count = 0;
+  trap->destroy_in_notify = 0;
   _dsk_hook_incr_trap_count (hook);
 
   return trap;
