@@ -123,7 +123,7 @@ _ JSON implementation
     x dense
     x pretty
     _ dsk-json-format (program)
-  _ object_get_member_by_name
+  x dsk_json_object_get_member()
 _ UTF-8 tests
   _ encode char
   _ decode char
@@ -131,7 +131,8 @@ _ UTF-8 tests
 _ Websocket support:
   _ compute_response
   _ client-stream support
-  _ server-stream support
+    - connection made, but no packets sent
+  x server-stream support
   _ server support
 
 _ make XML parser:

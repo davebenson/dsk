@@ -24,6 +24,7 @@ DskJsonValue *parse_value (const char *str)
 int main(int argc, char **argv)
 {
   DskJsonValue *v;
+  DskJsonMember *mem;
 
   dsk_cmdline_init ("test JSON handling",
                     "Test JSON parsing",
@@ -134,6 +135,22 @@ int main(int argc, char **argv)
   dsk_assert (v->value.v_array.values[1]->value.v_array.values[2]->value.v_number == 4);
   dsk_assert (v->value.v_array.values[1]->value.v_array.values[3]->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->value.v_array.values[1]->value.v_array.values[3]->value.v_number == 9);
+  dsk_json_value_free (v);
+
+  v = parse_value ("{\"b\":123, \"a\":\"foo\", \"c\":42.0}");
+  dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
+  mem = dsk_json_object_get_member (v, "a");
+  dsk_assert (mem != NULL);
+  dsk_assert (mem->value->type == DSK_JSON_VALUE_STRING);
+  dsk_assert (strcmp (mem->value->value.v_string.str, "foo") == 0);
+  mem = dsk_json_object_get_member (v, "b");
+  dsk_assert (mem != NULL);
+  dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (mem->value->value.v_number == 123);
+  mem = dsk_json_object_get_member (v, "c");
+  dsk_assert (mem != NULL);
+  dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (mem->value->value.v_number == 42);
   dsk_json_value_free (v);
 
   dsk_cleanup ();
