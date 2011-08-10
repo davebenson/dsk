@@ -107,6 +107,26 @@ DskTableReader  *dsk_table_new_reader(DskTable       *table,
                                       DskError      **error);
 //DskTableReader  *dsk_table_dump_range    (DskTable       *table, ...);
 
+/* Iterating a DskTableReader.
+   
+   // create a new reader.  for an empty table,
+   // this returns non-NULL, but reader->at_eof==TRUE.
+   reader = dsk_table_new_reader (table, &error);
+   if (reader == NULL)
+     dsk_die ("%s", error->message);
+
+   while (!reader->at_eof)
+     {
+       // process key/value
+       ...
+
+       // advance only returns FALSE on error.
+       DskError *error = NULL;
+       if (!reader->advance (reader, error))
+         dsk_die ("%s", error->message);
+     }
+
+ */
 
 /* internals */
 DskTableReader *dsk_table_reader_new_merge2 (DskTable       *table,

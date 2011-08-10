@@ -97,9 +97,31 @@ struct _DskTableFileInterface
   
 extern DskTableFileInterface dsk_table_file_interface_default;
 
-DskTableFileInterface *dsk_table_file_interface_new (DskTableFileCompressor *,
-                                                     unsigned    n_index_levels,
-                                                     const unsigned *fanouts);
+typedef struct _DskTableFileNewOptions DskTableFileNewOptions;
+struct _DskTableFileNewOptions
+{
+  DskTableFileCompressor *compressor;
+
+  /* As we get entries into the file, we group them into units of size
+     n_compress and write the key, the offset of the compressed blob,
+     and various sizes into the biggest index.  for each smaller index,
+     we only write one entry in the small index for every index_ratio
+     entries in the next larger index.  */
+
+  /* number of entries to compress into one unit */
+  unsigned n_compress;
+
+  /* size ratio between indexes */
+  unsigned index_ratio;
+};
+#define DSK_TABLE_FILE_NEW_OPTIONS_DEFAULT              \
+{                                                       \
+  &dsk_table_file_compressor_gzip[3],                   \
+  64,                           /* n_compress */        \
+  256                           /* index_ratio */       \
+}
+
+DskTableFileInterface *dsk_table_file_interface_new (DskTableFileNewOptions *options);
 
 extern DskTableFileInterface dsk_table_file_interface_trivial;
 
@@ -119,3 +141,7 @@ struct _DskTableFileCompressor
                              unsigned               *out_len_inout,
                              uint8_t                *out_data);
 };
+
+extern DskTableFileCompressor dsk_table_file_compressor_lzo;
+extern DskTableFileCompressor dsk_table_file_compressor_gzip[10];
+/*extern DskTableFileCompressor dsk_table_file_compressor_bzip2[10];*/
