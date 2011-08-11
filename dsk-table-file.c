@@ -95,9 +95,17 @@ struct _WriterIndexLevel
    *   min..max == 2 .. 12; use multiples of 2 bytes.
    */
   uint64_t index_entry_size_to_count[6];
+
+  /* index in index_entry_size_to_count[] array for current size. */
+  unsigned size_index;
+
+  /* maximum size of index-entry's */
+  unsigned max_size;
 };
-#define IE_SIZE_TO_COUNT_INDEX__LEVEL0(size)   ((size) < 8 ? 0 : ((size)-8+3)/4)
-#define IE_SIZE_TO_COUNT_INDEX__LEVELNON0(size) (((size)-2+1)/2)
+#define IE_SIZE_TO_COUNT_INDEX__LEVEL0(size)        ((size) < 8 ? 0 : ((size)-8+3)/4)
+#define IE_SIZE_TO_COUNT_INDEX__LEVELNON0(size)     (((size)-2+1)/2)
+#define IE_COUNT_INDEX_TO_MAX_SIZE__LEVEL0(index)   ((index) * 4 + 8 + 3)
+#define IE_COUNT_INDEX_TO_MAX_SIZE__LEVELNON0(size) ((index) * 2 + 2 + 1)
 
 typedef struct _TableFileWriter TableFileWriter;
 struct _TableFileWriter
@@ -122,18 +130,6 @@ struct _TableFileWriter
   WriterIndexLevel *index_levels;
 };
 
-static TableFileWriter *
-table_file_writer_new (DskTableLocation        *location
-                       const char              *base_filename,
-                       DskTableFileCompressor *compressor,
-                       dsk_boolean              prefix_compress,
-                       unsigned                 n_compress,
-                       unsigned                 index_ratio,
-                       DskError                **error)
-{
-  ...
-}
-
 static dsk_boolean
 write_index0_entry           (TableFileWriter *writer,
                               unsigned         first_key_length,
@@ -154,24 +150,30 @@ write_index0_entry           (TableFileWriter *writer,
                                         compressed_heap_offset);
 
   /* is it bigger than the current size? */
+  level0 = w->index_levels + 0;
   index = IE_SIZE_TO_COUNT_INDEX__LEVEL0 (packed_entry_len);
-  if (w->index0_size_index < index)
+  if (level0->size_index < index)
     {
-      ...
-      w->index0_max_size = ...;
-      w->index0_size_index = index;
+      level0->max_size = IE_COUNT_INDEX_TO_MAX_SIZE__LEVEL0 (index);
+      level0->size_index = index;
     }
 
-  if (w->index0_max_size > packed_entry_len)
+  /* increase count of this size of index-entry */
+  level0->index_entry_size_to_count[level0->size_index] += 1;
+
+  if (level0->max_size > packed_entry_len)
     {
       /* zero pad */
-      unsigned pad_len = w->index0_max_size - packed_entry_len;
+      unsigned pad_len = level0->max_size - packed_entry_len;
       memset (packed_entry + packed_entry_len, 0, pad_len);
-      packed_entry_len = w->index0_max_size;
+      packed_entry_len = level0->max_size;
     }
 
   /* write packed (and padded) entry */
-  ...
+  if (FWRITE (packed_entry, packed_entry_len, 1, level0->index_fp) != 1)
+    {
+      ...
+    }
 
   return DSK_TRUE;
 }
@@ -183,6 +185,36 @@ write_indexnon0_entry        (TableFileWriter *writer,
                               DskError       **error)
 {
   ....
+}
+
+static dsk_boolean table_file_writer__write  (DskTableFileWriter *writer,
+                                              unsigned            key_length,
+                                              const uint8_t      *key_data,
+                                              unsigned            value_length,
+                                              const uint8_t      *value_data,
+                                              DskError          **error);
+static dsk_boolean
+table_file_writer__first_write  (DskTableFileWriter *writer,
+                                 unsigned            key_length,
+                                 const uint8_t      *key_data,
+                                 unsigned            value_length,
+                                 const uint8_t      *value_data,
+                                 DskError          **error)
+{
+  /* Handle prefix-compression to the "incoming" buffer. */
+  w->append_to_incoming (w, key_length, key_data, value_length, value_data);
+  w->n_entries_in_incoming = 1;
+
+  /* write key and key_length to level0 index */
+  ...
+
+  /* write key/key_length to potential_new_level{_keys} */
+  ...
+
+  /* no longer use custom first-element writer */
+  writer->write = table_file_writer__write;
+
+  return DSK_TRUE;
 }
 
 static dsk_boolean
@@ -230,7 +262,7 @@ table_file_writer__write  (DskTableFileWriter *writer,
   heap_offset = w->compressed_heap_offset;
   vli_len = encode_uint32_b128 (....);
   if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
-   || FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1)
+   || (comp_len != 0 && FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1))
     {
       ...
     }
@@ -242,17 +274,10 @@ table_file_writer__write  (DskTableFileWriter *writer,
                            vli_len + comp_len, heap_offset,
                            error))
     return DSK_FALSE;
-  if (is_first)
-    {
-      /* append to potential new index level */
-      ...
-      w->compressed_level_counter = 1;
-      goto done_handling_index_levels;
-    }
-  else if (++w->compressed_level_counter < w->index_ratio)
+  if (++w->compressed_level_counter < w->index_ratio)
     goto done_handling_index_levels;
   w->compressed_level_counter = 0;
-  for (ilevel = 0; ilevel < w->n_index_levels; ilevel++)
+  for (ilevel = 1; ilevel < w->n_index_levels; ilevel++)
     {
       WriterIndexLevel *level = w->index_levels + ilevel;
 
@@ -283,11 +308,23 @@ table_file_writer__write  (DskTableFileWriter *writer,
   if (w->n_potential_new_level == w->index_ratio / 2)
     {
       WriterIndexLevel *new_level;
+      kh_fd = dsk_table_location_openat (...);
+      if (kh_fd < 0)
+        {
+          ...
+        }
+      ki_fd = dsk_table_location_openat (...);
+      if (ki_fd < 0)
+        {
+          ...
+        }
       w->index_levels = dsk_realloc (w->index_levels,
                                      (w->n_index_levels+1) * sizeof (WriterIndexLevel));
       new_level = w->index_levels + w->n_index_levels++;
-      new_level->key_heap_fp = ...;
-      new_level->index_fp = ...;
+      new_level->key_heap_fp = fdopen (kh_fd, "wb");
+      dsk_assert (new_level->key_heap_fp != NULL);
+      new_level->index_fp = fdopen (ki_fd, "wb");
+      dsk_assert (new_level->index_fp != NULL);
 
       /* dump key-heap */
       for (frag = w->potential_new_level_keys.first_frag;
@@ -299,7 +336,8 @@ table_file_writer__write  (DskTableFileWriter *writer,
                       frag->buf_length,
                       1, new_level->key_heap_fp) != 1)
             {
-              ...
+              dsk_set_error ("error writing initial key-data for new index level");
+              return DSK_FALSE;
             }
         }
       new_level->key_heap_offset = w->potential_new_level_keys.size;
@@ -334,6 +372,12 @@ table_file_writer__close  (DskTableFileWriter *writer,
 
   w->closed = DSK_TRUE;
 
+  if (w->incoming.size > 0)
+    {
+      /* compress remaining data, write index entry/entries */
+      ...
+    }
+
   /* close all index-levels (close index and heap files,
      and write the level-sizes arrays to disk) */
   ...
@@ -360,6 +404,26 @@ table_file_writer__destroy(DskTableFileWriter *writer)
   dsk_free (w->index_levels);
   dsk_free (w);
 }
+
+static TableFileWriter *
+table_file_writer_new (DskTableLocation        *location
+                       const char              *base_filename,
+                       DskTableFileCompressor *compressor,
+                       dsk_boolean              prefix_compress,
+                       unsigned                 n_compress,
+                       unsigned                 index_ratio,
+                       DskError                **error)
+{
+  TableFileWriter *w = dsk_malloc (sizeof (TableFileWriter));
+
+
+
+  w->n_index_levels = 1;
+  w->index_levels = dsk_malloc (sizeof (WriterIndexLevel));
+  w->index_levels[0]...
+  return w;
+}
+
 
 /* --- TableFileInterface interface constructor itself --- */
 typedef struct _TableFileInterface TableFileInterface;
@@ -421,7 +485,7 @@ file_interface__destroy     (DskTableFileInterface   *iface)
 DskTableFileInterface *
 dsk_table_file_interface_new (DskTableFileNewOptions *options)
 {
-  TableFileStdInterface *iface = dsk_malloc (sizeof (TableFileStdInterface));
+  TableFileInterface *iface = dsk_malloc (sizeof (TableFileInterface));
   dsk_assert (options->index_ratio >= 4);
   iface->base_iface.new_reader = file_interface__new_reader;
   iface->base_iface.new_writer = file_interface__new_writer;
