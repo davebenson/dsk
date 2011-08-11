@@ -44,6 +44,8 @@ struct _TableFileWriter
                               const uint8_t      *value_data);
   unsigned n_entries_in_incoming;
   DskTableFileCompressor *compressor;
+  FILE *compressed_heap;
+  uint64_t compressed_heap_offset;
 
   unsigned n_index_levels;
   WriterIndexLevel *index_levels;
@@ -67,18 +69,36 @@ table_file_writer__write  (DskTableFileWriter *writer,
   if (w->compressor == NULL)
     {
       comp_len = w->incoming.size;
+      vli_header = comp_len;
       comp_data = w->incoming.data;
     }
   else
     {
-      ...
-  dsk_boolean (*compress)   (DskTableFileCompressor *compressor,
-                             unsigned                in_len,
-                             const uint8_t          *in_data,
-                             unsigned               *out_len_inout,
-                             uint8_t                *out_data);
+      dsk_table_buffer_set_size (&w->compression_buffer,
+                                 w->incoming.size + 32);
+      if (!w->compressor->compress (w->compressor,
+                                    w->incoming.size, w->incoming.data,
+                                    &w->compression_buffer.size,
+                                    w->compression_buffer.data))
+        {
+          vli_header = 0;
+          comp_len = w->incoming.size;
+          comp_data = w->incoming.data;
+        }
+      else
+        {
+          vli_header = comp_len = w->compression_buffer.size;
+          comp_data = w->compression_buffer.data;
+        }
     }
-  ...
+  heap_offset = w->compressed_heap_offset;
+  vli_len = encode_uint32_b7 (....);
+  if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
+   || FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1)
+    {
+      ...
+    }
+  w->compressed_heap_offset += vli_len + comp_len;
 
   /* write to index file, possible propagating up to higher indexes */
   ...
