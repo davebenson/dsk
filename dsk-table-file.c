@@ -169,5 +169,6 @@ dsk_table_file_interface_new (DskTableFileNewOptions *options)
   iface->compressor = compressor;
   iface->n_compress = options->n_compress;
   iface->index_ratio = options->index_ratio;
+  iface->prefix_compress = options->prefix_compress;
   return iface;
 }

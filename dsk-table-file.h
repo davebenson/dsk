@@ -113,12 +113,19 @@ struct _DskTableFileNewOptions
 
   /* size ratio between indexes */
   unsigned index_ratio;
+
+  /* enable a trivial kind of pre-compression:
+     if two consecutive records have a common prefix,
+     only store the length of that prefix.  a big win for
+     long URLs and the like. */
+  dsk_boolean prefix_compress;
 };
 #define DSK_TABLE_FILE_NEW_OPTIONS_DEFAULT              \
 {                                                       \
   &dsk_table_file_compressor_gzip[3],                   \
   64,                           /* n_compress */        \
-  256                           /* index_ratio */       \
+  256,                          /* index_ratio */       \
+  DSK_TRUE                      /* prefix_compress */   \
 }
 
 DskTableFileInterface *dsk_table_file_interface_new (DskTableFileNewOptions *options);
