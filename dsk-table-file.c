@@ -6,6 +6,76 @@
 
 /* === Standard TableFileInterface implementation === */
 
+/* --- helper code (b128) --- */
+
+#define B128_UINT32_MAX_SIZE            5
+#define B128_UINT64_MAX_SIZE            9
+
+static inline unsigned
+encode_uint32_b128 (uint32_t value,
+                    uint8_t *data)
+{
+  unsigned len = 0;
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  *data++ = value;
+  return len + 1;
+}
+static inline unsigned
+encode_uint64_b128 (uint64_t value,
+                    uint8_t *data)
+{
+  unsigned len = 0;
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  *data++ = value;
+  return len + 1;
+}
+static inline unsigned
+decode_uint32_b128 (const uint8_t *data,
+                    uint32_t *value_out)
+{
+  unsigned len = 0;
+  unsigned shift = 0;
+  while (shift < 4*7 && (*data & 0x80))
+    {
+      value |= (*data & 0x7f) << shift;
+      len++;
+      shift += 7;
+      data++;
+    }
+  value |= (uint32_t) (*data) << shift;
+  *value_out = value;
+  return len + 1;
+}
+static inline unsigned
+decode_uint64_b128 (const uint8_t *data,
+                    uint32_t *value_out)
+{
+  unsigned len = 0;
+  unsigned shift = 0;
+  uint64_t value = 0;
+  while (shift < 8*7 && (*data & 0x80))
+    {
+      value |= (uint64_t)(*data & 0x7f) << shift;
+      len++;
+      shift += 7;
+      data++;
+    }
+  value |= (uint64_t) (*data) << shift;
+  *value_out = value;
+  return len + 1;
+}
+
+
 /* --- The TableFileWriter interface --- */
 
 struct _WriterIndexLevel
@@ -65,7 +135,7 @@ table_file_writer_new (DskTableLocation        *location
 }
 
 static dsk_boolean
-write_index0_entry (TableFileWriter *writer,
+write_index0_entry           (TableFileWriter *writer,
                               unsigned         first_key_length,
                               uint64_t         first_key_offset,
                               unsigned         compressed_length,
@@ -73,18 +143,46 @@ write_index0_entry (TableFileWriter *writer,
                               DskError       **error)
 {
   /* pack index0 entry */
-  ...
+  uint8_t packed_entry[B128_UINT32_MAX_SIZE + B128_UINT64_MAX_SIZE
+                     + B128_UINT32_MAX_SIZE + 8];
+  unsigned packed_entry_len = encode_uint32_b128 (packed_entry, first_key_length);
+  packed_entry_len += encode_uint64_b128 (packed_entry + packed_entry_len,
+                                          first_key_offset);
+  packed_entry_len += encode_uint32_b128 (packed_entry + packed_entry_len,
+                                          compressed_length);
+  packed_entry_len += encode_uint64_le (packed_entry + packed_entry_len,
+                                        compressed_heap_offset);
 
   /* is it bigger than the current size? */
-  ...
+  index = IE_SIZE_TO_COUNT_INDEX__LEVEL0 (packed_entry_len);
+  if (w->index0_size_index < index)
+    {
+      ...
+      w->index0_max_size = ...;
+      w->index0_size_index = index;
+    }
 
-  /* write packed entry */
-  ...
+  if (w->index0_max_size > packed_entry_len)
+    {
+      /* zero pad */
+      unsigned pad_len = w->index0_max_size - packed_entry_len;
+      memset (packed_entry + packed_entry_len, 0, pad_len);
+      packed_entry_len = w->index0_max_size;
+    }
 
-  /* zero-pad if smaller than needed */
+  /* write packed (and padded) entry */
   ...
 
   return DSK_TRUE;
+}
+
+static dsk_boolean
+write_indexnon0_entry        (TableFileWriter *writer,
+                              unsigned         first_key_length,
+                              uint64_t         first_key_offset,
+                              DskError       **error)
+{
+  ....
 }
 
 static dsk_boolean
@@ -130,7 +228,7 @@ table_file_writer__write  (DskTableFileWriter *writer,
         }
     }
   heap_offset = w->compressed_heap_offset;
-  vli_len = encode_uint32_b7 (....);
+  vli_len = encode_uint32_b128 (....);
   if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
    || FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1)
     {
@@ -144,7 +242,82 @@ table_file_writer__write  (DskTableFileWriter *writer,
                            vli_len + comp_len, heap_offset,
                            error))
     return DSK_FALSE;
-  .... propagate up to higher indexes as needed ....
+  if (is_first)
+    {
+      /* append to potential new index level */
+      ...
+      w->compressed_level_counter = 1;
+      goto done_handling_index_levels;
+    }
+  else if (++w->compressed_level_counter < w->index_ratio)
+    goto done_handling_index_levels;
+  w->compressed_level_counter = 0;
+  for (ilevel = 0; ilevel < w->n_index_levels; ilevel++)
+    {
+      WriterIndexLevel *level = w->index_levels + ilevel;
+
+      if (!write_indexnon0_entry (w, level,
+                                  key_length, level->key_heap_offset,
+                                  error))
+        return DSK_FALSE;
+
+      if (key_length != 0
+       && FWRITE (key_data, key_length, 1, level->key_heap_fp) != 1)
+        {
+          ...
+        }
+      level->key_heap_offset += key_length;
+
+      if (++level->next_level_cycle == w->index_ratio)
+        /* advance to the next level */
+        level->next_level_cycle = 0;
+      else
+        goto done_handling_index_levels;
+    }
+  /* append to potential new index level */
+  w->potential_new_level[w->n_potential_new_level] = key_length;
+  dsk_buffer_append (w->potential_new_level_keys, key_length, key_data);
+  w->n_potential_new_level += 1;
+
+  /* if we have index_ratio/2 entries, create the new index level */
+  if (w->n_potential_new_level == w->index_ratio / 2)
+    {
+      WriterIndexLevel *new_level;
+      w->index_levels = dsk_realloc (w->index_levels,
+                                     (w->n_index_levels+1) * sizeof (WriterIndexLevel));
+      new_level = w->index_levels + w->n_index_levels++;
+      new_level->key_heap_fp = ...;
+      new_level->index_fp = ...;
+
+      /* dump key-heap */
+      for (frag = w->potential_new_level_keys.first_frag;
+           frag != NULL;
+           frag = frag->next)
+        {
+          if (frag->buf_length != 0
+           && FWRITE (frag->buf + frag->buf_start,
+                      frag->buf_length,
+                      1, new_level->key_heap_fp) != 1)
+            {
+              ...
+            }
+        }
+      new_level->key_heap_offset = w->potential_new_level_keys.size;
+
+      /* dump key-index-entries */
+      for (i = 0; i < w->n_potential_new_level_keys; i++)
+        {
+          unsigned key_length = w->potential_new_level[i];
+          if (!write_indexnon0_entry (w, new_level,
+                                      key_length, key_offset, error))
+            return DSK_FALSE;
+          key_offset += key_length;
+        }
+
+      w->n_potential_new_level_keys = 1;
+      dsk_buffer_truncate (&w->potential_new_level_keys,
+                           w->potential_new_level[0]);
+    }
   
   /* reset pre-compressed entries */
   w->n_entries_in_incoming = 0;
@@ -249,6 +422,7 @@ DskTableFileInterface *
 dsk_table_file_interface_new (DskTableFileNewOptions *options)
 {
   TableFileStdInterface *iface = dsk_malloc (sizeof (TableFileStdInterface));
+  dsk_assert (options->index_ratio >= 4);
   iface->base_iface.new_reader = file_interface__new_reader;
   iface->base_iface.new_writer = file_interface__new_writer;
   iface->base_iface.new_seeker = file_interface__new_seeker;
