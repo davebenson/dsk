@@ -107,6 +107,11 @@ DskTableReader  *dsk_table_new_reader(DskTable       *table,
                                       DskError      **error);
 //DskTableReader  *dsk_table_dump_range    (DskTable       *table, ...);
 
+typedef struct {
+  const char *openat_dir;
+  int         openat_fd;
+} DskTableLocation;
+
 /* Iterating a DskTableReader.
    
    // create a new reader.  for an empty table,

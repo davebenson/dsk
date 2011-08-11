@@ -72,23 +72,19 @@ struct _DskTableFileSeeker
 struct _DskTableFileInterface
 {
   DskTableFileWriter *(*new_writer) (DskTableFileInterface   *iface,
-                                     const char              *openat_dir,
-                                     int                      openat_fd,
+                                     DskTableLocation        *location,
                                      const char              *base_filename,
                                      DskError               **error);
   DskTableReader     *(*new_reader) (DskTableFileInterface   *iface,
-                                     const char              *openat_dir,
-                                     int                      openat_fd,
+                                     DskTableLocation        *location,
                                      const char              *base_filename,
                                      DskError               **error);
   DskTableFileSeeker *(*new_seeker) (DskTableFileInterface   *iface,
-                                     const char              *openat_dir,
-                                     int                      openat_fd,
+                                     DskTableLocation        *location,
                                      const char              *base_filename,
                                      DskError               **error);
   dsk_boolean         (*delete_file)(DskTableFileInterface   *iface,
-                                     const char              *openat_dir,
-                                     int                      openat_fd,
+                                     DskTableLocation        *location,
                                      const char              *base_filename,
                                      DskError               **error);
   void                (*destroy)    (DskTableFileInterface   *iface);

@@ -37,19 +37,55 @@ struct _TableFileWriter
   /* slab of data to compress and write */
   DskTableBuffer incoming;
   DskTableBuffer prefix_buffer;
-  void (*append_to_incoming) (TableFileWriter *writer,
+  void (*append_to_incoming) (TableFileWriter    *writer,
                               unsigned            key_length,
                               const uint8_t      *key_data,
                               unsigned            value_length,
                               const uint8_t      *value_data);
   unsigned n_entries_in_incoming;
   DskTableFileCompressor *compressor;
+
   FILE *compressed_heap;
   uint64_t compressed_heap_offset;
 
   unsigned n_index_levels;
   WriterIndexLevel *index_levels;
 };
+
+static TableFileWriter *
+table_file_writer_new (DskTableLocation        *location
+                       const char              *base_filename,
+                       DskTableFileCompressor *compressor,
+                       dsk_boolean              prefix_compress,
+                       unsigned                 n_compress,
+                       unsigned                 index_ratio,
+                       DskError                **error)
+{
+  ...
+}
+
+static dsk_boolean
+write_index0_entry (TableFileWriter *writer,
+                              unsigned         first_key_length,
+                              uint64_t         first_key_offset,
+                              unsigned         compressed_length,
+                              uint64_t         compressed_heap_offset,
+                              DskError       **error)
+{
+  /* pack index0 entry */
+  ...
+
+  /* is it bigger than the current size? */
+  ...
+
+  /* write packed entry */
+  ...
+
+  /* zero-pad if smaller than needed */
+  ...
+
+  return DSK_TRUE;
+}
 
 static dsk_boolean
 table_file_writer__write  (DskTableFileWriter *writer,
@@ -60,6 +96,8 @@ table_file_writer__write  (DskTableFileWriter *writer,
                            DskError          **error)
 {
   TableFileWriter *w = (TableFileWriter *) writer;
+
+  /* Handle prefix-compression to the "incoming" buffer. */
   w->append_to_incoming (w, key_length, key_data, value_length, value_data);
   w->n_entries_in_incoming += 1;
   if (w->n_entries_in_incoming < w->n_compress)
@@ -69,7 +107,7 @@ table_file_writer__write  (DskTableFileWriter *writer,
   if (w->compressor == NULL)
     {
       comp_len = w->incoming.size;
-      vli_header = comp_len;
+      vli_header = 0;
       comp_data = w->incoming.data;
     }
   else
@@ -101,7 +139,12 @@ table_file_writer__write  (DskTableFileWriter *writer,
   w->compressed_heap_offset += vli_len + comp_len;
 
   /* write to index file, possible propagating up to higher indexes */
-  ...
+  if (!write_index0_entry (w,
+                           w->index0_first_key.key_length, key_heap_offset,
+                           vli_len + comp_len, heap_offset,
+                           error))
+    return DSK_FALSE;
+  .... propagate up to higher indexes as needed ....
   
   /* reset pre-compressed entries */
   w->n_entries_in_incoming = 0;
@@ -114,18 +157,40 @@ static dsk_boolean
 table_file_writer__close  (DskTableFileWriter *writer,
                            DskError          **error)
 {
+  TableFileWriter *w = (TableFileWriter *) writer;
+
+  w->closed = DSK_TRUE;
+
+  /* close all index-levels (close index and heap files,
+     and write the level-sizes arrays to disk) */
   ...
+
+  /* close the compressed-heap */
+  ...
+
+  return DSK_TRUE;
 }
 
 static void
 table_file_writer__destroy(DskTableFileWriter *writer)
 {
-  ...
+  TableFileWriter *w = (TableFileWriter *) writer;
+  if (!w->closed)
+    {
+      DskError *error = NULL;
+      if (!table_file_writer__close (writer, &error))
+        dsk_die ("error closing table-file-writer on destroy: %s",
+                 error->message);
+    }
+
+  /* clean up memory */
+  dsk_free (w->index_levels);
+  dsk_free (w);
 }
 
-/* the --- TableFileInterface interface constructor itself --- */
-typedef struct _TableFileStdInterface TableFileStdInterface;
-struct _TableFileStdInterface
+/* --- TableFileInterface interface constructor itself --- */
+typedef struct _TableFileInterface TableFileInterface;
+struct _TableFileInterface
 {
   DskTableFileInterface base_iface;
   DskTableFileCompressor *compressor;
@@ -135,12 +200,15 @@ struct _TableFileStdInterface
 
 static DskTableFileWriter *
 file_interface__new_writer  (DskTableFileInterface   *iface,
-                             const char              *openat_dir,
-                             int                      openat_fd,
+                             DskTableLocation        *location,
                              const char              *base_filename,
                              DskError               **error)
 {
-  ...
+  return (DskTableFileWriter *) table_file_writer_new (location, base_filename,
+                                                       I->prefix_compress,
+                                                       I->n_compress,
+                                                       I->index_ratio,
+                                                       error);
 }
 static DskTableReader *
 file_interface__new_reader  (DskTableFileInterface   *iface,
