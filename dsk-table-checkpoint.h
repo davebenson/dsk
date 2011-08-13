@@ -11,16 +11,14 @@ typedef dsk_boolean
 struct _DskTableCheckpointInterface
 {
   DskTableCheckpoint *(*create)  (DskTableCheckpointInterface *iface,
-                                  const char         *openat_dir,
-                                  int                 openat_fd,
+                                  DskTableLocation   *location,
                                   const char         *basename,
                                   unsigned            cp_data_len,
                                   const uint8_t      *cp_data,
                                   DskTableCheckpoint *prior,  /* optional */
                                   DskError          **error);
   DskTableCheckpoint *(*open)    (DskTableCheckpointInterface *iface,
-                                  const char         *openat_dir,
-                                  int                 openat_fd,
+                                  DskTableLocation   *location,
                                   const char         *basename,
                                   unsigned           *cp_data_len_out,
                                   uint8_t           **cp_data_out,

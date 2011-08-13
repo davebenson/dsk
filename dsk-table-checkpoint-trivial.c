@@ -182,8 +182,7 @@ static DskTableCheckpoint table_checkpoint_trivial__vfuncs =
 
 static DskTableCheckpoint *
 table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
-                                  const char         *openat_dir,
-                                  int                 openat_fd,
+                                  DskTableLocation   *location,
                                   const char         *basename,
                                   unsigned            cp_data_len,
                                   const uint8_t      *cp_data,
@@ -215,7 +214,7 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
     }
 
   /* create fd */
-  fd = dsk_table_helper_openat (openat_dir, openat_fd, basename, "",
+  fd = dsk_table_helper_openat (location, basename, "",
                                 O_RDWR|O_TRUNC|O_CREAT, 0666, error);
   if (fd < 0)
     return NULL;
@@ -259,8 +258,7 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
 
 static DskTableCheckpoint *
 table_checkpoint_trivial__open   (DskTableCheckpointInterface *iface,
-                                  const char         *openat_dir,
-                                  int                 openat_fd,
+                                  DskTableLocation   *location,
                                   const char         *basename,
                                   unsigned           *cp_data_len_out,
                                   uint8_t           **cp_data_out,
@@ -278,7 +276,7 @@ table_checkpoint_trivial__open   (DskTableCheckpointInterface *iface,
   DSK_UNUSED (iface);
 
   /* open fd */
-  fd = dsk_table_helper_openat (openat_dir, openat_fd, basename, "",
+  fd = dsk_table_helper_openat (location, basename, "",
                                 O_RDWR, 0, error);
   if (fd < 0)
     return NULL;

@@ -1,4 +1,5 @@
 #include "dsk.h"
+#include "dsk-table-helper.h"
 
 
 /* === Generic TableFileInterface code === */
@@ -16,11 +17,32 @@ encode_uint32_b128 (uint32_t value,
                     uint8_t *data)
 {
   unsigned len = 0;
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  *data++ = value;
+  if (*value >= 128)
+    {
+      *data++ = value | 128;
+      value >>= 7;
+      len++;
+      if (*value >= 128)
+        {
+          *data++ = value | 128;
+          value >>= 7;
+          len++;
+          if (*value >= 128)
+            {
+              *data++ = value | 128;
+              value >>= 7;
+              len++;
+              if (*value >= 128)
+                {
+                  *data++ = value | 128;
+                  value >>= 7;
+                  len++;
+                }
+            }
+        }
+    }
+
+  *data = value;
   return len + 1;
 }
 static inline unsigned
@@ -28,14 +50,54 @@ encode_uint64_b128 (uint64_t value,
                     uint8_t *data)
 {
   unsigned len = 0;
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
-  if (*value >= 128) { *data++ = value | 128; value >>= 7; len++; }
+  if (*value >= 128)
+    {
+      *data++ = value | 128;
+      value >>= 7;
+      len++;
+      if (*value >= 128)
+        {
+          *data++ = value | 128;
+          value >>= 7;
+          len++;
+          if (*value >= 128)
+            {
+              *data++ = value | 128;
+              value >>= 7;
+              len++;
+              if (*value >= 128)
+                {
+                  *data++ = value | 128;
+                  value >>= 7;
+                  len++;
+                  if (*value >= 128)
+                    {
+                      *data++ = value | 128;
+                      value >>= 7;
+                      len++;
+                      if (*value >= 128)
+                        {
+                          *data++ = value | 128;
+                          value >>= 7;
+                          len++;
+                          if (*value >= 128)
+                            {
+                              *data++ = value | 128;
+                              value >>= 7;
+                              len++;
+                              if (*value >= 128)
+                                {
+                                  *data++ = value | 128;
+                                  value >>= 7;
+                                  len++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
   *data++ = value;
   return len + 1;
 }
@@ -172,7 +234,8 @@ write_index0_entry           (TableFileWriter *writer,
   /* write packed (and padded) entry */
   if (FWRITE (packed_entry, packed_entry_len, 1, level0->index_fp) != 1)
     {
-      ...
+      dsk_set_error (error, "error writing to level0 index");
+      return DSK_FALSE;
     }
 
   return DSK_TRUE;
@@ -206,10 +269,16 @@ table_file_writer__first_write  (DskTableFileWriter *writer,
   w->n_entries_in_incoming = 1;
 
   /* write key and key_length to level0 index */
-  ...
+  if (key_length != 0 && FWRITE (key_data, key_length, 1, w->index_levels[0].index_heap_fp) != 1)
+    {
+      dsk_set_error (error, "error writing initial key to index level 0");
+      return DSK_FALSE;
+    }
 
   /* write key/key_length to potential_new_level{_keys} */
-  ...
+  w->n_potential_new_level_keys = 1;
+  w->potential_new_level[0] = key_length;
+  dsk_buffer_append (&w->potential_new_level_keys, key_length, key_data);
 
   /* no longer use custom first-element writer */
   writer->write = table_file_writer__write;
@@ -260,11 +329,12 @@ table_file_writer__write  (DskTableFileWriter *writer,
         }
     }
   heap_offset = w->compressed_heap_offset;
-  vli_len = encode_uint32_b128 (....);
+  vli_len = encode_uint32_b128 (vli, comp_len);
   if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
    || (comp_len != 0 && FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1))
     {
-      ...
+      dsk_set_error (error, "error writing compressed heap blob to disk");
+      return DSK_FALSE;
     }
   w->compressed_heap_offset += vli_len + comp_len;
 
@@ -289,7 +359,8 @@ table_file_writer__write  (DskTableFileWriter *writer,
       if (key_length != 0
        && FWRITE (key_data, key_length, 1, level->key_heap_fp) != 1)
         {
-          ...
+          dsk_set_error (error, "error writing key to index level %u", ilevel);
+          return DSK_FALSE;
         }
       level->key_heap_offset += key_length;
 
@@ -308,15 +379,26 @@ table_file_writer__write  (DskTableFileWriter *writer,
   if (w->n_potential_new_level == w->index_ratio / 2)
     {
       WriterIndexLevel *new_level;
-      kh_fd = dsk_table_location_openat (...);
+      char suffix[64];
+      snprintf (suffix, 64, "K%u", w->n_index_levels);
+      kh_fd = dsk_table_helper_openat (w->location,
+                                       w->base_filename, suffix,
+                                       O_CREAT|O_TRUNC, 0666,
+                                       error);
       if (kh_fd < 0)
         {
-          ...
+          dsk_add_error_prefix (error, "creating table's key file");
+          return DSK_FALSE;
         }
-      ki_fd = dsk_table_location_openat (...);
+      suffix[0] = 'I';
+      ki_fd = dsk_table_helper_openat (w->location,
+                                       w->base_filename, suffix,
+                                       O_CREAT|O_TRUNC, 0666,
+                                       error);
       if (ki_fd < 0)
         {
-          ...
+          dsk_add_error_prefix (error, "creating table's index file");
+          return DSK_FALSE;
         }
       w->index_levels = dsk_realloc (w->index_levels,
                                      (w->n_index_levels+1) * sizeof (WriterIndexLevel));
@@ -414,9 +496,23 @@ table_file_writer_new (DskTableLocation        *location
                        unsigned                 index_ratio,
                        DskError                **error)
 {
-  TableFileWriter *w = dsk_malloc (sizeof (TableFileWriter));
+  unsigned base_filename_len = strlen (base_filename);
+  TableFileWriter *w = dsk_malloc (sizeof (TableFileWriter)
+                                   + base_filename_len
+                                   + FILENAME_EXTENSION_MAX
+                                   + 1);
+  w->location = location;
+  w->base_filename = memcpy (w + 1, base_filename, base_filename_len);
+  dsk_table_buffer_init (&w->incoming);
+  dsk_table_buffer_init (&w->prefix_buffer);
+  w->append_to_incoming = prefix_compress ? ...
+                                          : ...;
+  w->n_entries_in_incoming = 0;
+  w->compressor = compressor;
 
-
+  compressed_heap_fd = dsk_table_helper_openat (...);
+  w->compressed_heap = fdopen (...);
+  w->compressed_heap_offset = 0ULL;
 
   w->n_index_levels = 1;
   w->index_levels = dsk_malloc (sizeof (WriterIndexLevel));

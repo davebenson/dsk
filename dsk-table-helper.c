@@ -12,8 +12,7 @@
 #include "dsk.h"
 #include "dsk-table-helper.h"
 
-int dsk_table_helper_openat (const char *openat_dir,
-                             int         openat_fd,
+int dsk_table_helper_openat (DskTableLocation *location,
                              const char *base_filename,
                              const char *suffix,
                              unsigned    open_flags,
@@ -25,11 +24,8 @@ int dsk_table_helper_openat (const char *openat_dir,
   char slab[1024];
   char *buf;
   int fd;
-#if defined(__USE_ATFILE)
-  DSK_UNUSED (openat_dir);
-#else
+#ifndef __USE_ATFILE
   unsigned openat_dir_len = strlen (openat_dir);
-  DSK_UNUSED (openat_fd);
   base_fname_len += openat_dir_len + 1;
 #endif
   if (base_fname_len + suffix_len < sizeof (slab) - 1)
@@ -46,7 +42,7 @@ int dsk_table_helper_openat (const char *openat_dir,
   memcpy (buf + base_fname_len, suffix, suffix_len + 1);
 
 #if defined(__USE_ATFILE)
-  fd = openat (openat_fd, buf, open_flags, open_mode);
+  fd = openat (location->openat_fd, buf, open_flags, open_mode);
 #define OPEN_SYSTEM_CALL "openat"
 #else
   fd = open (buf, open_flags, open_mode);
@@ -66,15 +62,13 @@ int dsk_table_helper_openat (const char *openat_dir,
   return fd;
 }
 
-dsk_boolean dsk_table_helper_renameat (const char *openat_dir,
-                                       int openat_fd,
+dsk_boolean dsk_table_helper_renameat (DskTableLocation *location,
                                        const char *old_name,
                                        const char *new_name,
                                        DskError  **error)
 {
 #if defined(__USE_ATFILE)
-  DSK_UNUSED (openat_dir);
-  if (renameat (openat_fd, old_name, openat_fd, new_name) < 0)
+  if (renameat (location->openat_fd, old_name, location->openat_fd, new_name) < 0)
     {
       dsk_set_error (error, "error renameat()ing file: %s -> %s: %s",
                      old_name, new_name, strerror (errno));
@@ -85,7 +79,7 @@ dsk_boolean dsk_table_helper_renameat (const char *openat_dir,
 #else
   unsigned base_old_len = strlen (old_name);
   unsigned base_new_len = strlen (new_name);
-  unsigned openat_dir_len = strlen (openat_dir);
+  unsigned openat_dir_len = strlen (location->openat_dir);
   char old_slab[1024], new_slab[1024];
   char *old_buf, *new_buf;
   dsk_boolean rv = DSK_TRUE;
@@ -117,14 +111,12 @@ dsk_boolean dsk_table_helper_renameat (const char *openat_dir,
 }
 
 dsk_boolean
-dsk_table_helper_unlinkat (const char *openat_dir,
-                           int openat_fd,
+dsk_table_helper_unlinkat (DskTableLocation *location,
                            const char *to_delete,
                            DskError  **error)
 {
 #if defined(__USE_ATFILE)
-  DSK_UNUSED (openat_dir);
-  if (unlinkat (openat_fd, to_delete, 0) < 0)
+  if (unlinkat (location->openat_fd, to_delete, 0) < 0)
     {
       dsk_set_error (error, "error unlinking(at) file: %s: %s",
                      to_delete, strerror (errno));
@@ -138,7 +130,6 @@ dsk_table_helper_unlinkat (const char *openat_dir,
   unsigned needed = base_new_len + 1 + openat_dir_len + 1;
   char *fname = needed <= sizeof (buf) ? buf : dsk_malloc (needed);
   snprintf (fname, needed, "%s/%s", openat_dir, to_delete);
-  DSK_UNUSED (openat_fd);
   
   if (unlink (fname) < 0)
     {
