@@ -250,12 +250,22 @@ write_indexnon0_entry        (TableFileWriter *writer,
   ....
 }
 
+/* hackery:  for the "write" function we use a virtual function
+   especially for the first invocation, since that's when we handle
+   so many unusual edge-cases that it's difficult to code them together.
+
+   at the end of that first write call, we set the virtual function to
+   the non-first write implementation. */
 static dsk_boolean table_file_writer__write  (DskTableFileWriter *writer,
                                               unsigned            key_length,
                                               const uint8_t      *key_data,
                                               unsigned            value_length,
                                               const uint8_t      *value_data,
                                               DskError          **error);
+
+
+/* special "write" method for first invocation.
+   see "hackery" comment above. */
 static dsk_boolean
 table_file_writer__first_write  (DskTableFileWriter *writer,
                                  unsigned            key_length,
@@ -269,7 +279,8 @@ table_file_writer__first_write  (DskTableFileWriter *writer,
   w->n_entries_in_incoming = 1;
 
   /* write key and key_length to level0 index */
-  if (key_length != 0 && FWRITE (key_data, key_length, 1, w->index_levels[0].index_heap_fp) != 1)
+  if (key_length != 0
+   && FWRITE (key_data, key_length, 1, w->index_levels[0].index_heap_fp) != 1)
     {
       dsk_set_error (error, "error writing initial key to index level 0");
       return DSK_FALSE;
@@ -280,7 +291,8 @@ table_file_writer__first_write  (DskTableFileWriter *writer,
   w->potential_new_level[0] = key_length;
   dsk_buffer_append (&w->potential_new_level_keys, key_length, key_data);
 
-  /* no longer use custom first-element writer */
+  /* no longer use custom first-element "write" method, so hackily switch
+     over to the implementation for non-first elements. */
   writer->write = table_file_writer__write;
 
   return DSK_TRUE;
@@ -404,9 +416,9 @@ table_file_writer__write  (DskTableFileWriter *writer,
                                      (w->n_index_levels+1) * sizeof (WriterIndexLevel));
       new_level = w->index_levels + w->n_index_levels++;
       new_level->key_heap_fp = fdopen (kh_fd, "wb");
-      dsk_assert (new_level->key_heap_fp != NULL);
+      dsk_assert_runtime (new_level->key_heap_fp != NULL);
       new_level->index_fp = fdopen (ki_fd, "wb");
-      dsk_assert (new_level->index_fp != NULL);
+      dsk_assert_runtime (new_level->index_fp != NULL);
 
       /* dump key-heap */
       for (frag = w->potential_new_level_keys.first_frag;
