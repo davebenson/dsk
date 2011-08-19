@@ -314,30 +314,47 @@ table_file_writer__write  (DskTableFileWriter *writer,
   if (w->n_entries_in_incoming < w->n_compress)
     return DSK_TRUE;
 
-  /* perform compression, write to file */
-  if (w->compressor == NULL)
+  /* --- perform compression, write to file --- */
+
+  /* data (compressed if possible) going out to the heap file. */
+  unsigned outgoing_len;
+  const uint8_t *outgoing_data;
+
+  /* uncompressed length, or 0 when compression is disabled. */
+  unsigned vli_header;        
+
+  if (w->compressor == NULL || w->incoming.size == 0)
     {
-      comp_len = w->incoming.size;
+      outgoing_len = w->incoming.size;
       vli_header = 0;
-      comp_data = w->incoming.data;
+      outgoing_data = w->incoming.data;
     }
   else
     {
-      dsk_table_buffer_set_size (&w->compression_buffer,
-                                 w->incoming.size + 32);
+      /* The compressed data should fit in less space,
+         or else we really should use the uncompressed version,
+         which we have to support anyway. */
+      dsk_table_buffer_set_size (&w->compression_buffer, w->incoming.size);
+
+      /* Run the compressor.  If the compressed data doesn't fit
+         in the size of the uncompressed data, just use the
+         uncompressed data. */
       if (!w->compressor->compress (w->compressor,
                                     w->incoming.size, w->incoming.data,
                                     &w->compression_buffer.size,
                                     w->compression_buffer.data))
         {
+          /* use uncompressed data */
           vli_header = 0;
-          comp_len = w->incoming.size;
-          comp_data = w->incoming.data;
+          outgoing_len = w->incoming.size;
+          outgoing_data = w->incoming.data;
         }
       else
         {
-          vli_header = comp_len = w->compression_buffer.size;
-          comp_data = w->compression_buffer.data;
+          /* use the compressed data */
+          vli_header = w->incoming.size;
+          outgoing_len = w->compression_buffer.size;
+          outgoing_data = w->compression_buffer.data;
         }
     }
   heap_offset = w->compressed_heap_offset;
