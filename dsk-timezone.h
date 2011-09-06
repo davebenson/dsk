@@ -9,7 +9,11 @@ struct _DskTimezoneTransition
   int gmt_offset;
 };
 
-struct _DskLeapSeconds
+/* total_correction has always been 1, for a leap second,
+   so far.  should the earth start speeding up you can expect
+   a -1 value someday.   As of 2011, there have been 24 leap seconds added.
+ */
+struct _DskTimezoneLeapSecond
 {
   unsigned time;
   int total_correction;

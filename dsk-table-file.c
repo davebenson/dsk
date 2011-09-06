@@ -297,31 +297,18 @@ table_file_writer__first_write  (DskTableFileWriter *writer,
 
   return DSK_TRUE;
 }
-
 static dsk_boolean
-table_file_writer__write  (DskTableFileWriter *writer,
-                           unsigned            key_length,
-                           const uint8_t      *key_data,
-                           unsigned            value_length,
-                           const uint8_t      *value_data,
-                           DskError          **error)
+do_compress (TableFileWriter *w,
+             unsigned        *vli_len_out,
+             unsigned        *outgoing_len_out,
+             DskError       **error)
 {
-  TableFileWriter *w = (TableFileWriter *) writer;
-
-  /* Handle prefix-compression to the "incoming" buffer. */
-  w->append_to_incoming (w, key_length, key_data, value_length, value_data);
-  w->n_entries_in_incoming += 1;
-  if (w->n_entries_in_incoming < w->n_compress)
-    return DSK_TRUE;
-
-  /* --- perform compression, write to file --- */
-
   /* data (compressed if possible) going out to the heap file. */
   unsigned outgoing_len;
   const uint8_t *outgoing_data;
 
   /* uncompressed length, or 0 when compression is disabled. */
-  unsigned vli_header;        
+  unsigned vli_len;        
 
   if (w->compressor == NULL || w->incoming.size == 0)
     {
@@ -358,19 +345,51 @@ table_file_writer__write  (DskTableFileWriter *writer,
         }
     }
   heap_offset = w->compressed_heap_offset;
-  vli_len = encode_uint32_b128 (vli, comp_len);
+  vli_len = encode_uint32_b128 (vli, outgoing_len);
   if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
-   || (comp_len != 0 && FWRITE (comp_data, comp_len, 1, w->compressed_heap) != 1))
+   || (outgoing_len != 0
+       && FWRITE (outgoing_data, outgoing_len, 1, w->compressed_heap) != 1))
     {
       dsk_set_error (error, "error writing compressed heap blob to disk");
       return DSK_FALSE;
     }
-  w->compressed_heap_offset += vli_len + comp_len;
+  w->compressed_heap_offset += vli_len + outgoing_len;
+  *vli_len_out = vli_len;
+  *outgoing_len_out = outgoing_len;
+  return DSK_TRUE;
+}
+
+static dsk_boolean
+table_file_writer__write  (DskTableFileWriter *writer,
+                           unsigned            key_length,
+                           const uint8_t      *key_data,
+                           unsigned            value_length,
+                           const uint8_t      *value_data,
+                           DskError          **error)
+{
+  TableFileWriter *w = (TableFileWriter *) writer;
+
+  /* Handle prefix-compression to the "incoming" buffer. */
+  w->append_to_incoming (w, key_length, key_data, value_length, value_data);
+  w->n_entries_in_incoming += 1;
+  if (w->n_entries_in_incoming < w->n_compress)
+    return DSK_TRUE;
+
+  /* --- perform compression, write to file --- */
+
+  /* data (compressed if possible) going out to the heap file. */
+  unsigned outgoing_len;
+
+  /* uncompressed length, or 0 when compression is disabled. */
+  unsigned vli_len;        
+
+  if (!do_compress (w, &vli_len, &outgoing_len, error))
+    return DSK_FALSE;
 
   /* write to index file, possible propagating up to higher indexes */
   if (!write_index0_entry (w,
                            w->index0_first_key.key_length, key_heap_offset,
-                           vli_len + comp_len, heap_offset,
+                           vli_len + outgoing_len, heap_offset,
                            error))
     return DSK_FALSE;
   if (++w->compressed_level_counter < w->index_ratio)
@@ -486,8 +505,22 @@ table_file_writer__close  (DskTableFileWriter *writer,
   if (w->incoming.size > 0)
     {
       /* compress remaining data, write index entry/entries */
+      unsigned outgoing_len;
+      unsigned vli_len;        
+      if (!do_compress (w, &vli_len, &outgoing_len, error))
+        return DSK_FALSE;
+      if (!write_index0_entry (w,
+                               w->index0_first_key.key_length, key_heap_offset,
+                               vli_len + outgoing_len, heap_offset,
+                               error))
+        return DSK_FALSE;
+
+      /* flush out any higher level indices */
       ...
     }
+
+  /* write a sentinel element to the index level 0. */
+  ...
 
   /* close all index-levels (close index and heap files,
      and write the level-sizes arrays to disk) */
