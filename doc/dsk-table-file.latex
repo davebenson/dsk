@@ -1,0 +1,23 @@
+\documentclass{article}
+\title{The Default DskTableFile}
+\author{Dave Benson}
+\frenchspacing
+\usepackage{amsfonts,amsmath,amssymb,epsfig,eucal}
+\pagestyle{headings}
+\begin{document}
+\maketitle
+
+\section{Overview}
+{\tt DskTable} is a generic ``no-sql'' type database.
+{\tt DskTableFile} is an abstraction with the following methods:
+\begin{itemize}
+\item {\verb|write_sorted|}.  This demands that the entries be
+inserted in sorted-order (and the keys must be unique. (?))
+\item {\verb|create_reader|}
+\item {\verb|create_searcher|}
+\end{itemze}
+
+\section{TODO}
+Optional methods {\verb|search|}, {\verb|get_by_index|}.
+
+\end{document}
