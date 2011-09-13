@@ -15,7 +15,59 @@
 inserted in sorted-order (and the keys must be unique. (?))
 \item {\verb|create_reader|}
 \item {\verb|create_searcher|}
-\end{itemze}
+\end{itemize}
+
+We call it a ``file'' because all the units are tied
+together, but on disk it actually occupies multiple files:
+\begin{itemize}
+\item{the \verb|.HEAP| file}.  This consists of compressed-chunks of
+data concatenated.  Each chunk is compressed separately and consists
+of a number (usually XXX) of entries.
+\item{the \verb|.K#| files}.  These consist of raw keys from the table.
+If \verb|#| is $0$, then there is one key for each compressed chunk.
+For higher \verb|#| there is one key for each \verb|index_ratio|
+keys in the next lower index.
+\item{the \verb|.I#| files}.  These consists of nearly fixed-length
+records, each record corresponding to one key in the \verb|.K#| file.
+The ``nearly'' means that there's a maximum of number of segments of
+constant length.  (The constant length is increasing throughout the file)
+The format of each index-entry is given below.
+\end{itemize}
+
+\section{The Format of the {\tt .I\#} files}
+The {\tt .I\#} files consist of a header,
+followed by a sequence of blocks of entries.  
+All the entries in a single block are the same size.
+Furthermore, each block as strictly larger entries than the last.
+In this way, we can place a very small upper bound
+on the number of blocks.  Furthermore, we insist that each block's index-entries
+be $2$ or $4$ bytes larger than the last.  The consequence is that
+we only need at most $6$ blocks:
+
+\begin{tabular}{lllllll}
+block number & 0 & 1 & 2 & 3 & 4 & 5 \\
+index-0 entry size & 8 & 12 & 16 & 20 & 24 & 28 \\
+index-non-0 entry size & 2 & 4 & 6 & 8 & 10 & 12
+\end{tabular}
+
+
+All {\tt .I\#} files have a common format:
+\begin{tabular}{llp{3in}}
+offset & length & description \\
+0 & 4 & magic \\
+4 & 1 & index level \\
+5 & 3 & reserved - must be 0 \\
+8 & 48 & number of index entries in each block (6 64-bit numbers)\\
+56 & variable & blocks, consisting of packed index entries
+\end{tabular}
+
+For level $0$ index files, this is the format of each index-entry:
+\begin{tabular}{llp{3in}}
+name & encoding & description \\
+...
+\end{tabular}
+
+
 
 \section{TODO}
 Optional methods {\verb|search|}, {\verb|get_by_index|}.
