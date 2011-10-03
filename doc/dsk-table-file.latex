@@ -33,6 +33,13 @@ The ``nearly'' means that there's a maximum of number of segments of
 constant length.  (The constant length is increasing throughout the file)
 The format of each index-entry is given below.
 \end{itemize}
+Because there is always an index level 0, there are always
+at least three files: {\tt .HEAP}, {\tt .K0}, {\tt .I0}.
+Once the index gets over
+$$\text{\tt index\_ratio}^2 / 2$$
+entries we create a new index with {\tt index\_ratio} entries
+that we've been storing up in memory.  (There wouldn't be anything
+wrong with creating it before-hand, ...)
 
 \section{The Format of the {\tt .I\#} files}
 The {\tt .I\#} files consist of a header,
@@ -44,32 +51,112 @@ on the number of blocks.  Furthermore, we insist that each block's index-entries
 be $2$ or $4$ bytes larger than the last.  The consequence is that
 we only need at most $6$ blocks:
 
-\begin{tabular}{lllllll}
-block number & 0 & 1 & 2 & 3 & 4 & 5 \\
+\begin{tabular}{l|llllll|}
+block number & 0 & 1 & 2 & 3 & 4 & 5 \\ \hline
 index-0 entry size & 8 & 12 & 16 & 20 & 24 & 28 \\
-index-non-0 entry size & 2 & 4 & 6 & 8 & 10 & 12
+index-non-0 entry size & 2 & 4 & 6 & 8 & 10 & 12 \\ \hline
 \end{tabular}
 
+\vskip 2ex
 
 All {\tt .I\#} files have a common format:
-\begin{tabular}{llp{3in}}
-offset & length & description \\
+
+\begin{tabular}{|llp{3in}|}
+offset & length & description \\ \hline
 0 & 4 & magic \\
 4 & 1 & index level \\
 5 & 3 & reserved - must be 0 \\
-8 & 48 & number of index entries in each block (6 64-bit numbers)\\
-56 & variable & blocks, consisting of packed index entries
+8 & 48 & number of index entries in each block (6 64-bit little-endian numbers)\\
+56 & variable & blocks, consisting of packed index entries \\ \hline
 \end{tabular}
+
+All of the fields in the index-entry are variable-length encoded integers.
+We call them "b128" encoded.  There are actually two formats:
+\begin{itemize}
+\item 32-bit max. ...
+\item 64-bit max. ...
+\end{itemize}
+
+\vskip 2ex
 
 For level $0$ index files, this is the format of each index-entry:
+
 \begin{tabular}{llp{3in}}
 name & encoding & description \\
-...
+{\tt key\_length} & b128, 32-bit max & length of the first key in this section \\
+{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K0} file. \\
+{\tt compressed\_data\_length} & b128, 32-bit max & length of compressed data in {\tt .HEAP} file \\
+{\tt compressed\_data\_offset} & b128, 64-bit max & offset of compressed data in {\tt .HEAP} file
 \end{tabular}
 
+\vskip 2ex
+
+For other, nonzero level index files, this is the format of each index-entry:
+\begin{tabular}{llp{3in}}
+name & encoding & description \\
+{\tt key\_length} & b128, 32-bit max & length of the first key in this section \\
+{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K0} file. \\
+\end{tabular}
+The index in the next level's file is determined by {\tt index\_ratio}.
+
+\section{Algorithms}
+This section provides pseudocode for common operations.
+
+\subsection{Create}
+Creating the table-file assumes that the incoming data is already sorted.
+We implement the table-file with a ``push'' type API, where
+we key/value pair is added to the file in sequence.  Here's the
+overall creation function:
+\begin{verbatim}
+   n_index_levels = 1.
+   create level 0 index files.
+   create compressed heap.
+   For each key/value pair:
+       add(file, key, value).
+\end{verbatim}
+
+So all the work is in the {\tt add} function:
+\begin{verbatim}
+add(file, key, value):
+   add_to_compress_buffer(file, key, value).
+   if (compress_buffer_count >= compress_buffer_max_count)
+       flush_compress_buffer(file).   // writes index(es)
+\end{verbatim}
+
+And its subfunctions:
+\begin{verbatim}
+add_to_compress_buffer(file, key, value):
+   if prefix_compress:
+       ...
+   else
+       ...
+
+flush_compress_buffer(file):
+    ...
+\end{verbatim}
+
+\subsection{Lookup}
+...
+
+\section{Low-level Tools}
+...
+
+\section{Notes on System-Calls}
+\begin{itemize}
+\item {\tt pread}. ...
+\item {\tt pwrite}. Not used: but it parallels {\tt pread}.
+\item {\tt fallocate}.  ... (note: {\tt posix\_fallocate} is discouraged
+since its behavior is emulated slowly on non-{\tt fallocate} file-systems.)
+\item {\tt writev}. ...
+\item {\tt madvise}/{\tt posix\_fadvise}. ...
+\end{itemize}
 
 
 \section{TODO}
+Do not use {\tt stdio}.
+
 Optional methods {\verb|search|}, {\verb|get_by_index|}.
+
+Possibility of querying a file while under construction.
 
 \end{document}

@@ -36,6 +36,51 @@ is_valid_generic_component (const char *start, const char *end)
   return DSK_TRUE;
 }
 
+dsk_boolean
+dsk_url_scheme_parse (const char   *url,
+                      unsigned     *scheme_length_out,
+                      DskUrlScheme *scheme_out
+                      DskError    **error)
+{
+  const char *p = url;
+  while (dsk_ascii_isalpha (*p))
+    p++;
+  if (*p != ':')
+    {
+      dsk_set_error (error, "missing ':' in URL");
+      return DSK_FALSE;
+    }
+  *scheme_length_out = p + 1 - url;
+   if ((url[0] == 'h' || url[0] == 'H')
+    && (url[1] == 't' || url[1] == 'T')
+    && (url[2] == 't' || url[2] == 'T')
+    && (url[3] == 'p' || url[3] == 'P'))
+    {
+      if (p - url == 4)
+        {
+          *scheme_out = DSK_URL_SCHEME_HTTP;
+          return DSK_TRUE;
+        }
+      else if (p - url == 5 && (p[4] == 's' || p[4] == 'S'))
+        {
+          *scheme_out = DSK_URL_SCHEME_HTTPS;
+          return DSK_TRUE;
+        }
+    }
+  else if ((ftp[0] == 'f' || ftp[0] == 'F')
+        && (ftp[1] == 't' || ftp[1] == 'T')
+        && (ftp[2] == 'p' || ftp[2] == 'P')
+        && p - url == 3)
+    {
+      *scheme_out = DSK_URL_SCHEME_FTP;
+      return DSK_TRUE;
+    }
+  dsk_set_error (error, "unknown scheme %.*s", (int)(p - url), url);
+  return DSK_FALSE;
+}
+
+
+
 /* TODO: rewrite this thing! */
 dsk_boolean  dsk_url_scan  (const char     *url_string,
                             DskUrlScanned  *out,
@@ -48,6 +93,7 @@ dsk_boolean  dsk_url_scan  (const char     *url_string,
   const char *frag_start;
   const char *end_string;
   out->scheme_start = at;
+  /* XXX: use dsk_url_scheme_parse() */
   while (dsk_ascii_isalnum (*at))
     at++;
   if (out->scheme_start == at)

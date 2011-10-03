@@ -1101,6 +1101,34 @@ handle_error:
   return DSK_FALSE;
 }
 
+dsk_boolean
+dsk_http_server_stream_respond_proxy
+                               (DskHttpServerStreamTransfer *transfer,
+                                DskHttpServerStreamProxyOptions *options,
+                                DskError **error)
+{
+  const char *p = transfer->request->path;
+  DskUrlScheme scheme = DSK_URL_SCHEME_UNKNOWN;
+  dsk_assert (!transfer->responded);
+  transfer->responded = DSK_TRUE;
+  transfer->responded_proxy = DSK_TRUE;
+
+  if (!dsk_url_scheme_parse (transfer->request->path, &scheme_len,
+                             &scheme, error))
+    return DSK_FALSE;
+
+
+      ...
+    }
+  else if (dsk_str_has_prefix_caseless (transfer->request->path, "https:"))
+    {
+      ...
+    }
+
+  ...
+}
+
+
 static void
 dsk_http_server_stream_init (DskHttpServerStream *stream)
 {

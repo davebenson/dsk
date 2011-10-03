@@ -29,15 +29,22 @@ Then we will briefly look at each API,
 in order to orient the reader who might wish to study some
 aspect in detail.
 
+\section{Relevant Aspects of the Specification}
+
+...
+
+handling broken behavior...
+
+
 \section{Client API Features}
 
 \subsection{Basic Operation}
 Path, port.  User-agent and other misc headers.
 blocking or nonblocking.  http 1.0 versus 1.1.
 Support for HEAD, CONNECT, TRACE, DELETE, OPTIONS.
-Spport for SOCKS proxies.
+Support for SOCKS proxies.  Support for Websockets.
 
-Error-handling, streaming versQs nonstreaming.
+Error-handling, streaming versus nonstreaming.
 
 \subsection{Transport Layer Issues}
 ssl, unix-domain-sockets, nagling, ipv6, willingness to use proxy.
