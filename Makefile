@@ -11,6 +11,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 	        tests/test-http-client-stream-0 \
 		tests/test-http-server-stream-0 \
 		tests/test-http-server-0 \
+		tests/test-http-protocol-0 \
 		tests/test-http-loopback \
 		tests/test-mime-multipart-decoder \
 		tests/test-cgi \
@@ -54,11 +55,11 @@ CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS)
 LINK_FLAGS = -g -lz -lbz2 $(EXTRA_LDFLAGS)
 
 tests/%: tests/%.c libdsk.a
-	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^ -lm
+	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
 programs/%: programs/%.c libdsk.a
-	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^
+	gcc $(CC_FLAGS) -o $@ $^ $(LINK_FLAGS)
 examples/%: examples/%.c libdsk.a
-	gcc $(CC_FLAGS) $(LINK_FLAGS) -o $@ $^ -lm
+	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
 libdsk.a: dsk-inlines.o \
 	  dsk-rand.o \
           dsk-dns-protocol.o dsk-error.o dsk-object.o dsk-common.o dsk-udp-socket.o dsk-dispatch.o dsk-hook.o \
