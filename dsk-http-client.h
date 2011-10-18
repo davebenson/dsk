@@ -218,7 +218,7 @@ struct _DskHttpClientRequestOptions
   DskDestroyNotify destroy;
 
   /* for use by servers that implement HTTP forward (check?)-proxying */
-  DskHttpClientProxyInfo *proxy_info;
+  //DskHttpClientProxyInfo *proxy_info;
 
 
   /* TODO:

@@ -39,7 +39,7 @@ is_valid_generic_component (const char *start, const char *end)
 dsk_boolean
 dsk_url_scheme_parse (const char   *url,
                       unsigned     *scheme_length_out,
-                      DskUrlScheme *scheme_out
+                      DskUrlScheme *scheme_out,
                       DskError    **error)
 {
   const char *p = url;
@@ -67,9 +67,9 @@ dsk_url_scheme_parse (const char   *url,
           return DSK_TRUE;
         }
     }
-  else if ((ftp[0] == 'f' || ftp[0] == 'F')
-        && (ftp[1] == 't' || ftp[1] == 'T')
-        && (ftp[2] == 'p' || ftp[2] == 'P')
+  else if ((url[0] == 'f' || url[0] == 'F')
+        && (url[1] == 't' || url[1] == 'T')
+        && (url[2] == 'p' || url[2] == 'P')
         && p - url == 3)
     {
       *scheme_out = DSK_URL_SCHEME_FTP;

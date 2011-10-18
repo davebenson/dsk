@@ -1070,7 +1070,7 @@ dsk_http_server_stream_respond_websocket
     }
 
   /* compute websocket response */
-  char key3[8];
+  uint8_t key3[8];
   uint8_t ws_response[16];
   if (dsk_buffer_read (&stream->incoming_data, 8, key3) != 8)
     dsk_assert_not_reached ();
@@ -1101,6 +1101,7 @@ handle_error:
   return DSK_FALSE;
 }
 
+#if 0
 dsk_boolean
 dsk_http_server_stream_respond_proxy
                                (DskHttpServerStreamTransfer *transfer,
@@ -1127,6 +1128,7 @@ dsk_http_server_stream_respond_proxy
 
   ...
 }
+#endif
 
 
 static void

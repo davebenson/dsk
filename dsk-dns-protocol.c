@@ -133,7 +133,7 @@ gather_name_length_resource_record (unsigned       length,
   unsigned sublen;
   DskDnsResourceRecordType type;
   unsigned rdlength;
-  const uint8_t *rddata;
+  //const uint8_t *rddata;
   unsigned init_used;
 
   /* owner */
@@ -154,7 +154,7 @@ gather_name_length_resource_record (unsigned       length,
       dsk_set_error (error, "truncated resource-data");
       return DSK_FALSE;
     }
-  rddata = data + *used_inout;
+  //rddata = data + *used_inout;
   switch (type)
     {
     case DSK_DNS_RR_HOST_ADDRESS:       code = "d"; break;
@@ -346,7 +346,7 @@ parse_resource_record (unsigned              length,
   uint16_t type;
   uint16_t class;
   uint32_t ttl;
-  uint16_t rdlength;
+  //uint16_t rdlength;
   rr->owner = parse_domain_name (length, data, used_inout, str_heap_at, error);
   if (rr->owner == NULL)
     return DSK_FALSE;
@@ -361,7 +361,7 @@ parse_resource_record (unsigned              length,
   class    = ((uint16_t)header[2] << 8)  | ((uint16_t)header[3] << 0);
   ttl      = ((uint32_t)header[4] << 24) | ((uint32_t)header[5] << 16)
            | ((uint32_t)header[6] << 8)  | ((uint32_t)header[7] << 0);
-  rdlength = ((uint16_t)header[8] << 8)  | ((uint16_t)header[9] << 0);
+  //rdlength = ((uint16_t)header[8] << 8)  | ((uint16_t)header[9] << 0);
   rr->type = type;
   rr->class_code = class;
   rr->time_to_live = ttl;

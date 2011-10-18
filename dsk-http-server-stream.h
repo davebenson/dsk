@@ -89,7 +89,7 @@ struct _DskHttpServerStreamTransfer
   
   /* has this transfer been responded to to the point of having
      an HTTP response header? */
-    TODO: responded_header : 1;
+    ////TODO: responded_header : 1;
 
   /* responded but potentially waiting on underlying client
      to have a response header. */

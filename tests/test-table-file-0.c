@@ -261,7 +261,7 @@ test_various_read_write_1 (const char *name,
   DskTableReader *reader;
 
   if (cmdline_verbose)
-    fprintf (stderr, "running dataset %s [%llu]\n", name, n_write);
+    fprintf (stderr, "running dataset %s [%llu]\n", name, (unsigned long long) n_write);
   else
     fprintf (stderr, ".");
 

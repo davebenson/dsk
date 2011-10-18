@@ -505,11 +505,11 @@ restart_processing:
         case DSK_HTTP_CLIENT_STREAM_READ_IN_BODY:
           {
             unsigned amount = xfer->read_info.in_body.remaining;
-            size_t old_size;
+            //size_t old_size;
             if (amount > stream->incoming_data.size)
               amount = stream->incoming_data.size;
             xfer->read_info.in_body.remaining -= amount;
-            old_size = xfer->content->buffer.size;
+            //old_size = xfer->content->buffer.size;
             transfer_content (xfer, amount);
             dsk_memory_source_added_data (xfer->content);
             if (xfer->read_info.in_body.remaining == 0)

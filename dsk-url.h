@@ -12,7 +12,7 @@ typedef enum
 } DskUrlScheme;
 dsk_boolean dsk_url_scheme_parse (const char   *url,
                                   unsigned     *scheme_length_out,
-                                  DskUrlScheme *scheme_out
+                                  DskUrlScheme *scheme_out,
                                   DskError    **error);
 
 typedef struct _DskUrlScanned DskUrlScanned;
