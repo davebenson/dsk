@@ -175,6 +175,10 @@ dsk_http_request_get (DskHttpRequest *request,
       if (dsk_ascii_strcasecmp (header, "Referer") == 0)
         return request->referrer;
       break;
+    case 'p': case 'P':
+      if (dsk_ascii_strcasecmp (header, "Path") == 0)
+        return request->path;
+      break;
     }
   for (i = 0; i < request->n_unparsed_headers; i++)
     if (dsk_ascii_strcasecmp (request->unparsed_headers[i].key, header) == 0)
