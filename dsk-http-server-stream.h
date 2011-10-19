@@ -85,7 +85,6 @@ struct _DskHttpServerStreamTransfer
   DskHookTrap *buffer_low_trap;         /* notify us when we are unblocked */
   unsigned returned : 1;   /* has this transfer been returned by get_request? */
   unsigned responded : 1;  /* dsk_http_server_stream_respond called */
-  
   unsigned failed : 1;
   unsigned blocked_content : 1;
   DskHttpServerStreamReadState read_state;

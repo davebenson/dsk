@@ -1102,7 +1102,6 @@ handle_error:
 }
 
 
-
 static void
 dsk_http_server_stream_init (DskHttpServerStream *stream)
 {

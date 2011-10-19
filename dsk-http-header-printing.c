@@ -126,7 +126,7 @@ void             dsk_http_request_print_buffer  (DskHttpRequest *request,
   if (request->content_length != -1LL)
     {
       char buf[20];
-      snprintf (buf, sizeof (buf), "%llu", request->content_length);
+      snprintf (buf, sizeof (buf), "%llu", (unsigned long long) request->content_length);
       dsk_buffer_append_string (buffer, "Content-Length: ");
       dsk_buffer_append_string (buffer, buf);
       append_newline (buffer);
@@ -176,7 +176,7 @@ dsk_http_response_print_buffer  (DskHttpResponse *response,
   if (response->content_length != -1LL)
     {
       char buf[20];
-      snprintf (buf, sizeof (buf), "%llu", response->content_length);
+      snprintf (buf, sizeof (buf), "%llu", (unsigned long long) response->content_length);
       dsk_buffer_append_string (buffer, "Content-Length: ");
       dsk_buffer_append_string (buffer, buf);
       append_newline (buffer);

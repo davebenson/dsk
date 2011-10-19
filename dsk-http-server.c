@@ -385,9 +385,8 @@ dsk_http_server_register_websocket_handler      (DskHttpServer *server,
                                                  void          *func_data,
                                                  DskHookDestroy destroy)
 {
-  Handler *h;
-  h = add_handler_generic (server, HANDLER_TYPE_WEBSOCKET,
-                           (FunctionPointer) func, func_data, destroy);
+  (void) add_handler_generic (server, HANDLER_TYPE_WEBSOCKET,
+                              (FunctionPointer) func, func_data, destroy);
 }
 
 /* === Handling Requests === */
