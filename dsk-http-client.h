@@ -217,10 +217,6 @@ struct _DskHttpClientRequestOptions
   void *func_data;
   DskDestroyNotify destroy;
 
-  /* for use by servers that implement HTTP forward (check?)-proxying */
-  DskHttpClientProxyInfo *proxy_info;
-
-
   /* TODO:
      - caching support
      - authentification support
