@@ -4,7 +4,6 @@ typedef struct _DskHttpServerStreamFuncs DskHttpServerStreamFuncs;
 typedef struct _DskHttpServerStreamTransfer DskHttpServerStreamTransfer;
 typedef struct _DskHttpServerStreamOptions DskHttpServerStreamOptions;
 typedef struct _DskHttpServerStreamResponseOptions DskHttpServerStreamResponseOptions;
-typedef struct _DskHttpServerStreamProxyOptions DskHttpServerStreamProxyOptions;
 
 struct _DskHttpServerStreamClass
 {
@@ -87,13 +86,6 @@ struct _DskHttpServerStreamTransfer
   unsigned returned : 1;   /* has this transfer been returned by get_request? */
   unsigned responded : 1;  /* dsk_http_server_stream_respond called */
   
-  /* has this transfer been responded to to the point of having
-     an HTTP response header? */
-    TODO: responded_header : 1;
-
-  /* responded but potentially waiting on underlying client
-     to have a response header. */
-  unsigned proxy_responded : 1;
   unsigned failed : 1;
   unsigned blocked_content : 1;
   DskHttpServerStreamReadState read_state;
@@ -167,35 +159,11 @@ struct  _DskHttpServerStreamResponseOptions
   NULL,                 /* content_body */              \
 }
 
-struct _DskHttpServerStreamProxyOptions
-{
-  dsk_boolean allow_http;
-  dsk_boolean allow_https;             /* UNIMPLEMENTED */
-  dsk_boolean allow_ftp;               /* UNIMPLEMENTED */
-
-  /* add Via header (technically required by HTTP protocol; practically,
-     this is used to operate in "stealth" mode,
-     e.g. for evading IP address quotas) */
-  dsk_boolean include_via;
-
-  const char *via_hostname;
-
-  /* to issue a full-on different HTTP request */
-  DskHttpClientRequestOptions *client_options;
-};
-
 
 /* Even if this returns FALSE the transfer is still destroyed */
 dsk_boolean
 dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
                                 DskHttpServerStreamResponseOptions *options,
-                                DskError **error);
-
-/* Even if this returns FALSE the transfer is still destroyed */
-dsk_boolean
-dsk_http_server_stream_respond_proxy
-                               (DskHttpServerStreamTransfer *transfer,
-                                DskHttpServerStreamProxyOptions *options,
                                 DskError **error);
 
 /* Respond to a websocket connection request. */
@@ -205,5 +173,7 @@ dsk_http_server_stream_respond_websocket
                                 const char        *protocol,
                                 DskWebsocket     **websocket_out);
 
+/* See also: dsk_http_server_stream_respond_proxy() in
+ * dsk-http-server-stream-proxy.h */
 
 extern DskHttpServerStreamClass dsk_http_server_stream_class;
