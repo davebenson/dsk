@@ -171,6 +171,9 @@ char *dsk_strdup (const char *str);
 char *dsk_strndup (size_t len, const char *str);
 void *dsk_memdup (size_t, const void *);
 
+void  dsk_strstrip (char *str_inout);
+void  dsk_strchomp (char *str_inout);
+
 /* copy the string starting at 'str', and ending with the last-character
    at end_str-1 (so end_str would point to the NUL on a NUL-terminated string */
 char *dsk_strdup_slice (const char *str, const char *end_str);
@@ -178,5 +181,7 @@ char *dsk_strdup_slice (const char *str, const char *end_str);
 /* utility for initializing objects */
 void dsk_bzero_pointers (void *ptrs, unsigned n_ptrs);
 
+char *dsk_strdup_vprintf (const char *str, va_list args);
+char *dsk_strdup_printf (const char *str, ...) DSK_GNUC_PRINTF(1,2);
 
 dsk_boolean dsk_parse_boolean (const char *str, dsk_boolean *out);

@@ -143,7 +143,8 @@ typedef DskTs0Scope *(*DskTs0ClassLookupScopeFunc) (void   *object_data,
                                                     const char *name);
 
 
-typedef struct {
+struct _DskTs0Class
+{
   char *(*get_variable)           (DskTs0Class *ts0_class,  
                                    void        *object_data,
                                    const char  *var_name);  
@@ -158,7 +159,7 @@ typedef struct {
                                    const char  *tag_name);
   void       (*destroy_object)    (DskTs0Class *ts0_class,
                                    void        *object_data);
-} DskTs0Class;
+};
 
 #if 0
 typedef struct _DskTs0ClassFunctionNode DskTs0ClassFunctionNode;
@@ -266,7 +267,38 @@ DskTs0Table * dsk_ts0_parse_tag_line    (DskTs0       *system,
 #endif
 
 /* --- inlines --- */
-DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
-DSK_INLINE_FUNC void            dsk_ts0_function_unref (DskTs0Function *);
-DSK_INLINE_FUNC DskTs0Tag      *dsk_ts0_tag_ref   (DskTs0Tag *);
-DSK_INLINE_FUNC void            dsk_ts0_tag_unref (DskTs0Tag *);
+#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
+DSK_INLINE_FUNC DskTs0Function *
+dsk_ts0_function_ref   (DskTs0Function *function)
+{
+  ...
+}
+
+DSK_INLINE_FUNC void
+dsk_ts0_function_unref (DskTs0Function *function)
+{
+  ...
+}
+
+DSK_INLINE_FUNC DskTs0Tag *
+dsk_ts0_tag_ref   (DskTs0Tag *tag)
+{
+  ...
+}
+
+DSK_INLINE_FUNC void
+dsk_ts0_tag_unref (DskTs0Tag *tag)
+{
+  ...
+}
+DSK_INLINE_FUNC void
+dsk_ts0_scope_unref (DskTs0Scope *scope)
+{
+  ...
+}
+DSK_INLINE_FUNC DskTs0Scope *
+dsk_ts0_scope_unref (DskTs0Scope *scope)
+{
+  ...
+}
+#endif
