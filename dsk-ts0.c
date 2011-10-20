@@ -1,5 +1,6 @@
+
+#define DSK_INCLUDE_TS0
 #include "dsk.h"
-#include "dsk-ts0.h"            /* TEMPORARY */
 
 
 

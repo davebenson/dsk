@@ -135,12 +135,14 @@ void dsk_ts0_global_add_func_data            (const char *name,
                                               DskDestroyNotify destroy);
 
 
-/* --- for scopes that always have the same name, optionally operating on
-   different data --- */
+/* --- classes -- local variables that act like objects or classes.
+   (meaning they have variables, functions and tags) --- */
+#if 0
 typedef char *(*DskTs0ClassLookupVarFunc) (void     *object_data,
                                            const char *name);
 typedef DskTs0Scope *(*DskTs0ClassLookupScopeFunc) (void   *object_data,
                                                     const char *name);
+#endif
 
 
 struct _DskTs0Class
@@ -271,34 +273,46 @@ DskTs0Table * dsk_ts0_parse_tag_line    (DskTs0       *system,
 DSK_INLINE_FUNC DskTs0Function *
 dsk_ts0_function_ref   (DskTs0Function *function)
 {
-  ...
+  _dsk_inline_assert (function->ref_count > 0);
+  function->ref_count += 1;
+  return function;
 }
 
 DSK_INLINE_FUNC void
 dsk_ts0_function_unref (DskTs0Function *function)
 {
-  ...
+  _dsk_inline_assert (function->ref_count > 0);
+  if (--(function->ref_count) == 0)
+    function->destroy (function);
 }
 
 DSK_INLINE_FUNC DskTs0Tag *
 dsk_ts0_tag_ref   (DskTs0Tag *tag)
 {
-  ...
+  _dsk_inline_assert (tag->ref_count > 0);
+  tag->ref_count += 1;
+  return tag;
 }
 
 DSK_INLINE_FUNC void
 dsk_ts0_tag_unref (DskTs0Tag *tag)
 {
-  ...
+  _dsk_inline_assert (tag->ref_count > 0);
+  if (--(tag->ref_count) == 0)
+    {
+      ...
+    }
 }
 DSK_INLINE_FUNC void
 dsk_ts0_scope_unref (DskTs0Scope *scope)
 {
+  _dsk_inline_assert (scope->ref_count > 0);
   ...
 }
 DSK_INLINE_FUNC DskTs0Scope *
 dsk_ts0_scope_unref (DskTs0Scope *scope)
 {
+  _dsk_inline_assert (scope->ref_count > 0);
   ...
 }
 #endif
