@@ -28,6 +28,19 @@ struct _DskTs0Function
 DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
 DSK_INLINE_FUNC void            dsk_ts0_function_unref (DskTs0Function *);
 
+DskTs0Function *
+dsk_ts0_function_new_global           (DskTs0GlobalFunc         func);
+DskTs0Function *
+dsk_ts0_function_new_global_data      (DskTs0GlobalDataFunc     func,
+                                       void                    *data,
+                                       DskDestroyNotify         destroy);
+DskTs0Function *
+dsk_ts0_function_new_global_lazy      (DskTs0GlobalLazyFunc     lazy);
+DskTs0Function *
+dsk_ts0_function_new_global_lazy_data (DskTs0GlobalLazyDataFunc lazy,
+                                       void                    *data,
+                                       DskDestroyNotify         destroy);
+
 /* --- tag-type operators --- */
 struct _DskTs0Tag
 {
@@ -268,6 +281,9 @@ DskTs0Table * dsk_ts0_parse_tag_line    (DskTs0       *system,
                                          DskError    **error);
 #endif
 
+/* private (used by inlines + macros) */
+void _dsk_ts0_scope_destroy (DskTs0Scope *scope);
+
 /* --- inlines --- */
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC DskTs0Function *
@@ -300,19 +316,22 @@ dsk_ts0_tag_unref (DskTs0Tag *tag)
   _dsk_inline_assert (tag->ref_count > 0);
   if (--(tag->ref_count) == 0)
     {
-      ...
+      if (tag->destroy)
+        tag->destroy (tag);
     }
 }
 DSK_INLINE_FUNC void
 dsk_ts0_scope_unref (DskTs0Scope *scope)
 {
   _dsk_inline_assert (scope->ref_count > 0);
-  ...
+  if (--(scope->ref_count) == 0)
+    _dsk_ts0_scope_destroy (scope);
 }
 DSK_INLINE_FUNC DskTs0Scope *
-dsk_ts0_scope_unref (DskTs0Scope *scope)
+dsk_ts0_scope_ref (DskTs0Scope *scope)
 {
   _dsk_inline_assert (scope->ref_count > 0);
-  ...
+  scope->ref_count += 1;
+  return scope;
 }
 #endif

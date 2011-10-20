@@ -21,12 +21,16 @@ DskTs0Scope *dsk_ts0_scope_new(DskTs0Scope *parent_scope)
   return rv;
 }
 
+static DskTs0Scope *the_global_scope = NULL;
+
 
 /* This can be casted to a DskTs0ScopeWritable, but usually use the
    dsk_ts0_global_* helper functions instead. */
 DskTs0Scope *dsk_ts0_scope_global (void)
 {
-  ...
+  if (the_global_scope == NULL)
+    the_global_scope = dsk_ts0_scope_new (NULL);
+  return the_global_scope;
 }
 
 /* === extending the global namespace === */
@@ -35,12 +39,12 @@ DskTs0Scope *dsk_ts0_scope_global (void)
 void dsk_ts0_global_set_variable (const char *key,
                                   const char *value)
 {
-  ...
+  dsk_ts0_scope_set_variable (dsk_ts0_scope_global (), key, value);
 }
-void dsk_ts0_global_add_scope    (const char *key,
-                                  DskTs0Scope *scope)
+void dsk_ts0_global_add_subscope    (const char *key,
+                                     DskTs0Scope *subscope)
 {
-  ...
+  dsk_ts0_scope_add_subscope (dsk_ts0_scope_global (), key, subscope);
 }
 
 /* simple ways to add various types of functions */
@@ -48,23 +52,27 @@ void
 dsk_ts0_global_add_lazy_func     (const char *name,
                                   DskTs0GlobalLazyFunc lazy_func)
 {
-  ...
+  DskFunction *function = dsk_ts0_function_new_global_lazy (lazy_func);
+  dsk_ts0_global_take_function (name, function);
 }
 
 void
-dsk_ts0_global_add_lazy_func_data       (const char *name,
-                                              DskTs0GlobalLazyDataFunc lazy_func,
-                                              void *func_data,
-                                              DskDestroyNotify destroy)
+dsk_ts0_global_add_lazy_func_data  (const char              *name,
+                                    DskTs0GlobalLazyDataFunc lazy_func,
+                                    void                    *func_data,
+                                    DskDestroyNotify         destroy)
 {
-  ...
+  DskFunction *function;
+  function = dsk_ts0_function_new_global_lazy_data (lazy_func, func_data, destroy);
+  dsk_ts0_global_take_function (name, function);
 }
 
 void
-dsk_ts0_global_add_func(const char *name,
-                                  DskTs0GlobalFunc func)
+dsk_ts0_global_add_func(const char *name, DskTs0GlobalFunc func)
 {
-  ...
+  DskFunction *function;
+  function = dsk_ts0_function_new_global (lazy_func, func_data, destroy);
+  dsk_ts0_global_take_function (name, function);
 }
 
 void
@@ -73,7 +81,9 @@ dsk_ts0_global_add_func_data            (const char *name,
                                               void *func_data,
                                               DskDestroyNotify destroy)
 {
-  ...
+  DskFunction *function;
+  function = dsk_ts0_function_new_global_data (func, func_data, destroy);
+  dsk_ts0_global_take_function (name, function);
 }
 
 
