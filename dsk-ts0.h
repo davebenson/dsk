@@ -44,6 +44,7 @@ typedef struct _DskTs0Namespace DskTs0Namespace;
 typedef struct _DskTs0Class DskTs0Class;
 typedef struct _DskTs0Expr DskTs0Expr;
 typedef struct _DskTs0Stanza DskTs0Stanza;
+typedef struct _DskTs0Expr DskTs0Expr;
 
 
 /* --- string-valued functions --- */
@@ -253,6 +254,17 @@ DskTs0Table * dsk_ts0_parse_tag_line    (DskTs0       *system,
 
 /* private (used by inlines + macros) */
 void _dsk_ts0_namespace_destroy (DskTs0Namespace *ns);
+
+
+DskTs0Expr *dsk_ts0_expr_parse    (const char *str,
+                                   const char **end_str_out,
+                                   const char *filename,
+                                   unsigned   *line_no_inout,
+                                   DskError  **error);
+dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+                                   DskTs0Namespace *ns,
+                                   DskBuffer  *target,
+                                   DskError  **error);
 
 /* --- inlines --- */
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
