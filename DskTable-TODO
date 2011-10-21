@@ -1,0 +1,7 @@
+_ standard TableFile
+  _ document plan
+  _ finish implementation
+  _ implement zlib compression
+  _ implement LZO compression
+  _ checksum support?
+  _ deletion support?
