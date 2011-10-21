@@ -44,7 +44,6 @@ typedef struct _DskTs0Namespace DskTs0Namespace;
 typedef struct _DskTs0Class DskTs0Class;
 typedef struct _DskTs0Expr DskTs0Expr;
 typedef struct _DskTs0Stanza DskTs0Stanza;
-typedef struct _DskTs0Expr DskTs0Expr;
 
 
 /* --- string-valued functions --- */
@@ -135,8 +134,6 @@ DskTs0Namespace *dsk_ts0_namespace_get_namespace(DskTs0Namespace *ns,
 const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
                                                  const char      *dotted_name,
                                                  DskError       **error);
-
-                tag = dsk_ts0_namespace_get_tag (ns, p->info.tag.tag_name, error);
 
 DSK_INLINE_FUNC void            dsk_ts0_namespace_unref (DskTs0Namespace *);
 DSK_INLINE_FUNC DskTs0Namespace*dsk_ts0_namespace_ref   (DskTs0Namespace *);

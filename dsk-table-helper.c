@@ -25,7 +25,7 @@ int dsk_table_helper_openat (DskTableLocation *location,
   char *buf;
   int fd;
 #ifndef __USE_ATFILE
-  unsigned openat_dir_len = strlen (openat_dir);
+  unsigned openat_dir_len = strlen (location->openat_dir);
   base_fname_len += openat_dir_len + 1;
 #endif
   if (base_fname_len + suffix_len < sizeof (slab) - 1)
@@ -35,7 +35,7 @@ int dsk_table_helper_openat (DskTableLocation *location,
 #if defined(__USE_ATFILE)
   memcpy (buf + 0, base_filename, base_fname_len);
 #else
-  memcpy (buf + 0, openat_dir, openat_dir_len);
+  memcpy (buf + 0, location->openat_dir, openat_dir_len);
   buf[openat_dir_len] = '/';
   strcpy (buf + openat_dir_len + 1, base_filename);
 #endif
@@ -83,19 +83,18 @@ dsk_boolean dsk_table_helper_renameat (DskTableLocation *location,
   char old_slab[1024], new_slab[1024];
   char *old_buf, *new_buf;
   dsk_boolean rv = DSK_TRUE;
-  DSK_UNUSED (openat_fd);
   if (openat_dir_len + base_new_len + 2 > sizeof (new_slab))
     new_buf = dsk_malloc (openat_dir_len + base_new_len + 2);
   else
     new_buf = new_slab;
   snprintf (new_buf, openat_dir_len + base_new_len + 2, "%s/%s",
-            openat_dir, new_name);
+            location->openat_dir, new_name);
   if (openat_dir_len + base_old_len + 2 > sizeof (old_slab))
     old_buf = dsk_malloc (openat_dir_len + base_old_len + 2);
   else
     old_buf = old_slab;
   snprintf (old_buf, openat_dir_len + base_old_len + 2, "%s/%s",
-            openat_dir, old_name);
+            location->openat_dir, old_name);
   if (rename (old_buf, new_buf) < 0)
     {
       dsk_set_error (error, "error rename()ing file: %s -> %s: %s",
@@ -126,10 +125,10 @@ dsk_table_helper_unlinkat (DskTableLocation *location,
 #else
   char buf[1024];
   unsigned base_new_len = strlen (to_delete);
-  unsigned openat_dir_len = strlen (openat_dir);
+  unsigned openat_dir_len = strlen (location->openat_dir);
   unsigned needed = base_new_len + 1 + openat_dir_len + 1;
   char *fname = needed <= sizeof (buf) ? buf : dsk_malloc (needed);
-  snprintf (fname, needed, "%s/%s", openat_dir, to_delete);
+  snprintf (fname, needed, "%s/%s", location->openat_dir, to_delete);
   
   if (unlink (fname) < 0)
     {
