@@ -108,6 +108,9 @@ void             dsk_ts0_namespace_set_object   (DskTs0Namespace *ns,
 void             dsk_ts0_namespace_set_variable (DskTs0Namespace *ns,
                                                  const char *key,
                                                  const char *value);
+char            *dsk_ts0_namespace_set_variable_slot (DskTs0Namespace *ns,
+                                                 const char *key,
+                                                 unsigned    value_length);
 void             dsk_ts0_namespace_add_subspace (DskTs0Namespace *ns,
                                                  const char *name,
                                                  DskTs0Namespace *subnamespace);
@@ -117,6 +120,23 @@ void             dsk_ts0_namespace_add_function (DskTs0Namespace *ns,
 void             dsk_ts0_namespace_add_tag      (DskTs0Namespace *ns,
                                                  const char *name,
                                                  DskTs0Tag *tag);
+
+/* The 'get' functions handle dotted named.
+ * (The 'add' and 'set' functions do not.) */
+DskTs0Tag     *  dsk_ts0_namespace_get_tag      (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error);
+DskTs0Function * dsk_ts0_namespace_get_function (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error);
+DskTs0Namespace *dsk_ts0_namespace_get_namespace(DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error);
+const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error);
+
+                tag = dsk_ts0_namespace_get_tag (ns, p->info.tag.tag_name, error);
 
 DSK_INLINE_FUNC void            dsk_ts0_namespace_unref (DskTs0Namespace *);
 DSK_INLINE_FUNC DskTs0Namespace*dsk_ts0_namespace_ref   (DskTs0Namespace *);
@@ -241,6 +261,10 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
                                          DskError    **error);
 
 DskTs0Stanza *dsk_ts0_stanza_parse_file (const char   *filename,
+                                         DskError    **error);
+DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
+                                         const char   *filename,
+                                         unsigned      line_no,
                                          DskError    **error);
 void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza);
 
