@@ -73,6 +73,7 @@ struct _DskTs0Tag
                          DskError         **error);
   void        (*destroy)(DskTs0Tag *tag);
   unsigned ref_count;
+  unsigned cachable : 1;
 };
 
 DSK_INLINE_FUNC DskTs0Tag      *dsk_ts0_tag_ref   (DskTs0Tag *);

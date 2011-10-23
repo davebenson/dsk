@@ -524,11 +524,75 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
       if (dsk_ascii_isalnum (*str) || *str == '_')
         {
           /* tag opening */
+          const char *tag_name_start = str++;
+          while (dsk_ascii_isalnum (*str) || *str == '_')
+            str++;
+          const char *tag_name_end = str;
+
+          for (;;)
+            {
+              skip_whitespace (&str, &line_no);
+              if (*str == 0)
+                {
+                  ...
+                }
+              if (*str == '%' && str[1] == '>')
+                {
+                  str += 2;
+                  break;
+                }
+              else if (dsk_ascii_isalnum (*str) || *str == '_')
+                {
+                  ...
+                }
+              else
+                {
+                  ...
+                }
+            }
+
+          /* Create opening tag in stack */
           ...
         }
       else if (*str == '/')
         {
           /* tag closing */
+
+          /* ensure stack non-empty */
+          ...
+
+          /* verify tag-stack match, if close-tag has name */
+          str++;
+          skip_whitespace (&str, &line_no);
+          if (dsk_ascii_isalnum (*str) || *str == '_')
+            {
+              const char *name_start = str++;
+              while (dsk_ascii_isalnum (*str) || *str == '_')
+                str++;
+              const char *name_end = str;
+              skip_whitespace (&str, &line_no);
+              if (str[0] != '%' || str[1] != '>')
+                {
+                  ...
+                }
+              /* ensure tags match */
+              ...
+            }
+          else if (*str == '%' && str[1] == '>')
+            {
+              /* empty close tag */
+              ...
+            }
+          else
+            {
+              /* syntax error */
+              ...
+            }
+
+          /* create stanza piece */
+          ...
+
+          /* pop stack */
           ...
         }
       else if (*str == '(')
