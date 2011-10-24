@@ -51,6 +51,10 @@ dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
                                          DskError     **error);
 void           dsk_json_parser_destroy  (DskJsonParser *parser);
 
+DskJsonValue * dsk_json_parse           (size_t         len,
+                                         const uint8_t *data,
+                                         DskError     **error);
+
 /* --- values --- */
 DskJsonValue *dsk_json_value_new_null   (void);
 DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value);
@@ -61,8 +65,9 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
 DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
                                          DskJsonValue **values);
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
-                                         char          *str);
+                                         const char    *str);
 DskJsonValue *dsk_json_value_new_number (double         value);
+DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value);
 
 void          dsk_json_value_free       (DskJsonValue  *value);
 

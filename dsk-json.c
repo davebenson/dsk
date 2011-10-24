@@ -100,7 +100,7 @@ DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
   return rv;
 }
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
-                                         char          *str)
+                                         const char    *str)
 {
   DskJsonValue *rv;
   rv = dsk_malloc (sizeof (DskJsonValue) + n_bytes + 1);
