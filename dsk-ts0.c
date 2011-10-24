@@ -3,6 +3,8 @@
 #include "dsk.h"
 #include "gskrbtreemacros.h"
 
+#define MAX_TAG_DEPTH           64
+
 typedef struct
 {
   char *name;
@@ -384,7 +386,64 @@ skip_whitespace (const char **str_inout,
   *line_no_inout = line_no;
 }
 
+static inline dsk_boolean
+slice_matches (const char *start, const char *end, const char *str)
+{
+  while (start < end)
+    {
+      if (*str != *start)
+        return DSK_FALSE;
+      start++;
+      str++;
+    }
+  return (*str == '\0');
+}
+
+
+static void
+dsk_ts0_stanza_piece_clear (DskTs0StanzaPiece *piece)
+{
+  switch (piece->type)
+    {
+    case DSK_TS0_STANZA_PIECE_LITERAL:
+      dsk_free (piece->info.literal.data);
+      break;
+    case DSK_TS0_STANZA_PIECE_TAG:
+      {
+        unsigned i;
+        for (i = 0; i < piece->info.tag.n_args; i++)
+          {
+            dsk_free (piece->info.tag.args[i].name);
+            dsk_ts0_expr_free (piece->info.tag.args[i].expr);
+          }
+      }
+      dsk_free (piece->info.tag.tag_name);
+      if (piece->info.tag.cached_tag)
+        dsk_ts0_tag_unref (piece->info.tag.cached_tag);
+      dsk_ts0_stanza_free (piece->info.tag.body);
+      break;
+    case DSK_TS0_STANZA_PIECE_EXPRESSION:
+      dsk_ts0_expr_free (piece->info.expression);
+      break;
+    }
+}
+
 static DskTs0Expr *_dsk_ts0_expr_make_var (unsigned name_len, const char *name);
+
+
+typedef struct _TagStack TagStack;
+struct _TagStack
+{
+  /* index into 'pieces' array where the first argument to this tag occurs. */
+  unsigned first_piece;
+
+  /* name of the tag */
+  char *name;
+
+  /* arguments to the opening tag */
+  unsigned n_args;
+  DskTs0NamedExpr *args;
+};
 
 DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                                          const char   *filename,
@@ -405,9 +464,25 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
    */
   dsk_boolean tags_chomp_newline = DSK_TRUE;
 
+  /* Strip whitespace at start of block, end of block.
+     Control with +/-strip_leading_ws, +/-strip_trailing_ws
+     or +/-strip_ws to set both at once. */
+  dsk_boolean strip_leading_whitespace = DSK_FALSE;
+  dsk_boolean strip_trailing_whitespace = DSK_FALSE;
+
+  /* stack of open <% tags %> */
+  TagStack tag_stack[MAX_TAG_DEPTH];
+  unsigned tag_stack_size = 0;
+
+  /* stripping whitespace for the next literal we are going to add */
+  dsk_boolean now_strip_first_newline = DSK_FALSE;
+  dsk_boolean now_strip_leading_whitespace = DSK_FALSE;
+  dsk_boolean now_strip_trailing_whitespace = DSK_FALSE;
+
+
   unsigned n_pieces = 0;
-  unsigned pieces_alloced = 16;
-  DskTs0StanzaPiece init_pieces[16];
+  unsigned pieces_alloced = 32;
+  DskTs0StanzaPiece init_pieces[32];
   DskTs0StanzaPiece *pieces = init_pieces;
 #define APPEND_PIECE(piece) \
       append_piece (&n_pieces, &pieces, &pieces_alloced, init_pieces, piece)
@@ -416,6 +491,26 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
       /* try making a literal */
       const char *start = str;
       unsigned n_double_dollars = 0;
+      if (now_strip_first_newline)
+        {
+          const char *at = str;
+          while (dsk_ascii_isspace (*at))
+            {
+              if (*at == '\n')
+                {
+                  str = at + 1;
+                  line_no += 1;
+                  break;
+                }
+              at++;
+            }
+          now_strip_first_newline = DSK_FALSE;
+        }
+      if (now_strip_leading_whitespace)
+        {
+          skip_whitespace (&str, &line_no);
+          now_strip_leading_whitespace = DSK_FALSE;
+        }
       if (dollar_variables)
         {
           while (*str && (str[0] != '<' || str[1] != '%'))
@@ -449,7 +544,14 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
               str++;
             }
         }
-      if (str > start)
+      const char *end_literal = str;
+      if (now_strip_trailing_whitespace)
+        {
+          while (end_literal > start && dsk_ascii_isspace (*(end_literal-1)))
+            end_literal--;
+          now_strip_trailing_whitespace = DSK_FALSE;
+        }
+      if (end_literal > start)
         {
           if (n_double_dollars > 0)
             {
@@ -457,10 +559,10 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
               DskTs0StanzaPiece piece;
               uint8_t *out;
               piece.type = DSK_TS0_STANZA_PIECE_LITERAL;
-              piece.info.literal.length = (str - start) - n_double_dollars;
+              piece.info.literal.length = (end_literal - start) - n_double_dollars;
               out = dsk_malloc (piece.info.literal.length);
               piece.info.literal.data = out;
-              while (start < str)
+              while (start < end_literal)
                 {
                   *out++ = *start;
                   if (*start == '$')
@@ -475,8 +577,8 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
               /* simple literal */
               DskTs0StanzaPiece piece;
               piece.type = DSK_TS0_STANZA_PIECE_LITERAL;
-              piece.info.literal.length = (str - start);
-              piece.info.literal.data = dsk_memdup (str - start, start);
+              piece.info.literal.length = (end_literal - start);
+              piece.info.literal.data = dsk_memdup (end_literal - start, start);
               APPEND_PIECE (piece);
             }
         }
@@ -516,6 +618,8 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
             }
         }
 
+      dsk_boolean setup_posttag_whitespace_rules = DSK_FALSE;
+
       /* at <% */
       dsk_assert (str[0] == '<' && str[1] == '%');
       str += 2;
@@ -528,13 +632,19 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           while (dsk_ascii_isalnum (*str) || *str == '_')
             str++;
           const char *tag_name_end = str;
+          unsigned n_args = 0;
+          unsigned args_alloced = 8;
+          DskTs0NamedExpr init_args[8];
+          DskTs0NamedExpr *args = init_args;
 
           for (;;)
             {
               skip_whitespace (&str, &line_no);
               if (*str == 0)
                 {
-                  ...
+                  dsk_set_error (error, "missing %%> in opening tag (%s:%u)",
+                                 filename, line_no);
+                  goto error_cleanup;
                 }
               if (*str == '%' && str[1] == '>')
                 {
@@ -543,24 +653,95 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                 }
               else if (dsk_ascii_isalnum (*str) || *str == '_')
                 {
-                  ...
+                  DskTs0NamedExpr named_expr;
+                  const char *arg_name_start = str++;
+                  while (dsk_ascii_isalnum (*str) || *str == '_')
+                    str++;
+                  const char *arg_name_end = str;
+                  skip_whitespace (&str, &line_no);
+                  if (*str != '=')
+                    {
+                      dsk_set_error (error, "expected '=' at %s:%u",
+                                     filename, line_no);
+                      /* TODO: free 'args' */
+                      goto error_cleanup;
+                    }
+                  str++;
+                  skip_whitespace (&str, &line_no);
+                  const char *end;
+                  named_expr.expr = dsk_ts0_expr_parse (str, &end, filename, &line_no, error);
+                  if (named_expr.expr == NULL)
+                    {
+                      dsk_add_error_prefix (error, "in opening-tag %.*s",
+                                            (int)(tag_name_end-tag_name_start),
+                                            tag_name_start);
+                      /* TODO: free 'args' */
+                      goto error_cleanup;
+                    }
+                  str = end;
+                  skip_whitespace (&str, &line_no);
+                  named_expr.name = dsk_strdup_slice (arg_name_start, arg_name_end);
+                  if (args_alloced == n_args)
+                    {
+                      unsigned old_size = args_alloced * sizeof (DskTs0NamedExpr);
+                      unsigned new_size = old_size * 2;
+                      args_alloced *= 2;
+                      if (args == init_args)
+                        {
+                          DskTs0NamedExpr *n = dsk_malloc (new_size);
+                          memcpy (n, args, old_size);
+                          args = n;
+                        }
+                      else
+                        args = dsk_realloc (args, new_size);
+                    }
+                  args[n_args++] = named_expr;
                 }
               else
                 {
-                  ...
+                  dsk_set_error (error,
+                                 "unexpected character %s in open-tag %s:%u",
+                                 dsk_ascii_byte_name (*str),
+                                 filename, line_no);
+                  /* TODO: free 'args' */
+                  goto error_cleanup;
                 }
             }
 
           /* Create opening tag in stack */
-          ...
+          if (tag_stack_size == MAX_TAG_DEPTH)
+            {
+              dsk_set_error (error,
+                             "maximum tag-depth %u exceeded, at %s:%u",
+                             MAX_TAG_DEPTH, filename, line_no);
+              /* TODO: free 'args' */
+              goto error_cleanup;
+            }
+          tag_stack[tag_stack_size].name = dsk_strdup_slice (tag_name_start, tag_name_end);
+          tag_stack[tag_stack_size].n_args = n_args;
+          tag_stack[tag_stack_size].args = dsk_memdup (sizeof (DskTs0NamedExpr) * n_args, args);
+          tag_stack[tag_stack_size].first_piece = n_pieces;
+          tag_stack_size++;
+
+          if (args != init_args)
+            dsk_free (args);
+
+          /* setup whitespace-swallowing */
+          setup_posttag_whitespace_rules = DSK_TRUE;
         }
       else if (*str == '/')
         {
           /* tag closing */
 
           /* ensure stack non-empty */
-          ...
+          if (tag_stack_size == 0)
+            {
+              dsk_set_error (error, "got close tag, no open tag %s:%u",
+                             filename, line_no);
+              goto error_cleanup;
+            }
 
+          TagStack *top = tag_stack + tag_stack_size - 1;
           /* verify tag-stack match, if close-tag has name */
           str++;
           skip_whitespace (&str, &line_no);
@@ -573,43 +754,148 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
               skip_whitespace (&str, &line_no);
               if (str[0] != '%' || str[1] != '>')
                 {
-                  ...
+                  dsk_set_error (error, "expected %%> at %s:%u", filename, line_no);
+                  goto error_cleanup;
                 }
+
               /* ensure tags match */
-              ...
+              const char *top_name = top->name;
+              if (slice_matches (name_start, name_end, top->name))
+                {
+                  dsk_set_error (error,
+                                 "close-tag does not match open-tag: got <%%/ %.*s %%>, expected <%%/ %s %%> at %s:%u",
+                                 (int)(name_end - name_start), name_start,
+                                 top_name,
+                                 filename, line_no);
+                  goto error_cleanup;
+                }
+              str += 2;
             }
           else if (*str == '%' && str[1] == '>')
             {
               /* empty close tag */
-              ...
+              str += 2;
             }
           else
             {
               /* syntax error */
-              ...
+              dsk_set_error (error, "unexpected character %s after <%%/, %s:%u",
+                             dsk_ascii_byte_name (*str),
+                             filename, line_no);
+              goto error_cleanup;
             }
 
           /* create stanza piece */
-          ...
+          DskTs0StanzaPiece piece;
+          piece.type = DSK_TS0_STANZA_PIECE_TAG;
+          piece.info.tag.n_args = top->n_args;
+          piece.info.tag.args = top->args;      /* take ownership */
+          piece.info.tag.tag_name = top->name;  /* take ownership */
+          piece.info.tag.cached_tag = NULL;
+          DskTs0Stanza *new_substanza;
+          new_substanza = dsk_malloc (sizeof (DskTs0Stanza));
+          piece.info.tag.body = new_substanza;
+          new_substanza->n_pieces = n_pieces - top->first_piece;
+          new_substanza->pieces = dsk_memdup (sizeof (DskTs0StanzaPiece) * new_substanza->n_pieces, pieces + top->first_piece);
+          n_pieces = top->first_piece;
+          APPEND_PIECE (piece);
 
           /* pop stack */
-          ...
+          tag_stack_size--;
+
+          /* setup whitespace-swallowing */
+          setup_posttag_whitespace_rules = DSK_TRUE;
         }
       else if (*str == '(')
         {
           /* expression */
-          ...
+          const char *end;
+          DskTs0Expr *expr;
+          expr = dsk_ts0_expr_parse (str, &end, filename, &line_no, error);
+          if (expr == NULL)
+            goto error_cleanup;
+          DskTs0StanzaPiece piece;
+          piece.type = DSK_TS0_STANZA_PIECE_EXPRESSION;
+          piece.info.expression = expr;
+          APPEND_PIECE (piece);
+          str = end;
+          skip_whitespace (&str, &line_no);
+          if (str[0] != '%' || str[1] != '>')
+            {
+              dsk_set_error (error, "after expression, expected %%>, %s:%u",
+                             filename, line_no);
+              goto error_cleanup;
+            }
+          str += 2;
+
+          /* setup whitespace-swallowing */
+          setup_posttag_whitespace_rules = DSK_TRUE;
         }
       else if (*str == '+' || *str == '-')
         {
-          /* tokenizer / parser flags */
-          ...
+          for (;;)
+            {
+              /* tokenizer / parser flags */
+              dsk_boolean enable = *str == '+';
+              str++;
+              const char *name_start = str;
+              while (dsk_ascii_isalnum (*str) || *str == '_')
+                str++;
+              const char *name_end = str;
+              if (name_end == name_start)
+                {
+                  dsk_set_error (error, "missing option name at %s:%u",
+                                 filename, line_no);
+                  goto error_cleanup;
+                }
+              skip_whitespace (&str, &line_no);
+              if (slice_matches (name_start, name_end, "tag_chomp"))
+                tags_chomp_newline = enable;
+              else if (slice_matches (name_start, name_end, "dollar_var"))
+                dollar_variables = enable;
+              else if (slice_matches (name_start, name_end, "strip_ws"))
+                strip_leading_whitespace = strip_trailing_whitespace = enable;
+              else if (slice_matches (name_start, name_end, "strip_trailing_ws"))
+                strip_trailing_whitespace = enable;
+              else if (slice_matches (name_start, name_end, "strip_leading_ws"))
+                strip_leading_whitespace = enable;
+              else
+                {
+                  dsk_set_error (error, "unknown option %.*s at %s:%u",
+                                 (int)(name_end - name_start), name_start,
+                                 filename, line_no);
+                  goto error_cleanup;
+                }
+
+              skip_whitespace (&str, &line_no);
+              if (str[0] == '%' && str[1] == '>')
+                {
+                  str += 2;
+                  break;
+                }
+              else if (*str != '+' && *str != '-')
+                {
+                  dsk_set_error (error, "unexpected character %s, %s:%u",
+                                 dsk_ascii_byte_name (*str), filename, line_no);
+                  goto error_cleanup;
+                }
+            }
+
+          /* setup whitespace-swallowing */
+          setup_posttag_whitespace_rules = DSK_TRUE;
         }
       else
         {
           dsk_set_error (error, "unexpected <%% %c at %s:%u",
                          *str, filename, line_no);
           goto error_cleanup;
+        }
+
+      if (setup_posttag_whitespace_rules)
+        {
+          now_strip_first_newline = tags_chomp_newline;
+          now_strip_leading_whitespace = strip_leading_whitespace;
+          now_strip_trailing_whitespace = strip_trailing_whitespace;
         }
     }
 
@@ -623,8 +909,11 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
 
 
 error_cleanup:
-  for (i = 0; i < n_pieces; i++)
-    dsk_ts0_stanza_piece_clear (pieces + i);
+  {
+    unsigned i;
+    for (i = 0; i < n_pieces; i++)
+      dsk_ts0_stanza_piece_clear (pieces + i);
+  }
   if (pieces != init_pieces)
     dsk_free (pieces);
   return NULL;
@@ -640,6 +929,12 @@ void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza)
 }
 
 /* --- expressions --- */
+typedef enum
+{
+  DSK_TS0_EXPR_LITERAL,
+  DSK_TS0_EXPR_VARIABLE,
+  DSK_TS0_EXPR_FUNCTION_CALL
+} DskTs0ExprType;
 struct _DskTs0Expr
 {
   DskTs0ExprType type;
@@ -684,4 +979,3 @@ DskTs0Expr *dsk_ts0_expr_parse (const char *str,
 {
 ...
 }
-DskTs0Expr *dsk_ts0_expr_parse (

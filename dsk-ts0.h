@@ -283,6 +283,7 @@ DskTs0Expr *dsk_ts0_expr_parse    (const char *str,
                                    const char *filename,
                                    unsigned   *line_no_inout,
                                    DskError  **error);
+void        dsk_ts0_expr_free     (DskTs0Expr *expr);
 dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                    DskTs0Namespace *ns,
                                    DskBuffer  *target,
