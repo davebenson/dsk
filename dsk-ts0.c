@@ -1,9 +1,58 @@
+#include <alloca.h>
 #include <string.h>
 #define DSK_INCLUDE_TS0
 #include "dsk.h"
 #include "gskrbtreemacros.h"
+#include "dsk-ts0-builtins.h"
 
 #define MAX_TAG_DEPTH           64
+
+/* Forward-declarations of expression code */
+typedef struct _DskTs0Filename DskTs0Filename;
+static DskTs0Expr *dsk_ts0_expr_parse    (const char *str,
+                                   const char **end_str_out,
+                                   DskTs0Filename *filename,
+                                   unsigned   *line_no_inout,
+                                   DskError  **error);
+
+/* note: takes ownership of 'data'! */
+static DskTs0Expr *dsk_ts0_expr_new_literal (DskTs0Filename *filename,
+                                               unsigned        line_no,
+                                               unsigned        len,
+                                               uint8_t        *data);
+static DskTs0Expr *dsk_ts0_expr_new_variable (DskTs0Filename *filename,
+                                              unsigned        line_no,
+                                              unsigned name_len,
+                                              const char *name);
+static DskTs0Expr *dsk_ts0_expr_new_function (DskTs0Filename *filename,
+                                              unsigned        line_no,
+                                              unsigned name_len,
+                                              const char *name,
+                                              unsigned    n_args,
+                                              DskTs0Expr **args);
+static DskTs0Expr *dsk_ts0_expr_new_function_anon (DskTs0Filename *filename,
+                                                   unsigned        line_no,
+                                                   DskTs0Function *function,
+                                                   unsigned    n_args,
+                                                   DskTs0Expr **args);
+static void        dsk_ts0_expr_free     (DskTs0Expr *expr);
+static dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+                                          DskTs0Namespace *ns,
+                                          DskBuffer  *target,
+                                          DskError  **error);
+
+struct _DskTs0Filename
+{
+  unsigned ref_count;
+  /* filename follows */
+};
+static inline const char *
+dsk_ts0_filename_get_str(const DskTs0Filename *fname)
+{
+  return (const char*)(fname + 1);
+}
+/* shorthand */
+#define FILENAME_STR(fname) dsk_ts0_filename_get_str(fname)
 
 typedef struct
 {
@@ -133,6 +182,102 @@ dsk_ts0_namespace_add_tag (DskTs0Namespace *namespace,
   node->value = tag;
 }
 
+static DskTs0Namespace *
+resolve_ns (DskTs0Namespace *top_ns,
+            const char      *dotted_name,
+            const char     **name_out,
+            DskError       **error)
+{
+  const char *at = dotted_name;
+  DskTs0Namespace *ns = top_ns;
+  for (;;)
+    {
+      const char *dot = strchr (at, '.');
+      if (dot == NULL)
+        break;
+      DskTs0NamespaceNode *node = lookup_namespace_node_len (ns, dot-at, at);
+      if (node == NULL)
+        {
+          dsk_set_error (error, "no subnamespace %.*s", (int)(dot-at), at);
+          return NULL;
+        }
+      ns = node->value;
+    }
+  *name_out = at;
+  return ns;
+}
+
+typedef void*(*GetEntityFunc) (DskTs0Class *class,
+                               void        *object_data,
+                               const char  *name);
+static void *
+get_entity (DskTs0Namespace *ns,
+            const char      *dotted_name,
+            unsigned         top_offset,
+            unsigned         class_offset,
+            DskError       **error)
+{
+  const char *name;
+  DskTs0Namespace *subns = resolve_ns (ns, dotted_name, &name, error);
+  if (subns == NULL)
+    return NULL;
+  DskTs0NamespaceNode **ptop = (DskTs0NamespaceNode **) ((char*)subns + top_offset);
+  DskTs0NamespaceNode *node = lookup_namespace_node (*pnode, name);
+  if (node == NULL
+   && subns->namespace_class != NULL)
+    {
+      GetEntityFunc func = * (GetEntityFunc *) ((char*)subns->namespace_class + class_offset);
+      if (func != NULL)
+        {
+          void *entity = func (subns->namespace_class, subns->object_data, name);
+          if (entity != NULL)
+            {
+              node = force_namespace_node (ptop, name);
+              node->value = entity;
+            }
+        }
+    }
+  if (node == NULL)
+    {
+      dsk_set_error (error, "%s not found in namespace (full-name %s)",
+                     name, dotted_name);
+      return NULL;
+    }
+  dsk_assert (node->value != NULL);
+  return node->value;
+}
+
+DskTs0Tag     *  dsk_ts0_namespace_get_tag      (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error)
+{
+  return get_entity (ns, dotted_name, offsetof (DskTs0Namespace, top_tag),
+                     offsetof (DskTs0Class, get_tag), error);
+}
+
+DskTs0Function * dsk_ts0_namespace_get_function (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error)
+{
+  return get_entity (ns, dotted_name, offsetof (DskTs0Namespace, top_function),
+                     offsetof (DskTs0Class, get_function), error);
+}
+DskTs0Namespace *dsk_ts0_namespace_get_namespace(DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error)
+{
+  return get_entity (ns, dotted_name, offsetof (DskTs0Namespace, top_subnamespace),
+                     offsetof (DskTs0Class, get_subnamespace), error);
+}
+const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
+                                                 const char      *dotted_name,
+                                                 DskError       **error)
+{
+  return get_entity (ns, dotted_name, offsetof (DskTs0Namespace, top_variable),
+                     offsetof (DskTs0Class, get_variable), error);
+}
+
+
 static DskTs0Namespace *the_global_namespace = NULL;
 
 
@@ -214,6 +359,28 @@ dsk_ts0_context_peek_namespace       (DskTs0Context *context)
   ...
 }
 #endif
+
+/* --- ref-counted filenames --- */
+static DskTs0Filename *dsk_ts0_filename_new (const char *filename)
+{
+  unsigned len = strlen (filename);
+  DskTs0Filename *rv = dsk_malloc (sizeof (DskTs0Filename) + len + 1);
+  rv->ref_count = 1;
+  strcpy ((char*)(rv + 1), filename);
+  return rv;
+}
+static inline DskTs0Filename *dsk_ts0_filename_ref (DskTs0Filename *filename)
+{
+  filename->ref_count += 1;
+  return filename;
+}
+static inline void dsk_ts0_filename_unref (DskTs0Filename *filename)
+{
+  filename->ref_count -= 1;
+  if (filename->ref_count == 0)
+    dsk_free (filename);
+}
+
 
 /* --- end-user api --- */
 dsk_boolean dsk_ts0_evaluate (DskTs0Namespace *ns,
@@ -428,7 +595,6 @@ dsk_ts0_stanza_piece_clear (DskTs0StanzaPiece *piece)
     }
 }
 
-static DskTs0Expr *_dsk_ts0_expr_make_var (unsigned name_len, const char *name);
 
 
 typedef struct _TagStack TagStack;
@@ -450,6 +616,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                                          unsigned      line_no,
                                          DskError    **error)
 {
+  DskTs0Filename *fname = dsk_ts0_filename_new (filename);
 #if 0
   <% %> <%/ %>
   <%( $foo )%>
@@ -465,8 +632,8 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
   dsk_boolean tags_chomp_newline = DSK_TRUE;
 
   /* Strip whitespace at start of block, end of block.
-     Control with +/-strip_leading_ws, +/-strip_trailing_ws
-     or +/-strip_ws to set both at once. */
+     Control with +/-strip_leading_spaces, +/-strip_trailing_spaces
+     or +/-strip_spaces to set both at once. */
   dsk_boolean strip_leading_whitespace = DSK_FALSE;
   dsk_boolean strip_trailing_whitespace = DSK_FALSE;
 
@@ -595,7 +762,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           if (*str == '(')
             {
               const char *end;
-              if (!dsk_ts0_expr_parse (str, &end, filename, &line_no, error))
+              if (!dsk_ts0_expr_parse (str, &end, fname, &line_no, error))
                 goto error_cleanup;
               str = end;
               continue;
@@ -612,7 +779,8 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                   goto error_cleanup;
                 }
               piece.type = DSK_TS0_STANZA_PIECE_EXPRESSION;
-              piece.info.expression = _dsk_ts0_expr_make_var (str - start, str);
+              piece.info.expression = dsk_ts0_expr_new_variable (fname, line_no,
+                                                              str - start, str);
               APPEND_PIECE (piece);
               continue;
             }
@@ -669,7 +837,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                   str++;
                   skip_whitespace (&str, &line_no);
                   const char *end;
-                  named_expr.expr = dsk_ts0_expr_parse (str, &end, filename, &line_no, error);
+                  named_expr.expr = dsk_ts0_expr_parse (str, &end, fname, &line_no, error);
                   if (named_expr.expr == NULL)
                     {
                       dsk_add_error_prefix (error, "in opening-tag %.*s",
@@ -811,7 +979,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           /* expression */
           const char *end;
           DskTs0Expr *expr;
-          expr = dsk_ts0_expr_parse (str, &end, filename, &line_no, error);
+          expr = dsk_ts0_expr_parse (str, &end, fname, &line_no, error);
           if (expr == NULL)
             goto error_cleanup;
           DskTs0StanzaPiece piece;
@@ -853,11 +1021,11 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                 tags_chomp_newline = enable;
               else if (slice_matches (name_start, name_end, "dollar_var"))
                 dollar_variables = enable;
-              else if (slice_matches (name_start, name_end, "strip_ws"))
+              else if (slice_matches (name_start, name_end, "strip_spaces"))
                 strip_leading_whitespace = strip_trailing_whitespace = enable;
-              else if (slice_matches (name_start, name_end, "strip_trailing_ws"))
+              else if (slice_matches (name_start, name_end, "strip_trailing_spaces"))
                 strip_trailing_whitespace = enable;
-              else if (slice_matches (name_start, name_end, "strip_leading_ws"))
+              else if (slice_matches (name_start, name_end, "strip_leading_spaces"))
                 strip_leading_whitespace = enable;
               else
                 {
@@ -938,6 +1106,8 @@ typedef enum
 struct _DskTs0Expr
 {
   DskTs0ExprType type;
+  DskTs0Filename *filename;
+  unsigned line_no;
   union {
     struct {
       unsigned length;
@@ -960,22 +1130,885 @@ struct _DskTs0Expr
   } info;
 };
 
-DskTs0Expr *_dsk_ts0_expr_make_var (unsigned length, const char *name)
+typedef enum
 {
-  DskTs0Expr *rv = dsk_malloc (sizeof (DskTs0Expr));
+  DSK_TS0_EXPR_TOKEN_TYPE_LPAREN,
+  DSK_TS0_EXPR_TOKEN_TYPE_RPAREN,
+  DSK_TS0_EXPR_TOKEN_TYPE_COMMA,
+  DSK_TS0_EXPR_TOKEN_TYPE_DOLLAR,
+  DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD,
+  DSK_TS0_EXPR_TOKEN_TYPE_QUOTED_STRING,
+  DSK_TS0_EXPR_TOKEN_TYPE_NUMBER,
+} DskTs0ExprTokenType;
+static const char *_dsk_ts0_expr_token_type_names[] = {
+  "left-paren '('",
+  "right-paren ')'",
+  "comma ','",
+  "dollar '$'"
+  "bareword",
+  "quoted-string",
+  "number"
+};
+static const char *
+dsk_ts0_expr_token_type_name (DskTs0ExprTokenType type)
+{
+  dsk_assert (type <= DSK_TS0_EXPR_TOKEN_TYPE_NUMBER);
+  return _dsk_ts0_expr_token_type_names[type];
+}
+
+
+typedef struct _CachedSubexpr CachedSubexpr;
+struct _CachedSubexpr
+{
+  const char *start, *end;
+  DskTs0Expr *expr;
+  CachedSubexpr *next;
+};
+static CachedSubexpr *
+reverse_cached_subexpr_list (CachedSubexpr *old_list)
+{
+  CachedSubexpr *head = NULL;
+  while (old_list)
+    {
+      CachedSubexpr *n = old_list->next;
+      old_list->next = head;
+      head = old_list;
+      old_list = n;
+    }
+  return head;
+}
+
+typedef struct _DskTs0ExprToken DskTs0ExprToken;
+struct _DskTs0ExprToken
+{
+  DskTs0ExprTokenType type;
+  const char *start, *end;
+  unsigned start_line_no;
+
+  /* for subexpressions within quoted-strings */
+  CachedSubexpr *cached_subexpr_list;
+};
+
+static dsk_boolean
+scan_number (const char *start,
+             const char **end_out,
+             DskTs0Filename *filename,
+             unsigned line_no,
+             DskError **error)
+{
+  const char *str = start;
+  if (*str == '+' || *str == '-')
+    str++;
+  while (dsk_ascii_isdigit (*str))
+    str++;
+  if (*str == '.')
+    {
+      str++;
+      while (dsk_ascii_isdigit (*str))
+        str++;
+    }
+  if (*str == 'e' || *str == 'E')
+    {
+      str++;
+      if (*str == '+' || *str == '-')
+        str++;
+      if (!dsk_ascii_isdigit (*str))
+        {
+          dsk_set_error (error,
+                         "expected digit after 'e' in floating-point number at %s:%u",
+                         FILENAME_STR (filename), line_no);
+                         
+        }
+      str++;
+      while (dsk_ascii_isdigit (*str))
+        {
+          str++;
+        }
+    }
+  if (dsk_ascii_isalnum (*str) || *str == '_')
+    {
+      dsk_set_error (error,
+                     "unexpected character %s after number at %s:%u",
+                     dsk_ascii_byte_name (*str),
+                     FILENAME_STR (filename), line_no);
+      return DSK_FALSE;
+    }
+  *end_out = str;
+  return DSK_TRUE;
+}
+
+static DskTs0Expr *parse_expr_from_tokens (DskTs0Filename *filename,
+                                           unsigned        start_line_no,
+                                           unsigned        n_tokens,
+                                           DskTs0ExprToken *tokens,
+                                           DskError       **error);
+
+DskTs0Expr *dsk_ts0_expr_parse (const char *str,
+                                const char **end_str_out,
+                                DskTs0Filename *filename,
+                                unsigned   *line_no_inout,
+                                DskError  **error)
+{
+  /* --- lexing the string, scanning for end-of-expression --- */
+  unsigned line_no = *line_no_inout;
+  unsigned n_tokens = 0;
+  unsigned tokens_alloced = 32;
+  DskTs0ExprToken init_tokens[32];
+  DskTs0ExprToken *tokens = init_tokens;
+
+  dsk_boolean do_dollar_variable_interpolation = DSK_TRUE;      /* TODO: make tunable */
+
+  /* we figure out the end of an expression at
+     tokenization time by realizing that an expression
+     must be:
+         QUOTED_STRING
+         NUMBER
+         DOLLAR BAREWORD               [variable access]
+         BAREWORD LPAREN ... RPAREN    [function call]
+         LPAREN ... RPAREN             [parenthesized expr]
+    where ... is an list of tokens whose have balanced parentheses.
+  */
+  int paren_balance = 0;
+  for (;;)
+    {
+      DskTs0ExprToken token;
+      skip_whitespace (&str, &line_no);
+      if (*str == 0)
+        {
+          dsk_set_error (error, "expression too short %s:%u",
+                         FILENAME_STR (filename), line_no);
+          return NULL;
+        }
+      token.start = str;
+      token.start_line_no = line_no;
+      token.cached_subexpr_list = NULL;
+      switch (*str)
+        {
+        case '(':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_LPAREN;
+          token.end = str + 1;
+          break;
+        case '$':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_DOLLAR;
+          token.end = str + 1;
+          break;
+        case ',':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_COMMA;
+          token.end = str + 1;
+          break;
+        case ')':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_RPAREN;
+          token.end = str + 1;
+          break;
+        case '"':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_QUOTED_STRING;
+          str++;
+          while (*str != '"')
+            {
+              if (*str == '\0')
+                {
+                  dsk_set_error (error, "premature end-of-file in quoted-string starting at %s:%u",
+                                 FILENAME_STR (filename), token.start_line_no);
+                  goto error_cleanup;
+                }
+              else if (*str == '\\')
+                {
+                  if (str[1] == '\0')
+                    {
+                      dsk_set_error (error, "premature end-of-file in quoted-string starting at %s:%u, after backslash",
+                                     FILENAME_STR (filename), token.start_line_no);
+                      goto error_cleanup;
+                    }
+                  str++;                /* skip an extra byte */
+                }
+              else if (*str == '\n')
+                line_no++;
+              else if (do_dollar_variable_interpolation && *str == '$' && str[1] == '(')
+                {
+                  const char *end_expr;
+                  DskTs0Expr *subexpr = dsk_ts0_expr_parse (str + 1, &end_expr,
+                                                            filename, &line_no,
+                                                            error);
+                  if (subexpr == NULL)
+                    {
+                      dsk_add_error_suffix (error, " in quoted-string starting at %s:%u",
+                                            FILENAME_STR (filename), token.start_line_no);
+                      goto error_cleanup;
+                    }
+                  CachedSubexpr *c = dsk_malloc (sizeof (CachedSubexpr));
+                  c->start = str + 1;
+                  c->end = end_expr;
+                  c->expr = subexpr;
+                  c->next = token.cached_subexpr_list;
+                  token.cached_subexpr_list = c;
+                  str = end_expr;
+                }
+              str++;
+            }
+          str++;                /* skip trailing double-quote */
+          token.end = str;
+          token.cached_subexpr_list = reverse_cached_subexpr_list (token.cached_subexpr_list);
+          break;
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+        case '+': case '-': case '.':
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_NUMBER;
+          if (!scan_number (str, &token.end, filename, line_no, error))
+            goto error_cleanup;
+          break;
+        default:
+          /* handle bareword */
+          if (!dsk_ascii_isalnum (*str) && *str != '_')
+            {
+              dsk_set_error (error, "unexpected character %s in string-expression, %s:%u",
+                             dsk_ascii_byte_name (*str),
+                             FILENAME_STR (filename), line_no);
+              goto error_cleanup;
+            }
+          token.type = DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD;
+          while (dsk_ascii_isalnum (*str) || *str == '_')
+            str++;
+          token.end = str;
+          break;
+        }
+      str = token.end;
+
+      /* append token to array */
+      if (n_tokens == tokens_alloced)
+        {
+          unsigned old_size = tokens_alloced * sizeof (DskTs0ExprToken);
+          tokens_alloced *= 2;
+          unsigned new_size = tokens_alloced * sizeof (DskTs0ExprToken);
+          if (tokens == init_tokens)
+            {
+              tokens = dsk_malloc (new_size);
+              memcpy (tokens, init_tokens, old_size);
+            }
+          else
+            tokens = dsk_realloc (tokens, new_size);
+        }
+      tokens[n_tokens++] = token;
+
+      if (n_tokens == 1)
+        {
+          if (tokens[0].type == DSK_TS0_EXPR_TOKEN_TYPE_QUOTED_STRING
+           || tokens[0].type == DSK_TS0_EXPR_TOKEN_TYPE_NUMBER)
+            break;
+          if (tokens[0].type != DSK_TS0_EXPR_TOKEN_TYPE_DOLLAR
+           && tokens[0].type != DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD
+           && tokens[0].type != DSK_TS0_EXPR_TOKEN_TYPE_LPAREN)
+            {
+              dsk_set_error (error, "unexpected token type %s at %s:%u",
+                             dsk_ts0_expr_token_type_name (tokens[0].type),
+                             FILENAME_STR (filename), line_no);
+              goto error_cleanup;
+            }
+        }
+      else if (n_tokens == 2)
+        {
+          if (tokens[0].type == DSK_TS0_EXPR_TOKEN_TYPE_DOLLAR
+           && tokens[1].type == DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD)
+            break;
+          if (tokens[0].type == DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD
+           && tokens[1].type == DSK_TS0_EXPR_TOKEN_TYPE_LPAREN)
+            {
+              /* beginning of function call */
+            }
+          else if (tokens[0].type == DSK_TS0_EXPR_TOKEN_TYPE_LPAREN)
+            {
+              if (paren_balance == 0)
+                {
+                  dsk_set_error (error, "empty parenthesized expression not allowed (ie encountered \"()\") at %s:%u",
+                                 FILENAME_STR (filename), tokens[0].start_line_no);
+                  goto error_cleanup;
+                }
+            }
+          else
+            {
+              dsk_set_error (error, "parsing expression starting at %s:%u (bad tokens %s %s)",
+                             FILENAME_STR (filename), tokens[0].start_line_no,
+                             dsk_ts0_expr_token_type_name (tokens[0].type),
+                             dsk_ts0_expr_token_type_name (tokens[1].type));
+              goto error_cleanup;
+            }
+        }
+      else if (paren_balance == 0)
+        {
+          break;
+        }
+    }
+  *end_str_out = str;
+  *line_no_inout = line_no;
+
+  /* --- parse tokens --- */
+  DskTs0Expr *rv;
+  dsk_assert (n_tokens > 0);
+  rv = parse_expr_from_tokens (filename, tokens[0].start_line_no,
+                               n_tokens, tokens, error);
+  if (tokens != init_tokens)
+    dsk_free (tokens);
+  return rv;
+
+error_cleanup:
+  {
+    unsigned i;
+    for (i = 0; i < n_tokens; i++)
+      if (tokens[i].type == DSK_TS0_EXPR_TOKEN_TYPE_QUOTED_STRING)
+        {
+          while (tokens[i].cached_subexpr_list != NULL)
+            {
+              CachedSubexpr *c = tokens[i].cached_subexpr_list;
+              tokens[i].cached_subexpr_list = c->next;
+              dsk_ts0_expr_free (c->expr);
+              dsk_free (c);
+            }
+        }
+  }
+  if (tokens != init_tokens)
+    dsk_free (tokens);
+  return NULL;
+}
+
+static void
+dsk_ts0_expr__find_next_comma (unsigned n_tokens, 
+                               DskTs0ExprToken *tokens,
+                               unsigned *at_inout)
+{
+  unsigned at = *at_inout;
+  unsigned paren_balance = 0;
+  while (at < n_tokens)
+    {
+      switch (tokens[at].type)
+        {
+        case DSK_TS0_EXPR_TOKEN_TYPE_LPAREN:
+          paren_balance += 1;
+          break;
+        case DSK_TS0_EXPR_TOKEN_TYPE_RPAREN:
+          dsk_assert (paren_balance != 0);
+          paren_balance -= 1;
+          break;
+        case DSK_TS0_EXPR_TOKEN_TYPE_COMMA:
+          *at_inout = at;
+          return;
+        default:
+          break;
+        }
+    }
+  *at_inout = at;
+}
+
+static unsigned
+scan_backslash_expr (const char *start,
+                     const char *max_end,
+                     DskBuffer  *dst,
+                     DskError  **error)
+{
+  if (start == max_end)
+    {
+      dsk_set_error (error, "end of string at \\ sequence");
+      return 0;
+    }
+  switch (*start)
+    {
+      /* allow any punctuation to be backslashed */
+    case '"': case '\\': case '\'': case '?':
+    case '!': case '@': case '#': case '$': case '%':
+    case '^': case '&': case '*': case '(': case ')':
+    case ';': case ':': case '[': case ']': case '~':
+    case '`': case '=': case '+': case '-': case '_':
+    case '{': case '}': case ',': case '.': case '/':
+    case '<': case '>':
+      dsk_buffer_append_byte (dst, *start);
+      return 1;
+    case '0': case '1': case '2': case '3':
+    case '4': case '5': case '6': case '7':
+      {
+        unsigned n_digits = 1;
+        unsigned value = *start - '0';
+        while (n_digits < 3
+            && start + n_digits < max_end
+            && ('0' <= start[n_digits] && start[n_digits] <= '7'))
+          {
+            value <<= 3;
+            value += start[n_digits] - '0';
+            n_digits++;
+          }
+        dsk_buffer_append_byte (dst, value);
+        return n_digits;
+      }
+    case 'n':
+      dsk_buffer_append_byte (dst, '\n');
+      return 1;
+    case 't':
+      dsk_buffer_append_byte (dst, '\t');
+      return 1;
+    case 'r':
+      dsk_buffer_append_byte (dst, '\r');
+      return 1;
+    default:
+      dsk_set_error (error, "unexpected byte %s after \\",
+                     dsk_ascii_byte_name (*start));
+      return 0;
+    }
+}
+
+/* TODO: needs flags passed in for do_dollar_variable_interpolation and permit_multiline_quoted_string */
+static DskTs0Expr *
+parse_expr_from_tokens (DskTs0Filename *filename,
+                        unsigned        start_line_no,
+                        unsigned    n_tokens,
+                        DskTs0ExprToken *tokens,
+                        DskError   **error)
+{
+  dsk_boolean permit_multiline_quoted_string = DSK_FALSE;               /* TODO: tunable */
+restart_parse:
+  if (n_tokens == 0)
+    {
+      dsk_set_error (error, "empty expression not allowed %s:%u",
+                     FILENAME_STR (filename), start_line_no);
+      return NULL;
+    }
+  switch (tokens[0].type)
+    {
+    case DSK_TS0_EXPR_TOKEN_TYPE_LPAREN:
+      if (tokens[n_tokens-1].type != DSK_TS0_EXPR_TOKEN_TYPE_RPAREN)
+        {
+          dsk_set_error (error, "ts0-expr internal error: subexpression paren mismatch? %s:%u (end token %s at line %u)",
+                         FILENAME_STR (filename), tokens[0].start_line_no,
+                         dsk_ts0_expr_token_type_name (tokens[n_tokens-1].type),
+                         tokens[n_tokens-1].start_line_no);
+          return NULL;
+        }
+      n_tokens -= 2;
+      tokens += 1;
+      goto restart_parse;
+    case DSK_TS0_EXPR_TOKEN_TYPE_RPAREN:
+      dsk_set_error (error, "did not expect ')': probably a program error (at %s:%u)",
+                    FILENAME_STR (filename), tokens[0].start_line_no);
+      return NULL;
+    case DSK_TS0_EXPR_TOKEN_TYPE_COMMA:
+      dsk_set_error (error, "did not expect ',' at %s:%u",
+                     FILENAME_STR (filename), start_line_no);
+      return NULL;
+    case DSK_TS0_EXPR_TOKEN_TYPE_DOLLAR:
+      if (n_tokens != 2 || tokens[1].type != DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD)
+        {
+          dsk_set_error (error, "expected bareword after '$', got %s, at %s:%u",
+                         dsk_ts0_expr_token_type_name (tokens[1].type),
+                         FILENAME_STR (filename), tokens[1].start_line_no);
+          return NULL;
+        }
+      return dsk_ts0_expr_new_variable (filename, tokens[1].start_line_no,
+                                        tokens[1].end - tokens[1].start,
+                                        tokens[1].start);
+    case DSK_TS0_EXPR_TOKEN_TYPE_BAREWORD:
+      if (n_tokens < 2)
+        {
+          dsk_set_error (error, "naked bareword '%.*s' is not an expression at %s:%u",
+                         (int)(tokens[0].end - tokens[0].start),
+                         tokens[0].start,
+                         FILENAME_STR (filename), tokens[0].start_line_no);
+          return NULL;
+        }
+      if (tokens[1].type != DSK_TS0_EXPR_TOKEN_TYPE_LPAREN)
+        {
+          dsk_set_error (error, "expected '(' after bareword '%.*s', got %s at %s:%u",
+                         (int)(tokens[0].end - tokens[0].start),
+                         tokens[0].start,
+                         dsk_ts0_expr_token_type_name (tokens[1].type),
+                         FILENAME_STR (filename), tokens[0].start_line_no);
+          return NULL;
+        }
+      if (tokens[n_tokens - 1].type != DSK_TS0_EXPR_TOKEN_TYPE_RPAREN)
+        {
+          dsk_set_error (error, "function call to %.*s beginning at line %u did not end with a ')' (ended with %s) at %s:%u",
+                         (int)(tokens[0].end - tokens[0].start),
+                         tokens[0].start,
+                         tokens[0].start_line_no,
+                         dsk_ts0_expr_token_type_name (tokens[n_tokens - 1].type),
+                         FILENAME_STR (filename), tokens[0].start_line_no);
+          return NULL;
+        }
+
+      /* function call */
+      {
+        /* count arguments */
+        unsigned n_commas = 0;
+        unsigned at = 0;
+        unsigned n_args_tokens = n_tokens - 3;
+        DskTs0ExprToken *args_tokens = tokens + 2;
+        for (;;)
+          {
+            dsk_ts0_expr__find_next_comma (n_args_tokens, args_tokens, &at);
+            if (at < n_args_tokens)
+              {
+                n_commas++;
+                at++;
+              }
+            else
+              break;
+          }
+        unsigned n_args = n_tokens == 3 ? 0 : (n_commas + 1);
+
+        dsk_assert (n_args < 4000);             /* since we alloca next line */
+        DskTs0Expr **args = alloca (sizeof (DskTs0Expr *) * n_args);
+
+        /* gather arguments */
+        at = 0;
+        unsigned args_at = 0;
+        while (at < n_args_tokens)
+          {
+            unsigned start_at = at;
+            dsk_ts0_expr__find_next_comma (n_args_tokens, args_tokens, &at);
+            if (at > start_at)
+              {
+                DskTs0Expr *arg_expr = parse_expr_from_tokens (filename, args_tokens[start_at].start_line_no,
+                                                               at - start_at, args_tokens + start_at,
+                                                               error);
+                args[args_at] = arg_expr;
+                args_at++;
+              }
+            if (at == n_args_tokens)
+              break;
+            else if (at < n_args_tokens && args_tokens[at].type == DSK_TS0_EXPR_TOKEN_TYPE_COMMA)
+              at++;
+            else
+              break;            /* can this happpen???? */
+          }
+
+        /* create expression */
+        DskTs0Expr *rv;
+        rv = dsk_ts0_expr_new_function (filename, tokens[0].start_line_no,
+                                        tokens[0].end - tokens[0].start,
+                                        tokens[0].start,
+                                        n_args, args);
+        return rv;
+      }
+
+    case DSK_TS0_EXPR_TOKEN_TYPE_QUOTED_STRING:
+      if (n_tokens != 1)
+        {
+          dsk_set_error (error, "unexpected token %s after quoted-string %s:%u",
+                         dsk_ts0_expr_token_type_name (tokens[1].type),
+                         FILENAME_STR (filename), tokens[1].start_line_no);
+          return NULL;
+        }
+      const char *iq_start = tokens[0].start + 1;
+      const char *iq_end = tokens[0].end - 1;
+      const char *at = iq_start;
+      DskBuffer dst = DSK_BUFFER_STATIC_INIT;
+      dsk_boolean do_dollar_variable_interpolation = DSK_TRUE; /* TODO: tunable */
+      unsigned line_no = tokens[0].start_line_no;
+      unsigned max_pieces = 1;
+      if (do_dollar_variable_interpolation)
+        {
+          unsigned n_dollar = 0;
+          while (at < iq_end)
+            {
+              if (*at == '$')
+                {
+                  if (at + 1 < iq_end && at[1] == '$')
+                    at += 1;
+                  else
+                    n_dollar++;
+                }
+              at++;
+            }
+          max_pieces = n_dollar * 2 + 1;
+        }
+
+      /* TODO: what if max_pieces is too large for alloca() !!! */
+      DskTs0Expr **pieces = alloca (sizeof (DskTs0Expr*) * max_pieces);
+      unsigned n_pieces = 0;
+
+      while (at < iq_end)
+        {
+          if (do_dollar_variable_interpolation && *at == '$')
+            {
+              if (at[1] == '$')
+                {
+                  dsk_buffer_append_byte (&dst, '$');
+                  at += 2;
+                }
+              else
+                {
+                  if (dst.size > 0)
+                    {
+                      uint8_t *slab = dsk_malloc (dst.size);
+                      unsigned len = dst.size;
+                      dsk_buffer_read (&dst, len, slab);
+                      pieces[n_pieces] = dsk_ts0_expr_new_literal (filename, line_no, len, slab);
+                      n_pieces++;
+                    }
+
+                  /* variable (or subexpression) */
+                  if (at + 1 == iq_end)
+                    {
+                      dsk_set_error (error, "unexpected end-of-string after '$' at %s:%u",
+                                     FILENAME_STR (filename), line_no);
+                      goto quoted_string_error;
+                    }
+                  else if (at[1] == '(')
+                    {
+                      /* subexpression */
+                      dsk_assert (tokens[0].cached_subexpr_list != NULL);
+                      CachedSubexpr *c = tokens[0].cached_subexpr_list;
+                      tokens[0].cached_subexpr_list = c->next;
+                      dsk_assert (c->start == at + 1);
+                      pieces[n_pieces] = c->expr;
+                      dsk_free (c);
+                      n_pieces++;
+                    }
+                  else if (dsk_ascii_isalnum (at[1]) || at[1] == '_')
+                    {
+                      /* variable interpolation */
+                      const char *start_name = at + 1;
+                      const char *end_name = start_name + 1;
+                      while (dsk_ascii_isalnum (*end_name) || *end_name == '_')
+                        end_name++;
+                      pieces[n_pieces] = dsk_ts0_expr_new_variable (filename, line_no,
+                                                                    end_name - start_name,
+                                                                    start_name);
+                      n_pieces++;
+                      at = end_name;
+                      dsk_assert (at <= iq_end);
+                    }
+                  else
+                    {
+                      dsk_set_error (error, "unexpected character %s after '$' at %s:%u",
+                                     dsk_ascii_byte_name (at[1]),
+                                     FILENAME_STR (filename), line_no);
+                      goto quoted_string_error;
+                    }
+                }
+              continue;
+            }
+          if (*at == '\n')
+            {
+              if (!permit_multiline_quoted_string)
+                {
+                  dsk_set_error (error, "unexpected newline in quoted-string at %s:%u",
+                                 FILENAME_STR (filename), line_no);
+                  goto quoted_string_error;
+                }
+              line_no++;
+            }
+
+          if (*at == '\\')
+            {
+              at++;
+              unsigned len = scan_backslash_expr (at, iq_end, &dst, error);
+              if (len == 0)
+                {
+                  dsk_add_error_suffix (error, " at %s:%u",
+                                        FILENAME_STR (filename), line_no);
+                  goto quoted_string_error;
+                }
+              at += len;
+            }
+          else
+            {
+              dsk_buffer_append_byte (&dst, *at);
+              at++;
+            }
+        }
+      if (0)
+        {
+quoted_string_error:
+          dsk_buffer_clear (&dst);
+          unsigned i;
+          for (i = 0; i < n_pieces; i++)
+            dsk_ts0_expr_free (pieces[i]);
+          return NULL;
+        }
+      if (dst.size > 0)
+        {
+          uint8_t *slab = dsk_malloc (dst.size);
+          unsigned len = dst.size;
+          dsk_buffer_read (&dst, len, slab);
+          pieces[n_pieces] = dsk_ts0_expr_new_literal (filename, line_no, len, slab);
+          n_pieces++;
+        }
+      if (n_pieces == 0)
+        {
+          return dsk_ts0_expr_new_literal (filename, line_no, 0, NULL);
+        }
+      else if (n_pieces == 1)
+        {
+          return pieces[0];
+        }
+      else
+        {
+          /* create concatenation */
+          return dsk_ts0_expr_new_function_anon (filename, tokens[0].start_line_no,
+                                                 dsk_ts0_function_concat (), n_pieces, pieces);
+        }
+
+    case DSK_TS0_EXPR_TOKEN_TYPE_NUMBER:
+      if (n_tokens != 1)
+        {
+          dsk_set_error (error, "unexpected token %s after number at %s:%u",
+                         dsk_ts0_expr_token_type_name (tokens[1].type),
+                         FILENAME_STR (filename), tokens[1].start_line_no);
+          return NULL;
+        }
+      unsigned len = tokens[0].end - tokens[0].start;
+      return dsk_ts0_expr_new_literal (filename, line_no,
+                                       len, dsk_memdup (len, tokens[0].start));
+    }
+  dsk_return_val_if_reached ("unhandled expression-token-type", NULL);
+}
+
+/* note: takes ownership of data */
+static DskTs0Expr *
+dsk_ts0_expr_new_literal (DskTs0Filename *filename,
+                          unsigned        line_no,
+                          unsigned        len,
+                          uint8_t        *data)
+{
+  DskTs0Expr *rv = dsk_malloc (sizeof (DskTs0Expr) + len);
+  rv->filename = dsk_ts0_filename_ref (filename);
+  rv->line_no = line_no;
+  rv->type = DSK_TS0_EXPR_LITERAL;
+  memcpy (rv + 1, data, len);
+  return rv;
+}
+static DskTs0Expr *
+dsk_ts0_expr_new_variable (DskTs0Filename *filename,
+                           unsigned        line_no,
+                           unsigned        length,
+                           const char     *name)
+{
+  DskTs0Expr *rv = dsk_malloc (sizeof (DskTs0Expr) + length + 1);
+  rv->filename = dsk_ts0_filename_ref (filename);
+  rv->line_no = line_no;
   rv->type = DSK_TS0_EXPR_VARIABLE;
-  rv->info.variable.name = dsk_malloc (length + 1);
-  memcpy (rv->info.variable.name, name, length);
+  rv->info.variable.name = memcpy ((char *) (rv + 1), name, length);
   rv->info.variable.name[length] = 0;
   return rv;
 }
 
-
-DskTs0Expr *dsk_ts0_expr_parse (const char *str,
-                                const char **end_str_out,
-                                const char *filename,
-                                unsigned   *line_no_inout,
-                                DskError  **error)
+static DskTs0Expr *
+dsk_ts0_expr_new_function (DskTs0Filename *filename,
+                           unsigned        line_no,
+                           unsigned name_len,
+                           const char *name,
+                           unsigned    n_args,
+                           DskTs0Expr **args)
 {
-...
+  unsigned size = sizeof (DskTs0Expr)
+                + n_args * sizeof (DskTs0Expr*)
+                + name_len + 1;
+  DskTs0Expr *rv = dsk_malloc (size);
+  rv->filename = dsk_ts0_filename_ref (filename);
+  rv->line_no = line_no;
+  rv->type = DSK_TS0_EXPR_FUNCTION_CALL;
+  rv->info.function_call.n_args = n_args;
+  rv->info.function_call.args = memcpy (rv + 1, args, n_args * sizeof (DskTs0Expr*));
+  rv->info.function_call.name = (char*)(rv->info.function_call.args + n_args);
+  memcpy (rv->info.function_call.name, name, name_len);
+  rv->info.function_call.name[name_len] = '\0';
+  rv->info.function_call.function = NULL;
+  return rv;
 }
+
+static DskTs0Expr *
+dsk_ts0_expr_new_function_anon (DskTs0Filename *filename,
+                           unsigned        line_no,
+                           DskTs0Function *function,
+                           unsigned    n_args,
+                           DskTs0Expr **args)
+{
+  unsigned size = sizeof (DskTs0Expr)
+                + n_args * sizeof (DskTs0Expr*);
+  DskTs0Expr *rv = dsk_malloc (size);
+  rv->filename = dsk_ts0_filename_ref (filename);
+  rv->line_no = line_no;
+  rv->type = DSK_TS0_EXPR_FUNCTION_CALL;
+  rv->info.function_call.n_args = n_args;
+  rv->info.function_call.args = memcpy (rv + 1, args, n_args * sizeof (DskTs0Expr*));
+  rv->info.function_call.name = NULL;
+  rv->info.function_call.function = dsk_ts0_function_ref (function);
+  return rv;
+}
+
+static void
+dsk_ts0_expr_free (DskTs0Expr *expr)
+{
+  switch (expr->type)
+    {
+    case DSK_TS0_EXPR_VARIABLE:
+      break;
+    case DSK_TS0_EXPR_LITERAL:
+      break;
+    case DSK_TS0_EXPR_FUNCTION_CALL:
+      if (expr->info.function_call.function != NULL)
+        dsk_ts0_function_unref (expr->info.function_call.function);
+      unsigned i;
+      for (i = 0; i < expr->info.function_call.n_args; i++)
+        dsk_ts0_expr_free (expr->info.function_call.args[i]);
+      break;
+    }
+  dsk_ts0_filename_unref (expr->filename);
+  dsk_free (expr);
+}
+
+static void
+add_expr_error_suffix (DskError **error,
+                       DskTs0Expr *expr)
+{
+  dsk_add_error_suffix (error,
+                        "at %s:%u",
+                        FILENAME_STR (expr->filename),
+                        expr->line_no);
+}
+
+static dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+                                          DskTs0Namespace *ns,
+                                          DskBuffer  *target,
+                                          DskError  **error)
+{
+  switch (expr->type)
+    {
+    case DSK_TS0_EXPR_VARIABLE:
+      {
+        const char *str = dsk_ts0_namespace_get_variable (ns, expr->info.variable.name, error);
+        if (str == NULL)
+          {
+            add_expr_error_suffix (error, expr);
+            return DSK_FALSE;
+          }
+        dsk_buffer_append_string (target, str);
+        break;
+      }
+    case DSK_TS0_EXPR_LITERAL:
+      dsk_buffer_append (target, expr->info.literal.length, expr->info.literal.data);
+      break;
+    case DSK_TS0_EXPR_FUNCTION_CALL:
+      {
+        DskTs0Function *func = expr->info.function_call.function;
+        if (func == NULL)
+          {
+            func = dsk_ts0_namespace_get_function (ns, expr->info.function_call.name, error);
+            if (func == NULL)
+              {
+                add_expr_error_suffix (error, expr);
+                return DSK_FALSE;
+              }
+            if (func->cachable)
+              expr->info.function_call.function = dsk_ts0_function_ref (func);
+          }
+        if (!func->invoke (func, ns,
+                           expr->info.function_call.n_args,
+                           expr->info.function_call.args, 
+                           target, error))
+          {
+            add_expr_error_suffix (error, expr);
+            return DSK_FALSE;
+          }
+        break;
+      }
+    }
+  return DSK_TRUE;
+}
+

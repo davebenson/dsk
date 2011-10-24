@@ -14,9 +14,9 @@
    (2) Expressions.  Expressions are little code snippets
        that evaluate to a string.  There are two syntaxes
        for using expressions at the top-level:
-           $( add("2", "4") )
+           $( add(2, 4) )
        and
-           <%( add("2", "4") )%>
+           <%( add(2, 4) )%>
 
    (3) Tags.  These are for longer functions which operate on a body:
         <% if condition=$support_feature %>
@@ -27,15 +27,19 @@
         <%/ repeat %>
 
 
-    Lexing options: (Default shown)
-       remove_tag_newline             Remove a single newline following a tag.
-       remove_tag_indent              Remove extraneous indent for tags.
-       strip_leading_spaces           Remove all whitespace after an open-tag
-                                      or close tag.
-       strip_trailing_spaces          Remove all whitespace before a close-tag
-                                      or an open-tag.
+    Lexing options: (If "!" precedes the name, it defaults to FALSE,)
+       tag_chomp                   Remove a single newline following a tag.
+       !strip_leading_spaces       Remove all whitespace after an open-tag
+                                   or close tag.
+       !strip_trailing_spaces      Remove all whitespace before a close-tag
+                                   or an open-tag.
+       !strip_spaces               Remove all leading and trailing whitespace.
+       dollar_var                  Cause $variable to do variable lookup,
+                                   $$ becomes a single $.
 
  */
+
+/* TODO: remove_tag_indent option */
 
 
 typedef struct _DskTs0Function DskTs0Function;
@@ -57,6 +61,7 @@ struct _DskTs0Function
                          DskError      **error);
   void        (*destroy)(DskTs0Function *function);
   unsigned ref_count;
+  unsigned cachable : 1;
 };
 
 DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
@@ -123,6 +128,7 @@ void             dsk_ts0_namespace_add_tag      (DskTs0Namespace *ns,
 
 /* The 'get' functions handle dotted named.
  * (The 'add' and 'set' functions do not.) */
+/* Do not unref() the return-values. */
 DskTs0Tag     *  dsk_ts0_namespace_get_tag      (DskTs0Namespace *ns,
                                                  const char      *dotted_name,
                                                  DskError       **error);
@@ -277,17 +283,6 @@ DskTs0Table * dsk_ts0_parse_tag_line    (DskTs0       *system,
 /* private (used by inlines + macros) */
 void _dsk_ts0_namespace_destroy (DskTs0Namespace *ns);
 
-
-DskTs0Expr *dsk_ts0_expr_parse    (const char *str,
-                                   const char **end_str_out,
-                                   const char *filename,
-                                   unsigned   *line_no_inout,
-                                   DskError  **error);
-void        dsk_ts0_expr_free     (DskTs0Expr *expr);
-dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
-                                   DskTs0Namespace *ns,
-                                   DskBuffer  *target,
-                                   DskError  **error);
 
 /* --- inlines --- */
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
