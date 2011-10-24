@@ -91,3 +91,10 @@ void    dsk_json_value_serialize  (const DskJsonValue  *value,
 void    dsk_json_value_to_buffer  (const DskJsonValue  *value,
                                    int                  indent,
                                    DskBuffer           *out);
+
+
+/* --- parsing internals --- */
+char   *dsk_json_string_dequote   (const char          *init_quote,
+                                   const char         **past_end_quote_out,
+                                   unsigned            *rv_len_out,
+                                   DskError           **error);

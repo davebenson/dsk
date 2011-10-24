@@ -44,6 +44,7 @@
 #include "dsk-http-client-stream.h"
 #include "dsk-http-client.h"
 #include "dsk-http-server-stream.h"
+#include "dsk-http-server-stream-proxy.h"
 #include "dsk-http-server.h"
 #include "dsk-mime-multipart.h"
 #include "dsk-mime.h"
@@ -76,6 +77,9 @@
 #include "dsk-table.h"
 #include "dsk-table-file.h"
 
+#ifdef DSK_INCLUDE_TS0
+#include "dsk-ts0.h"
+#endif
 
 #undef _dsk_inline_assert
 

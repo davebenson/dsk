@@ -152,6 +152,8 @@ _ Get-If-Modified Server support
     _ Obey If-Modified-Since header (with a flag to suppress?)
   _ A simple flag for non-file data
 
+_ SPDY protocol as an HTTP-like layer
+
 _ content_type_kv_pairs
   _ in request-parser
   _ in response-parser

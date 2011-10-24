@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dsk-common.h"
+#include "dsk-ascii.h"
 
 void
 dsk_die(const char *format, ...)
@@ -162,4 +163,60 @@ char *dsk_stpcpy (char *dst, const char *src)
       dst++;
     }
   return dst;
+}
+
+char *dsk_strdup_vprintf (const char *str, va_list args)
+{
+  size_t size;
+  va_list a;
+  char init_buf[256];
+  va_copy (a, args);
+  size = vsnprintf (init_buf, sizeof (init_buf), str, a);
+  va_end (a);
+  if (size >= sizeof (init_buf))
+    {
+      char *rv = dsk_malloc (size + 1);
+      vsnprintf (rv, size+1, str, a);
+      return rv;
+    }
+  else
+    return dsk_strdup (init_buf);
+}
+char *dsk_strdup_printf (const char *str, ...)
+{
+  va_list args;
+  char *rv;
+  va_start (args, str);
+  rv = dsk_strdup_vprintf (str, args);
+  va_end (args);
+  return rv;
+}
+void  dsk_strstrip (char *str_inout)
+{
+  if (dsk_ascii_isspace (*str_inout))
+    {
+      char *end_spaces = str_inout + 1;
+      while (dsk_ascii_isspace (*end_spaces))
+        end_spaces++;
+      char *end = end_spaces;
+      while (*end)
+        end++;
+      while (end > end_spaces && dsk_ascii_isspace (*(end-1)))
+        end--;
+      memmove (str_inout, end_spaces, end - end_spaces);
+      str_inout[end - end_spaces] = 0;
+    }
+  else
+    dsk_strchomp (str_inout);
+}
+
+
+void  dsk_strchomp (char *str_inout)
+{
+  char *end = str_inout;
+  while (*end)
+    end++;
+  while (end > str_inout && dsk_ascii_isspace (*(end-1)))
+    end--;
+  *end = 0;
 }
