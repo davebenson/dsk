@@ -3,3 +3,4 @@ dsk-host
 dsk-make-xml-binding
 dsk-netcat
 dsk-octet-filter
+dsk-ifconfig

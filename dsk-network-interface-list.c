@@ -144,7 +144,6 @@ make_interface_list (void)
 	  saddr = &tmp_req.ifr_addr;
 	  dsk_ip_address_from_native (saddr, &interface.address);
 	}
-      else
 
 #ifdef SIOCGIFHWADDR
       if (interface.is_loopback)
@@ -176,7 +175,6 @@ make_interface_list (void)
 	  saddr = &tmp_req.ifr_addr;
 	  dsk_ip_address_from_native (saddr, &interface.p2p_address);
 	}
-      else
 
       if (interface.supports_broadcast)
 	{
