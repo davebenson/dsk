@@ -291,6 +291,27 @@ const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
                      offsetof (DskTs0Class, get_variable), error);
 }
 
+static void
+free_tree_recursive (DskTs0NamespaceNode *top,
+                     DskDestroyNotify     destroy_func)
+{
+  if (top->left)
+    free_tree_recursive (top->left, destroy_func);
+  if (top->right)
+    free_tree_recursive (top->right, destroy_func);
+  destroy_func (top->value);
+  dsk_free (top);
+}
+
+void
+_dsk_ts0_namespace_destroy (DskTs0Namespace *ns)
+{
+  free_tree_recursive (ns->top_tag, (DskDestroyNotify) dsk_ts0_tag_unref);
+  free_tree_recursive (ns->top_function, (DskDestroyNotify) dsk_ts0_function_unref);
+  free_tree_recursive (ns->top_subnamespace, (DskDestroyNotify) dsk_ts0_namespace_unref);
+  free_tree_recursive (ns->top_variable, dsk_free);
+  dsk_free (ns);
+}
 
 static DskTs0Namespace *the_global_namespace = NULL;
 
@@ -1867,7 +1888,7 @@ quoted_string_error:
           return NULL;
         }
       unsigned len = tokens[0].end - tokens[0].start;
-      return dsk_ts0_expr_new_literal (filename, line_no,
+      return dsk_ts0_expr_new_literal (filename, start_line_no,
                                        len, dsk_memdup (len, tokens[0].start));
     }
   dsk_return_val_if_reached ("unhandled expression-token-type", NULL);
