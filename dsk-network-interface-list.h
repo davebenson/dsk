@@ -1,6 +1,9 @@
 
 /* DskNetworkInterfaceList:  find information about network devices on this host. */
 
+
+/* NOTE: /sbin/ifconfig on linux looks at /proc/net/dev which sometimes
+   includes down interfaces that are not in our list. */
 typedef struct _DskNetworkInterface DskNetworkInterface;
 typedef struct _DskNetworkInterfaceList DskNetworkInterfaceList;
 
@@ -18,19 +21,25 @@ struct _DskNetworkInterface
   /* whether this interface is receiving packets not intended for it. */
   unsigned is_promiscuous : 1;
 
+  unsigned is_up : 1;
+
+  unsigned has_hw_address : 1;
+  unsigned is_p2p : 1;
+  unsigned supports_broadcast : 1;
+
   /* ip-address if the interface is up. */
-  DskSocketAddress *address;
+  DskIpAddress address;
 
   /* if !is_loopback, this is the device's MAC address. */
-  DskSocketAddress *hw_address;
+  DskEthernetAddress hw_address;
 
   /* if is_point_to_point, this is the address of the other end of
    * the connection.
    */
-  DskSocketAddress *p2p_address;
+  DskIpAddress p2p_address;
 
   /* if supports_broadcast, this is the broadcast address. */
-  DskSocketAddress *broadcast;
+  DskIpAddress broadcast;
 };
 
 struct _DskNetworkInterfaceList

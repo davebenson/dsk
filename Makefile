@@ -29,7 +29,8 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-ctoken
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
-           programs/dsk-octet-filter programs/dsk-make-xml-binding
+           programs/dsk-octet-filter programs/dsk-make-xml-binding \
+	   programs/dsk-ifconfig
 all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all
@@ -63,7 +64,9 @@ examples/%: examples/%.c libdsk.a
 libdsk.a: dsk-inlines.o \
 	  dsk-rand.o \
           dsk-dns-protocol.o dsk-error.o dsk-object.o dsk-common.o dsk-udp-socket.o dsk-dispatch.o dsk-hook.o \
-	  dsk-cmdline.o dsk-ip-address.o dsk-dns-client.o dsk-mem-pool.o \
+	  dsk-cmdline.o dsk-ip-address.o dsk-ethernet-address.o dsk-dns-client.o \
+	  dsk-network-interface-list.o \
+	  dsk-mem-pool.o \
 	  dsk-fd.o dsk-octet-io.o dsk-octet-fd.o dsk-octet-pipe.o \
 	  dsk-ascii.o dsk-utf8.o dsk-client-stream.o \
 	  dsk-buffer.o dsk-main.o dsk-octet-connection.o dsk-octet-listener.o \
