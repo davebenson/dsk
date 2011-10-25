@@ -86,6 +86,20 @@ lookup_namespace_node (DskTs0NamespaceNode *top,
   return rv;
 }
 static DskTs0NamespaceNode *
+lookup_namespace_node_len (DskTs0NamespaceNode *top,
+                           unsigned         key_len,
+                           const char      *key)
+{
+  DskTs0NamespaceNode *rv;
+#define COMPARE_KEY_KEYLEN_TO_SCOPE_NODE(unused,b, rv) \
+  rv = strncmp (key, (char*)(b+1), key_len); \
+  if (rv == 0 && ((char*)(b+1))[key_len] != 0) \
+    rv = -1;
+  GSK_RBTREE_LOOKUP_COMPARATOR (GET_SCOPE_NODE_TREE (top), unused,
+                                COMPARE_KEY_KEYLEN_TO_SCOPE_NODE, rv);
+  return rv;
+}
+static DskTs0NamespaceNode *
 force_namespace_node (DskTs0NamespaceNode **top_ptr,
                   const char      *key)
 {
@@ -195,7 +209,7 @@ resolve_ns (DskTs0Namespace *top_ns,
       const char *dot = strchr (at, '.');
       if (dot == NULL)
         break;
-      DskTs0NamespaceNode *node = lookup_namespace_node_len (ns, dot-at, at);
+      DskTs0NamespaceNode *node = lookup_namespace_node_len (ns->top_subnamespace, dot-at, at);
       if (node == NULL)
         {
           dsk_set_error (error, "no subnamespace %.*s", (int)(dot-at), at);
@@ -222,7 +236,7 @@ get_entity (DskTs0Namespace *ns,
   if (subns == NULL)
     return NULL;
   DskTs0NamespaceNode **ptop = (DskTs0NamespaceNode **) ((char*)subns + top_offset);
-  DskTs0NamespaceNode *node = lookup_namespace_node (*pnode, name);
+  DskTs0NamespaceNode *node = lookup_namespace_node (*ptop, name);
   if (node == NULL
    && subns->namespace_class != NULL)
     {

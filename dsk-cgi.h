@@ -33,3 +33,30 @@ dsk_boolean dsk_cgi_parse_post_data (const char *content_type,
                                      DskError  **error);
 
 void        dsk_cgi_variable_clear  (DskCgiVariable *variable);
+
+char *dsk_cgi_make_path (unsigned pre_query_len,
+                         const char *pre_query,
+                         unsigned    n_cgi,
+                         DskCgiVariable *cgi);
+
+
+typedef enum
+{
+  DSK_CGI_MODIFY_SET,                   /* only sets if not already set */
+  DSK_CGI_MODIFY_OVERRIDE,              /* overrides existing value if set */
+  DSK_CGI_MODIFY_OVERRIDE_IF_SET,       /* only set if already set */
+  DSK_CGI_MODIFY_REMOVE
+} DskCgiModifyType;
+typedef struct _DskCgiModify DskCgiModify;
+struct _DskCgiModify
+{
+  DskCgiModifyType type;
+  char *key;
+  char *value;
+  dsk_boolean strict;
+};
+char       *dsk_cgi_modify_path     (const char *orig_path,
+                                     unsigned    n_modifications,
+                                     DskCgiModify *modifications,
+                                     DskError    **error);
+

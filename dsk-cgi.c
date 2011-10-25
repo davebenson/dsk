@@ -9,7 +9,6 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
 {
   const char *at;
   unsigned n_ampersand = 0;
-  unsigned idx;
   unsigned n_cgi = 0;
   if (*query_string == '?')
     query_string++;
@@ -18,7 +17,6 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
       n_ampersand++;
   /* TODO: need max_cgi_vars for security????? */
   *cgi_variables_out = dsk_malloc (sizeof (DskCgiVariable) * (n_ampersand+1));
-  idx = 0;
   for (at = query_string; *at; )
     {
       const char *start;
@@ -173,4 +171,157 @@ void        dsk_cgi_variable_clear       (DskCgiVariable *variable)
     }
   else
     dsk_free (variable->key);
+}
+
+static void
+init_get_cgi (DskCgiVariable *var,
+              const char     *key,
+              const char     *value)
+{
+  unsigned key_len = strlen (key), value_len = strlen (value);
+  char *kv = dsk_malloc (key_len + 1 + value_len + 1);
+  memcpy (kv, key, key_len + 1);
+  memcpy (kv + key_len + 1, value, value_len + 1);
+  var->is_get = DSK_TRUE;
+  var->key = kv;
+  var->value_length = value_len;
+  var->value = kv + key_len + 1;
+  var->content_type = var->content_location = var->content_description = NULL;
+}
+
+char       *
+dsk_cgi_modify_path     (const char   *orig_path,
+                         unsigned      n_modifications,
+                         DskCgiModify *modifications,
+                         DskError    **error)
+{
+  const char *q = strchr (orig_path, '?');
+  size_t n_cgi;
+  DskCgiVariable *cgi;
+  unsigned cgi_alloced;
+#if 0
+  for (i = 0; i < n_modifications; i++)
+    if (modifications[i].type == DSK_CGI_MODIFY_SET
+     || modifications[i].type == DSK_CGI_MODIFY_OVERRIDE)
+#endif
+  if (q == NULL)
+    {
+      n_cgi = 0;
+      cgi = NULL;
+      cgi_alloced = 0;
+    }
+  else 
+    {
+      if (!dsk_cgi_parse_query_string (q, &n_cgi, &cgi, error))
+        return NULL;
+      cgi_alloced = n_cgi;
+    }
+  unsigned i, j;
+  for (i = 0; i < n_modifications; i++)
+    {
+      for (j = 0; j < n_cgi; j++)
+        if (strcmp (cgi[j].key, modifications[i].key) == 0)
+          break;
+      switch (modifications[i].type)
+        {
+        case DSK_CGI_MODIFY_SET:
+          if (j == n_cgi)
+            {
+              /* add */
+              if (n_cgi == cgi_alloced)
+                cgi = dsk_realloc (cgi, sizeof (DskCgiVariable) * ++cgi_alloced);
+              init_get_cgi (cgi + n_cgi++, modifications[i].key, modifications[i].value);
+            }
+          else if (modifications[i].strict)
+            {
+              dsk_set_error (error, "cgi variable %s already set", cgi[j].key);
+              goto error_cleanup;
+            }
+          break;
+
+        case DSK_CGI_MODIFY_OVERRIDE:              /* overrides existing value if set */
+          if (j == n_cgi)
+            {
+              /* add */
+              if (n_cgi == cgi_alloced)
+                cgi = dsk_realloc (cgi, sizeof (DskCgiVariable) * ++cgi_alloced);
+              init_get_cgi (cgi + n_cgi++, modifications[i].key, modifications[i].value);
+            }
+          else
+            {
+              dsk_cgi_variable_clear (cgi + j);
+              init_get_cgi (cgi + j, modifications[i].key, modifications[i].value);
+            }
+          break;
+        case DSK_CGI_MODIFY_OVERRIDE_IF_SET:       /* only set if already set */
+          if (j < n_cgi)
+            {
+              dsk_cgi_variable_clear (cgi + j);
+              init_get_cgi (cgi + j, modifications[i].key, modifications[i].value);
+            }
+          else if (modifications[i].strict)
+            {
+              dsk_set_error (error, "cgi variable %s not set", cgi[j].key);
+              goto error_cleanup;
+            }
+          break;
+        case DSK_CGI_MODIFY_REMOVE:
+          if (j < n_cgi)
+            {
+              dsk_cgi_variable_clear (cgi + j);
+              cgi[j] = cgi[n_cgi-1];
+              n_cgi--;
+            }
+          else if (modifications[i].strict)
+            {
+              dsk_set_error (error, "cgi variable %s not set", cgi[j].key);
+              goto error_cleanup;
+            }
+          break;
+        default:
+          dsk_assert_not_reached ();
+        }
+    }
+
+  unsigned path_len = q ? (unsigned)(q - orig_path) : strlen (orig_path);
+  char *rv = dsk_cgi_make_path (path_len, orig_path, n_cgi, cgi);
+  for (i = 0; i < n_cgi; i++)
+    dsk_cgi_variable_clear (cgi + i);
+  dsk_free (cgi);
+  return rv;
+error_cleanup:
+  for (i = 0; i < n_cgi; i++)
+    dsk_cgi_variable_clear(cgi + i);
+  dsk_free (cgi);
+  return NULL;
+}
+
+char *dsk_cgi_make_path (unsigned pre_query_len,
+                         const char *pre_query,
+                         unsigned    n_cgi,
+                         DskCgiVariable *cgi)
+{
+  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  unsigned i, j;
+  dsk_buffer_append (&buffer, pre_query_len, pre_query);
+  for (i = 0; i < n_cgi; i++)
+    {
+      dsk_buffer_append_byte (&buffer, i == 0 ? '?' : '&');
+      dsk_buffer_append_string (&buffer, cgi[i].key);
+      dsk_buffer_append_byte (&buffer, '=');
+      for (j = 0; j < cgi[i].value_length; j++)
+        {
+          uint8_t c = cgi[i].value[j];
+          if (dsk_ascii_istoken (c))
+            dsk_buffer_append_byte (&buffer, c);
+          else if (c == ' ')
+            dsk_buffer_append_byte (&buffer, '+');
+          else
+            {
+              char enc[3] = { '%', dsk_ascii_hex_digits[c>>4], dsk_ascii_hex_digits[c&15] };
+              dsk_buffer_append (&buffer, 3, enc);
+            }
+        }
+    }
+  return dsk_buffer_clear_to_string (&buffer);
 }

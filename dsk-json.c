@@ -121,6 +121,46 @@ DskJsonValue *dsk_json_value_new_number (double         value)
   return rv;
 }
 
+DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
+{
+  switch (value->type)
+    {
+    case DSK_JSON_VALUE_BOOLEAN:
+      return dsk_json_value_new_boolean (value->value.v_boolean);
+    case DSK_JSON_VALUE_NULL:
+      return dsk_json_value_new_null ();
+    case DSK_JSON_VALUE_OBJECT:
+      {
+        unsigned n_members = value->value.v_object.n_members;
+        DskJsonMember *old = value->value.v_object.members;
+        DskJsonMember *tmp = alloca (sizeof (DskJsonMember) * n_members);
+        unsigned i;
+        for (i = 0; i < n_members; i++)
+          {
+            tmp[i].name = old[i].name;
+            tmp[i].value = dsk_json_value_copy (old[i].value);
+          }
+        return dsk_json_value_new_object (n_members, tmp);
+      }
+    case DSK_JSON_VALUE_ARRAY:
+      {
+        unsigned n_values = value->value.v_array.n_values;
+        DskJsonValue **old = value->value.v_array.values;
+        DskJsonValue **tmp = alloca (sizeof (DskJsonValue *) * n_values);
+        unsigned i;
+        for (i = 0; i < n_values; i++)
+          tmp[i] = dsk_json_value_copy (old[i]);
+        return dsk_json_value_new_array (n_values, tmp);
+      }
+    case DSK_JSON_VALUE_STRING:
+      return dsk_json_value_new_string (value->value.v_string.length,
+                                        value->value.v_string.str);
+    case DSK_JSON_VALUE_NUMBER:
+      return dsk_json_value_new_number (value->value.v_number);
+    }
+  dsk_return_val_if_reached ("bad value", NULL);
+}
+
 void          dsk_json_value_free       (DskJsonValue  *value)
 {
   unsigned i;

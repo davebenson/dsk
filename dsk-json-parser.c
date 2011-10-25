@@ -380,9 +380,10 @@ handle_token (DskJsonParser *parser,
   return DSK_TRUE;
 
 bad_token:
-  dsk_set_error (error, "got unexpected token %s: %s",
+  dsk_set_error (error, "got unexpected token %s: %s (line %u)",
                  token_names[token],
-                 parse_state_expecting_strings[parser->parse_state]);
+                 parse_state_expecting_strings[parser->parse_state],
+                 parser->line_no);
   parser->str_len = 0;
   return DSK_FALSE;
 }
@@ -743,4 +744,34 @@ void           dsk_json_parser_destroy  (DskJsonParser *parser)
   dsk_free (parser->str);
 
   dsk_free (parser);
+}
+DskJsonValue * dsk_json_parse           (size_t         len,
+                                         const uint8_t *data,
+                                         DskError     **error)
+{
+  DskJsonParser *parser = dsk_json_parser_new ();
+  if (!dsk_json_parser_feed (parser, len, data, error)
+   || !dsk_json_parser_finish (parser, error))
+    {
+      dsk_json_parser_destroy (parser);
+      return NULL;
+    }
+  DskJsonValue *rv = dsk_json_parser_pop (parser);
+  if (rv == NULL)
+    {
+      dsk_set_error (error, "json parser did not return any values");
+      dsk_json_parser_destroy (parser);
+      return NULL;
+    }
+  DskJsonValue *test = dsk_json_parser_pop (parser);
+  if (test != NULL)
+    {
+      dsk_set_error (error, "json parser returned multiple values, but only one expected");
+      dsk_json_parser_destroy (parser);
+      dsk_json_value_free (test);
+      dsk_json_value_free (rv);
+      return NULL;
+    }
+  dsk_json_parser_destroy (parser);
+  return rv;
 }
