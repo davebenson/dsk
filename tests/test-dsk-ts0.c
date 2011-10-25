@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #define DSK_INCLUDE_TS0
 #include "../dsk.h"
 
@@ -20,6 +21,18 @@ static dsk_boolean cmdline_verbose = DSK_FALSE;
       dsk_die ("error parsing stanza on line %u: %s", __LINE__, e_e->message); \
   }while(0)
 
+
+#define EVALUATE_STANZA(result, stanza) \
+  do{ \
+    DskError *e_e = NULL; \
+    DskBuffer buffer = DSK_BUFFER_STATIC_INIT; \
+    DskTs0Namespace *ns = dsk_ts0_namespace_new (dsk_ts0_namespace_global ()); \
+    if (!dsk_ts0_stanza_evaluate (ns, stanza, &buffer, &e_e)) \
+      dsk_die ("error evaluating stanza %s:%u:  %s", \
+               __FILE__, __LINE__, e_e->message); \
+    result = dsk_buffer_clear_to_string (&buffer); \
+    dsk_ts0_namespace_unref (ns); \
+  }while(0)
 static void
 test_trivial_stanza (void)
 {
@@ -27,7 +40,11 @@ test_trivial_stanza (void)
   {
     DEFINE_DATA("hi mom", hi_mom);
     PARSE_STANZA_FROM_DATA(stanza, hi_mom);
+    char *result;
+    EVALUATE_STANZA (result, stanza);
+    dsk_assert (strcmp (result, "hi mom") == 0);
     dsk_ts0_stanza_free (stanza);
+    dsk_free (result);
   }
 }
 

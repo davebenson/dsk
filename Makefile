@@ -108,7 +108,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-table-checkpoint-trivial.o \
 	  dsk-table-helper.o \
 	  dsk-table.o \
-	  dsk-ts0.o
+	  dsk-ts0.o dsk-ts0-builtins.o
 	ar cru $@ $^
 
 %.o: %.c
