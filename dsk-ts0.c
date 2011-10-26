@@ -1391,10 +1391,25 @@ void          _dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
           dsk_ts0_expr_to_buffer (stanza->pieces[i].info.expression, buffer);
           break;
         case DSK_TS0_STANZA_PIECE_TAG:
-          ...
-          _dsk_ts0_stanza_dump (..
+          dsk_buffer_append_string (buffer, "<% ");
+          dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.tag_name);
+          unsigned a;
+          for (a = 0; a < stanza->pieces[i].info.tag.n_args; a++)
+            {
+              dsk_buffer_append_byte (buffer, ' ');
+              dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.args[a].name);
+              dsk_buffer_append_byte (buffer, '=');
+              dsk_ts0_expr_to_buffer (stanza->pieces[i].info.tag.args[a].expr, buffer);
+            }
+          dsk_buffer_append_string (buffer, " %>\n");
+          _dsk_ts0_stanza_dump (stanza->pieces[i].info.tag.body, indent + 4, buffer);
+          dsk_buffer_append_repeated_byte (buffer, indent, ' ');
+          dsk_buffer_append_string (buffer, "<%/ ");
+          dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.tag_name);
+          dsk_buffer_append_string (buffer, " %>");
           break;
         }
+      dsk_buffer_append_byte (buffer, '\n');
     }
 }
 
@@ -2168,6 +2183,44 @@ quoted_string_error:
                                        len, dsk_memdup (len, tokens[0].start));
     }
   dsk_return_val_if_reached ("unhandled expression-token-type", NULL);
+}
+
+static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
+                                           DskBuffer  *out)
+{
+  switch (expr->type)
+    {
+    case DSK_TS0_EXPR_LITERAL:
+      dsk_filter_to_buffer (expr->info.literal.length,
+                            expr->info.literal.data,
+                            dsk_octet_filter_chain_new_take_list (
+                              dsk_byte_doubler_new ('$'),
+                              dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                              NULL
+                            ),
+                            out,
+                            NULL);
+      break;
+    case DSK_TS0_EXPR_VARIABLE:
+      dsk_buffer_append_byte (out, '$');
+      dsk_buffer_append_string (out, expr->info.variable.name);
+      break;
+    case DSK_TS0_EXPR_FUNCTION_CALL:
+      if (expr->info.function_call.name == NULL)
+        dsk_buffer_append_string (out, "*anon_function*");
+      else
+        dsk_buffer_append_string (out, expr->info.function_call.name);
+      dsk_buffer_append_byte (out, '(');
+      unsigned i;
+      for (i = 0; i < expr->info.function_call.n_args; i++)
+        {
+          if (i > 0)
+            dsk_buffer_append_string (out, ", ");
+          dsk_ts0_expr_to_buffer (expr->info.function_call.args[i], out);
+        }
+      dsk_buffer_append_byte (out, ')');
+      break;
+    }
 }
 
 /* note: takes ownership of data */
