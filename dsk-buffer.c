@@ -43,8 +43,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include "dsk-common.h"
-#include "dsk-buffer.h"
+#include "dsk.h"
 
 /* --- DskBufferFragment implementation --- */
 static inline int 
@@ -675,6 +674,23 @@ dsk_buffer_writev_len (DskBuffer *read_from,
     return rv;
   dsk_buffer_discard (read_from, rv);
   return rv;
+}
+
+dsk_boolean
+dsk_buffer_write_all_to_fd (DskBuffer       *read_from,
+		            int              fd,
+                            DskError       **error)
+{
+  while (read_from->size > 0)
+    {
+      if (dsk_buffer_writev (read_from, fd) < 0)
+        {
+          dsk_set_error (error, "error writing to fd %d: %s",
+                         fd, strerror (errno));
+          return DSK_FALSE;
+        }
+    }
+  return DSK_TRUE;
 }
 
 /**

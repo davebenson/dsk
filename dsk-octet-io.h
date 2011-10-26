@@ -1,4 +1,4 @@
-
+o
 typedef struct _DskOctetSourceClass DskOctetSourceClass;
 typedef struct _DskOctetSinkClass DskOctetSinkClass;
 typedef struct _DskOctetSource DskOctetSource;

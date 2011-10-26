@@ -274,6 +274,8 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                                          const char   *filename,
                                          unsigned      line_no,
                                          DskError    **error);
+void          dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+                                         DskBuffer    *buffer);
 void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza);
 
 

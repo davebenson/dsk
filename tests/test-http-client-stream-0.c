@@ -300,6 +300,7 @@ test_transfer_encoding_chunked (void)
         {
           fprintf (stderr, ".");
           xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+          DSK_UNUSED (xfer);
 
           /* read data from sink */
           while (!is_http_request_complete (&request_data.sink->buffer, NULL))
@@ -526,6 +527,7 @@ test_transfer_encoding_chunked_post (void)
       cr_options.funcs = &request_funcs_0;
       cr_options.user_data = &request_data;
       xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+      DSK_UNUSED (xfer);
       if (iter == 0)
         dsk_object_unref (post_data);
       else if (iter == 1)
@@ -1622,6 +1624,7 @@ test_random_response (void)
       cr_options.funcs = &request_funcs_0;
       cr_options.user_data = &request_data;
       xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+      DSK_UNUSED (xfer);
 
       while (!is_http_request_complete (&request_data.sink->buffer, NULL))
         dsk_main_run_once ();
@@ -1821,6 +1824,7 @@ test_head_transfer_encoding_chunked (void)
         {
           fprintf (stderr, ".");
           xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
+          DSK_UNUSED (xfer);
 
           /* read data from sink */
           while (!is_http_request_complete (&request_data.sink->buffer, NULL))

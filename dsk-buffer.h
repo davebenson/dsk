@@ -1,3 +1,6 @@
+/* invariant:  if a buffer.size==0, then first_frag/last_frag == NULL.
+   corollary:  if a buffer.size==0, then the buffer is using no memory. */
+
 typedef struct _DskBuffer DskBuffer;
 typedef struct _DskBufferFragment DskBufferFragment;
 
@@ -87,6 +90,8 @@ uint8_t  dsk_buffer_get_last_byte       (DskBuffer    *buffer);
 uint8_t  dsk_buffer_get_byte_at         (DskBuffer    *buffer,
                                          size_t        idx);
 
+
+/* --- buffer-to-buffer transfers --- */
 /* Take all the contents from src and append
  * them to dst, leaving src empty.
  */
@@ -98,11 +103,20 @@ unsigned dsk_buffer_transfer            (DskBuffer    *dst,
                                          DskBuffer    *src,
 					 unsigned      max_transfer);
 
-/* file-descriptor mucking */
+/* --- file-descriptor mucking --- */
 int      dsk_buffer_writev              (DskBuffer       *read_from,
                                          int              fd);
+int      dsk_buffer_writev_len          (DskBuffer *read_from,
+		                         int              fd,
+		                         unsigned         max_bytes);
+/* returns TRUE iff all the data was written.  'read_from' is blank. */
+dsk_boolean dsk_buffer_write_all_to_fd  (DskBuffer       *read_from,
+                                         int              fd,
+                                         DskError       **error);
 int      dsk_buffer_readv               (DskBuffer       *write_to,
                                          int              fd);
+
+/* --- deallocating memory used by buffer --- */
 
 /* This deallocates memory used by the buffer-- you are responsible
  * for the allocation and deallocation of the DskBuffer itself. */
@@ -114,7 +128,7 @@ void     dsk_buffer_reset               (DskBuffer    *to_reset);
 /* Return a string and clear the buffer. */
 char *dsk_buffer_clear_to_string (DskBuffer *buffer);
 
-/* iterating through the buffer */
+/* --- iterating through the buffer --- */
 /* 'frag_offset_out' is the offset of the returned fragment in the whole
    buffer. */
 DskBufferFragment *dsk_buffer_find_fragment (DskBuffer   *buffer,

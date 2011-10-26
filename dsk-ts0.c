@@ -1366,6 +1366,32 @@ error_cleanup:
   return NULL;
 }
 
+void          dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+                                         DskBuffer    *buffer)
+{
+  unsigned i;
+  for (i = 0; i < stanza->n_pieces; i++)
+    {
+      dsk_buffer_printf (buffer, "piece %u:\n", i);
+      switch (stanza->pieces[i].type)
+        {
+        case DSK_TS0_STANZA_PIECE_LITERAL:
+          dsk_c_quote_to_buffer (stanza->pieces[i].literal.length,
+                                 stanza->pieces[i].literal.data,
+                                 DSK_TRUE,      /* write_quotes */
+                                 buffer);
+          break;
+        case DSK_TS0_STANZA_PIECE_EXPRESSION:
+          dsk_ts0_expr_to_buffer (stanza->pieces[i].expression,
+                                  buffer);
+          break;
+        case DSK_TS0_STANZA_PIECE_TAG:
+          ...
+          break;
+        }
+    }
+}
+
 void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza)
 {
   unsigned i;

@@ -51,7 +51,6 @@ handle_cache_entry (DskDnsCacheEntry *entry,
 
 int main(int argc, char **argv)
 {
-
   dsk_cmdline_init ("lookup a name in DNS",
                     "Resolve a hostname using DNS",
                     "HOSTNAME",
