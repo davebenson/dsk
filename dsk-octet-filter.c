@@ -31,3 +31,18 @@ dsk_boolean          dsk_octet_filter_process_buffer (DskOctetFilter *filter,
   dsk_buffer_discard (in, to_discard);
   return DSK_TRUE;
 }
+
+dsk_boolean dsk_filter_to_buffer  (unsigned length,
+                                   const uint8_t *data,
+                                   DskOctetFilter *filter,
+                                   DskBuffer *output,
+                                   DskError **error)
+{
+  if (!dsk_octet_filter_process (filter, output, length, data, error)
+   || !dsk_octet_filter_finish (filter, output, error))
+    {
+      return DSK_FALSE;
+    }
+  dsk_object_unref (filter);
+  return DSK_TRUE;
+}

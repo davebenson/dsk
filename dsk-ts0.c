@@ -40,6 +40,8 @@ static void        dsk_ts0_expr_free     (DskTs0Expr *expr);
                                           DskTs0Namespace *ns,
                                           DskBuffer  *target,
                                           DskError  **error);
+static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
+                                           DskBuffer  *out);
 
 struct _DskTs0Filename
 {
@@ -1366,27 +1368,31 @@ error_cleanup:
   return NULL;
 }
 
-void          dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
-                                         DskBuffer    *buffer)
+void          _dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+                                          unsigned      indent,
+                                          DskBuffer    *buffer)
 {
   unsigned i;
   for (i = 0; i < stanza->n_pieces; i++)
     {
+      dsk_buffer_append_repeated_byte (buffer, indent, ' ');
       dsk_buffer_printf (buffer, "piece %u:\n", i);
+      dsk_buffer_append_repeated_byte (buffer, indent+2, ' ');
       switch (stanza->pieces[i].type)
         {
         case DSK_TS0_STANZA_PIECE_LITERAL:
-          dsk_c_quote_to_buffer (stanza->pieces[i].literal.length,
-                                 stanza->pieces[i].literal.data,
-                                 DSK_TRUE,      /* write_quotes */
-                                 buffer);
+          dsk_filter_to_buffer (stanza->pieces[i].info.literal.length,
+                                stanza->pieces[i].info.literal.data,
+                                dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                                buffer,
+                                NULL);
           break;
         case DSK_TS0_STANZA_PIECE_EXPRESSION:
-          dsk_ts0_expr_to_buffer (stanza->pieces[i].expression,
-                                  buffer);
+          dsk_ts0_expr_to_buffer (stanza->pieces[i].info.expression, buffer);
           break;
         case DSK_TS0_STANZA_PIECE_TAG:
           ...
+          _dsk_ts0_stanza_dump (..
           break;
         }
     }

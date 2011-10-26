@@ -244,27 +244,3 @@ dsk_c_quoter_new (dsk_boolean add_quotes,
   return DSK_OCTET_FILTER (cq);
 }
 
-/* hackneyed helper function */
-dsk_boolean dsk_c_quote_to_buffer (unsigned length,
-                                   const uint8_t *data,
-                                   dsk_boolean write_quotes,
-                                   DskBuffer *output,
-                                   DskError *error)
-{
-  DskOctetFilter *filter = dsk_c_quoter_new (DSK_TRUE, DSK_FALSE);
-  if (!dsk_octet_filter_process (filter, ..., error))
-    {
-      ...
-    }
-  return DSK_TRUE;
-}
-}
-
-char *dsk_c_quote_to_string (unsigned length,
-                             const uint8_t *data,
-                             dsk_boolean write_quotes,
-                             DskBuffer *output,
-                             DskError *error)
-{
-  ...
-}
