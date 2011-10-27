@@ -454,7 +454,6 @@ dsk_cmdline_try_process_args (int *argc_inout,
               /* long option */
               const char *opt = argv[i] + 2;
               DskCmdlineArg *arg;
-              dsk_warning ("trying arg %s",opt);
               GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (), opt,
                                             COMPARE_STR_EQUAL_TO_ARG_NODE, arg);
               if (arg == NULL)
