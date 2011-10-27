@@ -390,7 +390,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           block->n_bytes = (at - str) - block->start_byte;
           block->n_lines = line + 1 - block->start_line;
         }
-      else if (dsk_ascii_ispunct (*at))
+      else if (*at != '_' && dsk_ascii_ispunct (*at))
         {
           unsigned n_used = 0;
           DskCToken *block;

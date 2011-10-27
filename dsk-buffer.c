@@ -1029,53 +1029,6 @@ void dsk_buffer_append_foreign (DskBuffer        *buffer,
   CHECK_INTEGRITY (buffer);
 }
 
-#if 0
-/**
- * dsk_buffer_printf:
- * @buffer: the buffer to append to.
- * @format: printf-style format string describing what to append to buffer.
- * @Varargs: values referenced by @format string.
- *
- * Append printf-style content to a buffer.
- */
-void     dsk_buffer_printf              (DskBuffer    *buffer,
-					 const char   *format,
-					 ...)
-{
-  va_list args;
-  va_start (args, format);
-  dsk_buffer_vprintf (buffer, format, args);
-  va_end (args);
-}
-
-/**
- * dsk_buffer_vprintf:
- * @buffer: the buffer to append to.
- * @format: printf-style format string describing what to append to buffer.
- * @args: values referenced by @format string.
- *
- * Append printf-style content to a buffer, given a va_list.
- */
-void     dsk_buffer_vprintf             (DskBuffer    *buffer,
-					 const char   *format,
-					 va_list       args)
-{
-  XXX: use va_copy
-  size_t size = g_printf_string_upper_bound (format, args);
-  if (size < 1024)
-    {
-      char buf[1024];
-      g_vsnprintf (buf, sizeof (buf), format, args);
-      dsk_buffer_append_string (buffer, buf);
-    }
-  else
-    {
-      char *buf = g_strdup_vprintf (format, args);
-      dsk_buffer_append_foreign (buffer, buf, strlen (buf), g_free, buf);
-    }
-}
-#endif
-
 /* --- dsk_buffer_polystr_index_of implementation --- */
 /* Test to see if a sequence of buffer fragments
  * starts with a particular NUL-terminated string.
@@ -1252,10 +1205,21 @@ void     dsk_buffer_vprintf             (DskBuffer    *buffer,
     }
   else
     {
-      char *slab = dsk_malloc (req + 1);
+      char *slab;
+
+      if (frag != buffer->last_frag)
+        recycle (frag);
+
+      slab = dsk_malloc (req + 1);
       vsnprintf (slab, req + 1, format, args);
-      dsk_buffer_append (buffer, req, slab);
-      dsk_free (slab);
+
+      if (req - rem < BUF_CHUNK_SIZE)
+        {
+          dsk_buffer_append (buffer, req, slab);
+          dsk_free (slab);
+        }
+      else
+        dsk_buffer_append_foreign (buffer, req, slab, dsk_free, slab);
     }
 }
 
