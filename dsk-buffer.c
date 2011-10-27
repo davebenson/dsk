@@ -42,6 +42,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>      /* for vsnprintf() */
 #include <errno.h>
 #include "dsk.h"
 
@@ -1194,6 +1195,70 @@ dsk_buffer_polystr_index_of    (DskBuffer    *buffer,
     }
   return -1;
 }
+
+void     dsk_buffer_printf              (DskBuffer    *buffer,
+					 const char   *format,
+					 ...)
+{
+  va_list args;
+  va_start (args, format);
+  dsk_buffer_vprintf (buffer, format, args);
+  va_end (args);
+}
+
+void     dsk_buffer_vprintf             (DskBuffer    *buffer,
+					 const char   *format,
+					 va_list       args)
+{
+  DskBufferFragment *frag = buffer->last_frag;
+  unsigned rem = 0;
+  uint8_t *at;
+  size_t req;
+  if (frag != NULL)
+    {
+      rem = dsk_buffer_fragment_avail (frag);
+      at = dsk_buffer_fragment_end (frag);
+    }
+  if (rem == 0)
+    {
+      frag = new_native_fragment ();
+      rem = dsk_buffer_fragment_avail (frag);
+      at = dsk_buffer_fragment_end (frag);
+    }
+  {
+    va_list tmp;
+    va_copy (tmp, args);
+    req = vsnprintf ((char*)at, rem, format, tmp);
+    va_end (tmp);
+  }
+  if (req == 0)
+    {
+      if (frag != buffer->last_frag)
+        recycle (frag);
+      return;
+    }
+  if (req <= rem)
+    {
+      frag->buf_length += req;
+      buffer->size += req;
+      if (frag != buffer->last_frag)
+        {
+          if (buffer->last_frag)
+            buffer->last_frag->next = frag;
+          else
+            buffer->first_frag = frag;
+          buffer->last_frag = frag;
+        }
+    }
+  else
+    {
+      char *slab = dsk_malloc (req + 1);
+      vsnprintf (slab, req + 1, format, args);
+      dsk_buffer_append (buffer, req, slab);
+      dsk_free (slab);
+    }
+}
+
 
 #if 0
 /* --- DskBufferIterator --- */
