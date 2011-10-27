@@ -454,6 +454,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
               /* long option */
               const char *opt = argv[i] + 2;
               DskCmdlineArg *arg;
+              dsk_warning ("trying arg %s",opt);
               GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (), opt,
                                             COMPARE_STR_EQUAL_TO_ARG_NODE, arg);
               if (arg == NULL)
@@ -488,6 +489,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                           dsk_add_error_prefix (error, "processing --%s", opt);
                           return DSK_FALSE;
                         }
+                      arg->flags |= _DSK_CMDLINE_OPTION_USED;
                       skip_or_swallow (argc_inout, argv_inout, &i, 2);
                       continue;
                     }
