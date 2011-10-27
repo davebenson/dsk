@@ -702,19 +702,19 @@ handle_sink_writable (DskOctetSink *sink,
     {
     case DSK_IO_RESULT_SUCCESS:
     case DSK_IO_RESULT_AGAIN:
-      if (stream->outgoing_data.size == 0)
-        {
-          stream->write_trap = NULL;
-          if (stream->deferred_shutdown)
-            do_shutdown (stream, NULL);
-          return DSK_FALSE;
-        }
       if (stream->outgoing_data.size <= stream->max_outgoing_buffer_size
        && stream->first_transfer != NULL
        && stream->first_transfer->blocked_content)
         {
           stream->first_transfer->blocked_content = DSK_FALSE;
           dsk_hook_trap_unblock (stream->first_transfer->content_readable_trap);
+        }
+      if (stream->outgoing_data.size == 0)
+        {
+          stream->write_trap = NULL;
+          if (stream->deferred_shutdown)
+            do_shutdown (stream, NULL);
+          return DSK_FALSE;
         }
       return DSK_TRUE;
     case DSK_IO_RESULT_EOF:
