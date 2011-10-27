@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #define DSK_INCLUDE_TS0
@@ -56,6 +57,16 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
     dsk_ts0_namespace_unref (ns); \
   }while(0)
 #define DOT()  fprintf(stderr, ".")
+
+void dump_stanza (DskTs0Stanza *stanza)
+{
+  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskError *error = NULL;
+  dsk_ts0_stanza_dump (stanza, 2, &buffer);
+  if (!dsk_buffer_write_all_to_fd (&buffer, STDERR_FILENO, &error))
+    dsk_die ("dsk_buffer_write_all_to_fd: %s", error->message);
+}
+
 static void
 test_trivial_stanza (void)
 {
@@ -90,6 +101,7 @@ test_variable_interp_0 (void)
     DEFINE_DATA("hi $foo", hi_mom);
     PARSE_STANZA_FROM_DATA(stanza, hi_mom);
     char *result;
+    //dump_stanza (stanza);
     EVALUATE_STANZA (result, dsk_ts0_namespace_set_variable (ns, "foo", "bar"), stanza);
     dsk_assert (strcmp (result, "hi bar") == 0);
     dsk_ts0_stanza_free (stanza);
