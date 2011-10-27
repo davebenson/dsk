@@ -62,6 +62,7 @@ dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
         {
           in_data++;
           in_length--;
+          cunquoter->remove_initial_quote = 0;
           if (in_length == 0)
             return DSK_TRUE;
         }
