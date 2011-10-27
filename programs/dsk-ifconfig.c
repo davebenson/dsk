@@ -5,6 +5,9 @@ int main(int argc, char **argv)
 {
   DskNetworkInterfaceList *list;
   unsigned i;
+  dsk_cmdline_init ("dump network interfaces", "this mimics ifconfig with no args", NULL, 0);
+  dsk_cmdline_process_args (&argc, &argv);
+
   list = dsk_network_interface_list_peek_global ();
   for (i = 0; i < list->n_interfaces; i++)
     {
