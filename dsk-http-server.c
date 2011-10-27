@@ -523,7 +523,6 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
           ||  rreq->state == REQUEST_HANDLING_WAITING);
   dsk_assert (rreq->waiting_for_response);
 
-  rreq->waiting_for_response = DSK_FALSE;
 
   /* Transform options */
   soptions.header_options = &header_options;
@@ -598,6 +597,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
   header_options.content_charset = options->content_charset;
 
   /* Do lower-level response */
+  rreq->waiting_for_response = DSK_FALSE;
   if (!dsk_http_server_stream_respond (request->transfer, &soptions, &error))
     {
       dsk_warning ("dsk_http_server_stream_respond failed: %s", error->message);
@@ -741,7 +741,7 @@ add_get_cgi_variables (RealServerRequest *rreq)
     {
       /* compute GET variables (this may be called with an initial
        * query, or via an internal redirect). */
-      unsigned n_variables;
+      size_t n_variables;
       DskCgiVariable *variables;
       DskError *error = NULL;
       if (!dsk_cgi_parse_query_string (qm, &n_variables, &variables, &error))
@@ -765,7 +765,7 @@ add_post_cgi_variables (RealServerRequest *rreq)
 {
   unsigned post_data_len = rreq->request.raw_post_data_size;
   const uint8_t *post_data = rreq->request.raw_post_data;
-  unsigned n_variables;
+  size_t n_variables;
   DskCgiVariable *variables;
   DskError *error = NULL;
   if (!dsk_cgi_parse_post_data (rreq->request.request_header->content_type,
