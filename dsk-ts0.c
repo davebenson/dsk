@@ -1061,7 +1061,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                 }
               piece.type = DSK_TS0_STANZA_PIECE_EXPRESSION;
               piece.info.expression = dsk_ts0_expr_new_variable (fname, line_no,
-                                                              str - start, str);
+                                                              str - start, start);
               APPEND_PIECE (piece);
               continue;
             }
@@ -1368,7 +1368,7 @@ error_cleanup:
   return NULL;
 }
 
-void          _dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+void           dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
                                           unsigned      indent,
                                           DskBuffer    *buffer)
 {
@@ -1402,7 +1402,7 @@ void          _dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
               dsk_ts0_expr_to_buffer (stanza->pieces[i].info.tag.args[a].expr, buffer);
             }
           dsk_buffer_append_string (buffer, " %>\n");
-          _dsk_ts0_stanza_dump (stanza->pieces[i].info.tag.body, indent + 4, buffer);
+          dsk_ts0_stanza_dump (stanza->pieces[i].info.tag.body, indent + 4, buffer);
           dsk_buffer_append_repeated_byte (buffer, indent, ' ');
           dsk_buffer_append_string (buffer, "<%/ ");
           dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.tag_name);
