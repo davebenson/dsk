@@ -10,5 +10,8 @@ char    **dsk_strvv_concat (char ***str_arrays);
 char    **dsk_strv_copy    (char **strs);
 void      dsk_strv_free    (char **strs);
 
+char    **dsk_strsplit     (const char *str,
+                            const char *sep);
+
 /* see also:  dsk_utf8_split_on_whitespace() */
 

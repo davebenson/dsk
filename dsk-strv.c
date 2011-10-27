@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsk.h"
 
 unsigned dsk_strv_length  (char **strs)
@@ -58,4 +59,46 @@ void   dsk_strv_free    (char **strs)
         dsk_free (strs[i]);
       dsk_free (strs);
     }
+}
+
+char    **dsk_strsplit     (const char *str,
+                            const char *sep)
+{
+  char *init[128];
+  char **rv = init;
+  unsigned alloced = DSK_N_ELEMENTS (init);
+  unsigned n = 0;
+  unsigned sep_len = strlen (sep);
+  char *next_sep = strstr (str, sep);
+  while (next_sep)
+    {
+      if (n == alloced)
+        {
+          if (rv == init)
+            {
+              rv = dsk_malloc (sizeof(char*) * alloced * 2);
+              memcpy (rv, init, sizeof (char*) * alloced);
+            }
+          else
+            {
+              rv = dsk_realloc (rv, sizeof(char*) * alloced * 2);
+            }
+          alloced += alloced;
+        }
+      rv[n++] = dsk_strdup_slice (str, next_sep);
+      str = next_sep + sep_len;
+      next_sep = strstr (str + sep_len, sep);
+    }
+  if (rv == init)
+    {
+      rv = dsk_malloc (sizeof (char *) * (n + 2));
+      memcpy (rv, init, sizeof (char *) * n);
+    }
+  else if (n + 1 >= alloced)
+    {
+      rv = dsk_realloc (rv, sizeof (char *) * (n + 2));
+    }
+  rv[n++] = dsk_strdup (str);
+  rv[n] = NULL;
+  return rv;
 }
