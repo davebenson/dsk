@@ -390,7 +390,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           block->n_bytes = (at - str) - block->start_byte;
           block->n_lines = line + 1 - block->start_line;
         }
-      else if (dsk_ascii_ispunct (*at))
+      else if (dsk_ascii_ispunct (*at) && *at != '_')
         {
           unsigned n_used = 0;
           DskCToken *block;
@@ -432,7 +432,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
         {
           unsigned n_used = 0;
           DskCToken *block;
-          block = append_child (top, DSK_CTOKEN_TYPE_BAREWORD,
+          block = append_child (top, DSK_CTOKEN_TYPE_NUMBER,
                                 at - str, line);
           if (!config->scan_number (at, end, &n_used,
                                     &block->token_id, &block->token,
