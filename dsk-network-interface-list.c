@@ -13,7 +13,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-
+/* TODO: open /proc/net/dev on linux to find more (down) interfaces. */
 
 static int
 get_IPPROTO_IP ()
@@ -25,7 +25,7 @@ get_IPPROTO_IP ()
       entry = getprotobyname ("ip");
       if (entry == NULL)
 	{
-	  g_warning ("The ip protocol was not found in /etc/services...");
+	  dsk_warning ("The ip protocol was not found in /etc/services...");
 	  proto = 0;
 	}
       else
@@ -36,162 +36,178 @@ get_IPPROTO_IP ()
   return proto;
 }
 
-DskNetworkInterfaceList *
-dsk_network_interface_list_peek_global(void)
+static DskNetworkInterfaceList *global_interface_list = NULL;
+
+static void
+dsk_ip_address_from_native (struct sockaddr *addr, DskIpAddress *out)
 {
-  GArray *ifreq_array;
-  GArray *rv;
+  if (addr->sa_family == AF_INET)
+    {
+      out->type = DSK_IP_ADDRESS_IPV4;
+      memcpy (out->address, (uint8_t*)(&((struct sockaddr_in *)addr)->sin_addr), 4);
+    }
+  else if (addr->sa_family == AF_INET6)
+    {
+      out->type = DSK_IP_ADDRESS_IPV6;
+      memcpy (out->address, (uint8_t*)(&((struct sockaddr_in6 *)addr)->sin6_addr), 16);
+    }
+  else
+    {
+      dsk_warning ("bad socket-address family in dsk_ip_address_from_native: %u", addr->sa_family);
+    }
+}
+
+static DskNetworkInterfaceList *
+make_interface_list (void)
+{
+  unsigned ifreq_alloced = 16;
+  struct ifreq *ifreq_array = dsk_malloc (sizeof (struct ifreq) * ifreq_alloced);
+  unsigned n_ifreq;
+  DskNetworkInterface *rv;
   int tmp_socket;
-  guint i;
+  unsigned i;
   tmp_socket = socket (AF_INET, SOCK_DGRAM, get_IPPROTO_IP ());
   if (tmp_socket < 0)
     {
-      g_warning ("gsk_network_interface: error creating internal ns socket: %s",
-		 g_strerror (errno));
+      dsk_warning ("dsk_network_interface: error creating internal ns socket: %s",
+		   strerror (errno));
       return NULL;
     }
-  ifreq_array = g_array_new (FALSE, FALSE, sizeof (struct ifreq));
-  g_array_set_size (ifreq_array, 16);
+  //ifreq_array = g_array_new (FALSE, FALSE, sizeof (struct ifreq));
+  //g_array_set_size (ifreq_array, 16);
   for (;;)
     {
       struct ifconf all_interface_config;
-      guint num_got;
-      all_interface_config.ifc_len = ifreq_array->len * sizeof (struct ifreq);
-      all_interface_config.ifc_buf = ifreq_array->data;
+      all_interface_config.ifc_len = ifreq_alloced * sizeof (struct ifreq);
+      all_interface_config.ifc_buf = (void *) ifreq_array;
       if (ioctl (tmp_socket, SIOCGIFCONF, (char *) &all_interface_config) < 0)
 	{ 
-	  g_warning ("gsk_network_interface:"
-		     "error getting interface configuration: %s",
-		     g_strerror (errno));
+	  dsk_warning ("dsk_network_interface:"
+		       "error getting interface configuration: %s",
+		       strerror (errno));
 	  close (tmp_socket);
-	  g_array_free (ifreq_array, TRUE);
+	  dsk_free (ifreq_array);
 	  return NULL;
 	}
-      num_got = all_interface_config.ifc_len / sizeof (struct ifreq);
-      if (num_got == ifreq_array->len)
-	g_array_set_size (ifreq_array, ifreq_array->len * 2);
+      n_ifreq = all_interface_config.ifc_len / sizeof (struct ifreq);
+      if (n_ifreq == ifreq_alloced)
+        {
+          ifreq_alloced *= 2;
+          ifreq_array = dsk_realloc (ifreq_array, ifreq_alloced * sizeof (struct ifreq));
+        }
       else
-	{
-	  g_array_set_size (ifreq_array, num_got);
-	  break;
-	}
+        break;
     }
+  dsk_warning ("n_ifreq=%u",n_ifreq);
 
   /* now query each of those interfaces. */
-  rv = g_array_new (FALSE, FALSE, sizeof (GskNetworkInterface));
-  for (i = 0; i < ifreq_array->len; i++)
+  rv = dsk_malloc (sizeof (DskNetworkInterface) * n_ifreq);
+  unsigned n_interfaces = 0;
+  for (i = 0; i < n_ifreq; i++)
     {
-      struct ifreq *req_array = (struct ifreq *)(ifreq_array->data) + i;
       struct ifreq tmp_req;
-      gboolean is_up;
-      gboolean is_loopback;
-      gboolean has_broadcast;
-      gboolean has_multicast;
-      gboolean is_p2p;
-      guint if_flags;
-      GskNetworkInterface interface;
+      unsigned if_flags;
+      DskNetworkInterface interface;
 
       /* XXX: we don't at all no how to handle a generic interface. */
       /* XXX: is this an IPv6 problem? */
-      if (req_array->ifr_addr.sa_family != AF_INET)
+      if (ifreq_array[i].ifr_addr.sa_family != AF_INET)
 	continue;
 
-      memcpy (tmp_req.ifr_name, req_array->ifr_name, sizeof (tmp_req.ifr_name));
+      memcpy (tmp_req.ifr_name, ifreq_array[i].ifr_name, sizeof (tmp_req.ifr_name));
       if (ioctl (tmp_socket, SIOCGIFFLAGS, (char *) &tmp_req) < 0) 
 	{	
-	  g_warning ("error getting information about interface %s",
+	  dsk_warning ("error getting information about interface %s",
 		     tmp_req.ifr_name);
 	  continue;
 	}
 
-      if_flags = tmp_req.ifr_flags;
-      is_up = (if_flags & IFF_UP) == IFF_UP;
-      is_loopback = (if_flags & IFF_LOOPBACK) == IFF_LOOPBACK;
-      has_broadcast = (if_flags & IFF_BROADCAST) == IFF_BROADCAST;
-      has_multicast = (if_flags & IFF_MULTICAST) == IFF_MULTICAST;
-      is_p2p = (if_flags & IFF_POINTOPOINT) == IFF_POINTOPOINT;
 
-      interface.supports_multicast = has_multicast ? 1 : 0;
+      memset (&interface, 0, sizeof (interface));
+      if_flags = tmp_req.ifr_flags;
+      interface.is_up = (if_flags & IFF_UP) == IFF_UP;
+      interface.is_loopback = (if_flags & IFF_LOOPBACK) == IFF_LOOPBACK;
+      interface.supports_broadcast = (if_flags & IFF_BROADCAST) == IFF_BROADCAST;
+      interface.supports_multicast = (if_flags & IFF_MULTICAST) == IFF_MULTICAST;
+      interface.is_p2p = (if_flags & IFF_POINTOPOINT) == IFF_POINTOPOINT;
       interface.is_promiscuous = (if_flags & IFF_PROMISC) ? 1 : 0;
 
-      if (is_up)
+      if (interface.is_up)
 	{
 	  struct sockaddr *saddr;
 	  if (ioctl (tmp_socket, SIOCGIFADDR, (char *) &tmp_req) < 0)
 	    {
-	      g_warning ("error getting the ip address for interface %s",
+	      dsk_warning ("error getting the ip address for interface %s",
 			 tmp_req.ifr_name);
 	      continue;
 	    }
 	  saddr = &tmp_req.ifr_addr;
-	  interface.address = gsk_socket_address_from_native (saddr, sizeof (*saddr));
+	  dsk_ip_address_from_native (saddr, &interface.address);
 	}
-      else
-	interface.address = NULL;
 
-      interface.is_loopback = is_loopback ? 1 : 0;
 #ifdef SIOCGIFHWADDR
-      if (!interface.is_loopback)
-	interface.hw_address = NULL;
+      if (interface.is_loopback)
+        interface.has_hw_address = DSK_FALSE;
       else
 	{
 	  if (ioctl (tmp_socket, SIOCGIFHWADDR, (char *) &tmp_req) < 0)
 	    {
-	      g_warning ("error getting the hardware address for interface %s",
+	      dsk_warning ("error getting the hardware address for interface %s",
 			 tmp_req.ifr_name);
 	      continue;
 	    }
-	  interface.hw_address = gsk_socket_address_ethernet_new ((guint8*)tmp_req.ifr_addr.sa_data);
+          interface.has_hw_address = DSK_TRUE;
+	  memcpy (interface.hw_address.address, (uint8_t*)tmp_req.ifr_addr.sa_data, 6);
 	}
 #else
-      interface.hw_address = NULL;
+      interface.has_hw_address = DSK_FALSE;
 #endif
 
-      if (is_p2p)
+      if (interface.is_p2p)
 	{
 	  struct sockaddr *saddr;
 	  if (ioctl (tmp_socket, SIOCGIFDSTADDR, (char *) &tmp_req) < 0)
 	    {
-	      g_warning ("error getting the ip address for interface %s",
+	      dsk_warning ("error getting the ip address for interface %s",
 			 tmp_req.ifr_name);
 	      continue;
 	    }
 	  saddr = &tmp_req.ifr_addr;
-	  interface.p2p_address = gsk_socket_address_from_native (saddr,
-								  sizeof (struct sockaddr));
+	  dsk_ip_address_from_native (saddr, &interface.p2p_address);
 	}
-      else
-	interface.p2p_address = NULL;
 
-      if (has_broadcast)
+      if (interface.supports_broadcast)
 	{
 	  struct sockaddr *saddr;
 	  if (ioctl (tmp_socket, SIOCGIFBRDADDR, (char *) &tmp_req) < 0)
 	    {
-	      g_warning ("error getting the broadcast address for interface %s",
-			 tmp_req.ifr_name);
+	      dsk_warning ("error getting the broadcast address for interface %s",
+			   tmp_req.ifr_name);
 	      continue;
 	    }
 	  saddr = &tmp_req.ifr_addr;
-          interface.broadcast = gsk_socket_address_from_native (saddr,
-								sizeof (struct sockaddr));
+          dsk_ip_address_from_native (saddr, &interface.broadcast);
 	}
-      else
-	interface.broadcast = NULL;
 
-      interface.ifname = g_strdup (tmp_req.ifr_name);
-      g_array_append_val (rv, interface);
+      interface.ifname = dsk_strdup (tmp_req.ifr_name);
+      rv[n_interfaces++] = interface;
     }
 
   close (tmp_socket);
 
-  g_array_free (ifreq_array, TRUE);
-  {
-    GskNetworkInterfaceSet *set;
-    set = g_new (GskNetworkInterfaceSet, 1);
-    set->num_interfaces = rv->len;
-    set->interfaces = (GskNetworkInterface *) rv->data;
-    return set;
-  }
+  dsk_free (ifreq_array);
+
+  DskNetworkInterfaceList *list = dsk_malloc (sizeof (DskNetworkInterfaceList));
+  list->n_interfaces = n_interfaces;
+  list->interfaces = rv;
+  return list;
+}
+
+DskNetworkInterfaceList *
+dsk_network_interface_list_peek_global(void)
+{
+  if (global_interface_list == NULL)
+    global_interface_list = make_interface_list ();
+  return global_interface_list;
 }
 

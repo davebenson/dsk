@@ -42,9 +42,9 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>      /* for vsnprintf() */
 #include <errno.h>
-#include "dsk-common.h"
-#include "dsk-buffer.h"
+#include "dsk.h"
 
 /* --- DskBufferFragment implementation --- */
 static inline int 
@@ -677,6 +677,23 @@ dsk_buffer_writev_len (DskBuffer *read_from,
   return rv;
 }
 
+dsk_boolean
+dsk_buffer_write_all_to_fd (DskBuffer       *read_from,
+		            int              fd,
+                            DskError       **error)
+{
+  while (read_from->size > 0)
+    {
+      if (dsk_buffer_writev (read_from, fd) < 0)
+        {
+          dsk_set_error (error, "error writing to fd %d: %s",
+                         fd, strerror (errno));
+          return DSK_FALSE;
+        }
+    }
+  return DSK_TRUE;
+}
+
 /**
  * dsk_buffer_read_in_fd:
  * @write_to: buffer to append data to.
@@ -1012,53 +1029,6 @@ void dsk_buffer_append_foreign (DskBuffer        *buffer,
   CHECK_INTEGRITY (buffer);
 }
 
-#if 0
-/**
- * dsk_buffer_printf:
- * @buffer: the buffer to append to.
- * @format: printf-style format string describing what to append to buffer.
- * @Varargs: values referenced by @format string.
- *
- * Append printf-style content to a buffer.
- */
-void     dsk_buffer_printf              (DskBuffer    *buffer,
-					 const char   *format,
-					 ...)
-{
-  va_list args;
-  va_start (args, format);
-  dsk_buffer_vprintf (buffer, format, args);
-  va_end (args);
-}
-
-/**
- * dsk_buffer_vprintf:
- * @buffer: the buffer to append to.
- * @format: printf-style format string describing what to append to buffer.
- * @args: values referenced by @format string.
- *
- * Append printf-style content to a buffer, given a va_list.
- */
-void     dsk_buffer_vprintf             (DskBuffer    *buffer,
-					 const char   *format,
-					 va_list       args)
-{
-  XXX: use va_copy
-  size_t size = g_printf_string_upper_bound (format, args);
-  if (size < 1024)
-    {
-      char buf[1024];
-      g_vsnprintf (buf, sizeof (buf), format, args);
-      dsk_buffer_append_string (buffer, buf);
-    }
-  else
-    {
-      char *buf = g_strdup_vprintf (format, args);
-      dsk_buffer_append_foreign (buffer, buf, strlen (buf), g_free, buf);
-    }
-}
-#endif
-
 /* --- dsk_buffer_polystr_index_of implementation --- */
 /* Test to see if a sequence of buffer fragments
  * starts with a particular NUL-terminated string.
@@ -1178,6 +1148,81 @@ dsk_buffer_polystr_index_of    (DskBuffer    *buffer,
     }
   return -1;
 }
+
+void     dsk_buffer_printf              (DskBuffer    *buffer,
+					 const char   *format,
+					 ...)
+{
+  va_list args;
+  va_start (args, format);
+  dsk_buffer_vprintf (buffer, format, args);
+  va_end (args);
+}
+
+void     dsk_buffer_vprintf             (DskBuffer    *buffer,
+					 const char   *format,
+					 va_list       args)
+{
+  DskBufferFragment *frag = buffer->last_frag;
+  unsigned rem = 0;
+  uint8_t *at;
+  size_t req;
+  if (frag != NULL)
+    {
+      rem = dsk_buffer_fragment_avail (frag);
+      at = dsk_buffer_fragment_end (frag);
+    }
+  if (rem == 0)
+    {
+      frag = new_native_fragment ();
+      rem = dsk_buffer_fragment_avail (frag);
+      at = dsk_buffer_fragment_end (frag);
+    }
+  {
+    va_list tmp;
+    va_copy (tmp, args);
+    req = vsnprintf ((char*)at, rem, format, tmp);
+    va_end (tmp);
+  }
+  if (req == 0)
+    {
+      if (frag != buffer->last_frag)
+        recycle (frag);
+      return;
+    }
+  if (req <= rem)
+    {
+      frag->buf_length += req;
+      buffer->size += req;
+      if (frag != buffer->last_frag)
+        {
+          if (buffer->last_frag)
+            buffer->last_frag->next = frag;
+          else
+            buffer->first_frag = frag;
+          buffer->last_frag = frag;
+        }
+    }
+  else
+    {
+      char *slab;
+
+      if (frag != buffer->last_frag)
+        recycle (frag);
+
+      slab = dsk_malloc (req + 1);
+      vsnprintf (slab, req + 1, format, args);
+
+      if (req - rem < BUF_CHUNK_SIZE)
+        {
+          dsk_buffer_append (buffer, req, slab);
+          dsk_free (slab);
+        }
+      else
+        dsk_buffer_append_foreign (buffer, req, slab, dsk_free, slab);
+    }
+}
+
 
 #if 0
 /* --- DskBufferIterator --- */

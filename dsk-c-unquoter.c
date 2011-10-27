@@ -20,9 +20,11 @@ struct _DskOctetFilterCUnquoter
 typedef enum
 {
   STATE_DEFAULT,
+  STATE_GOT_UNQUOTED_QUOTE,             /* if remove_quotes */
   STATE_AFTER_BACKSLASH,
   STATE_AFTER_1_OCTAL,
-  STATE_AFTER_2_OCTAL
+  STATE_AFTER_2_OCTAL,
+  STATE_DONE            /* if remove_quotes and got final quote */
 } State;
 #define dsk_octet_filter_c_unquoter_init NULL
 #define dsk_octet_filter_c_unquoter_finalize NULL
@@ -78,15 +80,46 @@ dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
     case STATE_DEFAULT:
     state_default:
       {
-        const uint8_t *bs = memchr (in_data, '\\', in_length);
-        unsigned n;
+        const uint8_t *bs;
+        const const uint8_t *at = in_data;
+        unsigned rem = in_length;
+        if (cunquoter->remove_quotes)
+          {
+            while (rem > 0)
+              {
+                if (*at == '"')
+                  {
+                    if (rem != 1)
+                      {
+                        dsk_set_error (error, "trailing data after '\"'");
+                        return DSK_FALSE;
+                      }
+                    cunquoter->state = STATE_DONE;
+                    return DSK_TRUE;
+                  }
+                else if (*at == '\\')
+                  {
+                    bs = at;
+                    break;
+                  }
+                else
+                  {
+                    at++;
+                    rem--;
+                  }
+              }
+            bs = rem ? at : NULL;
+          }
+        else
+          bs = memchr (at, '\\', rem);
+
         if (bs == NULL)
           {
             dsk_buffer_append (out, in_length, in_data);
             cunquoter->state = STATE_DEFAULT;
             return DSK_TRUE;
           }
-        n = bs - in_data;
+        unsigned n = bs - in_data;
         dsk_buffer_append (out, n, in_data);
         in_data = bs + 1;
         in_length -= n + 1;
@@ -193,6 +226,19 @@ dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
           dsk_buffer_append_byte (out, cunquoter->partial_octal);
           goto state_default;
         }
+    case STATE_DONE:
+      /* permit whitespace after trailing quote */
+      while (in_length && dsk_ascii_isspace (*in_data))
+        {
+          in_data++;
+          in_length--;
+        }
+      if (in_length)
+        {
+          dsk_set_error (error, "non-whitespace after trailing quote");
+          return DSK_FALSE;
+        }
+      return DSK_TRUE;
     }
   dsk_return_val_if_reached (NULL, DSK_FALSE);
 }

@@ -36,10 +36,12 @@ static DskTs0Expr *dsk_ts0_expr_new_function_anon (DskTs0Filename *filename,
                                                    unsigned    n_args,
                                                    DskTs0Expr **args);
 static void        dsk_ts0_expr_free     (DskTs0Expr *expr);
-static dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+       dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                           DskTs0Namespace *ns,
                                           DskBuffer  *target,
                                           DskError  **error);
+static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
+                                           DskBuffer  *out);
 
 struct _DskTs0Filename
 {
@@ -160,6 +162,21 @@ dsk_ts0_namespace_set_variable (DskTs0Namespace *namespace,
   node->value = vdup;
 }
 
+char *
+dsk_ts0_namespace_set_variable_slot (DskTs0Namespace *namespace,
+                                     const char      *key,
+                                     unsigned         value_length)
+{
+  DskTs0NamespaceNode *node = force_namespace_node (&namespace->top_variable, key);
+  /* TODO: could save malloc/free sometimes if they value_length will fit
+     in existing value... */
+  char *rv = dsk_malloc (value_length + 1);
+  if (node->value)
+    dsk_free (node->value);
+  node->value = rv;
+  return rv;
+}
+
 void
 dsk_ts0_namespace_add_subnamespace (DskTs0Namespace *namespace,
                             const char *name,
@@ -179,6 +196,17 @@ dsk_ts0_namespace_add_function (DskTs0Namespace *namespace,
 {
   DskTs0NamespaceNode *node = force_namespace_node (&namespace->top_function, name);
   dsk_ts0_function_ref (function);
+  if (node->value)
+    dsk_ts0_function_unref (node->value);
+  node->value = function;
+}
+
+static void
+dsk_ts0_namespace_take_function (DskTs0Namespace *namespace,
+                            const char *name,
+                            DskTs0Function *function)
+{
+  DskTs0NamespaceNode *node = force_namespace_node (&namespace->top_function, name);
   if (node->value)
     dsk_ts0_function_unref (node->value);
   node->value = function;
@@ -291,6 +319,31 @@ const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
                      offsetof (DskTs0Class, get_variable), error);
 }
 
+static void
+free_tree_recursive (DskTs0NamespaceNode *top,
+                     DskDestroyNotify     destroy_func)
+{
+  if (top->left)
+    free_tree_recursive (top->left, destroy_func);
+  if (top->right)
+    free_tree_recursive (top->right, destroy_func);
+  destroy_func (top->value);
+  dsk_free (top);
+}
+
+void
+_dsk_ts0_namespace_destroy (DskTs0Namespace *ns)
+{
+  if (ns->top_tag)
+    free_tree_recursive (ns->top_tag, (DskDestroyNotify) dsk_ts0_tag_unref);
+  if (ns->top_function)
+    free_tree_recursive (ns->top_function, (DskDestroyNotify) dsk_ts0_function_unref);
+  if (ns->top_subnamespace)
+    free_tree_recursive (ns->top_subnamespace, (DskDestroyNotify) dsk_ts0_namespace_unref);
+  if (ns->top_variable)
+    free_tree_recursive (ns->top_variable, dsk_free);
+  dsk_free (ns);
+}
 
 static DskTs0Namespace *the_global_namespace = NULL;
 
@@ -321,40 +374,40 @@ void dsk_ts0_global_add_subnamespace    (const char *key,
 /* simple ways to add various types of functions */
 void
 dsk_ts0_global_add_lazy_func     (const char *name,
-                                  DskTs0GlobalLazyFunc lazy_func)
+                                  DskTs0LazyFunc lazy_func)
 {
-  DskTs0Function *function = dsk_ts0_function_new_global_lazy (lazy_func);
-  dsk_ts0_global_take_function (name, function);
+  DskTs0Function *function = dsk_ts0_function_new_lazy (lazy_func);
+  dsk_ts0_namespace_take_function (dsk_ts0_namespace_global (), name, function);
 }
 
 void
 dsk_ts0_global_add_lazy_func_data  (const char              *name,
-                                    DskTs0GlobalLazyDataFunc lazy_func,
+                                    DskTs0LazyDataFunc       lazy_func,
                                     void                    *func_data,
                                     DskDestroyNotify         destroy)
 {
   DskTs0Function *function;
-  function = dsk_ts0_function_new_global_lazy_data (lazy_func, func_data, destroy);
-  dsk_ts0_global_take_function (name, function);
+  function = dsk_ts0_function_new_lazy_data (lazy_func, func_data, destroy);
+  dsk_ts0_namespace_take_function (dsk_ts0_namespace_global (), name, function);
 }
 
 void
-dsk_ts0_global_add_func(const char *name, DskTs0GlobalFunc func)
+dsk_ts0_global_add_strict_func(const char *name, DskTs0StrictFunc func)
 {
   DskTs0Function *function;
-  function = dsk_ts0_function_new_global (func);
-  dsk_ts0_global_take_function (name, function);
+  function = dsk_ts0_function_new_strict (func);
+  dsk_ts0_namespace_take_function (dsk_ts0_namespace_global (), name, function);
 }
 
 void
-dsk_ts0_global_add_func_data            (const char *name,
-                                              DskTs0GlobalDataFunc func,
+dsk_ts0_global_add_strict_func_data          (const char *name,
+                                              DskTs0StrictDataFunc func,
                                               void *func_data,
                                               DskDestroyNotify destroy)
 {
   DskTs0Function *function;
-  function = dsk_ts0_function_new_global_data (func, func_data, destroy);
-  dsk_ts0_global_take_function (name, function);
+  function = dsk_ts0_function_new_strict_data (func, func_data, destroy);
+  dsk_ts0_namespace_take_function (dsk_ts0_namespace_global (), name, function);
 }
 
 
@@ -373,6 +426,220 @@ dsk_ts0_context_peek_namespace       (DskTs0Context *context)
   ...
 }
 #endif
+
+/* --- functions --- */
+#define DSK_TS0_FUNCTION_BASE_INIT(suffix) \
+{ function_invoke__##suffix, function_destroy__##suffix, 1, 1 }
+
+#define FUNCTION_INVOKE__ARGS \
+  DskTs0Function *function, \
+  DskTs0Namespace *ns, \
+  unsigned        n_args, \
+  DskTs0Expr    **args, \
+  DskBuffer      *output, \
+  DskError      **error
+
+#define function_destroy__dsk_free ((void(*)(DskTs0Function*)) dsk_free)
+
+/* helper function to invoke strict (ie non-lazy) functions */
+typedef dsk_boolean (*StrictMarshal) (DskTs0Function *function,
+                                      DskTs0Namespace *ns,
+                                      unsigned        n_args,
+                                      char          **args,
+                                      DskBuffer      *output,
+                                      DskError      **error);
+static dsk_boolean
+function_invoke_strict_generic (DskTs0Function *function,
+                                DskTs0Namespace *ns,
+                                unsigned        n_args,
+                                DskTs0Expr    **args,
+                                DskBuffer      *output,
+                                StrictMarshal   marshal,
+                                DskError      **error)
+{
+  unsigned *lengths = alloca (sizeof (unsigned) * n_args);
+  char **arg_strings = alloca (sizeof (char *) * n_args);
+  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  unsigned last_size = 0;
+  unsigned i;
+  for (i = 0; i < n_args; i++)
+    {
+      if (!dsk_ts0_expr_evaluate (args[i], ns, &buffer, error))
+        {
+          dsk_buffer_clear (&buffer);
+          return DSK_FALSE;
+        }
+      lengths[i] = buffer.size - last_size;
+      last_size = buffer.size;
+    }
+
+  unsigned needed_length = buffer.size + n_args;        /* for NUL characters */
+  dsk_boolean must_free = (needed_length >= 512);
+
+  char *slab;
+  if (must_free)
+    slab = dsk_malloc (needed_length);
+  else
+    slab = alloca (needed_length);
+
+  char *at = slab;
+  for (i = 0; i < n_args; i++)
+    {
+      arg_strings[i] = at;
+      dsk_buffer_read (&buffer, lengths[i], at);
+      at += lengths[i];
+      *at++ = '\0';
+    }
+  dsk_boolean rv = marshal (function, ns, n_args, arg_strings, output, error);
+  if (must_free)
+    dsk_free (slab);
+  return rv;
+}
+
+
+/* strict functions w/o data */
+typedef struct {
+  DskTs0Function base;
+  DskTs0StrictFunc func;
+} DskTs0Function_Strict;
+
+static dsk_boolean
+strict_marshal (DskTs0Function *function,
+                DskTs0Namespace *ns,
+                unsigned        n_args,
+                char          **args,
+                DskBuffer      *output,
+                DskError      **error)
+{
+  DskTs0Function_Strict *F = (DskTs0Function_Strict *) function;
+  return F->func (ns, n_args, args, output, error);
+}
+
+static dsk_boolean
+function_invoke__strict (FUNCTION_INVOKE__ARGS)
+{
+  return function_invoke_strict_generic (function, ns, n_args, args, output, strict_marshal, error);
+}
+#define function_destroy__strict    function_destroy__dsk_free
+
+DskTs0Function *
+dsk_ts0_function_new_strict           (DskTs0StrictFunc         func)
+{
+  static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(strict);
+  DskTs0Function_Strict *rv = dsk_malloc (sizeof (DskTs0Function_Strict));
+  rv->base = base;
+  rv->func = func;
+  return &rv->base;
+}
+
+/* strict functions w/ data */
+typedef struct {
+  DskTs0Function base;
+  DskTs0StrictDataFunc func;
+  void *func_data;
+  DskDestroyNotify destroy;
+} DskTs0Function_StrictData;
+
+static dsk_boolean
+strict_marshal__data (DskTs0Function *function,
+                      DskTs0Namespace *ns,
+                      unsigned        n_args,
+                      char          **args,
+                      DskBuffer      *output,
+                      DskError      **error)
+{
+  DskTs0Function_StrictData *F = (DskTs0Function_StrictData *) function;
+  return F->func (ns, n_args, args, output, F->func_data, error);
+}
+
+static dsk_boolean
+function_invoke__strict_data (FUNCTION_INVOKE__ARGS)
+{
+  return function_invoke_strict_generic (function, ns, n_args, args, output, strict_marshal__data, error);
+}
+
+static void
+function_destroy__strict_data (DskTs0Function *function)
+{
+  DskTs0Function_StrictData *F = (DskTs0Function_StrictData *) function;
+  if (F->destroy)
+    F->destroy (F->func_data);
+  dsk_free (F);
+}
+
+DskTs0Function *
+dsk_ts0_function_new_strict_data      (DskTs0StrictDataFunc     func,
+                                       void                    *data,
+                                       DskDestroyNotify         destroy)
+{
+  static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(strict_data);
+  DskTs0Function_StrictData *rv = dsk_malloc (sizeof (DskTs0Function_StrictData));
+  rv->base = base;
+  rv->func = func;
+  rv->func_data = data;
+  rv->destroy = destroy;
+  return &rv->base;
+}
+
+
+/* lazy functions w/o data */
+typedef struct {
+  DskTs0Function base;
+  DskTs0LazyFunc func;
+} DskTs0Function_Lazy;
+static dsk_boolean
+function_invoke__lazy (FUNCTION_INVOKE__ARGS)
+{
+  DskTs0Function_Lazy *F = (DskTs0Function_Lazy *) function;
+  return F->func (ns, n_args, args, output, error);
+}
+#define function_destroy__lazy    function_destroy__dsk_free
+
+DskTs0Function *
+dsk_ts0_function_new_lazy      (DskTs0LazyFunc func)
+{
+  static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(lazy);
+  DskTs0Function_Lazy *rv = dsk_malloc (sizeof (DskTs0Function_Lazy));
+  rv->base = base;
+  rv->func = func;
+  return &rv->base;
+}
+
+/* lazy functions w/ data */
+typedef struct {
+  DskTs0Function base;
+  DskTs0LazyDataFunc func;
+  void *func_data;
+  DskDestroyNotify destroy;
+} DskTs0Function_LazyData;
+static dsk_boolean
+function_invoke__lazy_data (FUNCTION_INVOKE__ARGS)
+{
+  DskTs0Function_LazyData *F = (DskTs0Function_LazyData *) function;
+  return F->func (ns, n_args, args, output, F->func_data, error);
+}
+static void
+function_destroy__lazy_data (DskTs0Function *function)
+{
+  DskTs0Function_LazyData *F = (DskTs0Function_LazyData *) function;
+  if (F->destroy)
+    F->destroy (F->func_data);
+  dsk_free (F);
+}
+
+DskTs0Function *
+dsk_ts0_function_new_lazy_data (DskTs0LazyDataFunc lazy,
+                                       void                    *data,
+                                       DskDestroyNotify         destroy)
+{
+  static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(lazy_data);
+  DskTs0Function_LazyData *rv = dsk_malloc (sizeof (DskTs0Function_LazyData));
+  rv->base = base;
+  rv->func = lazy;
+  rv->func_data = data;
+  rv->destroy = destroy;
+  return &rv->base;
+}
 
 /* --- ref-counted filenames --- */
 static DskTs0Filename *dsk_ts0_filename_new (const char *filename)
@@ -794,7 +1061,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                 }
               piece.type = DSK_TS0_STANZA_PIECE_EXPRESSION;
               piece.info.expression = dsk_ts0_expr_new_variable (fname, line_no,
-                                                              str - start, str);
+                                                              str - start, start);
               APPEND_PIECE (piece);
               continue;
             }
@@ -1099,6 +1366,51 @@ error_cleanup:
   if (pieces != init_pieces)
     dsk_free (pieces);
   return NULL;
+}
+
+void           dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+                                          unsigned      indent,
+                                          DskBuffer    *buffer)
+{
+  unsigned i;
+  for (i = 0; i < stanza->n_pieces; i++)
+    {
+      dsk_buffer_append_repeated_byte (buffer, indent, ' ');
+      dsk_buffer_printf (buffer, "piece %u:\n", i);
+      dsk_buffer_append_repeated_byte (buffer, indent+2, ' ');
+      switch (stanza->pieces[i].type)
+        {
+        case DSK_TS0_STANZA_PIECE_LITERAL:
+          dsk_filter_to_buffer (stanza->pieces[i].info.literal.length,
+                                stanza->pieces[i].info.literal.data,
+                                dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                                buffer,
+                                NULL);
+          break;
+        case DSK_TS0_STANZA_PIECE_EXPRESSION:
+          dsk_ts0_expr_to_buffer (stanza->pieces[i].info.expression, buffer);
+          break;
+        case DSK_TS0_STANZA_PIECE_TAG:
+          dsk_buffer_append_string (buffer, "<% ");
+          dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.tag_name);
+          unsigned a;
+          for (a = 0; a < stanza->pieces[i].info.tag.n_args; a++)
+            {
+              dsk_buffer_append_byte (buffer, ' ');
+              dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.args[a].name);
+              dsk_buffer_append_byte (buffer, '=');
+              dsk_ts0_expr_to_buffer (stanza->pieces[i].info.tag.args[a].expr, buffer);
+            }
+          dsk_buffer_append_string (buffer, " %>\n");
+          dsk_ts0_stanza_dump (stanza->pieces[i].info.tag.body, indent + 4, buffer);
+          dsk_buffer_append_repeated_byte (buffer, indent, ' ');
+          dsk_buffer_append_string (buffer, "<%/ ");
+          dsk_buffer_append_string (buffer, stanza->pieces[i].info.tag.tag_name);
+          dsk_buffer_append_string (buffer, " %>");
+          break;
+        }
+      dsk_buffer_append_byte (buffer, '\n');
+    }
 }
 
 void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza)
@@ -1855,7 +2167,7 @@ quoted_string_error:
         {
           /* create concatenation */
           return dsk_ts0_expr_new_function_anon (filename, tokens[0].start_line_no,
-                                                 dsk_ts0_function_concat (), n_pieces, pieces);
+                                                 &dsk_ts0_function_concat, n_pieces, pieces);
         }
 
     case DSK_TS0_EXPR_TOKEN_TYPE_NUMBER:
@@ -1867,10 +2179,48 @@ quoted_string_error:
           return NULL;
         }
       unsigned len = tokens[0].end - tokens[0].start;
-      return dsk_ts0_expr_new_literal (filename, line_no,
+      return dsk_ts0_expr_new_literal (filename, start_line_no,
                                        len, dsk_memdup (len, tokens[0].start));
     }
   dsk_return_val_if_reached ("unhandled expression-token-type", NULL);
+}
+
+static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
+                                           DskBuffer  *out)
+{
+  switch (expr->type)
+    {
+    case DSK_TS0_EXPR_LITERAL:
+      dsk_filter_to_buffer (expr->info.literal.length,
+                            expr->info.literal.data,
+                            dsk_octet_filter_chain_new_take_list (
+                              dsk_byte_doubler_new ('$'),
+                              dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                              NULL
+                            ),
+                            out,
+                            NULL);
+      break;
+    case DSK_TS0_EXPR_VARIABLE:
+      dsk_buffer_append_byte (out, '$');
+      dsk_buffer_append_string (out, expr->info.variable.name);
+      break;
+    case DSK_TS0_EXPR_FUNCTION_CALL:
+      if (expr->info.function_call.name == NULL)
+        dsk_buffer_append_string (out, "*anon_function*");
+      else
+        dsk_buffer_append_string (out, expr->info.function_call.name);
+      dsk_buffer_append_byte (out, '(');
+      unsigned i;
+      for (i = 0; i < expr->info.function_call.n_args; i++)
+        {
+          if (i > 0)
+            dsk_buffer_append_string (out, ", ");
+          dsk_ts0_expr_to_buffer (expr->info.function_call.args[i], out);
+        }
+      dsk_buffer_append_byte (out, ')');
+      break;
+    }
 }
 
 /* note: takes ownership of data */
@@ -1977,10 +2327,10 @@ add_expr_error_suffix (DskError **error,
                         expr->line_no);
 }
 
-static dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
-                                          DskTs0Namespace *ns,
-                                          DskBuffer  *target,
-                                          DskError  **error)
+dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+                                   DskTs0Namespace *ns,
+                                   DskBuffer  *target,
+                                   DskError  **error)
 {
   switch (expr->type)
     {

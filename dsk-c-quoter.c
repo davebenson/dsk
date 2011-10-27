@@ -243,3 +243,4 @@ dsk_c_quoter_new (dsk_boolean add_quotes,
   cq->protect_trigraphs = protect_trigraphs ? 1 : 0;
   return DSK_OCTET_FILTER (cq);
 }
+

@@ -488,6 +488,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                           dsk_add_error_prefix (error, "processing --%s", opt);
                           return DSK_FALSE;
                         }
+                      arg->flags |= _DSK_CMDLINE_OPTION_USED;
                       skip_or_swallow (argc_inout, argv_inout, &i, 2);
                       continue;
                     }

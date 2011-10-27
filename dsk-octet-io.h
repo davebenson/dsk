@@ -1,4 +1,3 @@
-
 typedef struct _DskOctetSourceClass DskOctetSourceClass;
 typedef struct _DskOctetSinkClass DskOctetSinkClass;
 typedef struct _DskOctetSource DskOctetSource;
@@ -206,6 +205,13 @@ DskOctetSource *dsk_octet_filter_source (DskOctetSource *source,
 DskOctetSink   *dsk_octet_filter_sink   (DskOctetSource *sink,
                                          DskOctetFilter *filter);
 
+
+/* hackneyed helper function: unrefs the filter. */
+dsk_boolean dsk_filter_to_buffer  (unsigned length,
+                                   const uint8_t *data,
+                                   DskOctetFilter *filter,
+                                   DskBuffer *output,
+                                   DskError **error);
 /* Defining subclasses of DskOctetFilter is easy and fun;
  */
 

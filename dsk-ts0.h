@@ -67,6 +67,10 @@ struct _DskTs0Function
 DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
 DSK_INLINE_FUNC void            dsk_ts0_function_unref (DskTs0Function *);
 
+dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+                                   DskTs0Namespace *ns,
+                                   DskBuffer  *target,
+                                   DskError  **error);
 
 /* --- tag-type operators --- */
 struct _DskTs0Tag
@@ -158,38 +162,38 @@ void dsk_ts0_global_add_subspace (const char *key,
                                   DskTs0Namespace *ns);
 
 /* simple ways to add various types of functions */
-typedef dsk_boolean (*DskTs0GlobalLazyFunc)  (DskTs0Namespace *ns,
+typedef dsk_boolean (*DskTs0LazyFunc)  (DskTs0Namespace *ns,
                                               unsigned         n_args,
                                               DskTs0Expr     **args,
                                               DskBuffer       *output,
                                               DskError       **error);
 void dsk_ts0_global_add_lazy_func(const char *name,
-                                  DskTs0GlobalLazyFunc lazy_func);
-typedef dsk_boolean (*DskTs0GlobalLazyDataFunc) (DskTs0Namespace *ns,
+                                  DskTs0LazyFunc lazy_func);
+typedef dsk_boolean (*DskTs0LazyDataFunc) (DskTs0Namespace *ns,
                                                  unsigned        n_args,
                                                  DskTs0Expr    **args,
                                                  DskBuffer      *output,
                                                  char           *func_data,
                                                  DskError      **error);
 void dsk_ts0_global_add_lazy_func_data       (const char *name,
-                                              DskTs0GlobalLazyDataFunc lazy_func,
+                                              DskTs0LazyDataFunc lazy_func,
                                               void *func_data,
                                               DskDestroyNotify destroy);
-typedef dsk_boolean (*DskTs0GlobalFunc)     (DskTs0Namespace *ns,
+typedef dsk_boolean (*DskTs0StrictFunc)     (DskTs0Namespace *ns,
+                                             unsigned        n_args,
+                                             char          **args,
+                                             DskBuffer      *output,
+                                             DskError      **error);
+void dsk_ts0_global_add_func(const char *name,
+                                  DskTs0StrictFunc func);
+typedef dsk_boolean (*DskTs0StrictDataFunc)     (DskTs0Namespace *ns,
                                              unsigned        n_args,
                                              char          **args,
                                              DskBuffer      *output,
                                               char           *func_data,
                                              DskError      **error);
-void dsk_ts0_global_add_func(const char *name,
-                                  DskTs0GlobalFunc func);
-typedef dsk_boolean (*DskTs0GlobalDataFunc)     (DskTs0Namespace *ns,
-                                             unsigned        n_args,
-                                             char          **args,
-                                             DskBuffer      *output,
-                                             DskError      **error);
 void dsk_ts0_global_add_func_data            (const char *name,
-                                              DskTs0GlobalDataFunc func,
+                                              DskTs0StrictDataFunc func,
                                               void *func_data,
                                               DskDestroyNotify destroy);
 
@@ -197,15 +201,15 @@ void dsk_ts0_global_take_function            (const char    *name,
                                               DskTs0Function *function);
 
 DskTs0Function *
-dsk_ts0_function_new_global           (DskTs0GlobalFunc         func);
+dsk_ts0_function_new_strict           (DskTs0StrictFunc         func);
 DskTs0Function *
-dsk_ts0_function_new_global_data      (DskTs0GlobalDataFunc     func,
+dsk_ts0_function_new_strict_data      (DskTs0StrictDataFunc     func,
                                        void                    *data,
                                        DskDestroyNotify         destroy);
 DskTs0Function *
-dsk_ts0_function_new_global_lazy      (DskTs0GlobalLazyFunc     lazy);
+dsk_ts0_function_new_lazy      (DskTs0LazyFunc     lazy);
 DskTs0Function *
-dsk_ts0_function_new_global_lazy_data (DskTs0GlobalLazyDataFunc lazy,
+dsk_ts0_function_new_lazy_data (DskTs0LazyDataFunc lazy,
                                        void                    *data,
                                        DskDestroyNotify         destroy);
 
@@ -270,6 +274,9 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                                          const char   *filename,
                                          unsigned      line_no,
                                          DskError    **error);
+void          dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
+                                         unsigned      indent,
+                                         DskBuffer    *buffer);
 void          dsk_ts0_stanza_free       (DskTs0Stanza *stanza);
 
 

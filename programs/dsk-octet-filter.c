@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include "../dsk.h"
 
 #define MAX_FILTERS 64
@@ -447,17 +448,9 @@ int main(int argc, char **argv)
         break;
       if (!dsk_octet_filter_process_buffer (filter, &out, in.size, &in, DSK_TRUE, &error))
         dsk_die ("error running filter: %s", error->message);
-      while (out.size)
-        {
-          int rv = dsk_buffer_writev (&out, 1);
-          if (rv < 0)
-            {
-              if (errno == EAGAIN || errno == EINTR)
-                continue;
-              dsk_die ("error writing to standard-output: %s",
-                       strerror (errno));
-            }
-        }
+      if (!dsk_buffer_write_all_to_fd (&out, STDOUT_FILENO, &error))
+        dsk_die ("error writing to stdout: %s", error->message);
+
       dsk_assert (in.size == 0);
       dsk_assert (out.size == 0);
     }

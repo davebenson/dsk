@@ -14,8 +14,11 @@
 #include "dsk-octet-io.h"
 #include "dsk-memory.h"
 #include "dsk-ip-address.h"
+#include "dsk-ethernet-address.h"
 #include "dsk-dns-client.h"
 #include "dsk-octet-listener.h"
+
+#include "dsk-network-interface-list.h"
 
 #include "dsk-dns-protocol.h"
 
