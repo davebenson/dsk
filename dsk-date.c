@@ -259,10 +259,8 @@ dsk_boolean dsk_date_parse   (const char *str,
                               DskError  **error)
 {
   unsigned n_alpha = 0;
-  const char *at;
   while (dsk_ascii_isalpha (str[n_alpha]))
     n_alpha++;
-  at = str + n_alpha;
   memset (out, 0, sizeof (DskDate));
   if (n_alpha == 3 && str[3] == ',')
     {

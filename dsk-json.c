@@ -13,7 +13,7 @@ DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value)
 {
   DskJsonValue *rv = dsk_malloc (sizeof (DskJsonValue));
   rv->type = DSK_JSON_VALUE_BOOLEAN;
-  rv->value.v_boolean = value;
+  rv->v_boolean.value = value;
   return rv;
 }
 /* takes ownership of subvalues, but not of the members array */
@@ -32,18 +32,18 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
                    + sizeof (DskJsonMember*) * n_members
                    + total_str_len);
   rv->type = DSK_JSON_VALUE_OBJECT;
-  rv->value.v_object.n_members = n_members;
-  rv->value.v_object.members = (DskJsonMember *) (rv + 1);
-  smembers = (DskJsonMember **) (rv->value.v_object.members + n_members);
-  rv->value.v_object.members_sorted_by_name = smembers;
+  rv->v_object.n_members = n_members;
+  rv->v_object.members = (DskJsonMember *) (rv + 1);
+  smembers = (DskJsonMember **) (rv->v_object.members + n_members);
+  rv->v_object.members_sorted_by_name = smembers;
   str_heap = (char*)(smembers + n_members);
   for (i = 0; i < n_members; i++)
     {
-      rv->value.v_object.members[i].value = members[i].value;
-      rv->value.v_object.members[i].name = str_heap;
+      rv->v_object.members[i].value = members[i].value;
+      rv->v_object.members[i].name = str_heap;
       strcpy (str_heap, members[i].name);
       str_heap = strchr (str_heap, 0) + 1;
-      smembers[i] = rv->value.v_object.members + i;
+      smembers[i] = rv->v_object.members + i;
     }
 #define COMPARE_MEMBERS(a,b, rv)   rv = strcmp (a->name, b->name)
   GSK_QSORT (smembers, DskJsonMember *, n_members, COMPARE_MEMBERS);
@@ -57,11 +57,11 @@ dsk_json_object_get_member (DskJsonValue *value,
 {
   unsigned start = 0, count;
   dsk_return_val_if_fail (value->type == DSK_JSON_VALUE_OBJECT, "get_member called on non-object json type", NULL);
-  count = value->value.v_object.n_members;
+  count = value->v_object.n_members;
   while (count > 0)
     {
       unsigned mid = start + count / 2;
-      DskJsonMember *member = value->value.v_object.members_sorted_by_name[mid];
+      DskJsonMember *member = value->v_object.members_sorted_by_name[mid];
       int cmp = strcmp (name, member->name);
       if (cmp < 0)
         {
@@ -94,9 +94,9 @@ DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
   rv = dsk_malloc (sizeof (DskJsonValue)
                    + sizeof (DskJsonValue *) * n_values);
   rv->type = DSK_JSON_VALUE_ARRAY;
-  rv->value.v_array.n_values = n_values;
-  rv->value.v_array.values = (DskJsonValue **) (rv + 1);
-  memcpy (rv->value.v_array.values, values, sizeof (DskJsonValue*) * n_values);
+  rv->v_array.n_values = n_values;
+  rv->v_array.values = (DskJsonValue **) (rv + 1);
+  memcpy (rv->v_array.values, values, sizeof (DskJsonValue*) * n_values);
   return rv;
 }
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
@@ -105,10 +105,10 @@ DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
   DskJsonValue *rv;
   rv = dsk_malloc (sizeof (DskJsonValue) + n_bytes + 1);
   rv->type = DSK_JSON_VALUE_STRING;
-  rv->value.v_string.length = n_bytes;
-  rv->value.v_string.str = (char*)(rv+1);
-  memcpy (rv->value.v_string.str, str, n_bytes);
-  rv->value.v_string.str[n_bytes] = 0;
+  rv->v_string.length = n_bytes;
+  rv->v_string.str = (char*)(rv+1);
+  memcpy (rv->v_string.str, str, n_bytes);
+  rv->v_string.str[n_bytes] = 0;
   return rv;
 }
 
@@ -117,7 +117,7 @@ DskJsonValue *dsk_json_value_new_number (double         value)
   DskJsonValue *rv;
   rv = dsk_malloc (sizeof (DskJsonValue));
   rv->type = DSK_JSON_VALUE_NUMBER;
-  rv->value.v_number = value;
+  rv->v_number.value = value;
   return rv;
 }
 
@@ -126,13 +126,13 @@ DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
   switch (value->type)
     {
     case DSK_JSON_VALUE_BOOLEAN:
-      return dsk_json_value_new_boolean (value->value.v_boolean);
+      return dsk_json_value_new_boolean (value->v_boolean.value);
     case DSK_JSON_VALUE_NULL:
       return dsk_json_value_new_null ();
     case DSK_JSON_VALUE_OBJECT:
       {
-        unsigned n_members = value->value.v_object.n_members;
-        DskJsonMember *old = value->value.v_object.members;
+        unsigned n_members = value->v_object.n_members;
+        DskJsonMember *old = value->v_object.members;
         DskJsonMember *tmp = alloca (sizeof (DskJsonMember) * n_members);
         unsigned i;
         for (i = 0; i < n_members; i++)
@@ -144,8 +144,8 @@ DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
       }
     case DSK_JSON_VALUE_ARRAY:
       {
-        unsigned n_values = value->value.v_array.n_values;
-        DskJsonValue **old = value->value.v_array.values;
+        unsigned n_values = value->v_array.n_values;
+        DskJsonValue **old = value->v_array.values;
         DskJsonValue **tmp = alloca (sizeof (DskJsonValue *) * n_values);
         unsigned i;
         for (i = 0; i < n_values; i++)
@@ -153,10 +153,10 @@ DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
         return dsk_json_value_new_array (n_values, tmp);
       }
     case DSK_JSON_VALUE_STRING:
-      return dsk_json_value_new_string (value->value.v_string.length,
-                                        value->value.v_string.str);
+      return dsk_json_value_new_string (value->v_string.length,
+                                        value->v_string.str);
     case DSK_JSON_VALUE_NUMBER:
-      return dsk_json_value_new_number (value->value.v_number);
+      return dsk_json_value_new_number (value->v_number.value);
     }
   dsk_return_val_if_reached ("bad value", NULL);
 }
@@ -165,11 +165,11 @@ void          dsk_json_value_free       (DskJsonValue  *value)
 {
   unsigned i;
   if (value->type == DSK_JSON_VALUE_OBJECT)
-    for (i = 0; i < value->value.v_object.n_members; i++)
-      dsk_json_value_free (value->value.v_object.members[i].value);
+    for (i = 0; i < value->v_object.n_members; i++)
+      dsk_json_value_free (value->v_object.members[i].value);
   else if (value->type == DSK_JSON_VALUE_ARRAY)
-    for (i = 0; i < value->value.v_array.n_values; i++)
-      dsk_json_value_free (value->value.v_array.values[i]);
+    for (i = 0; i < value->v_array.n_values; i++)
+      dsk_json_value_free (value->v_array.values[i]);
   dsk_free (value);
 }
 

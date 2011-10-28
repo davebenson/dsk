@@ -122,7 +122,7 @@ dsk_json_value_serialize  (const DskJsonValue *value,
   switch (value->type)
     {
     case DSK_JSON_VALUE_BOOLEAN:
-      if (value->value.v_boolean)
+      if (value->v_boolean.value)
         append_func (4, "true", append_data);
       else
         append_func (5, "false", append_data);
@@ -133,9 +133,9 @@ dsk_json_value_serialize  (const DskJsonValue *value,
     case DSK_JSON_VALUE_OBJECT:
       if (indent >= 0)
         {
-          unsigned n_members = value->value.v_object.n_members;
+          unsigned n_members = value->v_object.n_members;
           unsigned i;
-          const DskJsonMember *members = value->value.v_object.members;
+          const DskJsonMember *members = value->v_object.members;
           append_func (2, "{\n", append_data);
           for (i = 0; i < n_members; i++)
             {
@@ -156,8 +156,8 @@ dsk_json_value_serialize  (const DskJsonValue *value,
         }
       else
         {
-          unsigned n_members = value->value.v_object.n_members;
-          DskJsonMember *members = value->value.v_object.members;
+          unsigned n_members = value->v_object.n_members;
+          DskJsonMember *members = value->v_object.members;
           unsigned i;
           append_func (1, "{", append_data);
           for (i = 0; i < n_members; i++)
@@ -178,8 +178,8 @@ dsk_json_value_serialize  (const DskJsonValue *value,
     case DSK_JSON_VALUE_ARRAY:
       if (indent >= 0)
         {
-          unsigned n_values = value->value.v_array.n_values;
-          DskJsonValue **values = value->value.v_array.values;
+          unsigned n_values = value->v_array.n_values;
+          DskJsonValue **values = value->v_array.values;
           unsigned i;
           append_func (2, "[\n", append_data);
           for (i = 0; i < n_values; i++)
@@ -197,8 +197,8 @@ dsk_json_value_serialize  (const DskJsonValue *value,
         }
       else
         {
-          unsigned n_values = value->value.v_array.n_values;
-          DskJsonValue **values = value->value.v_array.values;
+          unsigned n_values = value->v_array.n_values;
+          DskJsonValue **values = value->v_array.values;
           unsigned i;
           append_func (1, "[", append_data);
           for (i = 0; i < n_values; i++)
@@ -212,14 +212,14 @@ dsk_json_value_serialize  (const DskJsonValue *value,
         }
       break;
     case DSK_JSON_VALUE_STRING:
-      pr_quoted_string (value->value.v_string.length,
-                        value->value.v_string.str,
+      pr_quoted_string (value->v_string.length,
+                        value->v_string.str,
                         append_func, append_data);
       break;
     case DSK_JSON_VALUE_NUMBER:
       {
         char buf[256];
-        snprintf (buf, sizeof (buf), "%.17g", value->value.v_number);
+        snprintf (buf, sizeof (buf), "%.17g", value->v_number.value);
         buf[sizeof(buf)-1] = 0;
         append_func (strlen (buf), buf, append_data);
         break;

@@ -1,6 +1,11 @@
 typedef struct _DskJsonMember DskJsonMember;
-typedef struct _DskJsonValue DskJsonValue;
+typedef union _DskJsonValue DskJsonValue;
 typedef struct _DskJsonParser DskJsonParser;
+
+typedef struct _DskJsonValueObject DskJsonValueObject;
+typedef struct _DskJsonValueArray DskJsonValueArray;
+typedef struct _DskJsonValueString DskJsonValueString;
+typedef struct _DskJsonValueNumber DskJsonValueNumber;
 
 typedef enum
 {
@@ -12,26 +17,45 @@ typedef enum
   DSK_JSON_VALUE_NUMBER
 } DskJsonValueType;
 
-struct _DskJsonValue
+typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
+struct _DskJsonValueBoolean
 {
   DskJsonValueType type;
-  union {
-    dsk_boolean v_boolean;
-    struct {
-      unsigned n_members;
-      DskJsonMember *members;
-      DskJsonMember **members_sorted_by_name; /* private */
-    } v_object;
-    struct {
-      unsigned n_values;
-      DskJsonValue **values;
-    } v_array;
-    struct {
-      unsigned length;            /* in bytes (!) */
-      char *str;
-    } v_string;
-    double v_number;
-  } value;
+  dsk_boolean value;
+};
+struct _DskJsonValueObject
+{
+  DskJsonValueType type;
+  unsigned n_members;
+  DskJsonMember *members;
+  DskJsonMember **members_sorted_by_name; /* private */
+};
+struct _DskJsonValueArray
+{
+  DskJsonValueType type;
+  unsigned n_values;
+  DskJsonValue **values;
+};
+struct _DskJsonValueString
+{
+  DskJsonValueType type;
+  unsigned length;            /* in bytes (!) */
+  char *str;
+};
+struct _DskJsonValueNumber
+{
+  DskJsonValueType type;
+  double value;
+};
+
+union _DskJsonValue
+{
+  DskJsonValueType type;
+  DskJsonValueBoolean v_boolean;
+  DskJsonValueObject v_object;
+  DskJsonValueArray v_array;
+  DskJsonValueString v_string;
+  DskJsonValueNumber v_number;
 };
 
 struct _DskJsonMember

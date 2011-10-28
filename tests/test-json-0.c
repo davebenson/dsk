@@ -35,22 +35,22 @@ int main(int argc, char **argv)
 
   v = parse_value ("true");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_boolean == DSK_TRUE);
+  dsk_assert (v->v_boolean.value == DSK_TRUE);
   dsk_json_value_free (v);
 
   v = parse_value ("true ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_boolean == DSK_TRUE);
+  dsk_assert (v->v_boolean.value == DSK_TRUE);
   dsk_json_value_free (v);
 
   v = parse_value ("false");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_boolean == DSK_FALSE);
+  dsk_assert (v->v_boolean.value == DSK_FALSE);
   dsk_json_value_free (v);
 
   v = parse_value ("false ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_boolean == DSK_FALSE);
+  dsk_assert (v->v_boolean.value == DSK_FALSE);
   dsk_json_value_free (v);
 
   v = parse_value ("null");
@@ -63,78 +63,78 @@ int main(int argc, char **argv)
 
   v = parse_value ("42 ");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_number == 42.0);
+  dsk_assert (v->v_number.value == 42.0);
   dsk_json_value_free (v);
 
   v = parse_value ("42.0");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_number == 42.0);
+  dsk_assert (v->v_number.value == 42.0);
   dsk_json_value_free (v);
 
   v = parse_value ("1e3");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_number == 1000.0);
+  dsk_assert (v->v_number.value == 1000.0);
   dsk_json_value_free (v);
 
   v = parse_value ("{}");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
-  dsk_assert (v->value.v_object.n_members == 0);
+  dsk_assert (v->v_object.n_members == 0);
   dsk_json_value_free (v);
 
   v = parse_value ("{ \"a\": 1 }");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
-  dsk_assert (v->value.v_object.n_members == 1);
-  dsk_assert (strcmp (v->value.v_object.members[0].name, "a") == 0);
-  dsk_assert (v->value.v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_object.members[0].value->value.v_number == 1.0);
+  dsk_assert (v->v_object.n_members == 1);
+  dsk_assert (strcmp (v->v_object.members[0].name, "a") == 0);
+  dsk_assert (v->v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_object.members[0].value->v_number.value == 1.0);
   dsk_json_value_free (v);
 
   v = parse_value ("{ \"a\": 1, \"bbb\": false }");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
-  dsk_assert (v->value.v_object.n_members == 2);
-  dsk_assert (strcmp (v->value.v_object.members[0].name, "a") == 0);
-  dsk_assert (v->value.v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_object.members[0].value->value.v_number == 1.0);
-  dsk_assert (strcmp (v->value.v_object.members[1].name, "bbb") == 0);
-  dsk_assert (v->value.v_object.members[1].value->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_object.members[1].value->value.v_boolean == DSK_FALSE);
+  dsk_assert (v->v_object.n_members == 2);
+  dsk_assert (strcmp (v->v_object.members[0].name, "a") == 0);
+  dsk_assert (v->v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_object.members[0].value->v_number.value == 1.0);
+  dsk_assert (strcmp (v->v_object.members[1].name, "bbb") == 0);
+  dsk_assert (v->v_object.members[1].value->type == DSK_JSON_VALUE_BOOLEAN);
+  dsk_assert (v->v_object.members[1].value->v_boolean.value == DSK_FALSE);
   dsk_json_value_free (v);
 
   v = parse_value ("[]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
-  dsk_assert (v->value.v_array.n_values == 0);
+  dsk_assert (v->v_array.n_values == 0);
   dsk_json_value_free (v);
 
   v = parse_value ("[\"a\",false,666]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
-  dsk_assert (v->value.v_array.n_values == 3);
-  dsk_assert (v->value.v_array.values[0]->type == DSK_JSON_VALUE_STRING);
-  dsk_assert (v->value.v_array.values[0]->value.v_string.length == 1);
-  dsk_assert (strcmp (v->value.v_array.values[0]->value.v_string.str, "a") == 0);
-  dsk_assert (v->value.v_array.values[1]->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->value.v_array.values[1]->value.v_boolean == DSK_FALSE);
-  dsk_assert (v->value.v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[2]->value.v_number == 666);
+  dsk_assert (v->v_array.n_values == 3);
+  dsk_assert (v->v_array.values[0]->type == DSK_JSON_VALUE_STRING);
+  dsk_assert (v->v_array.values[0]->v_string.length == 1);
+  dsk_assert (strcmp (v->v_array.values[0]->v_string.str, "a") == 0);
+  dsk_assert (v->v_array.values[1]->type == DSK_JSON_VALUE_BOOLEAN);
+  dsk_assert (v->v_array.values[1]->v_boolean.value == DSK_FALSE);
+  dsk_assert (v->v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[2]->v_number.value == 666);
   dsk_json_value_free (v);
 
   v = parse_value ("[{\"a\":1}, [1,2,4,9]]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
-  dsk_assert (v->value.v_array.n_values == 2);
-  dsk_assert (v->value.v_array.values[0]->type == DSK_JSON_VALUE_OBJECT);
-  dsk_assert (v->value.v_array.values[0]->value.v_object.n_members == 1);
-  dsk_assert (strcmp (v->value.v_array.values[0]->value.v_object.members[0].name, "a") == 0);
-  dsk_assert (v->value.v_array.values[0]->value.v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[0]->value.v_object.members[0].value->value.v_number == 1);
-  dsk_assert (v->value.v_array.values[1]->type == DSK_JSON_VALUE_ARRAY);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.n_values == 4);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[0]->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[0]->value.v_number == 1);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[1]->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[1]->value.v_number == 2);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[2]->value.v_number == 4);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[3]->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (v->value.v_array.values[1]->value.v_array.values[3]->value.v_number == 9);
+  dsk_assert (v->v_array.n_values == 2);
+  dsk_assert (v->v_array.values[0]->type == DSK_JSON_VALUE_OBJECT);
+  dsk_assert (v->v_array.values[0]->v_object.n_members == 1);
+  dsk_assert (strcmp (v->v_array.values[0]->v_object.members[0].name, "a") == 0);
+  dsk_assert (v->v_array.values[0]->v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[0]->v_object.members[0].value->v_number.value == 1);
+  dsk_assert (v->v_array.values[1]->type == DSK_JSON_VALUE_ARRAY);
+  dsk_assert (v->v_array.values[1]->v_array.n_values == 4);
+  dsk_assert (v->v_array.values[1]->v_array.values[0]->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[1]->v_array.values[0]->v_number.value == 1);
+  dsk_assert (v->v_array.values[1]->v_array.values[1]->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[1]->v_array.values[1]->v_number.value == 2);
+  dsk_assert (v->v_array.values[1]->v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[1]->v_array.values[2]->v_number.value == 4);
+  dsk_assert (v->v_array.values[1]->v_array.values[3]->type == DSK_JSON_VALUE_NUMBER);
+  dsk_assert (v->v_array.values[1]->v_array.values[3]->v_number.value == 9);
   dsk_json_value_free (v);
 
   v = parse_value ("{\"b\":123, \"a\":\"foo\", \"c\":42.0}");
@@ -142,15 +142,15 @@ int main(int argc, char **argv)
   mem = dsk_json_object_get_member (v, "a");
   dsk_assert (mem != NULL);
   dsk_assert (mem->value->type == DSK_JSON_VALUE_STRING);
-  dsk_assert (strcmp (mem->value->value.v_string.str, "foo") == 0);
+  dsk_assert (strcmp (mem->value->v_string.str, "foo") == 0);
   mem = dsk_json_object_get_member (v, "b");
   dsk_assert (mem != NULL);
   dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (mem->value->value.v_number == 123);
+  dsk_assert (mem->value->v_number.value == 123);
   mem = dsk_json_object_get_member (v, "c");
   dsk_assert (mem != NULL);
   dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
-  dsk_assert (mem->value->value.v_number == 42);
+  dsk_assert (mem->value->v_number.value == 42);
   dsk_json_value_free (v);
 
   dsk_cleanup ();
