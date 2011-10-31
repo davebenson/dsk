@@ -27,6 +27,9 @@ struct _DskCToken
   unsigned start_line, n_lines;		/* 1-indexed, per tradition */
   unsigned n_children;
   DskCToken *children;
+
+
+  const char *start_char;               /* as passed in to new_str() */
 };
 
 typedef enum
@@ -95,6 +98,16 @@ DskCToken *dsk_ctoken_scan_str  (const char  *str,
 void       dsk_ctoken_destroy   (DskCToken *top);
 
 
+
+/* --- for use in parsing the CToken data structures --- */
+
+/* Check if a CToken matches a simple fixed string.
+   ctoken_type_shortname should be "BAREWORD", "OPERATOR" or the like. */
+#define DSK_CTOKEN_IS(ctoken_ptr, ctoken_type_shortname, literal_str) \
+     ((ctoken_ptr)->type == DSK_CTOKEN_TYPE_##ctoken_type_shortname \
+   && memcmp ((ctoken_ptr)->start_char, literal_str, (ctoken_ptr)->n_bytes) == 0 \
+   && literal_str[(ctoken_ptr)->n_bytes] == '\0')
+    
 
 /* --- handlers --- */
 dsk_boolean dsk_ctoken_scan_quoted__default    (const char  *str,

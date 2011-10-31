@@ -28,6 +28,7 @@ static DskCToken *
 append_child (DskCToken    *parent,
               DskCTokenType type,
               unsigned       start_byte,
+              const char    *start_char,
               unsigned       line)
 {
   DskCToken *block;
@@ -41,6 +42,7 @@ append_child (DskCToken    *parent,
   block = parent->children + parent->n_children++;
   block->type = type;
   block->start_byte = start_byte;
+  block->start_char = start_char;
   block->start_line = line;
   block->token_id = 0;
   block->token = NULL;
@@ -315,6 +317,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
   rv->type = DSK_CTOKEN_TYPE_TOPLEVEL;
   rv->parent = NULL;
   rv->start_byte = 0;
+  rv->start_char = str;
   rv->start_line = 1;
   rv->token_id = 0;
   rv->token = NULL;
@@ -337,7 +340,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           block = append_child (top, (*at == LPAREN) ? DSK_CTOKEN_TYPE_PAREN
                                   : (*at == LBRACKET) ? DSK_CTOKEN_TYPE_BRACKET
                                   : DSK_CTOKEN_TYPE_BRACE,
-                                at - str, line);
+                                at - str, at, line);
           stack[stack_size++] = block;
 
           at++;
@@ -375,7 +378,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
                                 *at == '"' ? DSK_CTOKEN_TYPE_DOUBLE_QUOTED_STRING
                                 : *at == '\'' ? DSK_CTOKEN_TYPE_SINGLE_QUOTED_STRING
                                 : DSK_CTOKEN_TYPE_BACKTICK_STRING,
-                                at - str, line);
+                                at - str, at, line);
           if (!config->scan_quoted (at, end, &n_used, &block->token_id,
                                     &block->token, error))
             goto got_error;
@@ -395,7 +398,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           unsigned n_used = 0;
           DskCToken *block;
           block = append_child (top, DSK_CTOKEN_TYPE_OPERATOR,
-                                at - str, line);
+                                at - str, at, line);
           if (!config->scan_op (at, end, &n_used,
                                 &block->token_id, &block->token,
                                 error))
@@ -414,7 +417,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           unsigned n_used = 0;
           DskCToken *block;
           block = append_child (top, DSK_CTOKEN_TYPE_BAREWORD,
-                                at - str, line);
+                                at - str, at, line);
           if (!config->scan_bareword (at, end, &n_used,
                                       &block->token_id, &block->token,
                                       error))
@@ -433,7 +436,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
           unsigned n_used = 0;
           DskCToken *block;
           block = append_child (top, DSK_CTOKEN_TYPE_NUMBER,
-                                at - str, line);
+                                at - str, at, line);
           if (!config->scan_number (at, end, &n_used,
                                     &block->token_id, &block->token,
                                     error))
