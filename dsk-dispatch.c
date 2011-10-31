@@ -225,7 +225,7 @@ DskDispatch *dsk_dispatch_new (void)
   rv->base.n_notifies_desired = 0;
   rv->callbacks = dsk_malloc (sizeof (Callback) * rv->notifies_desired_alloced);
   rv->changes_alloced = 8;
-  rv->base.changes = dsk_malloc (sizeof (DskFileDescriptorNotify) * rv->changes_alloced);
+  rv->base.changes = dsk_malloc (sizeof (DskFileDescriptorNotifyChange) * rv->changes_alloced);
 #if HAVE_SMALL_FDS
   rv->fd_map_size = 16;
   rv->fd_map = dsk_malloc (sizeof (FDMap) * rv->fd_map_size);
