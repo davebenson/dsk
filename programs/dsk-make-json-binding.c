@@ -403,26 +403,26 @@ implement_to_json_by_type   (FILE *fp,
     {
     case JSON_METATYPE_INT:
     case JSON_METATYPE_NUMBER:
-      fprintf (fp, "%.*s%s = dsk_json_value_new_number (%s);\n",
+      fprintf (fp, "%*s%s = dsk_json_value_new_number (%s);\n",
                indent, "", output_name, input_name);
       break;
     case JSON_METATYPE_BOOLEAN:
-      fprintf (fp, "%.*s%s = dsk_json_value_new_boolean (%s);\n",
+      fprintf (fp, "%*s%s = dsk_json_value_new_boolean (%s);\n",
                indent, "", output_name, input_name);
       break;
     case JSON_METATYPE_STRING:
-      fprintf (fp, "%.*s%s = dsk_json_value_new_string (strlen (%s), %s);\n",
+      fprintf (fp, "%*s%s = dsk_json_value_new_string (strlen (%s), %s);\n",
                indent, "", output_name, input_name, input_name);
       break;
     case JSON_METATYPE_JSON:
-      fprintf (fp, "%.*s%s = dsk_json_value_copy (%s);\n",
+      fprintf (fp, "%*s%s = dsk_json_value_copy (%s);\n",
                indent, "", output_name, input_name);
       break;
 
       /* STRUCT and UNION are handled by other generated functions */
     case JSON_METATYPE_STRUCT:
     case JSON_METATYPE_UNION:
-      fprintf (fp, "%.*s%s = %s%s__to_json (&(%s);\n",
+      fprintf (fp, "%*s%s = %s%s__to_json (&(%s);\n",
                indent, "", output_name,
                namespace_func_prefix, type->lc_name, input_name);
       break;
@@ -473,7 +473,7 @@ implement_from_json_by_type (FILE *fp,
       fprintf (fp, "%*sif (%s->type != %s)\n"
                    "%*s  {\n"
                    "%*s    dsk_set_error (error, \"not a %s\");\n"
-                   "%*s    return NULL;\n"
+                   "%*s    return DSK_FALSE;\n"
                    "%*s  }\n",
                    indent,"", input_name, req_type_enumname,
                    indent,"",
@@ -791,9 +791,9 @@ int main(int argc, char **argv)
                 break;
               case JSON_MEMBER_TYPE_MAP:
                 fprintf (fp, "  unsigned n_%s;\n"
-                             "  %s%s *%s;\n",
+                             "  %s *%s;\n",
                          types[i]->members[j].name,
-                         namespace_struct_prefix, types[i]->members[j].value_type->cc_name,
+                         types[i]->members[j].value_type->c_name,
                          types[i]->members[j].name);
                 break;
               }
@@ -865,30 +865,29 @@ int main(int argc, char **argv)
       if (types[i]->metatype != JSON_METATYPE_UNION
        && types[i]->metatype != JSON_METATYPE_STRUCT)
         continue;
-      fprintf (fp, "%s *%s%s__from_json\n"
+      fprintf (fp, "dsk_boolean %s%s__from_json\n"
                    "         (DskMemPool *mem_pool,\n"
                    "          DskJsonValue *json,\n"
+                   "          %s *out,\n"
                    "          DskError  **error)\n"
                    "{\n",
-                   types[i]->c_name,
-                   namespace_func_prefix, types[i]->lc_name);
+                   namespace_func_prefix, types[i]->lc_name,
+                   types[i]->c_name);
       switch (types[i]->metatype)
         {
         case JSON_METATYPE_UNION:
           fprintf (fp, "  if (json->type != DSK_JSON_VALUE_OBJECT)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: not an object\", \"%s\");\n"
-                       "      return NULL;\n"
+                       "      return DSK_FALSE;\n"
                        "    }\n"
                        "  if (json->v_object.n_members == 1)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: did not have just one member\", \"%s\");\n"
-                       "      return NULL;\n"
+                       "      return DSK_FALSE;\n"
                        "    }\n"
-                       "  value = dsk_mem_pool_alloc (mem_pool, sizeof (%s));\n"
                        "  switch (json->v_object.members[0].name)\n"
                        "    {\n",
-                       types[i]->c_name,
                        types[i]->c_name,
                        types[i]->c_name);
           uint8_t *members_used = dsk_malloc0 (types[i]->n_members);
@@ -904,9 +903,6 @@ int main(int argc, char **argv)
                                      "        {\n",
                                types[i]->members[k].name);
                       JsonType *mem_type = types[i]->members[k].value_type;
-                      if (mem_type)
-                        fprintf (fp, "          %s *rv = dsk_mem_pool_alloc (mem_pool, sizeof (%s));\n",
-                                 types[i]->c_name, mem_type->c_name);
                       fprintf (fp,   "          rv->type = %s%s__%s;\n",
                                namespace_enum_prefix, types[i]->uc_name,
                                types[i]->members[k].uc_name);
@@ -929,31 +925,29 @@ int main(int argc, char **argv)
                        "    }\n"
                        "  dsk_set_error (error, \"from_json -> %s: bad type '%%s'\",\n"
                        "                 json->v_object.members[0].name)\n"
-                       "  return NULL;\n",
+                       "  return DSK_FALSE;\n",
                        types[i]->c_name);
           break;
         case JSON_METATYPE_STRUCT:
           fprintf (fp, "  if (json->type != DSK_JSON_VALUE_OBJECT)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: not an object\", \"%s\");\n"
-                       "      return NULL;\n"
+                       "      return DSK_FALSE;\n"
                        "    }\n",
-                       types[i]->c_name);
-          fprintf (fp, "  value = dsk_mem_pool_alloc (mem_pool, sizeof (%s));\n",
                        types[i]->c_name);
           for (j = 0; j < types[i]->n_members; j++)
             switch (types[i]->members[j].member_type)
               {
               case JSON_MEMBER_TYPE_DEFAULT:
                 {
-                  char *v = dsk_strdup_printf ("value->%s", types[i]->members[j].name);
+                  char *v = dsk_strdup_printf ("out->%s", types[i]->members[j].name);
                   fprintf (fp, "  {\n"
                                "    DskJsonValue *subvalue = dsk_json_object_get_value (json, \"%s\");\n"
                                "    if (subvalue == NULL)\n"
                                "      {\n"
                                "        dsk_set_error (error, \"could not get %%s in %%s\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return NULL;\n"
+                               "        return DSK_FALSE;\n"
                                "      }\n",
                                types[i]->members[j].name,
                                types[i]->members[j].name,
@@ -966,7 +960,7 @@ int main(int argc, char **argv)
                 break;
               case JSON_MEMBER_TYPE_OPTIONAL:
                 {
-                  char *v = dsk_strdup_printf ("value->%s", types[i]->members[j].name);
+                  char *v = dsk_strdup_printf ("out->%s", types[i]->members[j].name);
                   fprintf (fp, "  {\n"
                                "    DskJsonValue *subvalue = dsk_json_object_get_value (json, \"%s\");\n"
                                "    if (subvalue == NULL)\n"
@@ -991,20 +985,20 @@ int main(int argc, char **argv)
                                "    DskJsonValue *subvalue = dsk_json_object_get_value (json, \"%s\");\n"
                                "    if (subvalue == NULL)\n"
                                "      {\n"
-                               "        value->n_%s = 0;\n"
-                               "        value->%s = NULL;\n"
+                               "        out->n_%s = 0;\n"
+                               "        out->%s = NULL;\n"
                                "      }\n"
                                "    else if (subvalue->type != DSK_JSON_VALUE_ARRAY)\n"
                                "      {\n"
                                "        dsk_set_error (error, \"member %%s of %%s is not an array\n\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return NULL;\n"
+                               "        return DSK_FALSE;\n"
                                "      }\n"
                                "    else\n"
                                "      {\n"
                                "        unsigned i;\n"
-                               "        value->n_%s = subvalue->v_array.length;\n"
-                               "        value->%s = dsk_mem_pool_alloc (mem_pool, value->n_%s * sizeof (%s));\n"
+                               "        out->n_%s = subvalue->v_array.length;\n"
+                               "        out->%s = dsk_mem_pool_alloc (mem_pool, value->n_%s * sizeof (%s));\n"
                                "        if (i = 0; i < value->n_%s; i++)\n"
                                "          {\n",
                                types[i]->members[j].name,
@@ -1038,13 +1032,13 @@ int main(int argc, char **argv)
                                "      {\n"
                                "        dsk_set_error (error, \"member %%s of %%s is not an object\n\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return NULL;\n"
+                               "        return DSK_FALSE;\n"
                                "      }\n"
                                "    else\n"
                                "      {\n"
                                "        unsigned i;\n"
-                               "        value->n_%s = subvalue->v_object.n_members;\n"
-                               "        value->%s = dsk_mem_pool_alloc (mem_pool, sizeof (%s%s_MapElement) * value->n_%s);\n"
+                               "        out->n_%s = subvalue->v_object.n_members;\n"
+                               "        out->%s = dsk_mem_pool_alloc (mem_pool, sizeof (%s%s_MapElement) * value->n_%s);\n"
                                "        %s *values = dsk_mem_pool_alloc (mem_pool, sizeof (%s) * value->n_%s);\n"
                                "        if (i = 0; i < value->n_%s; i++)\n"
                                "          {\n"
@@ -1076,7 +1070,7 @@ int main(int argc, char **argv)
         default:
           dsk_assert_not_reached ();
         }
-      fprintf (fp, "  return value;\n"
+      fprintf (fp, "  return DSK_TRUE;\n"
                    "}\n\n");
     }
 
@@ -1125,47 +1119,47 @@ int main(int argc, char **argv)
             switch (types[i]->members[j].member_type)
               {
               case JSON_MEMBER_TYPE_DEFAULT:
-                fprintf (fp, "    members[n_members].name = \"%s\";\n",
+                fprintf (fp, "  members[n_members].name = \"%s\";\n",
                          types[i]->members[j].name);
                 {
                   char *v = dsk_strdup_printf ("value->%s", types[i]->members[j].name);
                   implement_to_json_by_type (fp, types[i]->members[j].value_type,
-                                             4,
+                                             2,
                                              "members[n_members].value", "members[n_members].value");
-                  fprintf (fp, "    n_members++;\n");
+                  fprintf (fp, "  n_members++;\n");
                   dsk_free (v);
                 }
                 break;
               case JSON_MEMBER_TYPE_MAP:
-                fprintf (fp, "    members[n_members].name = \"%s\";\n",
+                fprintf (fp, "  members[n_members].name = \"%s\";\n",
                          types[i]->members[j].name);
-                fprintf (fp, "    {\n"
-                             "      DskJsonMember *submembers = dsk_malloc (sizeof (DskJsonMember) * value->n_%s);\n"
-                             "      unsigned idx;\n"
-                             "      for (idx = 0; idx < value->n_%s; idx++)\n"
-                             "        {\n"
-                             "          submembers[idx].name = value->%s[idx].name;\n",
+                fprintf (fp, "  {\n"
+                             "    DskJsonMember *submembers = dsk_malloc (sizeof (DskJsonMember) * value->n_%s);\n"
+                             "    unsigned idx;\n"
+                             "    for (idx = 0; idx < value->n_%s; idx++)\n"
+                             "      {\n"
+                             "        submembers[idx].name = value->%s[idx].name;\n",
                          types[i]->members[j].name,
                          types[i]->members[j].name,
                          types[i]->members[j].name);
                 {
                   char *v = dsk_strdup_printf ("value->%s[idx].value", types[i]->members[j].name);
                   implement_to_json_by_type (fp, types[i]->members[j].value_type,
-                                             10, v, "submembers[idx].value");
+                                             8, v, "submembers[idx].value");
                   dsk_free (v);
                 }
-                fprintf (fp, "        }\n"
-                             "      members[n_members].value = dsk_json_value_new_array (value->n_%s, submembers);\n"
-                             "    }\n"
+                fprintf (fp, "      }\n"
+                             "    members[n_members].value = dsk_json_value_new_array (value->n_%s, submembers);\n"
+                             "  }\n"
                              "  n_members++;\n",
                          types[i]->members[j].name);
                 break;
               case JSON_MEMBER_TYPE_ARRAY:
-                fprintf (fp, "    {\n"
-                             "      DskJsonValue **v = dsk_malloc (sizeof (DskJsonValue*) * value->n_%s);\n"
-                             "      unsigned idx;\n"
-                             "      for (idx = 0; idx < value->n_%s; idx++)\n"
-                             "        {\n",
+                fprintf (fp, "  {\n"
+                             "    DskJsonValue **v = dsk_malloc (sizeof (DskJsonValue*) * value->n_%s);\n"
+                             "    unsigned idx;\n"
+                             "    for (idx = 0; idx < value->n_%s; idx++)\n"
+                             "      {\n",
                          types[i]->members[j].name,
                          types[i]->members[j].name);
                 char *v = dsk_strdup_printf ("value->%s",
@@ -1174,19 +1168,19 @@ int main(int argc, char **argv)
                                            10,
                                            v, "v[idx]");
                 dsk_free (v);
-                fprintf (fp, "        }\n"
-                             "    }\n"
-                             "    members[n_members].name = \"%s\";\n"
-                             "    members[n_members].value = dsk_json_value_new_array (n_%s, %s);\n"
-                             "    n_members++;\n",
+                fprintf (fp, "      }\n"
+                             "  }\n"
+                             "  members[n_members].name = \"%s\";\n"
+                             "  members[n_members].value = dsk_json_value_new_array (n_%s, %s);\n"
+                             "  n_members++;\n",
                              types[i]->members[j].name,
                              types[i]->members[j].name,
                              types[i]->members[j].name);
                 break;
               case JSON_MEMBER_TYPE_OPTIONAL:
-                fprintf (fp, "    if (value->%s != NULL)\n"
-                             "      {\n"
-                             "        members[n_members].name = \"%s\";\n",
+                fprintf (fp, "  if (value->%s != NULL)\n"
+                             "    {\n"
+                             "      members[n_members].name = \"%s\";\n",
                              types[i]->members[j].name,
                              types[i]->members[j].name);
                 {
@@ -1196,8 +1190,8 @@ int main(int argc, char **argv)
                                              8, v, "members[n_members].value");
                   dsk_free (v);
                 }
-                fprintf (fp, "        n_members++;\n");
-                fprintf (fp, "      }\n");
+                fprintf (fp, "      n_members++;\n");
+                fprintf (fp, "    }\n");
                 break;
               }
           fprintf (fp, "  return dsk_json_value_new_object (n_members, members);\n");
