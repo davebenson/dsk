@@ -87,3 +87,21 @@ dsk_ascii_strchomp (char *inout)
     end--;
   *end = '\0';
 }
+void  dsk_ascii_strup   (char *str)
+{
+  while (*str)
+    {
+      if ('a' <= *str && *str <= 'z')
+        *str -= ('a' - 'A');
+      str++;
+    }
+}
+void  dsk_ascii_strdown (char *str)
+{
+  while (*str)
+    {
+      if ('A' <= *str && *str <= 'Z')
+        *str += ('a' - 'A');
+      str++;
+    }
+}

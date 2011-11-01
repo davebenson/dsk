@@ -30,6 +30,7 @@ struct _DskCToken
 
 
   const char *start_char;               /* as passed in to new_str() */
+  char *str;                            /* created on demand */
 };
 
 typedef enum
@@ -94,6 +95,8 @@ DskCToken *dsk_ctoken_scan_str  (const char  *str,
                                  const char  *end,
                                  DskCTokenScannerConfig *config,
                                  DskError   **error);
+
+const char *dsk_ctoken_force_str (DskCToken *token);
 
 void       dsk_ctoken_destroy   (DskCToken *top);
 

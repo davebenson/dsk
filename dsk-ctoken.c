@@ -48,6 +48,7 @@ append_child (DskCToken    *parent,
   block->token = NULL;
   block->n_children = 0;
   block->children = NULL;
+  block->str = NULL;
   return block;
 }
 
@@ -323,6 +324,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
   rv->token = NULL;
   rv->n_children = 0;
   rv->children = NULL;
+  rv->str = NULL;
   stack[0] = rv;
   stack_size = 1;
 
@@ -496,6 +498,12 @@ got_error:
   return NULL;
 }
 
+const char *dsk_ctoken_force_str (DskCToken *token)
+{
+  if (token->str == NULL)
+    token->str = dsk_strndup (token->n_bytes, token->start_char);
+  return token->str;
+}
 
 static void
 clike_block_free_array (unsigned n, DskCToken *at,
@@ -505,8 +513,13 @@ clike_block_free_array (unsigned n, DskCToken *at,
   if (destruct)
     destruct (at);
   for (i = 0; i < n; i++)
-    if (at[i].children)
-      clike_block_free_array (at[i].n_children, at[i].children, destruct);
+    {
+      if (at[i].str)
+        dsk_free (at[i].str);
+      if (at[i].children)
+        clike_block_free_array (at[i].n_children, at[i].children, destruct);
+    }
+
   free (at);
 }
 

@@ -212,6 +212,16 @@ dsk_boolean dsk_filter_to_buffer  (unsigned length,
                                    DskOctetFilter *filter,
                                    DskBuffer *output,
                                    DskError **error);
+char       *dsk_filter_to_string  (unsigned length,
+                                   const uint8_t *data,
+                                   DskOctetFilter *filter,
+                                   unsigned  *output_string_length_out_opt,
+                                   DskError **error);
+uint8_t    *dsk_filter_to_data    (unsigned length,
+                                   const uint8_t *data,
+                                   DskOctetFilter *filter,
+                                   unsigned  *output_string_length_out,
+                                   DskError **error);
 /* Defining subclasses of DskOctetFilter is easy and fun;
  */
 

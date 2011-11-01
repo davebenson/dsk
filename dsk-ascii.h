@@ -42,6 +42,8 @@ int dsk_ascii_strcasecmp  (const char *a, const char *b);
 int dsk_ascii_strncasecmp (const char *a, const char *b, size_t max_len);
 void dsk_ascii_strchomp (char *chomp);
 
+void  dsk_ascii_strup   (char *str);
+void  dsk_ascii_strdown (char *str);
 
 #define DSK_ASCII_SKIP_SPACE(ptr) \
       do { while (dsk_ascii_isspace (*(ptr))) ptr++; } while(0)

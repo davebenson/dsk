@@ -103,6 +103,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-mime-multipart.o \
 	  dsk-xml-escaper.o \
 	  dsk-print.o \
+	  dsk-codegen.o \
 	  dsk-checksum.o \
 	  dsk-file-util.o dsk-pattern.o \
 	  dsk-table-file-trivial.o \
