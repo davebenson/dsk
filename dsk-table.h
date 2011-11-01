@@ -105,7 +105,13 @@ struct _DskTableReader
 
 DskTableReader  *dsk_table_new_reader(DskTable       *table,
                                       DskError      **error);
-//DskTableReader  *dsk_table_dump_range    (DskTable       *table, ...);
+
+/* returns all entries for which the supplied 'compare' returns 0. */
+DskTableReader  *dsk_table_dump_range    (DskTable       *table,
+                                          DskTableCompareFunc compare,
+                                          void           *compare_data,
+                                          DskDestroyNotify compare_data_destroy,
+                                          DskError      **error);
 
 typedef struct {
   const char *openat_dir;

@@ -30,6 +30,8 @@
 
 #include "dsk-print.h"
 
+#include "dsk-codegen.h"
+
 #include "dsk-date.h"
 
 #include "dsk-file-util.h"

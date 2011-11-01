@@ -32,7 +32,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
-	   programs/dsk-ifconfig
+	   programs/dsk-ifconfig programs/dsk-make-json-binding
 all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all
@@ -103,6 +103,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-mime-multipart.o \
 	  dsk-xml-escaper.o \
 	  dsk-print.o \
+	  dsk-codegen.o \
 	  dsk-checksum.o \
 	  dsk-file-util.o dsk-pattern.o \
 	  dsk-table-file-trivial.o \

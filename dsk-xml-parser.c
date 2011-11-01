@@ -1000,7 +1000,6 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
 {
   ParseState *cur_state = parser->stack[parser->stack_size-1].state;
   ParseState *new_state;
-  ParseStateTransition *trans;
   unsigned n_attrs = parser->n_attrs;
   unsigned str_size; /* space used on the "stack_tag_strs" buffer */
   /* there's 2*n_attrs strings for the attributes
@@ -1219,7 +1218,6 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
   if (cur_state == NULL)
     {
       new_state = NULL;
-      trans = NULL;
     }
   else
     {
