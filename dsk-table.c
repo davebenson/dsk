@@ -1620,7 +1620,8 @@ dsk_table_destroy      (DskTable       *table)
   table->cp->close (table->cp, NULL);
   table->cp->destroy (table->cp);
   destroy_file_list (table->oldest_file);
-  free_small_tree_recursive (table->small_tree);
+  if (table->small_tree)
+    free_small_tree_recursive (table->small_tree);
   while (table->running_merges)
     {
       Merge *merge = table->running_merges;
