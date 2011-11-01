@@ -225,7 +225,7 @@ DskDispatch *dsk_dispatch_new (void)
   rv->base.n_notifies_desired = 0;
   rv->callbacks = dsk_malloc (sizeof (Callback) * rv->notifies_desired_alloced);
   rv->changes_alloced = 8;
-  rv->base.changes = dsk_malloc (sizeof (DskFileDescriptorNotify) * rv->changes_alloced);
+  rv->base.changes = dsk_malloc (sizeof (DskFileDescriptorNotifyChange) * rv->changes_alloced);
 #if HAVE_SMALL_FDS
   rv->fd_map_size = 16;
   rv->fd_map = dsk_malloc (sizeof (FDMap) * rv->fd_map_size);
@@ -581,7 +581,6 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned fd_max;
   unsigned i;
-  FDMap *fd_map = d->fd_map;
   struct timeval tv;
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
@@ -589,14 +588,14 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
       fd_max = notifies[i].fd;
   ensure_fd_map_big_enough (d, fd_max);
   for (i = 0; i < n_notifies; i++)
-    fd_map[notifies[i].fd].closed_since_notify_started = 0;
+    d->fd_map[notifies[i].fd].closed_since_notify_started = 0;
   for (i = 0; i < n_notifies; i++)
     {
       unsigned fd = notifies[i].fd;
-      if (!fd_map[fd].closed_since_notify_started
-       && fd_map[fd].notify_desired_index != -1)
+      if (!d->fd_map[fd].closed_since_notify_started
+       && d->fd_map[fd].notify_desired_index != -1)
         {
-          unsigned nd_ind = fd_map[fd].notify_desired_index;
+          unsigned nd_ind = d->fd_map[fd].notify_desired_index;
           unsigned events = d->base.notifies_desired[nd_ind].events & notifies[i].events;
           if (events != 0)
             d->callbacks[nd_ind].func (fd, events, d->callbacks[nd_ind].data);
