@@ -102,3 +102,10 @@ char * dsk_codegen_lowercase_to_mixedcase    (const char *lowercase)
   return rv;
 }
 
+#if 0
+void dsk_codegen_function_render (DskCodegenFunction *function,
+                                  DskBuffer          *target)
+{
+  ...
+}
+#endif

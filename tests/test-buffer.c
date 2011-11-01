@@ -62,6 +62,9 @@ int main(int argc, char** argv)
   char buf[1024];
   char *str;
 
+  dsk_cmdline_init ("test dsk-buffer code", "test DskBuffer", NULL, 0);
+  dsk_cmdline_process_args (&argc, &argv);
+
   dsk_buffer_init (&gskbuffer);
   dsk_assert (gskbuffer.size == 0);
   dsk_buffer_append (&gskbuffer, 5, "hello");

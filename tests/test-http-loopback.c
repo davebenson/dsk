@@ -91,6 +91,7 @@ test_simple_connection_close (void)
   cr_options.funcs = &client_request_funcs;
   cr_options.user_data = &client_request_data;
   client_xfer = dsk_http_client_stream_request (client, &cr_options, &error);
+  dsk_assert (client_xfer != NULL);
   /* ALTERNATE: wait for request_available hook */
   while ((server_xfer=dsk_http_server_stream_get_request (server)) == NULL)
     dsk_main_run_once ();

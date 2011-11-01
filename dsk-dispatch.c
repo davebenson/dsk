@@ -805,6 +805,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
   rv->func_data = func_data;
   rv->dispatch = d;
   GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
+  (void) conflict;              /* suppress warnings */
   
   /* is this the first element in the tree */
   for (at = rv; at != NULL; at = at->parent)
