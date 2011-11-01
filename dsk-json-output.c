@@ -73,6 +73,7 @@ pr_quoted_string (unsigned              len,
           str++;
           len--;
         }
+#if 0
       else if ((uint8_t) (*str) < 128U)
         {
           /* Normally we can use a shortened octal code instead
@@ -87,6 +88,7 @@ pr_quoted_string (unsigned              len,
           str++;
           len--;
         }
+#endif
       else
         {
           /* unicode */
