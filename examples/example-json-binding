@@ -1,0 +1,18 @@
+namespace foo;
+
+struct Bar
+{
+  int aaa;
+  int{} bbb;
+  int[] ccc;
+  int? ddd;
+};
+
+union Baz
+{
+  int qqq;
+  number rrr;
+  string sss;
+  Bar ttt;
+  void uuu;
+};
