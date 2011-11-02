@@ -685,7 +685,7 @@ events_to_pollfd_events (unsigned ev)
 static inline unsigned
 pollfd_events_to_events (unsigned ev)
 {
-  return  ((ev & POLLIN) ? DSK_EVENT_READABLE : 0)
+  return  ((ev & (POLLIN|POLLHUP)) ? DSK_EVENT_READABLE : 0)
        |  ((ev & POLLOUT) ? DSK_EVENT_WRITABLE : 0)
        ;
 }
