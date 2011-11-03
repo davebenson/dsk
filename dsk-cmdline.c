@@ -6,6 +6,7 @@
 #include "dsk-object.h"
 #include "dsk-error.h"
 #include "dsk-cmdline.h"
+#include "dsk-buffer.h"
 
 static const char *cmdline_short_desc;
 static const char *cmdline_long_desc;
@@ -335,6 +336,60 @@ void dsk_cmdline_add_shortcut(char            shortcut,
   cmdline_args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] = arg;
 }
 
+void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
+                                     const char     *arg_1,
+                                     ...)
+{
+  va_list args;
+  unsigned n = 1;
+  char **arg_array;
+  char *a;
+  va_start (args, arg_1);
+  while (va_arg (args, char*))
+    n++;
+  va_end (args);
+
+  arg_array = alloca (sizeof(char*) * n);
+  arg_array[0] = (char*) arg_1;
+  va_start (args, arg_1);
+  n=1;
+  while ((a=va_arg (args, char*)) != NULL)
+    arg_array[n++] = a;
+  va_end (args);
+  dsk_cmdline_mutually_exclusive_v (one_required, n, arg_array);
+}
+
+typedef struct _ExclNode ExclNode;
+struct _ExclNode
+{
+  dsk_boolean one_required;
+  unsigned n_args;
+  DskCmdlineArg **args;
+  ExclNode *next;
+};
+static ExclNode *first_excl_node = NULL, *last_excl_node = NULL;
+
+void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
+                                       unsigned        n_excl,
+                                       char          **excl)
+{
+  DskCmdlineArg **args = dsk_malloc (sizeof(DskCmdlineArg*) * n_excl);
+  ExclNode *node = dsk_malloc (sizeof (ExclNode));
+  unsigned i;
+  node->args = args;
+  for (i = 0; i < n_excl; i++)
+    if ((args[i] = try_option (excl[i])) == NULL)
+      dsk_die ("dsk_cmdline_mutually_exclusive_v: bad option %s", excl[i]);
+  node->n_args = n_excl;
+  node->one_required = one_required;
+
+  if (first_excl_node == NULL)
+    first_excl_node = node;
+  else
+    last_excl_node->next = node;
+  last_excl_node = node;
+}
+
 void dsk_cmdline_permit_unknown_options (dsk_boolean permit)
 {
   cmdline_permit_unknown_options = permit;
@@ -380,6 +435,43 @@ check_mandatory_args_recursive (DskCmdlineArg *node,
     }
   return (node->left == NULL || check_mandatory_args_recursive (node->left, error))
       && (node->right == NULL || check_mandatory_args_recursive (node->right, error));
+}
+
+static dsk_boolean
+check_mutually_exclusive_args (DskError **error)
+{
+  ExclNode *at;
+  for (at = first_excl_node; at; at = at->next)
+    {
+      unsigned i;
+      const char *got_arg_name = NULL;
+      for (i = 0; i < at->n_args; i++)
+        if (at->args[i]->flags & _DSK_CMDLINE_OPTION_USED)
+          {
+            if (got_arg_name)
+              {
+                dsk_set_error (error, "'--%s' and '--%s' are mutually exclusive",
+                               got_arg_name, at->args[i]->option_name);
+                return DSK_FALSE;
+              }
+            got_arg_name = at->args[i]->option_name;
+          }
+      if (got_arg_name == NULL && at->one_required)
+        {
+          DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+          for (i = 0; i < at->n_args; i++)
+            {
+              dsk_buffer_append_string (&buffer, " --");
+              dsk_buffer_append_string (&buffer, at->args[i]->option_name);
+            }
+          char *str = dsk_buffer_clear_to_string (&buffer);
+          dsk_set_error (error, "one of the following options is required:%s",
+                         str);
+          dsk_free (str);
+          return DSK_FALSE;
+        }
+    }
+  return DSK_TRUE;
 }
 
 static void
@@ -609,6 +701,8 @@ dsk_cmdline_try_process_args (int *argc_inout,
   /* check that all mandatory arguments are used */
   if (cmdline_arg_tree != NULL
    && !check_mandatory_args_recursive (cmdline_arg_tree, error))
+    return DSK_FALSE;
+  if (!check_mutually_exclusive_args (error))
     return DSK_FALSE;
 
   return DSK_TRUE;

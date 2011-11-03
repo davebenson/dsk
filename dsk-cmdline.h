@@ -65,6 +65,12 @@ void dsk_cmdline_add_func    (const char     *static_option_name,
                               void           *callback_data);
 void dsk_cmdline_add_shortcut(char            shortcut,
                               const char     *option_name);
+void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
+                                     const char     *arg_1,
+                                     ...) DSK_GNUC_NULL_TERMINATED();
+void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
+                                       unsigned        n_excl,
+                                       char          **excl);
 void dsk_cmdline_permit_unknown_options (dsk_boolean permit);
 void dsk_cmdline_permit_extra_arguments (dsk_boolean permit);
 
