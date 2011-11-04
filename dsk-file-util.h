@@ -1,7 +1,7 @@
 #define DSK_DIR_SEPARATOR  '/'
 #define DSK_DIR_SEPARATOR_S  "/"
 
-char       *dsk_file_get_contents (const char *filename,
+uint8_t    *dsk_file_get_contents (const char *filename,
                                    size_t     *size_out,
 			           DskError  **error);
 dsk_boolean dsk_file_set_contents (const char *filename,

@@ -65,6 +65,7 @@ typedef enum
 #ifndef DSK_GNUC_PRINTF                /* fallback: no compiler hint */
 # define DSK_GNUC_PRINTF( format_idx, arg_idx )
 #endif
+#define DSK_GNUC_NULL_TERMINATED() __attribute__((sentinel))
 
 /* DSK_GNUC_NULL_TERMINATED(): Advise the compiler
  * that the arguments should be like printf(3); it may
@@ -172,6 +173,7 @@ char *dsk_stpcpy (char *dst, const char *src);
 
 /* programmer error:  only needed during development, hopefully.. */
 void dsk_die(const char *format, ...) DSK_GNUC_PRINTF(1,2);
+
 
 
 /* allocators (and utilities) which behave fatally */
