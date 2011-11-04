@@ -541,7 +541,7 @@ int main(int argc, char **argv)
 
   DskError *error = NULL;
   size_t len;
-  char *contents = dsk_file_get_contents (cmdline_input, &len, &error);
+  char *contents = (char *)dsk_file_get_contents (cmdline_input, &len, &error);
   if (contents == NULL)
     dsk_die ("error reading input file: %s", error->message);
   config.error_filename = cmdline_input;

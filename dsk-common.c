@@ -45,7 +45,7 @@ dsk_malloc (size_t size)
     return NULL;
   rv = malloc (size);
   if (rv == NULL)
-    dsk_error ("out-of-memory allocating %u bytes", (unsigned) size);
+    dsk_die ("out-of-memory allocating %u bytes", (unsigned) size);
   return rv;
 }
 void *
@@ -56,7 +56,7 @@ dsk_malloc0 (size_t size)
     return NULL;
   rv = malloc (size);
   if (rv == NULL)
-    dsk_error ("out-of-memory allocating %u bytes", (unsigned) size);
+    dsk_die ("out-of-memory allocating %u bytes", (unsigned) size);
   memset (rv, 0, size);
   return rv;
 }
@@ -80,7 +80,7 @@ dsk_realloc (void *ptr, size_t size)
     {
       void *rv = realloc (ptr, size);
       if (rv == NULL)
-        dsk_error ("out-of-memory re-allocating %u bytes", (unsigned) size);
+        dsk_die ("out-of-memory re-allocating %u bytes", (unsigned) size);
       return rv;
     }
 }

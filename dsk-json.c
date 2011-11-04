@@ -3,6 +3,21 @@
 #include "dsk.h"
 #include "gskqsortmacro.h"
 
+const char *dsk_json_value_type_name (DskJsonValueType type)
+{
+  switch (type)
+    {
+    case DSK_JSON_VALUE_BOOLEAN: return "boolean";
+    case DSK_JSON_VALUE_NULL: return "null";
+    case DSK_JSON_VALUE_OBJECT: return "object";
+    case DSK_JSON_VALUE_ARRAY: return "array";
+    case DSK_JSON_VALUE_STRING: return "string";
+    case DSK_JSON_VALUE_NUMBER: return "number";
+    }
+  return NULL;
+}
+
+
 DskJsonValue *dsk_json_value_new_null   (void)
 {
   DskJsonValue *rv = dsk_malloc (sizeof (DskJsonValue));

@@ -16,6 +16,7 @@ typedef enum
   DSK_JSON_VALUE_STRING,
   DSK_JSON_VALUE_NUMBER
 } DskJsonValueType;
+const char *dsk_json_value_type_name (DskJsonValueType type);
 
 typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
 struct _DskJsonValueBoolean
