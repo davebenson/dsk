@@ -66,6 +66,18 @@ typedef enum
 # define DSK_GNUC_PRINTF( format_idx, arg_idx )
 #endif
 
+/* DSK_GNUC_NULL_TERMINATED(): Advise the compiler
+ * that the arguments should be like printf(3); it may
+ * optionally print type warnings.  */
+#ifdef __GNUC__
+#if     __GNUC__ >= 4
+#define DSK_GNUC_NULL_TERMINATED()    __attribute__((sentinel))
+#endif
+#endif
+#ifndef DSK_GNUC_NULL_TERMINATED                /* fallback: no compiler hint */
+# define DSK_GNUC_NULL_TERMINATED()
+#endif
+
 /* logging */
 /* fatal user level error:  exit with status 1 */
 void dsk_error(const char *format, ...) DSK_GNUC_PRINTF(1,2);
