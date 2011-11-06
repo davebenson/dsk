@@ -383,7 +383,7 @@ DskPrint *dsk_print_new_buffer    (DskBuffer *buffer)
 
 void dsk_print_set_buffer          (DskPrint    *context,
                                     const char  *variable_name,
-                                    DskBuffer   *buffer)
+                                    const DskBuffer *buffer)
 {
   unsigned key_len = strlen (variable_name);
   unsigned value_len = buffer->size;
