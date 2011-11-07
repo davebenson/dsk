@@ -1,4 +1,5 @@
 #include "dsk.h"
+#include "dsk-config.h"
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -19,8 +20,13 @@
 #  error unknown endianness
 #endif
 
-#define FREAD  fread_unlocked
-#define FWRITE fwrite_unlocked
+#if DSK_HAS_UNLOCKED_STDIO_SUPPORT
+# define FREAD  fread_unlocked
+# define FWRITE fwrite_unlocked
+#else
+# define FREAD  fread
+# define FWRITE fwrite
+#endif
 
 /* synonyms provided for clarity */
 #define UINT64_FROM_LE UINT64_TO_LE
