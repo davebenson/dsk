@@ -17,7 +17,7 @@
 # define MY_O_BINARY  0
 #endif
 
-char       *dsk_file_get_contents (const char *filename,
+uint8_t    *dsk_file_get_contents (const char *filename,
                                    size_t     *size_out,
 			           DskError  **error)
 {
