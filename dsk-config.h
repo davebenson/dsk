@@ -49,6 +49,20 @@
 
 #define DSK_IS_BIG_ENDIAN    (!DSK_IS_LITTLE_ENDIAN)
 
+/* Miscellaneous features that linux has.
+ *  TODO: other OSes. */
+#ifdef __linux__
+# define DSK_HAS_ATFILE_SUPPORT         DSK_TRUE
+#else
+# define DSK_HAS_ATFILE_SUPPORT         DSK_FALSE
+#endif
+
+/* we should eliminate stdio instead of defining this. */
+#ifdef __linux__
+# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         DSK_TRUE
+#else
+# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         DSK_FALSE
+#endif
 
 /* Actually, this should be TRUE for all known versions
    of linux... but not mac os/x, and perhaps not BSD.
