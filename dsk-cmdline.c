@@ -382,6 +382,7 @@ void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
       dsk_die ("dsk_cmdline_mutually_exclusive_v: bad option %s", excl[i]);
   node->n_args = n_excl;
   node->one_required = one_required;
+  node->next = NULL;
 
   if (first_excl_node == NULL)
     first_excl_node = node;
