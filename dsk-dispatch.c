@@ -83,7 +83,7 @@ struct _RealDispatch
 #else
   FDMapNode *fd_map_tree;       /* map indexed by fd */
 #endif
-
+  dsk_boolean dispatching;
 
   DskDispatchTimer *timer_tree;
   DskDispatchTimer *recycled_timeouts;
@@ -258,8 +258,8 @@ DskDispatch *dsk_dispatch_new (void)
 }
 
 #if !HAVE_SMALL_FDS
-void free_fd_tree_recursive (DskAllocator *allocator,
-                             FDMapNode          *node)
+static void
+free_fd_tree_recursive (FDMapNode          *node)
 {
   if (node)
     {
@@ -269,6 +269,15 @@ void free_fd_tree_recursive (DskAllocator *allocator,
     }
 }
 #endif
+void free_timer_tree_recursive (DskDispatchTimer *node)
+{
+  if (node)
+    {
+      free_timer_tree_recursive (node->left);
+      free_timer_tree_recursive (node->right);
+      dsk_free (node);
+    }
+}
 
 /* XXX: leaking timer_tree seemingly? */
 void
@@ -302,8 +311,9 @@ dsk_dispatch_free(DskDispatch *dispatch)
 #if HAVE_SMALL_FDS
   dsk_free (d->fd_map);
 #else
-  free_fd_tree_recursive (allocator, d->fd_map_tree);
+  free_fd_tree_recursive (d->fd_map_tree);
 #endif
+  free_timer_tree_recursive (d->timer_tree);
   dsk_free (d);
 }
 
@@ -586,6 +596,8 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)
       fd_max = notifies[i].fd;
+  dsk_assert (!d->dispatching);
+  d->dispatching = DSK_TRUE;
   ensure_fd_map_big_enough (d, fd_max);
   for (i = 0; i < n_notifies; i++)
     d->fd_map[notifies[i].fd].closed_since_notify_started = 0;
@@ -659,6 +671,7 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
     }
   if (d->timer_tree == NULL)
     d->base.has_timeout = 0;
+  d->dispatching = DSK_FALSE;
 }
 
 void
