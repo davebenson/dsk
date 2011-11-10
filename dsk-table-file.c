@@ -577,7 +577,7 @@ table_file_writer_new (DskTableLocation        *location
   w->compressed_heap_offset = 0ULL;
 
   w->n_index_levels = 1;
-  w->index_levels = dsk_malloc (sizeof (WriterIndexLevel));
+  w->index_levels = DSK_NEW (WriterIndexLevel);
   w->index_levels[0]...
   return w;
 }
@@ -643,7 +643,7 @@ file_interface__destroy     (DskTableFileInterface   *iface)
 DskTableFileInterface *
 dsk_table_file_interface_new (DskTableFileNewOptions *options)
 {
-  TableFileInterface *iface = dsk_malloc (sizeof (TableFileInterface));
+  TableFileInterface *iface = DSK_NEW (TableFileInterface);
   dsk_assert (options->index_ratio >= 4);
   iface->base_iface.new_reader = file_interface__new_reader;
   iface->base_iface.new_writer = file_interface__new_writer;

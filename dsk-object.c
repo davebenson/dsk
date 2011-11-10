@@ -236,7 +236,7 @@ dsk_object_trap_finalize (DskObject *object,
                      DskDestroyNotify destroy,
                      void            *destroy_data)
 {
-  DskObjectFinalizeHandler *f = dsk_malloc (sizeof (DskObjectFinalizeHandler));
+  DskObjectFinalizeHandler *f = DSK_NEW (DskObjectFinalizeHandler);
   f->destroy = destroy;
   f->destroy_data = destroy_data;
   f->next = object->finalizer_list;

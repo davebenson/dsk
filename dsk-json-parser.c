@@ -150,8 +150,7 @@ static void
 stack_increase_subs_alloced (StackNode *node)
 {
   node->subs_alloced += 1;
-  node->u.members = dsk_realloc (node->u.members,
-                                 sizeof (DskJsonMember) * node->subs_alloced);
+  node->u.members = DSK_RENEW (DskJsonMember, node->u.members, node->subs_alloced);
 }
 
 /* --- parsing --- */
@@ -178,7 +177,7 @@ handle_subvalue          (DskJsonParser *parser,
   else
     {
       /* add to queue */
-      ValueQueue *q = dsk_malloc (sizeof (ValueQueue));
+      ValueQueue *q = DSK_NEW (ValueQueue);
       q->value = take;
       q->next = NULL;
       if (parser->queue_head == NULL)
@@ -245,8 +244,7 @@ push_stack (DskJsonParser *parser,
   if (parser->stack_alloced == parser->stack_size)
     {
       parser->stack_alloced += 1;
-      parser->stack = dsk_realloc (parser->stack,
-                                   parser->stack_alloced * sizeof (StackNode));
+      parser->stack = DSK_RENEW (StackNode, parser->stack, parser->stack_alloced);
       parser->stack[parser->stack_size].n_subs = 0;
       parser->stack[parser->stack_size].subs_alloced = 0;
       parser->stack[parser->stack_size].u.members = NULL;
@@ -639,7 +637,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
 
 DskJsonParser *dsk_json_parser_new      (void)
 {
-  DskJsonParser *parser = dsk_malloc0 (sizeof (DskJsonParser));
+  DskJsonParser *parser = DSK_NEW0 (DskJsonParser);
   return parser;
 }
 

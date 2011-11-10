@@ -17,6 +17,10 @@
  * "wall-clock" time for precise benchmarking.
  */
 
+/* I don't really think the above is true:
+ * rather that's POSIX's interpretation of UTC.
+ */
+
 typedef struct _DskDate DskDate;
 struct _DskDate
 {
@@ -65,8 +69,9 @@ void        dsk_unixtime_to_date (dsk_time_t unixtime,
 /* we recognise: UT, UTC, GMT; EST EDT CST CDT MST MDT PST PDT [A-Z]
    and the numeric formats: +#### and -#### and +##:## and -##:##
 
-   The return value is the number of minutes you must add to the time
-   to get the time in Greenwich.  */
+   The return value is the number of minutes you must add to Greenwich time
+   to get the time in the timezone's area.
+   (ie a negative number west of Greenwich) */
 dsk_boolean dsk_date_parse_timezone (const char *at,
                                      char **end,
 				     int *zone_offset_out);

@@ -170,7 +170,7 @@ force_host_info (DskHttpClientRequestOptions *options,
 #undef COMPARE
       if (host_info == NULL)
         {
-          host_info = dsk_malloc (sizeof (HostInfo));
+          host_info = DSK_NEW (HostInfo);
           host_info->name = dsk_strndup (host_len, host_start);
           dsk_ascii_strdown (host_info->name);
           host_info->port = port;
@@ -188,7 +188,7 @@ force_host_info (DskHttpClientRequestOptions *options,
 #undef COMPARE
       if (host_info == NULL)
         {
-          host_info = dsk_malloc (sizeof (HostInfo));
+          host_info = DSK_NEW (HostInfo);
           host_info->name = dsk_strdup (options->local_socket_path);
           host_info->port = 0;
           goto new_host_info;
@@ -300,10 +300,21 @@ connection_fatal_fail (Connection *connection,
             new->n_pipelined += 1;
             GSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
 
-            request_options ...
-            if (!dsk_http_client_stream_request (new->stream,
-                                                 &request_options, &error))
+            /* ???: copied from above.  is this adequate? */
+            DskHttpClientStreamRequestOptions sreq_options
+              = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+            DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+            char mem_pool_buf[1024];
+            options.request_options = &header_options;
+            DskMemPool mem_pool;
+            dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_buf), mem_pool_buf);
+            if (!init_request_options (options, &sreq_options, request, &mem_pool, error))
+              return DSK_FALSE;
+
+            if (!dsk_http_client_stream_request (new->stream, &sreq_options, &error))
               {
+                /* Presumably, there's something wrong with the
+                   request, so don't retry it. */
                 ...
               }
           }
@@ -652,7 +663,7 @@ dsk_http_client_request  (DskHttpClient               *client,
     return DSK_FALSE;
 
   /* Create request object */
-  request = dsk_malloc0 (sizeof (Transfer));
+  request = DSK_NEW0 (Transfer);
   request->host_info = host_info;
   request->funcs = options->funcs;
   request->func_data = options->func_data;
@@ -702,7 +713,7 @@ dsk_http_client_request  (DskHttpClient               *client,
           ...
         }
 
-      conn = dsk_malloc0 (sizeof (Connection));;
+      conn = DSK_NEW0 (Connection);;
 
       /* Setup http-client-stream options */
       ...
@@ -730,14 +741,14 @@ dsk_http_client_request  (DskHttpClient               *client,
     }
 
   /* --- Set up request options --- */
-  DskHttpClientStreamRequestOptions request_options
+  DskHttpClientStreamRequestOptions sreq_options
     = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
   DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
   char mem_pool_buf[1024];
-  request_options.request_options = &header_options;
+  options.request_options = &header_options;
   DskMemPool mem_pool;
   dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_buf), mem_pool_buf);
-  if (!init_request_options (options, &request_options, request, &mem_pool, error))
+  if (!init_request_options (options, &sreq_options, request, &mem_pool, error))
     return DSK_FALSE;
 
 

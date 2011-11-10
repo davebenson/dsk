@@ -1112,7 +1112,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   uint32_t key3_array[2];
   if (old_misc == NULL)
     old_misc = (DskHttpHeaderMisc*) ropts->unparsed_headers;
-  misc = dsk_malloc (sizeof (DskHttpHeaderMisc) * (old_n + 4));
+  misc = DSK_NEW_ARRAY (DskHttpHeaderMisc, old_n + 4);
   memcpy (misc, old_misc, old_n * sizeof (DskHttpHeaderMisc));
   misc[old_n].key = "Upgrade";
   misc[old_n].value = "Websocket";
@@ -1321,7 +1321,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
       return NULL;
     }
 
-  xfer = dsk_malloc (sizeof (DskHttpClientStreamTransfer));
+  xfer = DSK_NEW (DskHttpClientStreamTransfer);
   GSK_QUEUE_ENQUEUE (GET_STREAM_XFER_QUEUE (stream), xfer);
   if (stream->outgoing_data_transfer == NULL)
     stream->outgoing_data_transfer = xfer;

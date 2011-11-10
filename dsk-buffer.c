@@ -104,7 +104,7 @@ new_foreign_fragment (unsigned             length,
 		      void                *ddata)
 {
   DskBufferFragment *fragment;
-  fragment = dsk_malloc (sizeof (DskBufferFragment));
+  fragment = DSK_NEW (DskBufferFragment);
   fragment->is_foreign = 1;
   fragment->buf_start = 0;
   fragment->buf_length = length;

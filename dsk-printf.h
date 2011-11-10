@@ -13,7 +13,7 @@ void dsk_printf_valist (const char *format,
                         ...) DSK_GNUC_PRINT(1,2);
 
 
-/* defining new printf-like mecnanisms */
+/* defining new printf-like mechanisms */
 typedef enum
 {
   DSK_PRINTF_COLLECT_INT      = 'i',

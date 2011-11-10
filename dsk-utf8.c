@@ -232,12 +232,12 @@ dsk_utf8_split_on_whitespace(const char *str)
         {
           if (rv == pad)
             {
-              rv = dsk_malloc (sizeof(char*) * alloced * 2);
+              rv = DSK_NEW_ARRAY (char*, alloced * 2);
               memcpy (rv, pad, sizeof (pad));
             }
           else
             {
-              rv = dsk_realloc (rv, sizeof(char*) * alloced * 2);
+              rv = DSK_RENEW (char *, rv, alloced * 2);
             }
           alloced *= 2;
         }
@@ -245,7 +245,7 @@ dsk_utf8_split_on_whitespace(const char *str)
     }
   if (rv == pad)
     {
-      char **rrv = dsk_malloc (sizeof (char*) * (n+1));
+      char **rrv = DSK_NEW_ARRAY (char *, n + 1);
       memcpy (rrv, rv, sizeof (char*) * n);
       rrv[n] = NULL;
       return rrv;

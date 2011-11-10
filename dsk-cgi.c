@@ -16,7 +16,7 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
     if (*at == '&')
       n_ampersand++;
   /* TODO: need max_cgi_vars for security????? */
-  *cgi_variables_out = dsk_malloc (sizeof (DskCgiVariable) * (n_ampersand+1));
+  *cgi_variables_out = DSK_NEW_ARRAY (DskCgiVariable, n_ampersand + 1);
   for (at = query_string; *at; )
     {
       const char *start;
@@ -148,7 +148,7 @@ dsk_boolean dsk_cgi_parse_post_data (const char *content_type,
           dsk_object_unref (decoder);
           return DSK_FALSE;
         }
-      *cgi_var_out = dsk_malloc (*n_cgi_var_out * sizeof (DskCgiVariable));
+      *cgi_var_out = DSK_NEW_ARRAY (DskCgiVariable, *n_cgi_var_out);
       dsk_mime_multipart_decoder_dequeue_all (decoder, *cgi_var_out);
       dsk_object_unref (decoder);
       return DSK_TRUE;
@@ -229,7 +229,7 @@ dsk_cgi_modify_path     (const char   *orig_path,
             {
               /* add */
               if (n_cgi == cgi_alloced)
-                cgi = dsk_realloc (cgi, sizeof (DskCgiVariable) * ++cgi_alloced);
+                cgi = DSK_RENEW (DskCgiVariable, cgi, ++cgi_alloced);
               init_get_cgi (cgi + n_cgi++, modifications[i].key, modifications[i].value);
             }
           else if (modifications[i].strict)
@@ -244,7 +244,7 @@ dsk_cgi_modify_path     (const char   *orig_path,
             {
               /* add */
               if (n_cgi == cgi_alloced)
-                cgi = dsk_realloc (cgi, sizeof (DskCgiVariable) * ++cgi_alloced);
+                cgi = DSK_RENEW (DskCgiVariable, cgi, ++cgi_alloced);
               init_get_cgi (cgi + n_cgi++, modifications[i].key, modifications[i].value);
             }
           else

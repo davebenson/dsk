@@ -22,6 +22,13 @@ typedef int dsk_boolean;
 #define DSK_UNLIKELY(condition)   (condition)
 #define DSK_UNUSED(var)           ((void)(var))
 
+/* typed-memory allocation macros */
+#define DSK_NEW(type)             ((type*) dsk_malloc (sizeof(type)))
+#define DSK_NEW0(type)            ((type*) dsk_malloc0 (sizeof(type)))
+#define DSK_NEW_ARRAY(type, n)    ((type*) dsk_malloc (sizeof(type) * (n)))
+#define DSK_NEW0_ARRAY(type, n)   ((type*) dsk_malloc0 (sizeof(type) * (n)))
+#define DSK_RENEW(type, array, n) ((type*) dsk_realloc ((array), sizeof(type) * (n)))
+
 #ifndef DSK_DEBUG
 #define DSK_DEBUG 0
 #endif
@@ -66,6 +73,18 @@ typedef enum
 # define DSK_GNUC_PRINTF( format_idx, arg_idx )
 #endif
 #define DSK_GNUC_NULL_TERMINATED() __attribute__((sentinel))
+
+/* DSK_GNUC_NULL_TERMINATED(): Advise the compiler
+ * that the arguments should be like printf(3); it may
+ * optionally print type warnings.  */
+#ifdef __GNUC__
+#if     __GNUC__ >= 4
+#define DSK_GNUC_NULL_TERMINATED()    __attribute__((sentinel))
+#endif
+#endif
+#ifndef DSK_GNUC_NULL_TERMINATED                /* fallback: no compiler hint */
+# define DSK_GNUC_NULL_TERMINATED()
+#endif
 
 /* logging */
 /* fatal user level error:  exit with status 1 */

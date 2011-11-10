@@ -238,7 +238,7 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
       return DSK_FALSE;
     }
 
-  rv = dsk_malloc (sizeof (TrivialTableCheckpoint));
+  rv = DSK_NEW (TrivialTableCheckpoint);
   rv->base = table_checkpoint_trivial__vfuncs;
   rv->fd = fd;
   rv->mmapped = mmapped;
@@ -364,7 +364,7 @@ table_checkpoint_trivial__open   (DskTableCheckpointInterface *iface,
       *cp_data_out = dsk_malloc (cp_data_len);
       memcpy (*cp_data_out, mmapped + 12, cp_data_len);
     }
-  rv = dsk_malloc (sizeof (TrivialTableCheckpoint));
+  rv = DSK_NEW (TrivialTableCheckpoint);
   rv->base = table_checkpoint_trivial__vfuncs;
   rv->fd = fd;
   rv->mmapped = mmapped;

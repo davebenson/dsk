@@ -240,7 +240,7 @@ restart_processing:
         }
 
       /* new transfer */
-      xfer = dsk_malloc0 (sizeof (DskHttpServerStreamTransfer));
+      xfer = DSK_NEW0 (DskHttpServerStreamTransfer);
       xfer->owner = ss;
       xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_NEED_HEADER;
       GSK_QUEUE_ENQUEUE (GET_XFER_QUEUE (ss), xfer);

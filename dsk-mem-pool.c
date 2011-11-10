@@ -10,7 +10,7 @@
 
 /* --- Allocate-only Memory Pool --- */
 /**
- * dsk_mem_pool_construct:
+ * dsk_mem_pool_init:
  * @pool: the mem-pool to initialize.
  *
  * Initialize the members of a mem-pool.
@@ -20,7 +20,7 @@
  */
 
 /**
- * dsk_mem_pool_construct_with_scratch_buf:
+ * dsk_mem_pool_init_buf:
  * @pool: the mem-pool to initialize.
  * @buffer: the buffer to use.
  * @buffer_size: the number of bytes in buffer
