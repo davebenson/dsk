@@ -57,6 +57,8 @@ struct _ServerStream
   DskHttpServerStream *http_stream;
   DskHookTrap *trap;            /* http_stream->request_available trap */
   ServerStream *prev, *next;
+  DskIpAddress ip_address;
+  unsigned ip_port;
 };
 
 /* info about a listening port */

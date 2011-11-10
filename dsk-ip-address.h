@@ -35,3 +35,16 @@ dsk_boolean dsk_sockaddr_to_ip_address (unsigned addr_len,
                                          unsigned      *port_out);
 
 void dsk_ip_address_localhost (DskIpAddress *out);
+
+/* getting the locations of the two ends of a connection:
+      getsockname  -- returns our end's address
+      getpeername  -- returns the other end's address.
+   returns FALSE for non-ip sockets, etc.
+ */
+dsk_boolean dsk_getsockname (DskFileDescriptor fd,
+                             DskIpAddress     *addr_out,
+                             uint16_t         *port_out);
+dsk_boolean dsk_getpeername (DskFileDescriptor fd,
+                             DskIpAddress     *addr_out,
+                             uint16_t         *port_out);
+

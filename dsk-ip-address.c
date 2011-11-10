@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>              /* for snprintf() */
 #include "dsk-common.h"
+#include "dsk-fd.h"
 #include "dsk-ip-address.h"
 
 
@@ -292,4 +293,35 @@ dsk_ip_address_localhost (DskIpAddress *out)
   out->address[1] = 0;
   out->address[2] = 0;
   out->address[3] = 1;
+}
+
+dsk_boolean dsk_getsockname (DskFileDescriptor fd,
+                             DskIpAddress     *addr_out,
+                             unsigned         *port_out)
+{
+  struct sockaddr_storage addr;
+  socklen_t addrlen = sizeof (addr);
+retry:
+  if (getsockname (fd, (struct sockaddr *) &addr, &addrlen) < 0)
+    {
+      if (errno == EINTR)
+        goto retry;
+      return DSK_FALSE;
+    }
+  return dsk_sockaddr_to_ip_address (addrlen, &addr, addr_out, port_out);
+}
+dsk_boolean dsk_getpeername (DskFileDescriptor fd,
+                             DskIpAddress     *addr_out,
+                             unsigned         *port_out)
+{
+  struct sockaddr_storage addr;
+  socklen_t addrlen = sizeof (addr);
+retry:
+  if (getpeername (fd, (struct sockaddr *) &addr, &addrlen) < 0)
+    {
+      if (errno == EINTR)
+        goto retry;
+      return DSK_FALSE;
+    }
+  return dsk_sockaddr_to_ip_address (addrlen, &addr, addr_out, port_out);
 }

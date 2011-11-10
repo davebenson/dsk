@@ -14,6 +14,7 @@ struct _DskHttpServerRequest
   dsk_boolean cgi_variables_computed;
   unsigned n_cgi_variables;
   DskCgiVariable *cgi_variables;
+  DskIpAddress client_ip_address;
 
   dsk_boolean has_raw_post_data;
   size_t raw_post_data_size;
