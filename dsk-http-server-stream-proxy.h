@@ -6,11 +6,14 @@ struct _DskHttpServerStreamProxyOptions
   dsk_boolean allow_https;             /* UNIMPLEMENTED */
   dsk_boolean allow_ftp;               /* UNIMPLEMENTED */
 
+  char *destination_url;
+
   /* add Via header (technically required by HTTP protocol; practically,
      this is used to operate in "stealth" mode,
      e.g. for evading IP address quotas) */
   dsk_boolean include_via;
 
+  /* hostname for the via header; otherwise use gethostname() */
   const char *via_hostname;
 
   /* to issue a full-on different HTTP request */
