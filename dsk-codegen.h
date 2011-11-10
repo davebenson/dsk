@@ -67,5 +67,9 @@ struct _DskCodegenFunction
 }
 
 
+
 void dsk_codegen_function_render (DskCodegenFunction *function,
-                                  DskBuffer          *target);
+                                  DskPrint           *print);
+void dsk_codegen_function_render_buffer
+                                 (DskCodegenFunction *function,
+                                  DskBuffer *buffer);
