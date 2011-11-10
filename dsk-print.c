@@ -48,7 +48,7 @@ DskPrint *dsk_print_new    (DskPrintAppendFunc append,
                             void              *data,
 			    DskDestroyNotify   destroy)
 {
-  DskPrint *rv = dsk_malloc (sizeof (DskPrint));
+  DskPrint *rv = DSK_NEW (DskPrint);
   rv->append = append;
   rv->append_data = data;
   rv->append_destroy = destroy;
@@ -163,7 +163,7 @@ void dsk_print_set_uint (DskPrint *context,
 
 void dsk_print_push (DskPrint *context)
 {
-  StackNode *new_node = dsk_malloc (sizeof (StackNode));
+  StackNode *new_node = DSK_NEW (StackNode);
   if (context == NULL)
     context = get_default_context ();
   new_node->prev = context->top;

@@ -124,7 +124,7 @@ force_namespace_node (DskTs0NamespaceNode **top_ptr,
 
 DskTs0Namespace *dsk_ts0_namespace_new(DskTs0Namespace *parent_namespace)
 {
-  DskTs0Namespace *rv = dsk_malloc (sizeof (DskTs0Namespace));
+  DskTs0Namespace *rv = DSK_NEW (DskTs0Namespace);
   rv->ref_count = 1;
   rv->up = parent_namespace;
   if (parent_namespace)
@@ -526,7 +526,7 @@ DskTs0Function *
 dsk_ts0_function_new_strict           (DskTs0StrictFunc         func)
 {
   static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(strict);
-  DskTs0Function_Strict *rv = dsk_malloc (sizeof (DskTs0Function_Strict));
+  DskTs0Function_Strict *rv = DSK_NEW (DskTs0Function_Strict);
   rv->base = base;
   rv->func = func;
   return &rv->base;
@@ -573,7 +573,7 @@ dsk_ts0_function_new_strict_data      (DskTs0StrictDataFunc     func,
                                        DskDestroyNotify         destroy)
 {
   static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(strict_data);
-  DskTs0Function_StrictData *rv = dsk_malloc (sizeof (DskTs0Function_StrictData));
+  DskTs0Function_StrictData *rv = DSK_NEW (DskTs0Function_StrictData);
   rv->base = base;
   rv->func = func;
   rv->func_data = data;
@@ -599,7 +599,7 @@ DskTs0Function *
 dsk_ts0_function_new_lazy      (DskTs0LazyFunc func)
 {
   static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(lazy);
-  DskTs0Function_Lazy *rv = dsk_malloc (sizeof (DskTs0Function_Lazy));
+  DskTs0Function_Lazy *rv = DSK_NEW (DskTs0Function_Lazy);
   rv->base = base;
   rv->func = func;
   return &rv->base;
@@ -633,7 +633,7 @@ dsk_ts0_function_new_lazy_data (DskTs0LazyDataFunc lazy,
                                        DskDestroyNotify         destroy)
 {
   static DskTs0Function base = DSK_TS0_FUNCTION_BASE_INIT(lazy_data);
-  DskTs0Function_LazyData *rv = dsk_malloc (sizeof (DskTs0Function_LazyData));
+  DskTs0Function_LazyData *rv = DSK_NEW (DskTs0Function_LazyData);
   rv->base = base;
   rv->func = lazy;
   rv->func_data = data;
@@ -1242,7 +1242,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           piece.info.tag.tag_name = top->name;  /* take ownership */
           piece.info.tag.cached_tag = NULL;
           DskTs0Stanza *new_substanza;
-          new_substanza = dsk_malloc (sizeof (DskTs0Stanza));
+          new_substanza = DSK_NEW (DskTs0Stanza);
           piece.info.tag.body = new_substanza;
           new_substanza->n_pieces = n_pieces - top->first_piece;
           new_substanza->pieces = dsk_memdup (sizeof (DskTs0StanzaPiece) * new_substanza->n_pieces, pieces + top->first_piece);
@@ -1348,7 +1348,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
         }
     }
 
-  DskTs0Stanza *rv = dsk_malloc (sizeof (DskTs0Stanza));
+  DskTs0Stanza *rv = DSK_NEW (DskTs0Stanza);
   rv->n_pieces = n_pieces;
   if (pieces == init_pieces)
     rv->pieces = dsk_memdup (sizeof (DskTs0StanzaPiece) * n_pieces, pieces);
@@ -1661,7 +1661,7 @@ DskTs0Expr *dsk_ts0_expr_parse (const char *str,
                                             FILENAME_STR (filename), token.start_line_no);
                       goto error_cleanup;
                     }
-                  CachedSubexpr *c = dsk_malloc (sizeof (CachedSubexpr));
+                  CachedSubexpr *c = DSK_NEW (CachedSubexpr);
                   c->start = str + 1;
                   c->end = end_expr;
                   c->expr = subexpr;

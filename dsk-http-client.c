@@ -170,7 +170,7 @@ force_host_info (DskHttpClientRequestOptions *options,
 #undef COMPARE
       if (host_info == NULL)
         {
-          host_info = dsk_malloc (sizeof (HostInfo));
+          host_info = DSK_NEW (HostInfo);
           host_info->name = dsk_strndup (host_len, host_start);
           dsk_ascii_strdown (host_info->name);
           host_info->port = port;
@@ -188,7 +188,7 @@ force_host_info (DskHttpClientRequestOptions *options,
 #undef COMPARE
       if (host_info == NULL)
         {
-          host_info = dsk_malloc (sizeof (HostInfo));
+          host_info = DSK_NEW (HostInfo);
           host_info->name = dsk_strdup (options->local_socket_path);
           host_info->port = 0;
           goto new_host_info;
@@ -652,7 +652,7 @@ dsk_http_client_request  (DskHttpClient               *client,
     return DSK_FALSE;
 
   /* Create request object */
-  request = dsk_malloc0 (sizeof (Transfer));
+  request = DSK_NEW0 (Transfer);
   request->host_info = host_info;
   request->funcs = options->funcs;
   request->func_data = options->func_data;
@@ -702,7 +702,7 @@ dsk_http_client_request  (DskHttpClient               *client,
           ...
         }
 
-      conn = dsk_malloc0 (sizeof (Connection));;
+      conn = DSK_NEW0 (Connection);;
 
       /* Setup http-client-stream options */
       ...

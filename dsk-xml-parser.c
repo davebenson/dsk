@@ -273,10 +273,10 @@ validate_and_split_xpath (const char *xmlpath,
     }
   if (!slash_allowed)
     {
-      rv = dsk_malloc0 (sizeof (char *));
+      rv = DSK_NEW0 (char *);
       return rv;
     }
-  rv = dsk_malloc (sizeof (char*) * (n_slashes + 2));
+  rv = DSK_NEW_ARRAY (char *, n_slashes + 2);
   i = 0;
   for (at = xmlpath; at != NULL; )
     {
@@ -330,10 +330,10 @@ static int compare_uint (const void *a, const void *b)
 static ParseState *
 copy_parse_state (ParseState *src)
 {
-  ParseState *ps = dsk_malloc0 (sizeof (ParseState));
+  ParseState *ps = DSK_NEW0 (ParseState);
   unsigned i;
   ps->n_transitions = src->n_transitions;
-  ps->transitions = dsk_malloc (sizeof (ParseStateTransition) * src->n_transitions);
+  ps->transitions = DSK_NEW_ARRAY (ParseStateTransition, src->n_transitions);
   for (i = 0; i < ps->n_transitions; i++)
     {
       ps->transitions[i].str = dsk_strdup (src->transitions[i].str);
@@ -511,7 +511,7 @@ dsk_xml_parser_config_new (DskXmlParserFlags flags,
           }
     }
 
-  config = dsk_malloc0 (sizeof (DskXmlParserConfig));
+  config = DSK_NEW0 (DskXmlParserConfig);
   config->ref_count = 1;
   config->ignore_ns = (flags & DSK_XML_PARSER_IGNORE_NS) ? 1 : 0;
   config->include_comments = (flags & DSK_XML_PARSER_INCLUDE_COMMENTS) ? 1 : 0;
@@ -544,7 +544,7 @@ dsk_xml_parser_config_new (DskXmlParserFlags flags,
               at->transitions = dsk_realloc (at->transitions, sizeof (ParseStateTransition) * (1+at->n_transitions));
               trans = &at->transitions[at->n_transitions];
               trans->str = pieces[p];
-              trans->state = dsk_malloc0 (sizeof (ParseState));
+              trans->state = DSK_NEW0 (ParseState);
               at->n_transitions += 1;
             }
           else
@@ -1072,7 +1072,7 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
               {
                 /* default ns */
                 NsAbbrevMap *map;
-                map = dsk_malloc (sizeof (NsAbbrevMap));
+                map = DSK_NEW (NsAbbrevMap);
                 map->abbrev = NULL;
                 map->translate = xlats[i];
 
@@ -1354,7 +1354,7 @@ static dsk_boolean handle_close_element (DskXmlParser *parser,
       if (stack->state != NULL)
         for (i = 0; i < stack->state->n_ret; i++)
           {
-            ResultQueueNode *result = dsk_malloc (sizeof (ResultQueueNode));
+            ResultQueueNode *result = DSK_NEW (ResultQueueNode);
             result->index = stack->state->ret_indices[i];
             result->xml = dsk_xml_ref (node);
             result->next = NULL;
@@ -2188,7 +2188,7 @@ dsk_xml_parser_new (DskXmlParserConfig *config,
   DskXmlParser *parser;
   dsk_assert (config != NULL);
   dsk_assert (!config->destroyed);
-  parser = dsk_malloc (sizeof (DskXmlParser));
+  parser = DSK_NEW (DskXmlParser);
 
   parser->filename = display_filename ? new_filename (display_filename) : NULL;
   parser->line_no = 1;
@@ -2204,7 +2204,7 @@ dsk_xml_parser_new (DskXmlParserConfig *config,
   parser->stack[0].defined_list = NULL;
   parser->stack[0].n_children = 0;
   parser->stack_children_alloced = 8;
-  parser->stack_children = dsk_malloc (sizeof (DskXml *) * parser->stack_children_alloced);
+  parser->stack_children = DSK_NEW_ARRAY (DskXml *, parser->stack_children_alloced);
   parser->n_stack_children = 0;
   parser->config = config;
   parser->default_ns = NULL;

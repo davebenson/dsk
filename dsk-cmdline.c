@@ -100,7 +100,7 @@ add_option (const char *option_name)
   DskCmdlineArg *conflict;
   if (rv != NULL)
     dsk_die ("option %s added twice", option_name);
-  rv = dsk_malloc (sizeof (DskCmdlineArg));
+  rv = DSK_NEW (DskCmdlineArg);
   rv->option_name = option_name;
   rv->c = 0;
   rv->description = rv->arg_description = NULL;
@@ -373,8 +373,8 @@ void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
                                        unsigned        n_excl,
                                        char          **excl)
 {
-  DskCmdlineArg **args = dsk_malloc (sizeof(DskCmdlineArg*) * n_excl);
-  ExclNode *node = dsk_malloc (sizeof (ExclNode));
+  DskCmdlineArg **args = DSK_NEW_ARRAY (DskCmdlineArg*, n_excl);
+  ExclNode *node = DSK_NEW (ExclNode);
   unsigned i;
   node->args = args;
   for (i = 0; i < n_excl; i++)

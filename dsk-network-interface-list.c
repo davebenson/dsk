@@ -61,7 +61,7 @@ static DskNetworkInterfaceList *
 make_interface_list (void)
 {
   unsigned ifreq_alloced = 16;
-  struct ifreq *ifreq_array = dsk_malloc (sizeof (struct ifreq) * ifreq_alloced);
+  struct ifreq *ifreq_array = DSK_NEW_ARRAY (struct ifreq, ifreq_alloced);
   unsigned n_ifreq;
   DskNetworkInterface *rv;
   int tmp_socket;
@@ -93,7 +93,7 @@ make_interface_list (void)
       if (n_ifreq == ifreq_alloced)
         {
           ifreq_alloced *= 2;
-          ifreq_array = dsk_realloc (ifreq_array, ifreq_alloced * sizeof (struct ifreq));
+          ifreq_array = DSK_RENEW (struct ifreq, ifreq_array, ifreq_alloced);
         }
       else
         break;
@@ -101,7 +101,7 @@ make_interface_list (void)
   dsk_warning ("n_ifreq=%u",n_ifreq);
 
   /* now query each of those interfaces. */
-  rv = dsk_malloc (sizeof (DskNetworkInterface) * n_ifreq);
+  rv = DSK_NEW_ARRAY (DskNetworkInterface, n_ifreq);
   unsigned n_interfaces = 0;
   for (i = 0; i < n_ifreq; i++)
     {
@@ -197,7 +197,7 @@ make_interface_list (void)
 
   dsk_free (ifreq_array);
 
-  DskNetworkInterfaceList *list = dsk_malloc (sizeof (DskNetworkInterfaceList));
+  DskNetworkInterfaceList *list = DSK_NEW (DskNetworkInterfaceList);
   list->n_interfaces = n_interfaces;
   list->interfaces = rv;
   return list;

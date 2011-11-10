@@ -173,7 +173,7 @@ void dsk_http_server_add_match                 (DskHttpServer        *server,
 
 void dsk_http_server_match_save                (DskHttpServer        *server)
 {
-  MatchTestNode *node = dsk_malloc0 (sizeof (MatchTestNode));
+  MatchTestNode *node = DSK_NEW0 (MatchTestNode);
   node->under_construction = DSK_TRUE;
 
   node->parent = server->current;
@@ -346,7 +346,7 @@ add_handler_generic (DskHttpServer *server,
                      void *handler_data,
                      DskHookDestroy handler_destroy)
 {
-  Handler *handler = dsk_malloc (sizeof (Handler));
+  Handler *handler = DSK_NEW (Handler);
   handler->handler_type = handler_type;
   handler->handler = handler_func;
   handler->handler_data = handler_data;
@@ -1156,7 +1156,7 @@ handle_http_server_request_available (DskHttpServerStream   *stream,
   if (xfer == NULL)
     return DSK_TRUE;
 
-  rreq = dsk_malloc0 (sizeof (RealServerRequest));
+  rreq = DSK_NEW0 (RealServerRequest);
   rreq->request.server = sstream->bind_info->server;
   rreq->request.request_header = dsk_object_ref (xfer->request);
   rreq->request.transfer = xfer;
@@ -1213,7 +1213,7 @@ handle_listener_ready (DskOctetListener *listener,
 
   http_stream = dsk_http_server_stream_new (sink, source,
                                             &bind_info->server_stream_options);
-  sstream = dsk_malloc (sizeof (ServerStream));
+  sstream = DSK_NEW (ServerStream);
   sstream->bind_info = bind_info;
   GSK_LIST_APPEND (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
   sstream->http_stream = http_stream;
@@ -1253,7 +1253,7 @@ do_bind (DskHttpServer *server,
   DskHttpServerBindInfo *bind_info;
   if (listener == NULL)
     return NULL;
-  bind_info = dsk_malloc (sizeof (DskHttpServerBindInfo));
+  bind_info = DSK_NEW (DskHttpServerBindInfo);
   bind_info->listener = listener;
   bind_info->server = server;
   bind_info->next = server->bind_infos;

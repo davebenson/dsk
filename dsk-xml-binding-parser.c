@@ -70,7 +70,7 @@ tokenize (const char *filename,
           DskError **error)
 {
   unsigned n = 0;
-  Token *rv = dsk_malloc (sizeof (Token) * TOKENIZE_INIT_TOKEN_COUNT);
+  Token *rv = DSK_NEW_ARRAY (Token, TOKENIZE_INIT_TOKEN_COUNT);
   unsigned line_no = 1;
   const char *at = str;
 #define ADD_TOKEN(type_, start_, len_) \
@@ -419,7 +419,7 @@ parse_member_list (ParseContext *context,
 
   /* parse each member */
   n_members = 0;
-  members = dsk_malloc (sizeof(DskXmlBindingStructMember) * max_members);
+  members = DSK_NEW_ARRAY (DskXmlBindingStructMember, max_members);
   while (at < context->n_tokens
       && context->tokens[at].type != TOKEN_RBRACE)
     {
@@ -540,7 +540,7 @@ parse_case_list (ParseContext           *context,
     }
   cases_tokens = matching_rbrace - (lbrace_index+1);
   max_cases = cases_tokens / 2;
-  cases = dsk_malloc (sizeof (DskXmlBindingUnionCase) * max_cases);
+  cases = DSK_NEW_ARRAY (DskXmlBindingUnionCase, max_cases);
 
   while (at < context->n_tokens
       && context->tokens[at].type != TOKEN_RBRACE)
@@ -922,7 +922,7 @@ _dsk_xml_binding_parse_ns_str (DskXmlBinding *binding,
   context.str = contents;
   context.filename = filename;
   context.n_use_statements = 1;
-  context.use_statements = dsk_malloc (sizeof (UseStatement));
+  context.use_statements = DSK_NEW (UseStatement);
   context.use_statements[0].ns = &dsk_xml_binding_namespace_builtin;
   context.use_statements[0].as = NULL;
 

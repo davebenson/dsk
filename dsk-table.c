@@ -323,7 +323,7 @@ create_possible_merge (DskTable *table,
       double lg_ratio = log (ratio) * M_LN2 * 1024;
       lg2_10 = (int) lg_ratio;
     }
-  pm = dsk_malloc (sizeof (PossibleMerge));
+  pm = DSK_NEW (PossibleMerge);
   pm->actual_entry_count_ratio_log2_b10 = lg2_10;
   pm->a = a;
   pm->b = b;
@@ -406,7 +406,7 @@ parse_checkpoint_data (DskTable *table,
   n_files = (len - 8) / 32;
   for (i = 0; i < n_files; i++)
     {
-      File *file = dsk_malloc (sizeof (File));
+      File *file = DSK_NEW (File);
       const uint8_t *info = data + 8 + 32 * i;
       file->id = parse_uint64_le (info + 0);
       file->seeker = NULL;
@@ -505,7 +505,7 @@ start_merge_job (DskTable *table,
   if (possible->b->next_merge)
     kill_possible_merge (table, possible->b->next_merge);
 
-  merge = dsk_malloc (sizeof (Merge));
+  merge = DSK_NEW (Merge);
 
   /* setup info about input 'a' */
   merge->a = possible->a;
@@ -1067,7 +1067,7 @@ merge_job_finished (DskTable  *table,
     }
 
   /* make new File */
-  new = dsk_malloc (sizeof (File));
+  new = DSK_NEW (File);
   new->id = merge->out_id;
   new->seeker = NULL;
   new->first_entry_index = merge->a->first_entry_index;
@@ -1276,7 +1276,7 @@ dsk_table_insert       (DskTable       *table,
           return DSK_FALSE;
         }
       writer->destroy (writer);
-      file = dsk_malloc (sizeof (File));
+      file = DSK_NEW (File);
       file->id = id;
       file->seeker = NULL;
       file->first_entry_index = table->cp_first_entry_index;
@@ -1818,7 +1818,7 @@ dsk_table_reader_new_merge2 (DskTable *table,
       return a;
     }
 
-  merge2 = dsk_malloc (sizeof (TableReaderMerge2));
+  merge2 = DSK_NEW (TableReaderMerge2);
   merge2->base.advance = merge2_advance;
   merge2->base.destroy = merge2_destroy;
   merge2->base.at_eof = DSK_FALSE;

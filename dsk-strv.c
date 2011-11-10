@@ -76,12 +76,12 @@ char    **dsk_strsplit     (const char *str,
         {
           if (rv == init)
             {
-              rv = dsk_malloc (sizeof(char*) * alloced * 2);
+              rv = DSK_NEW_ARRAY (char*, alloced * 2);
               memcpy (rv, init, sizeof (char*) * alloced);
             }
           else
             {
-              rv = dsk_realloc (rv, sizeof(char*) * alloced * 2);
+              rv = DSK_RENEW (char *, rv, alloced * 2);
             }
           alloced += alloced;
         }

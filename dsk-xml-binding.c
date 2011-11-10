@@ -45,7 +45,7 @@ struct _DskXmlBinding
 
 DskXmlBinding *dsk_xml_binding_new (void)
 {
-  DskXmlBinding *rv = dsk_malloc (sizeof (DskXmlBinding));
+  DskXmlBinding *rv = DSK_NEW (DskXmlBinding);
   rv->namespace_tree = NULL;
   rv->n_search_paths = 0;
   rv->search_paths = NULL;
@@ -146,7 +146,7 @@ dsk_xml_binding_get_ns         (DskXmlBinding *binding,
       /* try opening file */
       if (dsk_file_test_exists (path))
         {
-          char *contents = dsk_file_get_contents (path, NULL, error);
+          uint8_t *contents = dsk_file_get_contents (path, NULL, error);
           DskXmlBindingNamespace *real_ns;
           NamespaceNode *node;
           NamespaceNode *conflict;
@@ -156,7 +156,7 @@ dsk_xml_binding_get_ns         (DskXmlBinding *binding,
               return NULL;
             }
           real_ns = _dsk_xml_binding_parse_ns_str (binding, path, name,
-                                                   contents, error);
+                                                   (char*) contents, error);
           if (real_ns == NULL)
             {
               dsk_free (path);
@@ -166,7 +166,7 @@ dsk_xml_binding_get_ns         (DskXmlBinding *binding,
           dsk_free (path);
 
           /* add to tree */
-          node = dsk_malloc (sizeof (NamespaceNode));
+          node = DSK_NEW (NamespaceNode);
           node->ns = real_ns;
           GSK_RBTREE_INSERT (NAMESPACE_TREE (binding), node, conflict);
           dsk_assert (conflict == NULL);
@@ -184,7 +184,7 @@ dsk_xml_binding_get_ns         (DskXmlBinding *binding,
 DskXmlBindingNamespace *
 dsk_xml_binding_namespace_new (const char *name)
 {
-  DskXmlBindingNamespace *rv = dsk_malloc (sizeof (DskXmlBindingNamespace));
+  DskXmlBindingNamespace *rv = DSK_NEW (DskXmlBindingNamespace);
   rv->is_static = DSK_FALSE;
   rv->name = dsk_strdup (name);
   rv->n_types = 0;
@@ -756,7 +756,7 @@ struct_members_to_xml        (DskXmlBindingType *type,
         break;
       }
   *n_nodes_out = n_children;
-  *nodes_out = dsk_malloc (sizeof (DskXml *) * n_children);
+  *nodes_out = DSK_NEW_ARRAY (DskXml *, n_children);
   children = *nodes_out;
   n_children = 0;
   for (i = 0; i < s->n_members; i++)
@@ -1100,7 +1100,7 @@ dsk_xml_binding_type_struct_new (DskXmlBindingNamespace *ns,
   rv->base_type.sizeof_instance = offset;
   rv->base_type.alignof_instance = max_align;
 
-  rv->members_sorted_by_name = dsk_malloc (sizeof (unsigned) * n_members);
+  rv->members_sorted_by_name = DSK_NEW_ARRAY (unsigned, n_members);
   for (i = 0; i < n_members; i++)
     rv->members_sorted_by_name[i] = i;
 #define COMPARE_MEMBERS_BY_NAME(a,b, rv) rv = strcmp (members[a].name, members[b].name)
@@ -1340,7 +1340,7 @@ dsk_xml_binding_type_union_new (DskXmlBindingNamespace *ns,
   rv->base_type.sizeof_instance = DSK_ALIGN (rv->variant_offset + sizeof_variant, alignof_variant);
   rv->base_type.alignof_instance = (DSK_ALIGNOF_INT > alignof_variant) ? DSK_ALIGNOF_INT : alignof_variant;
 
-  rv->cases_sorted_by_name = dsk_malloc (sizeof (unsigned) * n_cases);
+  rv->cases_sorted_by_name = DSK_NEW_ARRAY (unsigned, n_cases);
   for (i = 0; i < n_cases; i++)
     rv->cases_sorted_by_name[i] = i;
 #define COMPARE_CASES_BY_NAME(a,b, rv) rv = strcmp (cases[a].name, cases[b].name)

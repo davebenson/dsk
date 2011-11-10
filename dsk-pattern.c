@@ -1478,7 +1478,7 @@ DskPattern *dsk_pattern_compile (unsigned n_entries,
                         n_entries, init_states,
                         entries);
 
-  nfa_state_pad = dsk_malloc (sizeof (struct NFA_State *) * nfa_state_pad_size);
+  nfa_state_pad = DSK_NEW_ARRAY (struct NFA_State *, nfa_state_pad_size);
 
   while (skeletal_list != NULL)
     {
@@ -1581,7 +1581,7 @@ DskPattern *dsk_pattern_compile (unsigned n_entries,
   dsk_mem_pool_clear (&tree_pool);
   dsk_free (nfa_state_pad);
 
-  rv = dsk_malloc (sizeof (DskPattern));
+  rv = DSK_NEW (DskPattern);
   rv->state_pool = final_pool;
   rv->init_state = init_dfa;
   return rv;

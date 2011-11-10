@@ -20,13 +20,13 @@ const char *dsk_json_value_type_name (DskJsonValueType type)
 
 DskJsonValue *dsk_json_value_new_null   (void)
 {
-  DskJsonValue *rv = dsk_malloc (sizeof (DskJsonValue));
+  DskJsonValue *rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_NULL;
   return rv;
 }
 DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value)
 {
-  DskJsonValue *rv = dsk_malloc (sizeof (DskJsonValue));
+  DskJsonValue *rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_BOOLEAN;
   rv->v_boolean.value = value;
   return rv;
@@ -130,7 +130,7 @@ DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
 DskJsonValue *dsk_json_value_new_number (double         value)
 {
   DskJsonValue *rv;
-  rv = dsk_malloc (sizeof (DskJsonValue));
+  rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_NUMBER;
   rv->v_number.value = value;
   return rv;

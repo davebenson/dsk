@@ -24,7 +24,7 @@ uint8_t    *dsk_file_get_contents (const char *filename,
   DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
   int fd = open (filename, O_RDONLY | MY_O_BINARY);
   int read_rv;
-  char *rv;
+  uint8_t *rv;
   if (fd < 0)
     {
       dsk_set_error (error, "error opening %s: %s",

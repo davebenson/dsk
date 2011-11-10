@@ -22,6 +22,13 @@ typedef int dsk_boolean;
 #define DSK_UNLIKELY(condition)   (condition)
 #define DSK_UNUSED(var)           ((void)(var))
 
+/* typed-memory allocation macros */
+#define DSK_NEW(type)             ((type*) dsk_malloc (sizeof(type)))
+#define DSK_NEW0(type)            ((type*) dsk_malloc0 (sizeof(type)))
+#define DSK_NEW_ARRAY(type, n)    ((type*) dsk_malloc (sizeof(type) * (n)))
+#define DSK_NEW0_ARRAY(type, n)   ((type*) dsk_malloc0 (sizeof(type) * (n)))
+#define DSK_RENEW(type, array, n) ((type*) dsk_realloc ((array), sizeof(type) * (n)))
+
 #ifndef DSK_DEBUG
 #define DSK_DEBUG 0
 #endif

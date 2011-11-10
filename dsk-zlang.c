@@ -50,7 +50,7 @@ struct _DskZLangContext
 
 DskZLangContext *dsk_zlang_context_new        (void)
 {
-  DskZLangContext *rv = dsk_malloc (sizeof (DskZLangContext));
+  DskZLangContext *rv = DSK_NEW (DskZLangContext);
   rv->namespace.tree = NULL;
   dsk_zlang_namespace_register_type (&rv->namespace, "number",
                                      dsk_zlang_stack_node_clear_do_nothing,

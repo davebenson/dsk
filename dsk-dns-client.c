@@ -123,7 +123,7 @@ void    dsk_dns_lookup (const char       *name,
                         DskDnsLookupFunc  callback,
                         void             *callback_data)
 {
-  LookupData *lookup_data = dsk_malloc (sizeof (LookupData));
+  LookupData *lookup_data = DSK_NEW (LookupData);
   lookup_data->callback = callback;
   lookup_data->callback_data = callback_data;
   dsk_dns_lookup_cache_entry (name, is_ipv6,
@@ -193,7 +193,7 @@ void dsk_dns_client_config (DskDnsConfigFlags flags)
 void dsk_dns_client_add_nameserver (DskIpAddress *addr)
 {
   unsigned N = n_resolv_conf_ns;
-  resolv_conf_ns = dsk_realloc (resolv_conf_ns, sizeof (NameserverInfo) * N);
+  resolv_conf_ns = DSK_RENEW (NameserverInfo, resolv_conf_ns, N);
   n_resolv_conf_ns = N + 1;
   resolv_conf_ns[N].address = *addr;
   resolv_conf_ns[N].n_requests = 0;
@@ -305,7 +305,7 @@ handle_message (DskDnsMessage *message)
       else
         {
           /* positive result (an actual address) */
-          DskIpAddress *addrs = dsk_malloc (sizeof (DskIpAddress) * n_matches);
+          DskIpAddress *addrs = DSK_NEW_ARRAY (DskIpAddress, n_matches);
           unsigned ai = 0;
           entry->type = DSK_DNS_CACHE_ENTRY_ADDR;
           entry->info.addr.n = n_matches;
@@ -454,7 +454,7 @@ dsk_dns_try_init (DskError **error)
       host_entry = dsk_malloc (sizeof (DskDnsCacheEntry)
                                + strlen (name) + 1);
 
-      host_entry->info.addr.addresses = dsk_malloc (sizeof (DskIpAddress));
+      host_entry->info.addr.addresses = DSK_NEW (DskIpAddress);
       host_entry->info.addr.addresses[0] = addr;
       host_entry->name = (char*)(host_entry + 1);
       strcpy (host_entry->name, name);
@@ -580,8 +580,9 @@ retry:
           else
             {
               unsigned length = strlen (arg);
-              resolv_conf_search_paths = dsk_realloc (resolv_conf_search_paths,
-                                            (n_resolv_conf_search_paths+1) * sizeof (char *));
+              resolv_conf_search_paths = DSK_RENEW (char *,
+                                            resolv_conf_search_paths,
+                                            n_resolv_conf_search_paths + 1);
               if (max_resolv_conf_searchpath_len < length)
                 max_resolv_conf_searchpath_len = length;
               resolv_conf_search_paths[n_resolv_conf_search_paths++] = dsk_strdup (arg);
@@ -606,8 +607,8 @@ retry:
             }
           else
             {
-              resolv_conf_ns = dsk_realloc (resolv_conf_ns,
-                                            (n_resolv_conf_ns+1) * sizeof (NameserverInfo));
+              resolv_conf_ns = DSK_RENEW (NameserverInfo, resolv_conf_ns,
+                                          n_resolv_conf_ns + 1);
               nameserver_info_init (&resolv_conf_ns[n_resolv_conf_ns++], &addr);
             }
         }
@@ -917,7 +918,7 @@ begin_dns_request (DskDnsCacheEntry *entry)
     next_nameserver_index = 0;
 
   /* create job */
-  entry->info.in_progress = job = dsk_malloc (sizeof (*job));
+  entry->info.in_progress = job = DSK_NEW (DskDnsCacheEntryJob);
   job->owner = entry;
   job->ns_index = dns_index;
   job->waiters = NULL;
@@ -1017,7 +1018,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
 
       /* add to watch list */
       Waiter *waiter;
-      waiter = dsk_malloc (sizeof (Waiter));
+      waiter = DSK_NEW (Waiter);
       waiter->func = callback;
       waiter->data = callback_data;
       waiter->next = entry->info.in_progress->waiters;
@@ -1097,7 +1098,7 @@ lookup_without_searchpath (const char       *normalized_name,
 {
   if (flags & DSK_DNS_LOOKUP_FOLLOW_CNAMES)
     {
-      CnameInfo *ci = dsk_malloc (sizeof (CnameInfo));
+      CnameInfo *ci = DSK_NEW (CnameInfo);
       ci->is_ipv6 = is_ipv6;
       ci->n_cnames = 0;
       ci->callback = callback;
@@ -1333,7 +1334,7 @@ dsk_dns_lookup_cache_entry (const char       *name,
   else
     {
       /* iterate through searchpath, eventually trying "no search path" */
-      SearchpathStatus *status = dsk_malloc (sizeof (SearchpathStatus));
+      SearchpathStatus *status = DSK_NEW (SearchpathStatus);
       status->searchpath_index = 0;
       status->name = normalized_name;
       status->expire_time = 0xffffffff;

@@ -217,18 +217,18 @@ static int          global_signal_dispatch_fd;
 /* Create or destroy a Dispatch */
 DskDispatch *dsk_dispatch_new (void)
 {
-  RealDispatch *rv = dsk_malloc (sizeof (RealDispatch));
+  RealDispatch *rv = DSK_NEW (RealDispatch);
   struct timeval tv;
   rv->base.n_changes = 0;
   rv->notifies_desired_alloced = 8;
-  rv->base.notifies_desired = dsk_malloc (sizeof (DskFileDescriptorNotify) * rv->notifies_desired_alloced);
+  rv->base.notifies_desired = DSK_NEW_ARRAY (DskFileDescriptorNotify, rv->notifies_desired_alloced);
   rv->base.n_notifies_desired = 0;
-  rv->callbacks = dsk_malloc (sizeof (Callback) * rv->notifies_desired_alloced);
+  rv->callbacks = DSK_NEW_ARRAY (Callback, rv->notifies_desired_alloced);
   rv->changes_alloced = 8;
-  rv->base.changes = dsk_malloc (sizeof (DskFileDescriptorNotifyChange) * rv->changes_alloced);
+  rv->base.changes = DSK_NEW_ARRAY (DskFileDescriptorNotifyChange, rv->changes_alloced);
 #if HAVE_SMALL_FDS
   rv->fd_map_size = 16;
-  rv->fd_map = dsk_malloc (sizeof (FDMap) * rv->fd_map_size);
+  rv->fd_map = DSK_NEW_ARRAY (FDMap, rv->fd_map_size);
   memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
 #else
   rv->fd_map_tree = NULL;
@@ -335,7 +335,7 @@ enlarge_fd_map (RealDispatch *d,
   FDMap *new_map;
   while (fd >= new_size)
     new_size *= 2;
-  new_map = dsk_malloc (sizeof (FDMap) * new_size);
+  new_map = DSK_NEW_ARRAY (FDMap, new_size);
   memcpy (new_map, d->fd_map, d->fd_map_size * sizeof (FDMap));
   memset (new_map + d->fd_map_size,
           255,
@@ -361,8 +361,8 @@ allocate_notifies_desired_index (RealDispatch *d)
   if (rv == d->notifies_desired_alloced)
     {
       unsigned new_size = d->notifies_desired_alloced * 2;
-      DskFileDescriptorNotify *n = dsk_malloc (new_size * sizeof (DskFileDescriptorNotify));
-      Callback *c = dsk_malloc (new_size * sizeof (Callback));
+      DskFileDescriptorNotify *n = DSK_NEW_ARRAY (DskFileDescriptorNotify, new_size);
+      Callback *c = DSK_NEW_ARRAY (Callback, new_size);
       memcpy (n, d->base.notifies_desired, d->notifies_desired_alloced * sizeof (DskFileDescriptorNotify));
       dsk_free (d->base.notifies_desired);
       memcpy (c, d->callbacks, d->notifies_desired_alloced * sizeof (Callback));
@@ -383,7 +383,7 @@ allocate_change_index (RealDispatch *d)
   if (rv == d->changes_alloced)
     {
       unsigned new_size = d->changes_alloced * 2;
-      DskFileDescriptorNotifyChange *n = dsk_malloc (new_size * sizeof (DskFileDescriptorNotifyChange));
+      DskFileDescriptorNotifyChange *n = DSK_NEW_ARRAY (DskFileDescriptorNotifyChange, new_size);
       memcpy (n, d->base.changes, d->changes_alloced * sizeof (DskFileDescriptorNotifyChange));
       dsk_free (d->base.changes);
       d->base.changes = n;
@@ -418,7 +418,7 @@ force_fd_map (RealDispatch *d, DskFileDescriptor fd)
     DskAllocator *allocator = d->allocator;
     if (fm == NULL)
       {
-        FDMapNode *node = dsk_malloc (sizeof (FDMapNode));
+        FDMapNode *node = DSK_NEW (FDMapNode);
         FDMapNode *conflict;
         node->fd = fd;
         memset (&node->map, 255, sizeof (FDMap));
@@ -715,7 +715,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
   if (dispatch->n_notifies_desired < 128)
     fds = alloca (sizeof (struct pollfd) * dispatch->n_notifies_desired);
   else
-    to_free = fds = dsk_malloc (sizeof (struct pollfd) * dispatch->n_notifies_desired);
+    to_free = fds = DSK_NEW_ARRAY (struct pollfd, dispatch->n_notifies_desired);
   for (i = 0; i < dispatch->n_notifies_desired; i++)
     {
       fds[i].fd = dispatch->notifies_desired[i].fd;
@@ -770,7 +770,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
   if (n_events < 128)
     events = alloca (sizeof (DskFileDescriptorNotify) * n_events);
   else
-    to_free2 = events = dsk_malloc (sizeof (DskFileDescriptorNotify) * n_events);
+    to_free2 = events = DSK_NEW_ARRAY (DskFileDescriptorNotify, n_events);
   n_events = 0;
   for (i = 0; i < dispatch->n_notifies_desired; i++)
     if (fds[i].revents)
@@ -810,7 +810,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
     }
   else
     {
-      rv = dsk_malloc (sizeof (DskDispatchTimer));
+      rv = DSK_NEW (DskDispatchTimer);
     }
   rv->timeout_secs = timeout_secs;
   rv->timeout_usecs = timeout_usecs;
@@ -942,7 +942,7 @@ dsk_dispatch_add_idle (DskDispatch        *dispatch,
     }
   else
     {
-      rv = dsk_malloc (sizeof (DskDispatchIdle));
+      rv = DSK_NEW (DskDispatchIdle);
     }
   GSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
   rv->func = func;
@@ -1101,7 +1101,7 @@ retry_sigaction:
       return NULL;
     }
 
-  rv = dsk_malloc (sizeof (DskDispatchSignal));
+  rv = DSK_NEW (DskDispatchSignal);
   rv->dispatch = d;
   rv->is_notifying = rv->destroyed_while_notifying = 0;
   rv->signal = signal_number;
@@ -1193,7 +1193,7 @@ dsk_dispatch_add_child    (DskDispatch       *dispatch,
   
 
   /* add child to child tree */
-  child = dsk_malloc (sizeof (DskDispatchChild));
+  child = DSK_NEW (DskDispatchChild);
   child->dispatch = d;
   child->process_id = process_id;
   child->func = func;
