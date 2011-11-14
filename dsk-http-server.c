@@ -1163,6 +1163,8 @@ handle_http_server_request_available (DskHttpServerStream   *stream,
   rreq->request.request_header = dsk_object_ref (xfer->request);
   rreq->request.transfer = xfer;
   rreq->request.bind_info = sstream->bind_info;
+  rreq->request.client_ip_address = sstream->ip_address;
+  rreq->request.client_ip_port = sstream->ip_port;
   dsk_http_server_stream_transfer_set_funcs (xfer, &stream_transfer_handlers, rreq);
 
   if (find_first_match (rreq))
@@ -1217,6 +1219,17 @@ handle_listener_ready (DskOctetListener *listener,
                                             &bind_info->server_stream_options);
   sstream = DSK_NEW (ServerStream);
   sstream->bind_info = bind_info;
+
+  DskFileDescriptor fd = -1;
+  if (dsk_object_is_a (source, &dsk_octet_stream_fd_source_class)
+   && source->stream != NULL)
+    fd = DSK_OCTET_STREAM_FD (source->stream)->fd;
+  if (fd < 0
+   || dsk_getpeername (fd, &sstream->ip_address, &sstream->ip_port))
+    {
+      memset (&sstream->ip_address, 0, sizeof (DskIpAddress));
+      sstream->ip_port = 0;
+    }
   GSK_LIST_APPEND (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
   sstream->http_stream = http_stream;
   sstream->trap = dsk_hook_trap (&http_stream->request_available,

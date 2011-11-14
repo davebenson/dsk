@@ -43,8 +43,8 @@ void dsk_ip_address_localhost (DskIpAddress *out);
  */
 dsk_boolean dsk_getsockname (DskFileDescriptor fd,
                              DskIpAddress     *addr_out,
-                             uint16_t         *port_out);
+                             unsigned         *port_out);
 dsk_boolean dsk_getpeername (DskFileDescriptor fd,
                              DskIpAddress     *addr_out,
-                             uint16_t         *port_out);
+                             unsigned         *port_out);
 

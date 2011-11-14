@@ -16,6 +16,7 @@ static dsk_boolean cmdline_permit_unknown_options = DSK_FALSE;
 static dsk_boolean cmdline_permit_extra_arguments = DSK_FALSE;
 static dsk_boolean cmdline_permit_help = DSK_TRUE;
 static dsk_boolean swallow_arguments = DSK_TRUE;
+static DskCmdlineArgumentHandler cmdline_argument_handler = NULL;
 
 #define _DSK_CMDLINE_OPTION_USED                (1<<31)
 
@@ -399,6 +400,11 @@ void dsk_cmdline_permit_extra_arguments (dsk_boolean permit)
 {
   cmdline_permit_extra_arguments = permit;
 }
+void dsk_cmdline_set_argument_handler (DskCmdlineArgumentHandler handler)
+{
+  dsk_assert (cmdline_argument_handler == NULL);
+  cmdline_argument_handler = handler;
+}
 
 void dsk_cmdline_process_args(int            *argc_inout,
                               char         ***argv_inout)
@@ -687,6 +693,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
                   skip_or_swallow (argc_inout, argv_inout, &i, 1);
                 }
             }
+        }
+      else if (cmdline_argument_handler)
+        {
+          if (!cmdline_argument_handler (argv[i], error))
+            return DSK_FALSE;
+          skip_or_swallow (argc_inout, argv_inout, &i, 1);
         }
       else if (cmdline_permit_extra_arguments)
         {
