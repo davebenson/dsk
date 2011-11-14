@@ -63,6 +63,9 @@ void dsk_cmdline_add_func    (const char     *static_option_name,
                               DskCmdlineFlags flags,
                               DskCmdlineCallback callback,
                               void           *callback_data);
+typedef dsk_boolean (*DskCmdlineArgumentHandler) (const char *argument,
+                                                  DskError  **error);
+void dsk_cmdline_set_argument_handler (DskCmdlineArgumentHandler handler);
 void dsk_cmdline_add_shortcut(char            shortcut,
                               const char     *option_name);
 void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
