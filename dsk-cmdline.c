@@ -236,7 +236,6 @@ cmdline_handle_boolean (DskCmdlineArg *arg,
   if (str == NULL)
     {
       * (dsk_boolean *) arg->value_ptr = DSK_TRUE;
-      return DSK_TRUE;
     }
   else
     {
