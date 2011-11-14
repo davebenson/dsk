@@ -49,6 +49,24 @@ void dsk_print_set_buffer          (DskPrint        *context,
                                     const char      *variable_name,
                                     const DskBuffer *buffer);
 
+typedef enum
+{
+  /* Exactly one of these two flags should be given */
+  DSK_PRINT_FLOAT_EXACT_DIGITS = (1<<16),
+  DSK_PRINT_FLOAT_SCIENTIFIC = (1<<17),
+
+  /* Bits reserved for precision, MAYBE: (offset exponent, padding) */
+  DSK_PRINT_FLOAT_PRECISION_MASK = 0x3f
+} DskPrintFloatFlags;
+#define DSK_PRINT_FLOAT_PRECISION(value) \
+  ((value) & 0x3f)
+#define DSK_PRINT_FLOAT_MAX_PRECISION 0x3f /* == 63 */
+
+void dsk_print_set_double          (DskPrint        *context,
+                                    const char      *name,
+                                    DskPrintFloatFlags flags,
+                                    double           value);
+
 /* Somewhat like Local Variables:  Pop will undo all variable assignments
    since the last call to push. */
 void dsk_print_push                (DskPrint        *context);
