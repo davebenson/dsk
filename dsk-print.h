@@ -52,15 +52,16 @@ void dsk_print_set_buffer          (DskPrint        *context,
 typedef enum
 {
   /* Exactly one of these two flags should be given */
-  DSK_PRINT_FLOAT_EXACT_DIGITS = (1<<16),
-  DSK_PRINT_FLOAT_SCIENTIFIC = (1<<17),
+  DSK_PRINT_FLOAT_FLAG_EXACT_DIGITS = (1<<16),
+  DSK_PRINT_FLOAT_FLAG_SCIENTIFIC = (1<<17),
 
   /* Bits reserved for precision, MAYBE: (offset exponent, padding) */
-  DSK_PRINT_FLOAT_PRECISION_MASK = 0x3f
+  DSK_PRINT_FLOAT_FLAG_PRECISION_MASK = 0x3f
 } DskPrintFloatFlags;
-#define DSK_PRINT_FLOAT_PRECISION(value) \
-  ((value) & 0x3f)
 #define DSK_PRINT_FLOAT_MAX_PRECISION 0x3f /* == 63 */
+#define DSK_PRINT_FLOAT_EXACT_DIGITS(n_digits) \
+  (DSK_PRINT_FLOAT_FLAG_EXACT_DIGITS | (DSK_PRINT_FLOAT_MAX_PRECISION&(n_digits)))
+
 
 void dsk_print_set_double          (DskPrint        *context,
                                     const char      *name,

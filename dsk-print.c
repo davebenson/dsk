@@ -167,19 +167,19 @@ void dsk_print_set_double          (DskPrint        *context,
                                     double           value)
 {
   char buf[256];
-  if (flags & DSK_PRINT_FLOAT_EXACT_DIGITS)
+  if (flags & DSK_PRINT_FLOAT_FLAG_EXACT_DIGITS)
     {
       snprintf (buf, sizeof (buf), "%.*f",
-                (int) (DSK_PRINT_FLOAT_PRECISION_MASK & flags),
+                (int) (DSK_PRINT_FLOAT_MAX_PRECISION & flags),
                 value);
-      dsk_assert ((flags & (DSK_PRINT_FLOAT_SCIENTIFIC)) == 0);
+      dsk_assert ((flags & (DSK_PRINT_FLOAT_FLAG_SCIENTIFIC)) == 0);
     }
-  else if (flags & DSK_PRINT_FLOAT_SCIENTIFIC)
+  else if (flags & DSK_PRINT_FLOAT_FLAG_SCIENTIFIC)
     {
       snprintf (buf, sizeof (buf), "%.*e",
-                (int) (DSK_PRINT_FLOAT_PRECISION_MASK & flags),
+                (int) (DSK_PRINT_FLOAT_MAX_PRECISION & flags),
                 value);
-      dsk_assert ((flags & (DSK_PRINT_FLOAT_EXACT_DIGITS)) == 0);
+      dsk_assert ((flags & (DSK_PRINT_FLOAT_FLAG_EXACT_DIGITS)) == 0);
     }
   else
     {
