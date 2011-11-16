@@ -161,6 +161,24 @@ void dsk_print_set_uint (DskPrint *context,
   dsk_print_set_string (context, variable_name, buf);
 }
 
+void dsk_print_set_int64           (DskPrint    *context,
+                                    const char  *variable_name,
+                                    int64_t      value)
+{
+  char buf[64];
+  snprintf (buf, sizeof (buf), "%lld", (long long) value);
+  dsk_print_set_string (context, variable_name, buf);
+}
+
+void dsk_print_set_uint64 (DskPrint *context,
+                         const char *variable_name,
+                         uint64_t value)
+{
+  char buf[64];
+  snprintf (buf, sizeof (buf), "%llu", (unsigned long long) value);
+  dsk_print_set_string (context, variable_name, buf);
+}
+
 void dsk_print_set_double          (DskPrint        *context,
                                     const char      *name,
                                     DskPrintFloatFlags flags,
