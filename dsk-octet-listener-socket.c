@@ -14,8 +14,8 @@
 #include "dsk-buffer.h"
 #include "dsk-octet-io.h"
 #include "dsk-octet-listener.h"
-#include "dsk-ip-address.h"
 #include "dsk-fd.h"
+#include "dsk-ip-address.h"
 #include "dsk-dispatch.h"
 #include "dsk-main.h"
 #include "dsk-octet-fd.h"
@@ -40,6 +40,7 @@ dsk_octet_listener_socket_accept (DskOctetListener        *listener,
                      (int) s->listening_fd, strerror (errno));
       return DSK_IO_RESULT_ERROR;
     }
+
 
   if (!dsk_octet_stream_new_fd (fd, DSK_FILE_DESCRIPTOR_IS_READABLE|
                                     DSK_FILE_DESCRIPTOR_IS_WRITABLE|
