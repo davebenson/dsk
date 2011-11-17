@@ -40,16 +40,75 @@ DskSpdySession*dsk_spdy_session_new_client_tcp        (const char     *name,
 						       unsigned        port,
 						       DskError      **error);
 
-dsk_boolean    dsk_spdy_session_get_stream            (DskSpdySession *session,
-                                                       uint32_t       *stream_id_out,
-                                                       DskOctetStream**stream_out,
-                                                       DskOctetSource**source_out,
-                                                       DskOctetSink  **sink_out);
+/* Returns the number of stream requests from the other side,
+   which may be larger than max_return. */
+unsigned       dsk_spdy_session_get_pending_stream_ids(DskSpdySession *session,
+                                                       unsigned        max_return,
+                                                       uint32_t       *stream_ids_out);
 
-dsk_boolean    dsk_spdy_session_make_stream           (DskSpdySession *session,
-                                                       uint32_t       *stream_id_out,
-						       dsk_boolean     unidirectional,
-                                                       DskOctetStream**stream_out,
-                                                       DskOctetSource**source_out,
-                                                       DskOctetSink  **sink_out);
+/* Returns a reference that you must unref */
+DskSpdyStream  *dsk_spdy_session_get_stream           (DskSpdySession *session,
+                                                       uint32_t        stream_id,
+                                                       DskSpdyHeaders *reply_headers);
 
+DskSpdyHeaders *dsk_spdy_session_peek_stream_headers  (DskSpdySession *session,
+                                                       uint32_t        stream_id);
+
+
+typedef struct _DskSpdyStreamClass DskSpdyStreamClass;
+typedef struct _DskSpdyStream DskSpdyStream;
+typedef enum
+{
+  /* Request originating from our side has not gotten SYN_REPLY or RST_STREAM. */
+  DSK_SPDY_STREAM_STATE_WAITING_FOR_ACK,
+
+  /* Request originating from the other side; we have not called get_stream()
+     or reject_stream(). */
+  DSK_SPDY_STREAM_STATE_PENDING,
+
+  /* Running stream (directionality can be figured by looking
+     at 'stream->source' and 'stream->sink') */
+  DSK_SPDY_STREAM_STATE_OK,
+
+  /* Closed in both directions */
+  DSK_SPDY_STREAM_STATE_CLOSED,
+
+  /* Since cancellation has no ack, there's no "cancelling" state.
+     It could have been us, or the remote side that cancelled. */
+  DSK_SPDY_STREAM_STATE_CANCELLED,
+
+  /* Something the other side sent was bad:
+     effect is similar to the remote side cancelling. */
+  DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
+
+  /* All streams are put in this state if
+     the underlying stream goes down,
+     or if the framing-layer goes bad. */
+  DSK_SPDY_STREAM_STATE_TRANSPORT_ERROR
+} DskSpdyStreamState;
+
+struct _DskSpdyStreamClass
+{
+  DskObjectClass base_class;
+};
+struct _DskSpdyStream
+{
+  DskObject base_instance;
+  DskSpdyHeaders *request_header;
+  DskSpdyHeaders *response_header;
+  DskSpdyStreamState state;
+  DskOctetSource *source;
+  DskOctetSink *sink;
+};
+extern DskSpdyStreamClass dsk_spdy_stream_class;
+#define DSK_SPDY_STREAM(stream) DSK_OBJECT_CAST(DskSpdyStream, stream, &dsk_spdy_stream_class)
+
+DskSpdyStream *dsk_spdy_session_make_stream           (DskSpdySession *session,
+                                                       uint32_t       *stream_id_out,
+						       DskSpdyHeaders *request_headers,
+                                                       DskSpdyResponseFunc func,
+                                                       void           *func_data);
+
+void           dsk_spdy_stream_cancel                 (DskSpdyStream  *stream);
+
+DskSpdyHttp
