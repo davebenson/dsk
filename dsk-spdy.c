@@ -1,22 +1,41 @@
 #include "dsk.h"
 
+typedef enum
+{
+  SPDY_STATUS__PROTOCOL_ERROR = 1,
+  SPDY_STATUS__INVALID_STREAM = 2,
+  SPDY_STATUS__REFUSED_STREAM = 3,
+  SPDY_STATUS__UNSUPPORTED_VERSION = 4,
+  SPDY_STATUS__CANCEL = 5,
+  SPDY_STATUS__INTERNAL_ERROR = 6,
+  SPDY_STATUS__FLOW_CONTROL_ERROR = 7
+} SpdyStatusCode;
+
 /* NOTE: leaves session->incoming untouched. */
+/* NOTE: caller must typically handle errors by doing a stream reset. */
 static DskSpdyHeaders *
 parse_name_value_block (DskSpdySession *session,
                         unsigned        n_bytes,
                         DskError      **error)
 {
   DskBuffer decompressed = DSK_BUFFER_STATIC_INIT;
+  DskError *e = NULL;
   if (!dsk_octet_filter_process_buffer (session->decompressor, &decompressed,
                                         n_bytes, &session->incoming, DSK_FALSE,
-                                        error)
+                                        &e)
    || !dsk_zlib_decompressor_sync (session->decompressor, &decompressed,
-                                   error))
-    return NULL;
+                                   &e))
+    {
+      dsk_set_error (error, "error decompressing name/value block: %s",
+                     e->message);
+      dsk_error_unref (e);
+      return NULL;
+    }
 
   if (decompressed.size < 2)
     {
-      ...
+      dsk_set_error (error, "decompressed data much too short");
+      return NULL;
     }
 
   uint8_t tmp[2];
@@ -29,7 +48,9 @@ parse_name_value_block (DskSpdySession *session,
      length gives a minumum of 6 bytes per key/value pair. */
   if (decompressed.size < (4+2) * n_kv)
     {
-      ...
+      dsk_set_error (error, "decompressed data too short for %u name/values",
+                     n_kv);
+      return NULL;
     }
 
   alloc_size = (decompressed.size - 4*n_kv)
@@ -77,6 +98,137 @@ parse_name_value_block (DskSpdySession *session,
   return headers;
 }
 
+struct _DskSpdyMessage
+{
+  /* For data, settings, header messages which are not
+     reodered in the stream. */
+  DskSpdyStream *owner;
+  DskSpdyMessage *next_in_stream, *prev_in_stream;
+
+  unsigned length;
+  /* The data follows Message. */
+};
+
+static DskSpdyMessage *
+allocate_message (DskSpdySession *session,
+                  DskSpdyStream  *stream,
+                  unsigned        length)
+{
+  unsigned pri = stream ? stream->priority : 4;
+  DskSpdyMessage *rv = dsk_malloc (sizeof (DskSpdyMessage) + length);
+  rv->owner = stream;
+  GSK_LIST_APPEND (GET_MESSAGE_LIST (session, pri), rv);
+  rv->length = length;
+  return rv;
+}
+
+static void
+send_reset_stream_message (DskSpdySession *session,
+                           uint32_t        stream_id,
+                           SpdyStatusCode  status_code)
+{
+  uint8_t buf[16];
+  buf[0] = 0x80;
+  buf[1] = 2;
+  buf[2] = SPDY_TYPE__RST_STREAM >> 8;
+  buf[3] = SPDY_TYPE__RST_STREAM;
+  buf[4] = 0;               /* no flags for RST_STREAM */
+  buf[5] = 0;               /* buf[5..7] is the payload length */
+  buf[6] = 0;
+  buf[7] = 8;
+  dsk_uint32be_pack (stream_id, buf + 8);
+  dsk_uint32be_pack (status_code, buf + 12);
+
+  DskSpdyMessage *message = allocate_message (session, NULL, 16);
+  memcpy (message + 1, buf, 16);
+  if (session->write_trap == NULL)
+    {
+      ...
+    }
+}
+
+
+typedef struct _Info_SYN_STREAM Info_SYN_STREAM;
+struct _Info_SYN_STREAM
+{
+  uint32_t stream_id;
+  uint32_t assoc_to_stream_id;
+  uint8_t priority;
+  uint8_t flags;
+  uint32_t header_length;
+};
+
+/* Should only respond FALSE if there is a framing layer error
+   that cannot be recovered from. */
+static dsk_boolean
+handle_SYN_STREAM (DskSpdySession *session,
+                   uint32_t        stream_id,
+                   uint32_t        assoc_to_stream_id,
+                   uint8_t         priority,
+                   uint8_t         flags,
+                   uint8_t         header_length,
+                   DskError      **error)
+{
+  DskError *e = NULL;
+  DskSpdyHeaders *headers;
+  DskSpdyStream *stream;
+
+  /* Duplicate stream_id is considered a recoverable error. */
+  stream = dsk_spdy_session_lookup_stream (session, stream_id);
+  if (stream != NULL)
+    {
+      /* destroy stream, RST_STREAM */
+      send_reset_stream_message (session, stream_id);
+      return DSK_TRUE;
+    }
+
+  /* Failure parsing the name/value block is considered a
+     recoverably error (for some unknown reason, really). */
+  headers = parse_name_value_block (session, length - 10, &e);
+  dsk_buffer_discard (&session->incoming, length - 10);
+  if (headers == NULL)
+    {
+      if (session->print_errors)
+        dsk_warning ("SPDY: bad header for new stream: %s",
+                     e->message);
+      dsk_error_unref (e);
+      send_reset_stream_message (stream_id);
+      return DSK_TRUE;
+    }
+  if (DSK_SPDY_SESSION_IS_CLIENT (session) == (stream_id & 1))
+    {
+      /* client originated even stream,
+         or server originated odd stream:
+         the spec says this is an error, but 
+         doesn't seem to say how to handle it.
+         We disband the session. */
+      dsk_boolean peer_client = !DSK_SPDY_SESSION_IS_CLIENT (session);
+      dsk_set_error (error,
+                 "SPDY: %s sent message with id %u (should be %s)",
+                     peer_client ? "client" : "server",
+                     stream_id,
+                     peer_client ? "odd" : "even");
+      return DSK_FALSE;
+    }
+  stream = dsk_object_new (&dsk_spdy_stream_class);
+  if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
+    {
+      stream->source = dsk_object_new (&dsk_spdy_source_class);
+    }
+  if ((flags & SPDY_FLAG_FIN) == 0)
+    {
+      stream->sink = dsk_object_new (&dsk_spdy_sink_class);
+    }
+
+  if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
+    {
+      /* Send SYN_REPLY */
+      ...
+    }
+}
+
+/* Should only respond FALSE if there is a framing layer error
+   that cannot be recovered from. */
 static dsk_boolean
 try_processing_incoming (DskOctetSource *source,
                          DskSpdySession *session,
@@ -108,49 +260,12 @@ try_processing_incoming (DskOctetSource *source,
                 goto packet_too_short;
               {
                 uint8_t subhdr[10];
+                SynStreamInfo info;
                 dsk_buffer_read (&session->incoming, 10, subhdr);
-                uint32_t stream_id = dsk_uint32be_parse (subhdr) & 0x7fffffff;
-                uint32_t assoc_to_stream_id = dsk_uint32be_parse (subhdr + 4) & 0x7fffffff;
-                uint8_t priority = subhdr[8] >> 6;
-                DskSpdyHeaders *headers = parse_name_value_block (session, length - 10, error);
-                dsk_buffer_discard (&session->incoming, length - 10);
-                if (headers == NULL)
-                  {
-                    /* must respond with RST_STREAM */
-                    ...
-
-                    return DSK_FALSE;
-                  }
-                ...
-              }
-              if (DSK_SPDY_SESSION_IS_CLIENT (session) == (stream_id & 1))
-                {
-                  /* client originated even stream,
-                     or server originated odd stream. */
-                  ...
-                }
-              DskSpdyStream *stream = dsk_spdy_session_lookup_stream (session, stream_id);
-              if (stream != NULL)
-                {
-                  /* destroy stream, RST_STREAM */
-                  ...
-                  break;
-                }
-              stream = dsk_object_new (&dsk_spdy_stream_class);
-              if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
-                {
-                  stream->source = dsk_object_new (&dsk_spdy_source_class);
-                }
-              if ((flags & SPDY_FLAG_FIN) == 0)
-                {
-                  stream->sink = dsk_object_new (&dsk_spdy_sink_class);
-                }
-
-              if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
-                {
-                  /* Send SYN_REPLY */
-                  ...
-                }
+                if (!parse_SYN_STREAM (subhdr, length, &info, error))
+                  return DSK_FALSE;
+                if (!handle_SYN_STREAM (session, &info, error))
+                  return DSK_FALSE;
               break;
             case SPDY_TYPE__SYN_REPLY:
               ...
@@ -184,6 +299,10 @@ try_processing_incoming (DskOctetSource *source,
         }
     }
   return DSK_TRUE;
+
+packet_too_short:
+  dsk_set_error (error, "SPDY session: packet too short for message type: terminating");
+  return DSK_FALSE;
 }
 
 DskSpdySession *

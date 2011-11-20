@@ -4,6 +4,11 @@
        this is the raw framing layer --- */
        
 typedef struct _DskSpdySession DskSpdySession;
+typedef struct _DskSpdyMessageQueue DskSpdyMessageQueue;
+struct _DskSpdyMessageQueue
+{
+  DskSpdyMessage *first, *last;
+};
 struct _DskSpdySession
 {
   DskObject       base_instance;
@@ -30,6 +35,11 @@ struct _DskSpdySession
 
   unsigned n_pending_streams;
   DskSpdyStream  *first_pending_stream, *last_pending_stream;
+
+  /* queues[0..3] are for each priority level;
+     queues[4] is for non-stream affiliated messages.
+     (Including RST_STREAM messages) */
+  DskSpdyMessageQueue queues[5];
 };
 #define DSK_SPDY_SESSION_IS_CLIENT(session) ((session)->next_stream_id & 1)
 
@@ -110,6 +120,8 @@ struct _DskSpdyStream
   DskSpdyStream *left, *right, *parent;
   dsk_boolean is_red;
   DskSpdyStream *prev_pending, *next_pending;
+
+  DskSpdyMessage *first_message, *last_message;
 };
 extern DskSpdyStreamClass dsk_spdy_stream_class;
 #define DSK_SPDY_STREAM(stream) DSK_OBJECT_CAST(DskSpdyStream, stream, &dsk_spdy_stream_class)
