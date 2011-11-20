@@ -23,8 +23,13 @@ struct _DskSpdySession
   uint32_t        next_stream_id;
   uint32_t        next_ping_id;
 
+  /*< private >*/
+
+  /* a rbtree of streams */
   DskSpdyStream  *streams_by_id;
-  DskSpdyStream  *first_unclaimed_stream, *last_unclaimed_stream;
+
+  unsigned n_pending_streams;
+  DskSpdyStream  *first_pending_stream, *last_pending_stream;
 };
 #define DSK_SPDY_SESSION_IS_CLIENT(session) ((session)->next_stream_id & 1)
 
@@ -99,16 +104,27 @@ struct _DskSpdyStream
   DskSpdyStreamState state;
   DskOctetSource *source;
   DskOctetSink *sink;
+  zstream header_compressor;
+  zstream header_decompressor;
+
+  DskSpdyStream *left, *right, *parent;
+  dsk_boolean is_red;
+  DskSpdyStream *prev_pending, *next_pending;
 };
 extern DskSpdyStreamClass dsk_spdy_stream_class;
 #define DSK_SPDY_STREAM(stream) DSK_OBJECT_CAST(DskSpdyStream, stream, &dsk_spdy_stream_class)
 
 DskSpdyStream *dsk_spdy_session_make_stream           (DskSpdySession *session,
-                                                       uint32_t       *stream_id_out,
 						       DskSpdyHeaders *request_headers,
                                                        DskSpdyResponseFunc func,
                                                        void           *func_data);
 
 void           dsk_spdy_stream_cancel                 (DskSpdyStream  *stream);
 
-DskSpdyHttp
+/* --- low-level HTTP support --- */
+DskSpdyHeaders *dsk_spdy_headers_from_http_request    (DskHttpRequest *request);
+DskSpdyHeaders *dsk_spdy_headers_from_http_response   (DskHttpResponse*response);
+DskHttpRequest *dsk_spdy_headers_to_http_request      (DskSpdyHeaders *request,
+                                                       DskError      **error);
+DskHttpResponse*dsk_spdy_headers_to_http_response     (DskSpdyHeaders *response,
+                                                       DskError      **error);
