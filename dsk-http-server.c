@@ -597,6 +597,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
   header_options.content_main_type = options->content_main_type;
   header_options.content_sub_type = options->content_sub_type;
   header_options.content_charset = options->content_charset;
+  header_options.date = dsk_dispatch_default ()->last_dispatch_secs;
 
   /* Do lower-level response */
   rreq->waiting_for_response = DSK_FALSE;
