@@ -98,6 +98,17 @@ parse_name_value_block (DskSpdySession *session,
   return headers;
 }
 
+static inline void
+session_ensure_has_write_trap (DskSpdySession *session)
+{
+  if (session->write_trap != NULL)
+    return;
+  session->write_trap = dsk_hook_trap (&session->sink->writable_hook,
+                                       handle_sink_writable,
+                                       session,
+                                       NULL);
+}
+
 struct _DskSpdyMessage
 {
   /* For data, settings, header messages which are not
@@ -141,10 +152,7 @@ send_reset_stream_message (DskSpdySession *session,
 
   DskSpdyMessage *message = allocate_message (session, NULL, 16);
   memcpy (message + 1, buf, 16);
-  if (session->write_trap == NULL)
-    {
-      ...
-    }
+  session_ensure_has_write_trap (session);
 }
 
 
@@ -211,20 +219,17 @@ handle_SYN_STREAM (DskSpdySession *session,
       return DSK_FALSE;
     }
   stream = dsk_object_new (&dsk_spdy_stream_class);
-  if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
+  if (flags & SPDY_FLAG_UNIDIRECTIONAL)
+    stream->unidirectional = 1;
+  if (!stream->unidirectional)
     {
       stream->source = dsk_object_new (&dsk_spdy_source_class);
     }
-  if ((flags & SPDY_FLAG_FIN) == 0)
+  if (!(flags&SPDY_FLAG_FIN))
     {
       stream->sink = dsk_object_new (&dsk_spdy_sink_class);
     }
 
-  if ((flags & SPDY_FLAG_UNIDIRECTIONAL) == 0)
-    {
-      /* Send SYN_REPLY */
-      ...
-    }
 }
 
 /* Should only respond FALSE if there is a framing layer error
@@ -266,6 +271,7 @@ try_processing_incoming (DskOctetSource *source,
                   return DSK_FALSE;
                 if (!handle_SYN_STREAM (session, &info, error))
                   return DSK_FALSE;
+              }
               break;
             case SPDY_TYPE__SYN_REPLY:
               ...
@@ -368,6 +374,28 @@ dsk_spdy_session_get_stream           (DskSpdySession *session,
                                        uint32_t        stream_id,
                                        DskSpdyHeaders *reply_headers)
 {
+  DskSpdyStream *stream = dsk_spdy_session_lookup_stream (stream, stream_id);
+  if (stream == NULL)
+    return NULL;
+  if (stream->state != DSK_SPDY_STREAM_STATE_PENDING)
+    {
+      ...
+    }
+  GSK_LIST_REMOVE (GET_PENDING_STREAM_LIST (session), stream);
+  stream->state = DSK_SPDY_STREAM_STATE_OK;
+  /* There's no need to emit a stream-state-change notification,
+     because no end user could have accessed this stream yet. */
+  if (!stream->unidirectional)
+    {
+      /* send SYN_REPLY */
+      ...
+    }
+  else
+    {
+      if (reply_headers && reply_headers->n_kv)
+        dsk_warning ("reply_headers specified for unidirectional stream");
+    }
+  stream->state = DSK_SPDY_STREAM_STATE_OK;
   ...
 }
 
