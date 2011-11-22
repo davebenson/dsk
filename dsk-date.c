@@ -335,7 +335,7 @@ int64_t     dsk_date_to_unixtime (DskDate *date)
                       + date->second;
   return (int64_t) days_since_epoch * 86400LL
        + (int64_t) secs_since_midnight
-       + date->zone_offset * 60;
+       - date->zone_offset * 60;
 
 }
 
