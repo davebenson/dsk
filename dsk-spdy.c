@@ -1,14 +1,25 @@
 #include "dsk.h"
 
+#define SPDY_MIN_VERSION 3
+#define SPDY_MAX_VERSION 3
+
+
+/* The minimum length for a compressed name/value block.
+   The minimum length of the uncompressed data is 2 bytes (4 for SPDY 3),
+   so I bet we could set this to 2.  but the gains
+   would be very minimal, only relevant for invalid packets. */
+#define MIN_NAME_VALUE_HEADER_LENGTH    1
+
 typedef enum
 {
-  SPDY_STATUS__PROTOCOL_ERROR = 1,
-  SPDY_STATUS__INVALID_STREAM = 2,
-  SPDY_STATUS__REFUSED_STREAM = 3,
-  SPDY_STATUS__UNSUPPORTED_VERSION = 4,
-  SPDY_STATUS__CANCEL = 5,
-  SPDY_STATUS__INTERNAL_ERROR = 6,
-  SPDY_STATUS__FLOW_CONTROL_ERROR = 7
+  SPDY_STATUS_PROTOCOL_ERROR = 1,
+  SPDY_STATUS_INVALID_STREAM = 2,
+  SPDY_STATUS_REFUSED_STREAM = 3,
+  SPDY_STATUS_UNSUPPORTED_VERSION = 4,
+  SPDY_STATUS_CANCEL = 5,
+  SPDY_STATUS_INTERNAL_ERROR = 6,
+  SPDY_STATUS_FLOW_CONTROL_ERROR = 7,
+  SPDY_STATUS_STREAM_ALREADY_CLOSED = 8
 } SpdyStatusCode;
 
 /* NOTE: leaves session->incoming untouched. */
@@ -186,7 +197,9 @@ handle_SYN_STREAM (DskSpdySession *session,
   if (stream != NULL)
     {
       /* destroy stream, RST_STREAM */
-      send_reset_stream_message (session, stream_id);
+      destroy_stream (session, stream_id, DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
+                      SPDY_STATUS_INVALID_STREAM,       /* TODO: is this correct? */
+                      DSK_FALSE);
       return DSK_TRUE;
     }
 
@@ -200,7 +213,7 @@ handle_SYN_STREAM (DskSpdySession *session,
         dsk_warning ("SPDY: bad header for new stream: %s",
                      e->message);
       dsk_error_unref (e);
-      send_reset_stream_message (stream_id);
+      send_reset_stream_message (session, stream_id, SPDY_STATUS_PROTOCOL_ERROR);
       return DSK_TRUE;
     }
   if (DSK_SPDY_SESSION_IS_CLIENT (session) == (stream_id & 1))
@@ -232,6 +245,58 @@ handle_SYN_STREAM (DskSpdySession *session,
 
 }
 
+static dsk_boolean
+is_terminated_state (DskSpdyStreamState state)
+{
+  return  stream->state == DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR
+      ||  stream->state == DSK_SPDY_STREAM_STATE_TRANSPORT_ERROR
+      ||  stream->state == DSK_SPDY_STREAM_STATE_CANCELLED
+      ||  stream->state == DSK_SPDY_STREAM_STATE_CLOSED;
+}
+
+/* Destroy a stream.
+ * If 'remote_reset', send a reset package.
+ */
+static void
+destroy_stream (DskSpdyStream     *stream,
+                DskSpdyStreamState new_state,
+                SpdyStatusCode     status_code,
+                dsk_boolean        remote_reset)
+{
+  DskSpdySession *session = stream->session;
+  dsk_assert (session != NULL);
+  dsk_assert (!is_terminated_state (stream->state));
+  dsk_assert (is_terminated_state (new_state));
+  if (stream->state == DSK_SPDY_STREAM_STATE_PENDING)
+    GSK_LIST_REMOVE (GET_SESSION_PENDING_STREAMS (session), stream);
+  GSK_RBTREE_REMOVE (GET_SESSION_STREAMS_BY_ID (session), stream);
+  stream->remote_reset = remote_reset;
+
+  if (!remote_reset)
+    {
+      send_reset_stream_message (session, stream_id, status_code);
+    }
+
+  /* remove all outbound packets from stream */
+  while (stream->first_control_packet != NULL)
+     {
+      DskSpdyMessage *message = stream->first_control_packet;
+      GSK_LIST_REMOVE_FIRST (GET_STREAM_CONTROL_PACKET_LIST ());
+      dsk_spdy_message_free (message);
+    }
+  while (stream->first_data_packet != NULL)
+    {
+      DskSpdyMessage *message = stream->first_data_packet;
+      GSK_LIST_REMOVE_FIRST (GET_STREAM_DATA_PACKET_LIST ());
+      dsk_spdy_message_free (message);
+    }
+
+  stream->state = new_state;
+  dsk_hook_notify (&stream->state_changed_hook);
+  stream->session = NULL;
+  dsk_object_unref (stream);
+}
+
 /* Should only respond FALSE if there is a framing layer error
    that cannot be recovered from. */
 static dsk_boolean
@@ -261,7 +326,7 @@ try_processing_incoming (DskOctetSource *source,
           switch (type)
             {
             case SPDY_TYPE__SYN_STREAM:
-              if (length < 12)
+              if (length < 10 + MIN_NAME_VALUE_HEADER_LENGTH)
                 goto packet_too_short;
               {
                 uint8_t subhdr[10];
@@ -274,17 +339,118 @@ try_processing_incoming (DskOctetSource *source,
               }
               break;
             case SPDY_TYPE__SYN_REPLY:
-              ...
+              if (length < 4 + MIN_NAME_VALUE_HEADER_LENGTH)
+                goto packet_too_short;
+              {
+                uint8_t subhdr[4];
+                dsk_buffer_read (&session->incoming, 4, subhdr);
+                uint32_t stream_id = dsk_uint32be_parse (subhdr) & 0x7fffffff;
+                DskSpdyHeaders *headers;
+                DskSpdyStream *stream = dsk_spdy_session_lookup_stream (session, stream_id);
+                if (stream == NULL)
+                  {
+                    send_reset_stream_message (session, stream_id,
+                                               SPDY_STATUS_INVALID_STREAM);
+                    dsk_buffer_discard (&session->incoming, length - 4);
+                    break;
+                  }
+                if (stream->state != DSK_SPDY_STREAM_STATE_WAITING_FOR_ACK)
+                  {
+                    /* must issue a stream error STREAM_IN_USE */
+                    dsk_buffer_discard (&session->incoming, length - 4);
+                    destroy_stream (stream, DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
+                                    SPDY_STATUS_STREAM_IN_USE, DSK_FALSE);
+                    break;
+                  }
+
+                headers = parse_name_value_block (session, length - 4, &e);
+                if (headers == NULL)
+                  {
+                    dsk_buffer_discard (&session->incoming, length - 4);
+                    destroy_stream (session, stream_id, 
+                                    DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
+                                    SPDY_STATUS_PROTOCOL_ERROR,
+                                    DSK_FALSE);
+                    break;
+                  }
+                stream->response_header = headers;
+                stream->state = DSK_SPDY_STREAM_STATE_OK;
+              }
               break;
             case SPDY_TYPE__RST_STREAM:
-              ...
+              if (length != 8)
+                goto packet_too_short;
+              {
+                /* Parse header */
+                uint8_t subhdr[8];
+                dsk_buffer_read (&session->incoming, 8, subhdr);
+                uint32_t stream_id = dsk_uint32be_parse (subhdr) & 0x7fffffff;
+                uint32_t status = dsk_uint32be_parse (subhdr + 4);
+
+                /* lookup stream */
+                DskSpdyStream *stream;
+                stream = dsk_spdy_session_lookup_stream (session, stream_id);
+
+                /* if stream not found, ignore it. */
+                /* NOTE: we could be more strict if it is a stream
+                   whose parity could have been created by us, but wasn't. */
+                if (stream == NULL)
+                  {
+                    ...
+                  }
+
+                /* destroy the stream */
+                DskSpdyStreamState new_state;
+                switch (status)
+                  {
+                  case SPDY_STATUS_PROTOCOL_ERROR:
+                    new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
+                    break;
+                  case SPDY_STATUS_INVALID_STREAM:
+                    ... issue warning ...
+                    new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
+                    break;
+                  case SPDY_STATUS_REFUSED_STREAM:
+                    new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
+                    ...
+                    break;
+                  case SPDY_STATUS_UNSUPPORTED_VERSION:
+                    ... issue warning ...
+                    new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
+                    break;
+                  case SPDY_STATUS_CANCEL:
+                    new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
+                    break;
+                  case SPDY_STATUS_FLOW_CONTROL_ERROR:
+                    new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
+                    break;
+                  case SPDY_STATUS_STREAM_IN_USE:
+                    new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
+                    break;
+                  case SPDY_STATUS_STREAM_ALREADY_CLOSED:
+                    ....
+                    new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
+                    break;
+                  default:
+                    dsk_warning ("SPDY: got RST_STREAM with unknown status %u", status);
+                    new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
+
+                    /* set status back to a recognizable value */
+                    status = SPDY_STATUS_PROTOCOL_ERROR;
+                    break;
+                  }
+
+                destroy_stream (session, stream->id, new_state, status, DSK_TRUE);
+              }
               break;
             case SPDY_TYPE__SETTINGS:
               ...
               break;
+#if 0           /* REMOVED as of SPDY 3 */
             case SPDY_TYPE__NOOP:
               ...
               break;
+#endif
             case SPDY_TYPE__PING:
               ...
               break;
@@ -413,17 +579,44 @@ const DskSpdyStreamClass dsk_spdy_stream_class = {
                           dsk_spdy_stream_init, dsk_spdy_stream_finalize)
 };
 
-DskSpdyStream *dsk_spdy_session_make_stream           (DskSpdySession *session,
-						       DskSpdyHeaders *request_headers,
-                                                       DskSpdyResponseFunc func,
-                                                       void           *func_data);
+DskSpdyStream *
+dsk_spdy_session_make_stream           (DskSpdySession     *session,
+                                        DskSpdyHeaders     *request_headers,
+                                        DskSpdyResponseFunc func,
+                                        void               *func_data)
+{
+  ...
+}
 
-void           dsk_spdy_stream_cancel                 (DskSpdyStream  *stream);
+void
+dsk_spdy_stream_cancel (DskSpdyStream  *stream)
+{
+  ...
+}
 
 /* --- low-level HTTP support --- */
-DskSpdyHeaders *dsk_spdy_headers_from_http_request    (DskHttpRequest *request);
-DskSpdyHeaders *dsk_spdy_headers_from_http_response   (DskHttpResponse*response);
-DskHttpRequest *dsk_spdy_headers_to_http_request      (DskSpdyHeaders *request,
-                                                       DskError      **error);
-DskHttpResponse*dsk_spdy_headers_to_http_response     (DskSpdyHeaders *response,
-                                                       DskError      **error);
+DskSpdyHeaders *
+dsk_spdy_headers_from_http_request    (DskHttpRequest   *request)
+{
+  ...
+}
+
+DskSpdyHeaders *
+dsk_spdy_headers_from_http_response   (DskHttpResponse  *response)
+{
+  ...
+}
+
+DskHttpRequest *
+dsk_spdy_headers_to_http_request      (DskSpdyHeaders   *request,
+                                       DskError        **error)
+{
+  ...
+}
+
+DskHttpResponse*
+dsk_spdy_headers_to_http_response     (DskSpdyHeaders   *response,
+                                       DskError        **error)
+{
+  ...
+}

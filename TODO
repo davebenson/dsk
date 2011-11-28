@@ -13,6 +13,15 @@ _ make a survey of existing HTTP Client APIs
   _ ruby
   _ apache
 
+_ HTTP server access log (hook)
+_ file rotation service
+
+cmdline:
+_ wrapper programs where the first non-hyphen-prefixed argument stops processing
+_ mode-based programs:
+  _ modes may be wrappers
+  _ modes may have submodes, etc
+
 STEAL:
 _ glib's timezone code
 

@@ -112,6 +112,7 @@ struct _DskSpdyStream
   DskSpdyHeaders *request_header;
   DskSpdyHeaders *response_header;
   DskSpdyStreamState state;
+  dsk_boolean remote_reset; /* if in a terminated state, who terminated. */
   DskOctetSource *source;
   DskOctetSink *sink;
   zstream header_compressor;
