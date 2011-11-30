@@ -295,11 +295,6 @@ connection_fatal_fail (Connection *connection,
             if (new->n_pipelined >= host_info->max_pipelined)
               break;
 
-            /* Pipeline to_move to this new connection. */
-            GSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), new);
-            new->n_pipelined += 1;
-            GSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
-
             /* ???: copied from above.  is this adequate? */
             DskHttpClientStreamRequestOptions sreq_options
               = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
@@ -315,8 +310,16 @@ connection_fatal_fail (Connection *connection,
               {
                 /* Presumably, there's something wrong with the
                    request, so don't retry it. */
-                ...
+                to_move->funcs->handle_fail (to_move, error, to_move->func_data);
+                dsk_clear_error (&error);
+                transfer_unref (to_move);
+                continue;
               }
+
+            /* Pipeline to_move to this new connection. */
+            GSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), new);
+            new->n_pipelined += 1;
+            GSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
           }
 
         if (connection->first_pipelined != NULL)

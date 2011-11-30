@@ -8,19 +8,58 @@
 #include "dsk-cmdline.h"
 #include "dsk-buffer.h"
 
-static const char *cmdline_short_desc;
-static const char *cmdline_long_desc;
-static const char *cmdline_non_option_arg_desc;
-static DskCmdlineInitFlags cmdline_init_flags;
-static dsk_boolean cmdline_permit_unknown_options = DSK_FALSE;
-static dsk_boolean cmdline_permit_extra_arguments = DSK_FALSE;
-static dsk_boolean cmdline_permit_help = DSK_TRUE;
+typedef struct _DskCmdlineMode DskCmdlineMode;
+typedef struct _DskCmdlineArg DskCmdlineArg;
+typedef struct _ExclNode ExclNode;
+
+#define FIRST_SINGLE_CHAR_CMDLINE_ARG   '!'
+#define LAST_SINGLE_CHAR_CMDLINE_ARG    '~'
+#define N_SINGLE_CHAR_CMDLINE_ARGS  (LAST_SINGLE_CHAR_CMDLINE_ARG-FIRST_SINGLE_CHAR_CMDLINE_ARG+1)
+
+/* bah, it just seems unnecessary to support an
+   arbitrary number of aliases. */
+#define DSK_CMDLINE_MAX_ALIASES 5
+
+struct _DskCmdlineMode
+{
+  const char *mode_name;                /* NULL for top-level */
+  const char *short_desc;
+  const char *long_desc;
+  const char *non_option_arg_desc;
+  dsk_boolean permit_unknown_options;
+  dsk_boolean permit_extra_arguments;
+  dsk_boolean permit_help;
+  DskCmdlineArgumentHandler argument_handler;
+
+  unsigned n_aliases;
+  const char *aliases[DSK_CMDLINE_MAX_ALIASES];
+
+  DskCmdlineMode *parent;
+  DskCmdlineMode *next_sibling;
+  DskCmdlineMode *first_child;
+  DskCmdlineMode *last_child;
+
+  DskCmdlineArg *arg_tree;
+  DskCmdlineArg *args_single_char[N_SINGLE_CHAR_CMDLINE_ARGS];
+
+  void *user_data;
+  DskVoidFunc callback;
+
+  ExclNode *first_excl_node, *last_excl_node;
+};
+
+static DskCmdlineMode toplevel_mode = {
+  .permit_help = DSK_TRUE
+};
+
+static DskCmdlineMode *configuring = &toplevel_mode;
+
+void *dsk_cmdline_mode_user_data = NULL;        /* public */
+
 static dsk_boolean swallow_arguments = DSK_TRUE;
-static DskCmdlineArgumentHandler cmdline_argument_handler = NULL;
 
 #define _DSK_CMDLINE_OPTION_USED                (1<<31)
 
-typedef struct _DskCmdlineArg DskCmdlineArg;
 struct _DskCmdlineArg
 {
   const char *option_name;
@@ -39,17 +78,11 @@ struct _DskCmdlineArg
   dsk_boolean is_red;
 };
 
-static DskCmdlineArg *cmdline_arg_tree = NULL;
-#define FIRST_SINGLE_CHAR_CMDLINE_ARG   '!'
-#define LAST_SINGLE_CHAR_CMDLINE_ARG    '~'
-#define N_SINGLE_CHAR_CMDLINE_ARGS  (LAST_SINGLE_CHAR_CMDLINE_ARG-FIRST_SINGLE_CHAR_CMDLINE_ARG+1)
-static DskCmdlineArg *cmdline_args_single_char[N_SINGLE_CHAR_CMDLINE_ARGS];
-
 #define COMPARE_STR_TO_ARG_NODE(a,b, rv)  rv = strcmp(a, b->option_name)
 #define COMPARE_CMDLINE_ARG_NODES(a,b, rv)  COMPARE_STR_TO_ARG_NODE(a->option_name,b,rv)
 
-#define CMDLINE_ARG_GET_TREE() \
-  cmdline_arg_tree, DskCmdlineArg*,  \
+#define CMDLINE_ARG_GET_TREE(mode) \
+  (mode)->arg_tree, DskCmdlineArg*,  \
   GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_CMDLINE_ARG_NODES
@@ -73,23 +106,36 @@ compare_equal_terminated_str (const char *option,
 #define COMPARE_STR_EQUAL_TO_ARG_NODE(a,b, rv)  rv = compare_equal_terminated_str(a,b)
 
 
+/* For mutually-exclusive argument handling */
+struct _ExclNode
+{
+  dsk_boolean one_required;
+  unsigned n_args;
+  DskCmdlineArg **args;
+  ExclNode *next;
+};
+
 
 void dsk_cmdline_init        (const char     *short_desc,
                               const char     *long_desc,
                               const char     *non_option_arg_desc,
                               DskCmdlineInitFlags flags)
 {
-  cmdline_short_desc = short_desc;
-  cmdline_long_desc = long_desc;
-  cmdline_non_option_arg_desc = non_option_arg_desc;
-  cmdline_init_flags = flags;
+  configuring->short_desc = short_desc;
+  configuring->long_desc = long_desc;
+  configuring->non_option_arg_desc = non_option_arg_desc;
+  if (flags & DSK_CMDLINE_PERMIT_ARGUMENTS)
+    configuring->permit_extra_arguments = DSK_TRUE;
+  if (flags & DSK_CMDLINE_PERMIT_UNKNOWN_OPTIONS)
+    configuring->permit_unknown_options = DSK_TRUE;
 }
 
 static DskCmdlineArg *
 try_option (const char *option_name)
 {
   DskCmdlineArg *rv;
-  GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (), option_name,
+  GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (configuring),
+                                option_name,
                                 COMPARE_STR_TO_ARG_NODE, rv);
   return rv;
 }
@@ -108,7 +154,7 @@ add_option (const char *option_name)
   rv->flags = 0;
   rv->value_ptr = NULL;
   rv->func = NULL;
-  GSK_RBTREE_INSERT (CMDLINE_ARG_GET_TREE (), rv, conflict);
+  GSK_RBTREE_INSERT (CMDLINE_ARG_GET_TREE (configuring), rv, conflict);
   dsk_assert (conflict == NULL);
   return rv;
 }
@@ -330,10 +376,10 @@ void dsk_cmdline_add_shortcut(char            shortcut,
   dsk_return_if_fail (FIRST_SINGLE_CHAR_CMDLINE_ARG <= shortcut
                       && shortcut <= LAST_SINGLE_CHAR_CMDLINE_ARG,
                       "invalid shortcut letter");
-  dsk_return_if_fail (cmdline_args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL,
+  dsk_return_if_fail (configuring->args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL,
                       "shortcut already defined");
   arg->c = shortcut;
-  cmdline_args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] = arg;
+  configuring->args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] = arg;
 }
 
 void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
@@ -359,16 +405,6 @@ void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
   dsk_cmdline_mutually_exclusive_v (one_required, n, arg_array);
 }
 
-typedef struct _ExclNode ExclNode;
-struct _ExclNode
-{
-  dsk_boolean one_required;
-  unsigned n_args;
-  DskCmdlineArg **args;
-  ExclNode *next;
-};
-static ExclNode *first_excl_node = NULL, *last_excl_node = NULL;
-
 void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
                                        unsigned        n_excl,
                                        char          **excl)
@@ -384,25 +420,25 @@ void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
   node->one_required = one_required;
   node->next = NULL;
 
-  if (first_excl_node == NULL)
-    first_excl_node = node;
+  if (configuring->first_excl_node == NULL)
+    configuring->first_excl_node = node;
   else
-    last_excl_node->next = node;
-  last_excl_node = node;
+    configuring->last_excl_node->next = node;
+  configuring->last_excl_node = node;
 }
 
 void dsk_cmdline_permit_unknown_options (dsk_boolean permit)
 {
-  cmdline_permit_unknown_options = permit;
+  configuring->permit_unknown_options = permit;
 }
 void dsk_cmdline_permit_extra_arguments (dsk_boolean permit)
 {
-  cmdline_permit_extra_arguments = permit;
+  configuring->permit_extra_arguments = permit;
 }
 void dsk_cmdline_set_argument_handler (DskCmdlineArgumentHandler handler)
 {
-  dsk_assert (cmdline_argument_handler == NULL);
-  cmdline_argument_handler = handler;
+  dsk_assert (configuring->argument_handler == NULL);
+  configuring->argument_handler = handler;
 }
 
 void dsk_cmdline_process_args(int            *argc_inout,
@@ -444,10 +480,11 @@ check_mandatory_args_recursive (DskCmdlineArg *node,
 }
 
 static dsk_boolean
-check_mutually_exclusive_args (DskError **error)
+check_mutually_exclusive_args (DskCmdlineMode *mode,
+                               DskError **error)
 {
   ExclNode *at;
-  for (at = first_excl_node; at; at = at->next)
+  for (at = mode->first_excl_node; at; at = at->next)
     {
       unsigned i;
       const char *got_arg_name = NULL;
@@ -514,27 +551,44 @@ print_options_recursive (DskCmdlineArg *tree)
   print_options_recursive (tree->right);
 }
 
-static void usage (const char *prog_name)
+static void usage (DskCmdlineMode *mode,
+                   const char *prog_name)
 {
   const char *base_prog_name = strrchr (prog_name, '/');
   if (base_prog_name)
     base_prog_name++;
   else
     base_prog_name = prog_name;
-  if (cmdline_short_desc)
+  if (mode->short_desc)
     fprintf (stderr, "%s - %s\n\n",
              base_prog_name,
-             cmdline_short_desc);
+             mode->short_desc);
   fprintf (stderr, "usage: %s [OPTIONS] %s\n",
-           base_prog_name, cmdline_non_option_arg_desc ? cmdline_non_option_arg_desc : "");
-  if (cmdline_long_desc)
+           base_prog_name, mode->non_option_arg_desc ? mode->non_option_arg_desc : "");
+  if (mode->long_desc)
     {
-      fprintf (stderr, "\n%s\n", cmdline_long_desc);
+      fprintf (stderr, "\n%s\n", mode->long_desc);
     }
   fprintf (stderr, "Options:\n");
-  print_options_recursive (cmdline_arg_tree);
+  print_options_recursive (mode->arg_tree);
 }
 
+static DskCmdlineMode *
+find_child_mode (DskCmdlineMode *parent,
+                 const char     *name)
+{
+  DskCmdlineMode *at;
+  for (at = parent->first_child; at; at = at->next_sibling)
+    {
+      unsigned i;
+      if (strcmp (at->mode_name, name) == 0)
+        return at;
+      for (i = 0; i < at->n_aliases; i++)
+        if (strcmp (at->aliases[i], name) == 0)
+          return at;
+    }
+  return NULL;
+}
 
 dsk_boolean
 dsk_cmdline_try_process_args (int *argc_inout,
@@ -543,6 +597,8 @@ dsk_cmdline_try_process_args (int *argc_inout,
 {
   char **argv = *argv_inout;
   int i;
+  DskCmdlineMode *mode = &toplevel_mode;
+  DskCmdlineMode *submode;
   for (i = 1; i < *argc_inout; )
     {
       if (argv[i][0] == '-')
@@ -552,18 +608,18 @@ dsk_cmdline_try_process_args (int *argc_inout,
               /* long option */
               const char *opt = argv[i] + 2;
               DskCmdlineArg *arg;
-              GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (), opt,
+              GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (mode), opt,
                                             COMPARE_STR_EQUAL_TO_ARG_NODE, arg);
               if (arg == NULL)
                 {
-                  if (cmdline_permit_unknown_options)
+                  if (mode->permit_unknown_options)
                     {
                       i++;
                       continue;
                     }
-                  if (cmdline_permit_help && strcmp (opt, "help") == 0)
+                  if (mode->permit_help && strcmp (opt, "help") == 0)
                     {
-                      usage (**argv_inout);
+                      usage (mode, **argv_inout);
                       exit (1);
                     }
                   dsk_set_error (error, "bad option --%s", opt);
@@ -607,7 +663,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
           else if (argv[i][1] == 0)
             {
               /* just '-':  cease processing options, if allowed */
-              if (!cmdline_permit_extra_arguments)
+              if (!mode->permit_extra_arguments)
                 {
                   dsk_set_error (error, "got '-', but non-options are forbidding");
                   return DSK_FALSE;
@@ -628,7 +684,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                       dsk_set_error (error, "invalid single-char option '%c'", argv[i][1]);
                       return DSK_FALSE;
                     }
-                  arg = cmdline_args_single_char[argv[i][1] - FIRST_SINGLE_CHAR_CMDLINE_ARG];
+                  arg = mode->args_single_char[argv[i][1] - FIRST_SINGLE_CHAR_CMDLINE_ARG];
                   if (arg == NULL)
                     {
                       dsk_set_error (error, "invalid single-char option '%c'", argv[i][1]);
@@ -668,12 +724,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
                     {
                       if (argv[i][ci] < FIRST_SINGLE_CHAR_CMDLINE_ARG
                        || argv[i][ci] > LAST_SINGLE_CHAR_CMDLINE_ARG
-                       || cmdline_args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL)
+                       || mode->args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL)
                         {
                           dsk_set_error (error, "invalid single-char option '%c'", argv[i][ci]);
                           return DSK_FALSE;
                         }
-                      if (cmdline_args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG]->flags & DSK_CMDLINE_TAKES_ARGUMENT)
+                      if (mode->args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG]->flags & DSK_CMDLINE_TAKES_ARGUMENT)
                         {
                           dsk_set_error (error, "multiple short-options combined, but '%c' take argument", argv[i][ci]);
                           return DSK_FALSE;
@@ -681,7 +737,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                     }
                   for (ci = 1; argv[i][ci] != 0; ci++)
                     {
-                      DskCmdlineArg *arg = cmdline_args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG];
+                      DskCmdlineArg *arg = mode->args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG];
                       if (!arg->func (arg, NULL, error))
                         {
                           dsk_add_error_prefix (error, "processing -%c", argv[i][ci]);
@@ -693,13 +749,21 @@ dsk_cmdline_try_process_args (int *argc_inout,
                 }
             }
         }
-      else if (cmdline_argument_handler)
+      else if ((submode=find_child_mode (mode, argv[i])) != NULL)
         {
-          if (!cmdline_argument_handler (argv[i], error))
+          mode = submode;
+          dsk_cmdline_mode_user_data = mode->user_data;
+          if (mode->callback)
+            mode->callback ();
+          skip_or_swallow (argc_inout, argv_inout, &i, 1);
+        }
+      else if (mode->argument_handler)
+        {
+          if (!mode->argument_handler (argv[i], error))
             return DSK_FALSE;
           skip_or_swallow (argc_inout, argv_inout, &i, 1);
         }
-      else if (cmdline_permit_extra_arguments)
+      else if (mode->permit_extra_arguments)
         {
           i++;
         }
@@ -711,29 +775,41 @@ dsk_cmdline_try_process_args (int *argc_inout,
     }
 
   /* check that all mandatory arguments are used */
-  if (cmdline_arg_tree != NULL
-   && !check_mandatory_args_recursive (cmdline_arg_tree, error))
-    return DSK_FALSE;
-  if (!check_mutually_exclusive_args (error))
-    return DSK_FALSE;
+  for (submode = mode; submode; submode = submode->parent)
+    {
+      if (submode->arg_tree != NULL
+       && !check_mandatory_args_recursive (submode->arg_tree, error))
+        return DSK_FALSE;
+      if (!check_mutually_exclusive_args (submode, error))
+        return DSK_FALSE;
+    }
 
   return DSK_TRUE;
 }
 
 static void
-do_cleanup_recursive (DskCmdlineArg *arg)
+_dsk_cmdline_arg_tree_free_recursive (DskCmdlineArg *arg)
 {
   if (arg == NULL)
     return;
-  if (arg->left)
-    do_cleanup_recursive (arg->left);
-  if (arg->right)
-    do_cleanup_recursive (arg->right);
-
+  _dsk_cmdline_arg_tree_free_recursive (arg->left);
+  _dsk_cmdline_arg_tree_free_recursive (arg->right);
   dsk_free (arg);
+}
+
+static void _dsk_cmdline_mode_clear (DskCmdlineMode *mode)
+{
+  while (mode->first_child)
+    {
+      DskCmdlineMode *kill = mode->first_child;
+      mode->first_child = kill->next_sibling;
+      _dsk_cmdline_mode_clear (kill);
+      dsk_free (kill);
+    }
+  _dsk_cmdline_arg_tree_free_recursive (mode->arg_tree);
 }
 
 void _dsk_cmdline_cleanup (void)
 {
-  do_cleanup_recursive (cmdline_arg_tree);
+  _dsk_cmdline_mode_clear (&toplevel_mode);
 }

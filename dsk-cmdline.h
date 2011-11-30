@@ -63,23 +63,47 @@ void dsk_cmdline_add_func    (const char     *static_option_name,
                               DskCmdlineFlags flags,
                               DskCmdlineCallback callback,
                               void           *callback_data);
-typedef dsk_boolean (*DskCmdlineArgumentHandler) (const char *argument,
-                                                  DskError  **error);
-void dsk_cmdline_set_argument_handler (DskCmdlineArgumentHandler handler);
+
 void dsk_cmdline_add_shortcut(char            shortcut,
                               const char     *option_name);
-void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
-                                     const char     *arg_1,
-                                     ...) DSK_GNUC_NULL_TERMINATED();
-void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
-                                       unsigned        n_excl,
-                                       char          **excl);
-void dsk_cmdline_permit_unknown_options (dsk_boolean permit);
-void dsk_cmdline_permit_extra_arguments (dsk_boolean permit);
 
-void dsk_cmdline_process_args(int            *argc_inout,
-                              char         ***argv_inout);
 
+/* Handling of extra arguments and options.  (Here, _arguments_
+   are command-line elements that DO NOT begin with "-";
+   _options_ DO begin with "-".) */
+typedef dsk_boolean (*DskCmdlineArgumentHandler) (const char *argument,
+                                                  DskError  **error);
+void dsk_cmdline_set_argument_handler   (DskCmdlineArgumentHandler handler);
+void dsk_cmdline_permit_unknown_options (dsk_boolean     permit);
+void dsk_cmdline_permit_extra_arguments (dsk_boolean     permit);
+
+
+/* Functions to make it easy to warn user about incompatible options.  */
+void dsk_cmdline_mutually_exclusive     (dsk_boolean     one_required,
+                                         const char     *arg_1,
+                                         ...) DSK_GNUC_NULL_TERMINATED();
+void dsk_cmdline_mutually_exclusive_v   (dsk_boolean     one_required,
+                                         unsigned        n_excl,
+                                         char          **excl);
+
+/* Modal program support. */
+extern void *dsk_cmdline_mode_user_data;
+void dsk_cmdline_begin_mode             (const char     *mode,
+                                         const char     *static_short_desc,
+                                         const char     *static_long_desc,
+                                         const char     *non_option_arg_desc,
+                                         DskVoidFunc     mode_callback,
+                                         void           *mode_user_data);
+void dsk_cmdline_add_mode_alias         (const char     *alias);
+void dsk_cmdline_end_mode               (void);
+
+/* Wrapper program support. After the first non-option given to a
+   wrapper program, command-line processing ceases. */
+void dsk_cmdline_program_wrapper        (dsk_boolean     is_wrapper);
+
+/* --- Processing the Command-line --- */
+void        dsk_cmdline_process_args     (int            *argc_inout,
+                                          char         ***argv_inout);
 
 dsk_boolean dsk_cmdline_try_process_args (int *argc_inout,
                                           char ***argv_inout,
