@@ -1581,6 +1581,77 @@ dsk_buffer_append_empty_fragment (DskBuffer *buffer)
   buffer->last_frag = fragment;
 }
 
+void     dsk_buffer_append_placeholder  (DskBuffer    *buffer,
+                                         unsigned      length,
+                                         DskBufferPlaceholder *out)
+{
+  out->buffer = buffer;
+  out->fragment = buffer->last_frag;
+  if (out->fragment)
+    out->offset = out->fragment->buf_start + out->fragment->buf_length;
+  else
+    out->offset = 0;
+  out->length = length;
+
+  CHECK_INTEGRITY (buffer);
+  buffer->size += length;
+  while (length > 0)
+    {
+      unsigned avail;
+      if (!buffer->last_frag)
+	{
+	  buffer->last_frag = buffer->first_frag = new_native_fragment ();
+	  avail = dsk_buffer_fragment_avail (buffer->last_frag);
+	}
+      else
+	{
+	  avail = dsk_buffer_fragment_avail (buffer->last_frag);
+	  if (avail <= 0)
+	    {
+	      buffer->last_frag->next = new_native_fragment ();
+	      avail = dsk_buffer_fragment_avail (buffer->last_frag);
+	      buffer->last_frag = buffer->last_frag->next;
+	    }
+	}
+      if (avail > length)
+	avail = length;
+      length -= avail;
+      buffer->last_frag->buf_length += avail;
+    }
+  if (out->fragment == NULL)
+    out->fragment = buffer->first_frag;
+  CHECK_INTEGRITY (buffer);
+}
+
+
+void     dsk_buffer_placeholder_set     (DskBufferPlaceholder *placeholder,
+                                         const void       *data)
+{
+  unsigned rem = placeholder->length;
+  DskBufferFragment *frag = placeholder->fragment;
+  unsigned offset = placeholder->offset;
+  if (rem > 0)
+    for (;;)
+      {
+        unsigned avail = frag->buf_start + frag->buf_length - offset;
+        if (DSK_LIKELY (avail >= rem))
+          {
+            memcpy (frag->buf + offset, data, rem);
+            return;
+          }
+        else
+          {
+            memcpy (frag->buf + offset, data, avail);
+            rem -= avail;
+            data = (const char *) data + avail;
+            frag = frag->next;
+            offset = 0;
+          }
+      }
+}
+
+
+
 void dsk_buffer_maybe_remove_empty_fragment (DskBuffer *buffer)
 {
   if (buffer->last_frag->buf_length == 0)

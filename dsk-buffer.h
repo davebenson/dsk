@@ -54,6 +54,7 @@ uint8_t  dsk_buffer_last_byte           (DskBuffer    *buffer);
 void     dsk_buffer_append              (DskBuffer    *buffer, 
                                          unsigned      length,
                                          const void   *data);
+
 DSK_INLINE_FUNC void dsk_buffer_append_small(DskBuffer    *buffer, 
                                          unsigned      length,
                                          const void   *data);
@@ -90,6 +91,20 @@ uint8_t  dsk_buffer_get_last_byte       (DskBuffer    *buffer);
 uint8_t  dsk_buffer_get_byte_at         (DskBuffer    *buffer,
                                          size_t        idx);
 
+
+/* --- appending data that will be filled in later --- */
+typedef struct {
+  DskBuffer *buffer;
+  DskBufferFragment *fragment;
+  unsigned offset;
+  unsigned length;
+} DskBufferPlaceholder;
+
+void     dsk_buffer_append_placeholder  (DskBuffer    *buffer,
+                                         unsigned      length,
+                                         DskBufferPlaceholder *out);
+void     dsk_buffer_placeholder_set     (DskBufferPlaceholder *placeholder,
+                                         const void       *data);
 
 /* --- buffer-to-buffer transfers --- */
 /* Take all the contents from src and append

@@ -55,6 +55,31 @@ void decount(DskBuffer* buf, int start, int end)
     }
 }
 
+/* Return whether 'buffer' begins with 'str'; remove it if so. */
+static dsk_boolean
+try_initial_remove (DskBuffer *buffer, const char *str)
+{
+  unsigned len = strlen (str);
+  if (buffer->size < len)
+    return DSK_FALSE;
+  char *tmp = dsk_malloc (len);
+  dsk_buffer_read (buffer, len, tmp);
+  dsk_boolean rv = memcmp (str, tmp, len) == 0;
+  dsk_free (tmp);
+  return rv;
+}
+
+static char *generate_str (unsigned min_length, unsigned max_length)
+{
+  unsigned len = dsk_random_int_range (min_length, max_length);
+  char *rv = dsk_malloc (len + 1);
+  unsigned i;
+  for (i = 0; i < len; i++)
+    rv[i] = dsk_random_int_range (0, 26)["abcdefghijklmnopqrstuvwxyz"];
+  rv[i] = 0;
+  return rv;
+}
+
 int main(int argc, char** argv)
 {
 
@@ -142,6 +167,46 @@ int main(int argc, char** argv)
 #endif
     dsk_buffer_clear (&buffer);
   }
+
+  static const char *before_strs[] = {
+    "",
+    "foo",
+    NULL, NULL
+  };
+  before_strs[2] = generate_str (100, 1000);
+  before_strs[3] = generate_str (10000, 100000);
+  static const char *placeholder_strs[] = {
+    "",
+    "bar",
+    NULL, NULL, NULL
+  };
+  placeholder_strs[2] = generate_str (100, 1000);
+  placeholder_strs[3] = generate_str (10000, 100000);
+  placeholder_strs[4] = generate_str (100000, 1000000);
+  static const char *after_strs[] = {
+    "",
+    "foo",
+    NULL, NULL
+  };
+  after_strs[2] = generate_str (100, 1000);
+  after_strs[3] = generate_str (10000, 100000);
+  unsigned bi, pi, ai;
+  for (bi = 0; bi < DSK_N_ELEMENTS (before_strs); bi++)
+    for (pi = 0; pi < DSK_N_ELEMENTS (placeholder_strs); pi++)
+      for (ai = 0; ai < DSK_N_ELEMENTS (after_strs); ai++)
+        {
+          DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+          const char *pi_str = placeholder_strs[pi];
+          DskBufferPlaceholder placeholder;
+          dsk_buffer_append_string (&buffer, before_strs[bi]);
+          dsk_buffer_append_placeholder (&buffer, strlen (pi_str), &placeholder);
+          dsk_buffer_append_string (&buffer, after_strs[ai]);
+          dsk_buffer_placeholder_set (&placeholder, pi_str);
+          dsk_assert (try_initial_remove (&buffer, before_strs[bi]));
+          dsk_assert (try_initial_remove (&buffer, pi_str));
+          dsk_assert (try_initial_remove (&buffer, after_strs[ai]));
+          dsk_assert (buffer.size == 0);
+        }
 
   return 0;
 }
