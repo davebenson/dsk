@@ -470,7 +470,7 @@ check_mutually_exclusive_args (DskError **error)
               dsk_buffer_append_string (&buffer, " --");
               dsk_buffer_append_string (&buffer, at->args[i]->option_name);
             }
-          char *str = dsk_buffer_clear_to_string (&buffer);
+          char *str = dsk_buffer_empty_to_string (&buffer);
           dsk_set_error (error, "one of the following options is required:%s",
                          str);
           dsk_free (str);

@@ -33,7 +33,7 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
     if (!dsk_ts0_stanza_evaluate (ns, stanza, &buffer, &e_e)) \
       dsk_die ("error evaluating stanza %s:%u:  %s", \
                __FILE__, __LINE__, e_e->message); \
-    result = dsk_buffer_clear_to_string (&buffer); \
+    result = dsk_buffer_empty_to_string (&buffer); \
     dsk_ts0_namespace_unref (ns); \
   }while(0)
 #define EVALUATE_STANZA_FAIL(init_ns_code, stanza) \
@@ -51,7 +51,7 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
     else \
       { \
         dsk_die ("expected error at %s:%u: got '%s'", \
-                 __FILE__, __LINE__, dsk_buffer_clear_to_string (&buffer)); \
+                 __FILE__, __LINE__, dsk_buffer_empty_to_string (&buffer)); \
       } \
     dsk_buffer_clear (&buffer); \
     dsk_ts0_namespace_unref (ns); \

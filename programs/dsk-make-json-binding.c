@@ -372,7 +372,7 @@ compute_type_order (JsonType *type)
         }
       while (at != type);
       dsk_die ("cannot fully order types in file: %s",
-               dsk_buffer_clear_to_string (&list));
+               dsk_buffer_empty_to_string (&list));
     }
   type->computing_order = DSK_TRUE;
   unsigned i;
@@ -647,9 +647,9 @@ int main(int argc, char **argv)
       dsk_buffer_append (&lc_ns, 2, "__");
       dsk_buffer_append (&uc_ns, 2, "__");
       dsk_buffer_append (&mixed_ns, 1, "_");
-      namespace_struct_prefix = dsk_buffer_clear_to_string (&mixed_ns);
-      namespace_func_prefix = dsk_buffer_clear_to_string (&lc_ns);
-      namespace_enum_prefix = dsk_buffer_clear_to_string (&uc_ns);
+      namespace_struct_prefix = dsk_buffer_empty_to_string (&mixed_ns);
+      namespace_func_prefix = dsk_buffer_empty_to_string (&lc_ns);
+      namespace_enum_prefix = dsk_buffer_empty_to_string (&uc_ns);
     }
 
   char *hname = NULL, *cname = NULL;

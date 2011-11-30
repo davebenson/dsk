@@ -737,10 +737,6 @@ dsk_buffer_clear(DskBuffer *to_destroy)
       recycle (at);
       at = next;
     }
-
-  /* TODO: remove these */
-  to_destroy->first_frag = to_destroy->last_frag = NULL;
-  to_destroy->size = 0;
 }
 
 void
@@ -1671,7 +1667,7 @@ dsk_buffer_fragment_free (DskBufferFragment *fragment)
   recycle (fragment);
 }
 
-char *dsk_buffer_clear_to_string (DskBuffer *buffer)
+char *dsk_buffer_empty_to_string (DskBuffer *buffer)
 {
   char *rv = dsk_malloc (buffer->size + 1);
   rv[buffer->size] = 0;

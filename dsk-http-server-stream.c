@@ -234,7 +234,7 @@ restart_processing:
     {
       if (ss->no_more_transfers)
         {
-          dsk_buffer_clear (&ss->incoming_data);
+          dsk_buffer_reset (&ss->incoming_data);
           ss->read_trap = NULL;
           return DSK_FALSE;
         }

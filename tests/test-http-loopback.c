@@ -47,7 +47,7 @@ client_request_data_clear (ClientRequestData *crd)
 {
   if (crd->response)
     dsk_object_unref (crd->response);
-  dsk_buffer_clear (&crd->content);
+  dsk_buffer_reset (&crd->content);
   if (crd->error)
     dsk_error_unref (crd->error);
 }

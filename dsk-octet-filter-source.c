@@ -148,7 +148,7 @@ dsk_octet_source_filter_shutdown  (DskOctetSource *source)
       dsk_object_unref (sf->filter);
       sf->filter = NULL;
     }
-  dsk_buffer_clear (&sf->buffer);
+  dsk_buffer_reset (&sf->buffer);
   dsk_hook_set_idle_notify (&source->readable_hook, DSK_TRUE);
 }
 

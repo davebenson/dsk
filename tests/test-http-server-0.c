@@ -149,7 +149,7 @@ do_request (DskHttpClientStream *http_client_stream,
         dsk_octet_filter_process (urlenc, &path, strlen (in), (uint8_t*)in, NULL);
         dsk_octet_filter_finish (urlenc, &path, NULL);
         dsk_object_unref (urlenc);
-        to_free = dsk_buffer_clear_to_string (&path);
+        to_free = dsk_buffer_empty_to_string (&path);
         request_options->request_options->path = to_free;
         break;
       }
@@ -283,7 +283,7 @@ test_simple_http_server (void)
         dsk_main_run_once ();
       dsk_assert (sri.status_code == 200);
       dsk_assert (!sri.failed);
-      str = dsk_buffer_clear_to_string (&sri.content_buffer);
+      str = dsk_buffer_empty_to_string (&sri.content_buffer);
       dsk_ascii_strchomp (str);
       dsk_assert (strcmp (str, "42") == 0);
       dsk_free (str);

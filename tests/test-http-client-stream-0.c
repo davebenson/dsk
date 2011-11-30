@@ -69,7 +69,7 @@ request_data_clear (RequestData *rd)
     dsk_object_unref (rd->response_header);
   if (rd->websocket)
     dsk_object_unref (rd->websocket);
-  dsk_buffer_clear (&rd->content);
+  dsk_buffer_reset (&rd->content);
 }
 
 static dsk_boolean
@@ -345,13 +345,13 @@ test_transfer_encoding_chunked (void)
             dsk_buffer_peek (&request_data.content, 7, buf);
             dsk_assert (memcmp (buf, "hi mom\n", 7) == 0);
           }
-          dsk_buffer_clear (&request_data.content);
+          dsk_buffer_reset (&request_data.content);
 
           request_data.content_complete = 0;
           request_data.destroyed = 0;
           dsk_object_unref (request_data.response_header);
           request_data.response_header = NULL;
-          dsk_buffer_clear (&request_data.sink->buffer);
+          dsk_buffer_reset (&request_data.sink->buffer);
         }
       dsk_object_unref (stream);
       request_data_clear (&request_data);
@@ -1869,7 +1869,7 @@ test_head_transfer_encoding_chunked (void)
           request_data.destroyed = 0;
           dsk_object_unref (request_data.response_header);
           request_data.response_header = NULL;
-          dsk_buffer_clear (&request_data.sink->buffer);
+          dsk_buffer_reset (&request_data.sink->buffer);
         }
       dsk_object_unref (stream);
       request_data_clear (&request_data);
@@ -2028,7 +2028,7 @@ test_simple_websocket (void)
           request_data.destroyed = 0;
           dsk_object_unref (request_data.response_header);
           request_data.response_header = NULL;
-          dsk_buffer_clear (&request_data.sink->buffer);
+          dsk_buffer_reset (&request_data.sink->buffer);
 
           /* play with websocket */
           dsk_warning ("TODO: need more websocket testing");

@@ -141,7 +141,7 @@ void     dsk_buffer_clear               (DskBuffer    *to_destroy);
 void     dsk_buffer_reset               (DskBuffer    *to_reset);
 
 /* Return a string and clear the buffer. */
-char *dsk_buffer_clear_to_string (DskBuffer *buffer);
+char *dsk_buffer_empty_to_string (DskBuffer *buffer);
 
 /* --- iterating through the buffer --- */
 /* 'frag_offset_out' is the offset of the returned fragment in the whole

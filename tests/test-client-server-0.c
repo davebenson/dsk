@@ -278,7 +278,7 @@ write_then_read (unsigned write_len,
           timer = NULL;
           goto done_reading;
         case DSK_IO_RESULT_ERROR:
-          dsk_buffer_clear (&readbuf);
+          dsk_buffer_reset (&readbuf);
           dsk_main_remove_timer (timer);
           return DSK_FALSE;
         }

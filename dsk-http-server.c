@@ -549,7 +549,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
           dsk_print_set_string (print, "error_message", strerror (open_errno));
           dsk_print (print, "error opening $filename: $error_message");
           dsk_print_free (print);
-          error_message = dsk_buffer_clear_to_string (&content_buffer);
+          error_message = dsk_buffer_empty_to_string (&content_buffer);
 
           /* serve response */
           dsk_http_server_request_respond_error (request, 404, error_message);

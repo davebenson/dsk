@@ -323,5 +323,5 @@ char *dsk_cgi_make_path (unsigned pre_query_len,
             }
         }
     }
-  return dsk_buffer_clear_to_string (&buffer);
+  return dsk_buffer_empty_to_string (&buffer);
 }
