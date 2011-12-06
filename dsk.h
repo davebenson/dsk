@@ -9,6 +9,7 @@
 #include "dsk-object.h"
 #include "dsk-error.h"
 #include "dsk-mem-pool.h"
+#include "dsk-data.h"
 #include "dsk-hook.h"
 #include "dsk-buffer.h"
 #include "dsk-octet-io.h"

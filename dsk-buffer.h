@@ -165,6 +165,13 @@ dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
                                          unsigned           *offset_inout,
                                          unsigned            skip);
 
+/* allocate an empty, non-foreign fragment */
+DskBufferFragment *dsk_buffer_fragment_alloc    (void);
+
+void dsk_buffer_append_fragment (DskBuffer *buffer,
+                                 DskBufferFragment *fragment);
+
+
 /* HACKS */
 /* NOTE: the buffer is INVALID after this call, since no empty
    fragments are allowed.  You MUST deal with this if you do 

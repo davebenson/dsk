@@ -268,8 +268,10 @@ dsk_octet_stream_fd_sink_write  (DskOctetSink   *sink,
 }
 
 static DskIOResult
-dsk_octet_stream_fd_sink_write_buffer (DskOctetSink   *sink,
-                                       DskBuffer      *write_buffer,
+dsk_octet_stream_fd_sink_writev       (DskOctetSink   *sink,
+                                       unsigned        n_data,
+                                       const DskData  *data,
+                                       size_t         *bytes_written_out,
                                        DskError      **error)
 {
   int rv;
@@ -279,7 +281,8 @@ dsk_octet_stream_fd_sink_write_buffer (DskOctetSink   *sink,
       dsk_set_error (error, "write to dead stream");
       return DSK_IO_RESULT_ERROR;
     }
-  rv = dsk_buffer_writev (write_buffer, stream->fd);
+  dsk_assert (DSK_DATA_IS_COMPATIBLE_WITH_IOVEC);
+  rv = writev (stream->fd, (const struct iovec *) data, n_data);
   if (rv < 0)
     {
       if (errno == EINTR || errno == EAGAIN)
@@ -288,9 +291,9 @@ dsk_octet_stream_fd_sink_write_buffer (DskOctetSink   *sink,
                      stream->fd, strerror (errno));
       return DSK_IO_RESULT_ERROR;
     }
+  *bytes_written_out = rv;
   return DSK_IO_RESULT_SUCCESS;
 }
-
 
 static void       
 dsk_octet_stream_fd_sink_shutdown     (DskOctetSink   *sink)
@@ -312,7 +315,7 @@ const DskOctetStreamFdSinkClass dsk_octet_stream_fd_sink_class =
                             NULL,
                             NULL),
     dsk_octet_stream_fd_sink_write,
-    dsk_octet_stream_fd_sink_write_buffer,
+    dsk_octet_stream_fd_sink_writev,
     dsk_octet_stream_fd_sink_shutdown
   }
 };
@@ -355,9 +358,11 @@ dsk_octet_stream_fd_source_read (DskOctetSource *source,
 }
 
 static DskIOResult
-dsk_octet_stream_fd_source_read_buffer  (DskOctetSource *source,
-                                       DskBuffer      *read_buffer,
-                                       DskError      **error)
+dsk_octet_stream_fd_source_readv  (DskOctetSource *source,
+                                   unsigned        n_data,
+                                   DskData        *data,
+                                   size_t         *bytes_read_out,
+                                   DskError      **error)
 {
   int rv;
   DskOctetStreamFd *stream = DSK_OCTET_STREAM_FD (source->stream);
@@ -371,7 +376,8 @@ dsk_octet_stream_fd_source_read_buffer  (DskOctetSource *source,
       dsk_set_error (error, "read from stream with no file-descriptor");
       return DSK_IO_RESULT_ERROR;
     }
-  rv = dsk_buffer_readv (read_buffer, stream->fd);
+  dsk_assert (DSK_DATA_IS_COMPATIBLE_WITH_IOVEC);
+  rv = readv (stream->fd, (struct iovec *) data, n_data);
   if (rv < 0)
     {
       if (errno == EINTR || errno == EAGAIN)
@@ -380,6 +386,7 @@ dsk_octet_stream_fd_source_read_buffer  (DskOctetSource *source,
                      stream->fd, strerror (errno));
       return DSK_IO_RESULT_ERROR;
     }
+  *bytes_read_out = rv;
   if (rv == 0)
     {
       dsk_hook_clear (&source->readable_hook);
@@ -408,7 +415,7 @@ const DskOctetStreamFdSourceClass dsk_octet_stream_fd_source_class =
                             NULL,
                             NULL),
     dsk_octet_stream_fd_source_read,
-    dsk_octet_stream_fd_source_read_buffer,
+    dsk_octet_stream_fd_source_readv,
     dsk_octet_stream_fd_source_shutdown
   }
 };

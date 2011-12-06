@@ -1,11 +1,4 @@
-#include "dsk-common.h"
-#include "dsk-mem-pool.h"
-#include "dsk-hook.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-buffer.h"
-#include "dsk-octet-io.h"
-#include "dsk-octet-listener.h"
+#include "dsk.h"
 
 DskIOResult dsk_octet_listener_accept (DskOctetListener        *listener,
                                        DskOctetStream         **stream_out,

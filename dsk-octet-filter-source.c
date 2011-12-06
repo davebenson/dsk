@@ -102,6 +102,38 @@ dsk_octet_source_filter_read (DskOctetSource *source,
 }
 
 static DskIOResult
+dsk_octet_source_filter_readv       (DskOctetSource *source,
+                                     unsigned        n_data,
+                                     DskData        *data,
+                                     size_t         *bytes_read_out,
+                                     DskError      **error)
+{
+  DskOctetSourceFilter *sf = (DskOctetSourceFilter *) source;
+  if (sf->buffer.size == 0)
+    {
+      if (sf->filter == NULL)
+        return DSK_IO_RESULT_EOF;
+      /* XXX: results in extra copy sometimes */
+      if (!read_into_buffer (sf, error))
+        return DSK_IO_RESULT_ERROR;
+      if (sf->buffer.size == 0)
+        return sf->filter == NULL ? DSK_IO_RESULT_EOF : DSK_IO_RESULT_AGAIN;
+    }
+
+  /* XXX: would be a case for dsk_buffer_readv()?? */
+  dsk_buffer_drain (read_buffer, &sf->buffer);
+
+  dsk_hook_set_idle_notify (&source->readable_hook, sf->filter == NULL);
+  if (sf->sub != NULL
+   && sf->read_trap == NULL
+   && dsk_hook_is_trapped (&source->readable_hook))
+    sf->read_trap = dsk_hook_trap (&sf->sub->readable_hook,
+                                   (DskHookFunc) notify_filter_readable,
+                                   sf, NULL);
+  return DSK_IO_RESULT_SUCCESS;
+}
+
+static DskIOResult
 dsk_octet_source_filter_read_buffer (DskOctetSource *source,
                                      DskBuffer      *read_buffer,
                                      DskError      **error)
@@ -170,6 +202,7 @@ static DskOctetSourceFilterClass dsk_octet_source_filter_class =
   { DSK_OBJECT_CLASS_DEFINE (DskOctetSourceFilter, &dsk_octet_source_class, 
                              NULL, dsk_octet_source_filter_finalize),
     dsk_octet_source_filter_read,
+    dsk_octet_source_filter_readv,
     dsk_octet_source_filter_read_buffer,
     dsk_octet_source_filter_shutdown
   }

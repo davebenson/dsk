@@ -70,9 +70,7 @@ dsk_memory_source_read_buffer (DskOctetSource *source,
   if (msource->buffer.size == 0 && msource->done_adding && msource->error == NULL)
     return DSK_IO_RESULT_EOF;
   if (dsk_buffer_drain (read_buffer, &msource->buffer) == 0)
-    {
     rv = DSK_IO_RESULT_AGAIN;
-    }
   else
     rv = DSK_IO_RESULT_SUCCESS;
   if (!msource->done_adding)

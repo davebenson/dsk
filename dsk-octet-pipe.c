@@ -1,11 +1,4 @@
-#include "dsk-common.h"
-#include "dsk-mem-pool.h"
-#include "dsk-hook.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-buffer.h"
-#include "dsk-octet-io.h"
-#include "dsk-memory.h"
+#include "dsk.h"
 
 /* TODO: if Source shuts down, we should also disconnect */
 
@@ -27,8 +20,13 @@ static DskIOResult dsk_pipe_sink_write         (DskOctetSink   *sink,
                                                 const void     *data_out,
                                                 unsigned       *n_written_out,
                                                 DskError      **error);
+static DskIOResult dsk_pipe_sink_writev        (DskOctetSink   *sink,
+                                                unsigned        n_data,
+                                                const DskData  *data,
+                                                size_t         *bytes_written_out,
+                                                DskError      **error);
 static DskIOResult dsk_pipe_sink_write_buffer  (DskOctetSink   *sink,
-                                                DskBuffer      *write_buffer,
+                                                DskBuffer      *from_buffer,
                                                 DskError      **error);
 static void        dsk_pipe_sink_shutdown      (DskOctetSink   *sink);
 static void        dsk_pipe_sink_finalize      (DskPipeSink    *sink);
@@ -40,6 +38,7 @@ static DskPipeSinkClass dsk_pipe_sink_class =
                           NULL,
                           dsk_pipe_sink_finalize),
   dsk_pipe_sink_write,
+  dsk_pipe_sink_writev,
   dsk_pipe_sink_write_buffer,
   dsk_pipe_sink_shutdown
 } };
@@ -94,10 +93,9 @@ dsk_pipe_sink_write         (DskOctetSink   *sink,
   return DSK_IO_RESULT_SUCCESS;
 }
 
-static DskIOResult
-dsk_pipe_sink_write_buffer  (DskOctetSink   *sink,
-                             DskBuffer      *write_buffer,
-                             DskError      **error)
+static DskIOResult dsk_pipe_sink_write_buffer  (DskOctetSink   *sink,
+                                                DskBuffer      *write_buffer,
+                                                DskError      **error)
 {
   DskPipeSink *psink = DSK_PIPE_SINK (sink);
   DskMemorySource *msource = psink->source;
@@ -124,6 +122,43 @@ dsk_pipe_sink_write_buffer  (DskOctetSink   *sink,
                                                 psink, NULL);
     }
   dsk_memory_source_added_data (msource);
+  return DSK_IO_RESULT_SUCCESS;
+}
+static DskIOResult dsk_pipe_sink_writev  (DskOctetSink   *sink,
+                                          unsigned        n_data,
+                                          const DskData  *data,
+                                          size_t         *bytes_written_out,
+                                          DskError      **error)
+{
+  DskPipeSink *psink = DSK_PIPE_SINK (sink);
+  DskMemorySource *msource = psink->source;
+  if (msource == NULL)
+    {
+      dsk_set_error (error, "write to disconnected pipe");
+      return DSK_IO_RESULT_ERROR;
+    }
+  if (n_data == 0)
+    return DSK_IO_RESULT_SUCCESS;
+  if (psink->source->buffer.size >= psink->source->buffer_low_amount)
+    return DSK_IO_RESULT_AGAIN;
+  size_t written = 0;
+  while (n_data > 0)
+    {
+      dsk_buffer_append (&psink->source->buffer, data->length, data->data);
+      written += data->length;
+      data++;
+      n_data--;
+    }
+  if (psink->source->buffer.size == psink->source->buffer_low_amount)
+    {
+      dsk_hook_set_idle_notify (&sink->writable_hook, DSK_FALSE);
+      if (psink->buffer_low_trap == NULL)
+        psink->buffer_low_trap = dsk_hook_trap (&psink->source->buffer_low,
+                                                (DskHookFunc) handle_source_buffer_low,
+                                                psink, NULL);
+    }
+  dsk_memory_source_added_data (msource);
+  *bytes_written_out = written;
   return DSK_IO_RESULT_SUCCESS;
 }
 

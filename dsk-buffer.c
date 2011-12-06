@@ -1662,6 +1662,25 @@ void dsk_buffer_maybe_remove_empty_fragment (DskBuffer *buffer)
 }
 
 void
+dsk_buffer_append_fragment (DskBuffer *buffer,
+                            DskBufferFragment *fragment)
+{
+  dsk_assert (fragment->buf_length > 0);
+  if (buffer->last_frag)
+    buffer->last_frag->next = fragment;
+  else
+    buffer->first_frag = fragment;
+  buffer->last_frag = fragment;
+  buffer->size += fragment->buf_length;
+}
+
+DskBufferFragment *
+dsk_buffer_fragment_alloc (void)
+{
+  return new_native_fragment ();
+}
+
+void
 dsk_buffer_fragment_free (DskBufferFragment *fragment)
 {
   recycle (fragment);
