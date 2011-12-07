@@ -1235,7 +1235,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
           else
             ropts.content_length = options->post_data_length;
         }
-      else
+      else if (options->post_data != NULL)
         {
           ropts.transfer_encoding_chunked = 1;
         }
