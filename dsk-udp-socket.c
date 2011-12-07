@@ -249,6 +249,11 @@ dsk_udp_socket_bind    (DskUdpSocket  *socket,
 {
   struct sockaddr_storage addr;
   unsigned addr_len;
+  if (bind_addr == NULL)
+    {
+      static DskIpAddress default_bind = DSK_IP_ADDRESS_DEFAULT;
+      bind_addr = default_bind;
+    }
   dsk_ip_address_to_sockaddr (bind_addr, port, &addr, &addr_len);
   if (bind (socket->fd, (struct sockaddr *) &addr, addr_len) < 0)
     {
