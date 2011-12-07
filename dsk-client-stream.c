@@ -484,6 +484,11 @@ dsk_client_stream_finalize (DskClientStream *stream)
     dsk_dispatch_remove_timer (stream->idle_disconnect_timer);
   if (stream->reconnect_timer)
     dsk_dispatch_remove_timer (stream->reconnect_timer);
+  if (stream->fd >= 0)
+    {
+      dsk_main_close_fd (stream->fd);
+      stream->fd = -1;
+    }
   dsk_free (stream->name);
 }
 
