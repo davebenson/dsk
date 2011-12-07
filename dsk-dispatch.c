@@ -239,6 +239,7 @@ DskDispatch *dsk_dispatch_new (void)
   rv->base.has_timeout = DSK_FALSE;
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
+  rv->dispatching = DSK_FALSE;
 
   /* need to handle SIGPIPE more gracefully than default */
   signal (SIGPIPE, SIG_IGN);
@@ -817,6 +818,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
   rv->func = func;
   rv->func_data = func_data;
   rv->dispatch = d;
+  rv->expired = DSK_FALSE;
   GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
   (void) conflict;              /* suppress warnings */
   
