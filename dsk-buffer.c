@@ -737,6 +737,10 @@ dsk_buffer_clear(DskBuffer *to_destroy)
       recycle (at);
       at = next;
     }
+#if DSK_DEBUG_BUFFER_ALLOCATIONS
+  to_destroy->first_frag = (void*)(size_t)1;
+  to_destroy->last_frag = (void*)(size_t)2;
+#endif
 }
 
 void
