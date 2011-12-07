@@ -785,10 +785,10 @@ DskTs0Stanza *dsk_ts0_stanza_parse_file (const char   *filename,
                                          DskError    **error)
 {
   DskTs0Stanza *rv;
-  char *contents = dsk_file_get_contents (filename, NULL, error);
+  uint8_t *contents = dsk_file_get_contents (filename, NULL, error);
   if (contents == NULL)
     return NULL;
-  rv = dsk_ts0_stanza_parse_str (contents, filename, 1, error);
+  rv = dsk_ts0_stanza_parse_str ((char*)contents, filename, 1, error);
   dsk_free (contents);
   return rv;
 }
@@ -815,7 +815,7 @@ append_piece (unsigned *n_inout,
         *pieces_inout = dsk_realloc (*pieces_inout, new_size);
     }
   (*pieces_inout)[*n_inout] = to_append;
-  *n_inout += 2;
+  *n_inout += 1;
 }
 
 static void
