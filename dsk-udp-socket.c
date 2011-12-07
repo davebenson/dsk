@@ -3,16 +3,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <unistd.h>
-#include "dsk-common.h"
-#include "dsk-mem-pool.h"
-#include "dsk-hook.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-ip-address.h"
-#include "dsk-dns-client.h"
-#include "dsk-fd.h"
-#include "dsk-udp-socket.h"
-#include "dsk-dispatch.h"
+#include "dsk.h"
 
 static void
 handle_dispatch_events (DskFileDescriptor   fd,
