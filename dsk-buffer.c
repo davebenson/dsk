@@ -1013,6 +1013,13 @@ void dsk_buffer_append_foreign (DskBuffer        *buffer,
 {
   DskBufferFragment *fragment;
 
+  if (length == 0)
+    {
+      if (destroy)
+        destroy (destroy_data);
+      return;
+    }
+
   CHECK_INTEGRITY (buffer);
 
   fragment = new_foreign_fragment (length, data, destroy, destroy_data);
