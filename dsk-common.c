@@ -176,7 +176,7 @@ char *dsk_strdup_vprintf (const char *str, va_list args)
   if (size >= sizeof (init_buf))
     {
       char *rv = dsk_malloc (size + 1);
-      vsnprintf (rv, size+1, str, a);
+      vsnprintf (rv, size+1, str, args);
       return rv;
     }
   else
