@@ -593,6 +593,11 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
   unsigned fd_max;
   unsigned i;
   struct timeval tv;
+
+  gettimeofday (&tv, NULL);
+  dispatch->last_dispatch_secs = tv.tv_sec;
+  dispatch->last_dispatch_usecs = tv.tv_usec;
+
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)
@@ -637,9 +642,6 @@ dsk_dispatch_dispatch (DskDispatch *dispatch,
   d->base.has_idle = DSK_FALSE;
 
   /* handle timers */
-  gettimeofday (&tv, NULL);
-  dispatch->last_dispatch_secs = tv.tv_sec;
-  dispatch->last_dispatch_usecs = tv.tv_usec;
   DskDispatchTimer *expired = NULL;
   while (d->timer_tree != NULL)
     {
