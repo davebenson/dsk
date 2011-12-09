@@ -319,6 +319,7 @@ handle_transport_source_readable (DskOctetSource *source,
       got_eof = DSK_TRUE;
       break;
     }
+  dsk_object_ref (stream);
 restart_processing:
   while (stream->incoming_data.size > 0)
     {
@@ -336,6 +337,7 @@ restart_processing:
           stream->read_trap = NULL;
           client_stream_set_error (stream, xfer, "got data when none expected");
           do_shutdown (stream);
+          dsk_object_unref (stream);
           return DSK_FALSE;
         }
       switch (xfer->read_state)
@@ -384,6 +386,7 @@ restart_processing:
                                              "header too long (at least %u bytes)",
                                              (unsigned)xfer->read_info.need_header.checked);
                     do_shutdown (stream);
+                    dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
                 goto return_true;
@@ -400,6 +403,7 @@ restart_processing:
                                          error->message);
                 do_shutdown (stream);
                 dsk_error_unref (error);
+                dsk_object_unref (stream);
                 return DSK_FALSE;
               }
             if (response->status_code == DSK_HTTP_STATUS_CONTINUE)
@@ -421,11 +425,13 @@ restart_processing:
                                              xfer->request->path);
                     do_shutdown (stream);
                     dsk_error_unref (error);
+                    dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
                 if (stream->incoming_data.size < 16)
                   {
                     xfer->read_state = DSK_HTTP_CLIENT_STREAM_READ_WAITING_FOR_WEBSOCKET_HEADER;
+                    dsk_object_unref (stream);
                     return DSK_TRUE;
                   }
 
@@ -436,6 +442,7 @@ restart_processing:
                                              error->message);
                     do_shutdown (stream);
                     dsk_error_unref (error);
+                    dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
                 dsk_assert (xfer->websocket != NULL);
@@ -443,6 +450,7 @@ restart_processing:
                   xfer->funcs->handle_response (xfer);
                 transfer_done (xfer);
                 stream->read_trap = NULL;
+                dsk_object_unref (stream);
                 return DSK_FALSE;
               }
             else if (xfer->request->is_websocket_request)
@@ -453,6 +461,7 @@ restart_processing:
                                          xfer->request->path);
                 do_shutdown (stream);
                 dsk_error_unref (error);
+                dsk_object_unref (stream);
                 return DSK_FALSE;
               }
             if (has_response_body (xfer->request, xfer->response))
@@ -554,6 +563,7 @@ restart_processing:
                   {
                     client_stream_set_error (stream, xfer, "unexpected char %s in 'chunked' header", dsk_ascii_byte_name (c));
                     do_shutdown (stream);
+                    dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
               }
@@ -570,6 +580,7 @@ restart_processing:
                   {
                     client_stream_set_error (stream, xfer, "in transfer-encoding-chunked header: extension too long");
                     do_shutdown (stream);
+                    dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
                 goto return_true;
@@ -620,6 +631,7 @@ restart_processing:
                   goto return_true;
                 client_stream_set_error (stream, xfer, "unexpected char %s after 'chunked' header", dsk_ascii_byte_name (c));
                 do_shutdown (stream);
+                dsk_object_unref (stream);
                 return DSK_FALSE;
               }
             break;
@@ -684,12 +696,14 @@ restart_processing:
               client_stream_take_error_literal (stream, xfer, error);
               do_shutdown (stream);
               dsk_error_unref (error);
+              dsk_object_unref (stream);
               return DSK_FALSE;
             }
           if (xfer->funcs->handle_response != NULL)
             xfer->funcs->handle_response (xfer);
           transfer_done (xfer);
           stream->read_trap = NULL;
+          dsk_object_unref (stream);
           return DSK_FALSE;   /* websocket will take care of hook */
         default:
           /* INIT already handled when checking if incoming_data_transfer==NULL;
@@ -700,6 +714,7 @@ restart_processing:
 return_true:
   if (got_eof)
     do_shutdown (stream);
+  dsk_object_unref (stream);
   return DSK_TRUE;
 }
 
