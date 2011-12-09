@@ -3,7 +3,7 @@
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
 		dsk-base64-char-table.inc dsk-base64-value-table.inc \
-		dsk-pattern-char-classes.inc
+		dsk-pattern-char-classes.inc dsk-codepage-latin1.inc
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
 		tests/test-endian \
@@ -99,6 +99,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-url-encoder.o dsk-url-decoder.o \
 	  dsk-byte-doubler.o dsk-byte-undoubler.o \
 	  dsk-utf8-fixer.o \
+	  dsk-codepage.o \
 	  dsk-strv.o \
 	  dsk-mime-multipart.o \
 	  dsk-xml-escaper.o \
@@ -130,6 +131,11 @@ dsk-base64-value-table.inc: mk-base64-to-value-table.pl
 	./$^ > $@
 dsk-pattern-char-classes.inc: mk-pattern-char-classes.pl
 	./$^ > $@
+dsk-codepage-latin1.inc: mk-codepage
+	./mk-codepage latin1 > $@
+
+mk-codepage: mk-codepage.c
+	gcc $(CC_FLAGS) -o $@ $^ 
 
 tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c: \
 	tests/xml-binding-ns/my.test programs/dsk-make-xml-binding

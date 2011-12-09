@@ -29,6 +29,16 @@ typedef enum
 } DskUtf8FixerMode;
 DskOctetFilter *dsk_utf8_fixer_new                 (DskUtf8FixerMode mode);
 
+typedef struct _DskCodepage DskCodepage;
+struct _DskCodepage
+{
+  /* gives mappings for characters above 127. */
+  uint16_t offsets[129];
+  const uint8_t *heap;
+};
+extern const DskCodepage dsk_codepage_latin1;
+
+DskOctetFilter *dsk_codepage_to_utf8_new           (const DskCodepage *codepage);
 
 
 DskOctetFilter *dsk_whitespace_trimmer_new         (void);
