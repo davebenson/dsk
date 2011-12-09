@@ -693,6 +693,21 @@ handle_char_entity (DskXmlParser *parser,
           break;
         }
       break;
+    case 6:
+      if (b[0] == '#' && (b[1] == 'x'||b[1] == 'X'))
+        {
+          unsigned unicode = (dsk_ascii_xdigit_value (b[2]) << 12)
+                           | (dsk_ascii_xdigit_value (b[3]) << 8)
+                           | (dsk_ascii_xdigit_value (b[4]) << 4)
+                           | (dsk_ascii_xdigit_value (b[5]) << 0);
+          if (unicode > 0x100000)
+            break;
+          char utf8[16];
+          unsigned utf8_len = dsk_utf8_encode_unichar (utf8, unicode);
+          simple_buffer_append (&parser->buffer, utf8_len, utf8);
+          return DSK_TRUE;
+        }
+      break;
     default:
       dsk_set_error (error, "character entity too long (%u bytes)", parser->entity_buf_len);
       return DSK_FALSE;
@@ -769,11 +784,11 @@ static dsk_boolean utf_validate_open_element (DskXmlParser *parser,
             }
           at++;
         }
-      else if ((*at & 0xe0) == 0xb0)
+      else if ((*at & 0xe0) == 0xc0)
         {
           unsigned cur;
           //utf8_state = 1;
-          if ((at[1] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0x1f) << 6) | (at[1] & 0x3f);
           if (cur < 0x80)
@@ -784,7 +799,7 @@ static dsk_boolean utf_validate_open_element (DskXmlParser *parser,
         }
       else if ((*at & 0xf0) == 0xe0)
         {
-          if ((at[1] & 0xb0) != 0x80 || (at[2] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80 || (at[2] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0xf) << 12) | ((at[1] & 0x3f) << 6)
                        | (at[2] & 0x3f);
@@ -796,8 +811,8 @@ static dsk_boolean utf_validate_open_element (DskXmlParser *parser,
         }
       else if ((*at & 0xf8) == 0xf0)
         {
-          if ((at[1] & 0xb0) != 0x80 || (at[2] & 0xb0) != 0x80
-           || (at[3] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80 || (at[2] & 0xc0) != 0x80
+           || (at[3] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0xf) << 18) | ((at[1] & 0x3f) << 12)
                         | ((at[2] & 0x3f) << 6) | (at[3] & 0x3f);
@@ -848,10 +863,10 @@ static dsk_boolean utf_validate_text (DskXmlParser *parser,
             line_offset++;
           at++;
         }
-      else if ((*at & 0xe0) == 0xb0)
+      else if ((*at & 0xe0) == 0xc0)
         {
           unsigned cur;
-          if ((at[1] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0x1f) << 6) | (at[1] & 0x3f);
           if (cur < 0x80)
@@ -862,7 +877,7 @@ static dsk_boolean utf_validate_text (DskXmlParser *parser,
         }
       else if ((*at & 0xf0) == 0xe0)
         {
-          if ((at[1] & 0xb0) != 0x80 || (at[2] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80 || (at[2] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0xf) << 12) | ((at[1] & 0x3f) << 6)
                        | (at[2] & 0x3f);
@@ -874,8 +889,8 @@ static dsk_boolean utf_validate_text (DskXmlParser *parser,
         }
       else if ((*at & 0xf8) == 0xf0)
         {
-          if ((at[1] & 0xb0) != 0x80 || (at[2] & 0xb0) != 0x80
-           || (at[3] & 0xb0) != 0x80)
+          if ((at[1] & 0xc0) != 0x80 || (at[2] & 0xc0) != 0x80
+           || (at[3] & 0xc0) != 0x80)
             goto bad_utf8;
           cur = ((at[0] & 0xf) << 18) | ((at[1] & 0x3f) << 12)
                         | ((at[2] & 0x3f) << 6) | (at[3] & 0x3f);
