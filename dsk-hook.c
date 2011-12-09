@@ -3,6 +3,11 @@
 #include "gsklistmacros.h"
 #include "debug.h"
 
+
+#if DSK_ENABLE_DEBUGGING
+dsk_boolean dsk_debug_hooks;
+#endif
+
 static DskDispatchIdle *idle_handler = NULL;
 static DskHook *dsk_hook_idle_first = NULL;
 static DskHook *dsk_hook_idle_last = NULL;
@@ -104,7 +109,7 @@ dsk_hook_trap_destroy (DskHookTrap   *trap)
   void *data = trap->callback_data;
 
   if (dsk_debug_hooks)
-    dsk_warning ("dsk_hook_trap_destroy: trap=%p, object=%p", trap, trap->owner->object);
+    dsk_warning ("dsk_hook_trap_destroy: hook=%p, trap=%p, object=%p; notifying=%u", trap->owner, trap, trap->owner->object, trap->is_notifying);
   /* If the trap itself is notifying, we handle it in dsk_hook_notify() */
   if (trap->is_notifying)
     {

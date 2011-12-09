@@ -3,6 +3,10 @@
 #include "dsk-mem-pool.h"
 #include "debug.h"
 
+#if DSK_ENABLE_DEBUGGING
+dsk_boolean dsk_debug_object_lifetimes;
+#endif
+
 #define ASSERT_OBJECT_CLASS_MAGIC(class) \
   dsk_assert ((class)->object_class_magic == DSK_OBJECT_CLASS_MAGIC)
 

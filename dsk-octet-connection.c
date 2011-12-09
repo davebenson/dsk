@@ -3,6 +3,10 @@
 
 static DskOctetConnectionOptions default_options = DSK_OCTET_CONNECTION_OPTIONS_DEFAULT;
 
+#if DSK_ENABLE_DEBUGGING
+dsk_boolean dsk_debug_connections;
+#endif
+
 static dsk_boolean
 handle_source_readable (void       *object,
                         void       *callback_data)
