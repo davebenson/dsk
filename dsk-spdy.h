@@ -5,10 +5,13 @@
        
 typedef struct _DskSpdySession DskSpdySession;
 typedef struct _DskSpdyMessageQueue DskSpdyMessageQueue;
-struct _DskSpdyMessageQueue
+struct _DskSpdyDataRing
 {
-  DskSpdyMessage *first, *last;
+  DskSpdyMessage *prev, *next;
+  unsigned        length;
+  DskSpdyStream  *owner;
 };
+
 struct _DskSpdySession
 {
   DskObject       base_instance;
@@ -19,7 +22,7 @@ struct _DskSpdySession
   DskOctetSink   *sink;
 
   DskBuffer       incoming;
-  DskBuffer       outgoing;
+  DskSpdyDataRing *outgoing[9];
 
   DskHook         new_stream;
   DskHook         error_hook;
@@ -28,6 +31,11 @@ struct _DskSpdySession
   uint32_t        next_stream_id;
   uint32_t        next_ping_id;
 
+  /* ping information */
+  unsigned        has_roundtrip_time : 1;
+  unsigned        ping_outstanding : 1;
+  unsigned        roundtrip_time;       /* in microseconds */
+
   /*< private >*/
 
   /* a rbtree of streams */
@@ -35,11 +43,6 @@ struct _DskSpdySession
 
   unsigned n_pending_streams;
   DskSpdyStream  *first_pending_stream, *last_pending_stream;
-
-  /* queues[0..3] are for each priority level;
-     queues[4] is for non-stream affiliated messages.
-     (Including RST_STREAM messages) */
-  DskSpdyMessageQueue queues[5];
 };
 #define DSK_SPDY_SESSION_IS_CLIENT(session) ((session)->next_stream_id & 1)
 

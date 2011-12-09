@@ -1,7 +1,7 @@
 #include "dsk.h"
 
-#define SPDY_MIN_VERSION 3
-#define SPDY_MAX_VERSION 3
+#define SPDY_MIN_VERSION 2
+#define SPDY_MAX_VERSION 3              /* under construction */
 
 
 /* The minimum length for a compressed name/value block.
@@ -297,6 +297,26 @@ destroy_stream (DskSpdyStream     *stream,
   dsk_object_unref (stream);
 }
 
+static uint8_t *
+append_outgoing (DskSpdySession *session,
+                 DskSpdyStream  *stream,
+                 unsigned        length)
+{
+  DskSpdyDataRing *node = dsk_malloc (sizeof (DskSpdyDataRing) + length);
+  node->stream = stream;
+
+  /* put into outgoing list */
+  ...
+
+  /* if stream is non-NULL, put into stream list */
+  ...
+
+  /* ensure writability is trapped */
+  ...
+
+  return (uint8_t *) (node + 1);
+}
+
 /* Should only respond FALSE if there is a framing layer error
    that cannot be recovered from. */
 static dsk_boolean
@@ -396,7 +416,7 @@ try_processing_incoming (DskOctetSource *source,
                    whose parity could have been created by us, but wasn't. */
                 if (stream == NULL)
                   {
-                    ...
+                    break;
                   }
 
                 /* destroy the stream */
@@ -407,15 +427,21 @@ try_processing_incoming (DskOctetSource *source,
                     new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
                     break;
                   case SPDY_STATUS_INVALID_STREAM:
-                    ... issue warning ...
+                    dsk_spdy_session_warn (session,
+                           "got INVALID_STREAM RST_STREAM message for stream %u",
+                           stream_id);
                     new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
                     break;
                   case SPDY_STATUS_REFUSED_STREAM:
+                    dsk_spdy_session_warn (session,
+                           "remote side REFUSED_STREAM (stream %u)",
+                           stream_id);
                     new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
-                    ...
                     break;
                   case SPDY_STATUS_UNSUPPORTED_VERSION:
-                    ... issue warning ...
+                    dsk_spdy_session_warn (session,
+                           "remote side gave UNSUPPORTED_VERSION (stream %u)",
+                           stream_id);
                     new_state = DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR;
                     break;
                   case SPDY_STATUS_CANCEL:
@@ -428,7 +454,6 @@ try_processing_incoming (DskOctetSource *source,
                     new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
                     break;
                   case SPDY_STATUS_STREAM_ALREADY_CLOSED:
-                    ....
                     new_state = DSK_SPDY_STREAM_STATE_CANCELLED;
                     break;
                   default:
@@ -444,17 +469,74 @@ try_processing_incoming (DskOctetSource *source,
               }
               break;
             case SPDY_TYPE__SETTINGS:
-              ...
+              if (length < 4)
+                goto packet_too_short;
+              uint8_t n_values_buf[4];
+              dsk_buffer_read (&session->incoming, 4, n_values_buf);
+              uint32_t n_values = dsk_uint32be_parse (n_values_buf);
+              if (length != 4 + 8 * n_values)
+                {
+                  dsk_warning ("got SETTINGS message with bad size");
+                  dsk_buffer_discard (&session->incoming, length - 4);
+                  break;
+                }
+              unsigned i;
+              for (i = 0; i < n_values; i++)
+                {
+                  uint8_t setting_buf[8];
+                  dsk_buffer_read (&session->incoming, 8, setting_buf);
+                  uint32_t id = dsk_uint24be_parse (setting_buf);
+                  uint8_t flags = setting_buf[3];
+                  uint32_t value = dsk_uint32be_parse (setting_buf + 4);
+                  handle_setting (session, id, flags, value);
+                }
               break;
-#if 0           /* REMOVED as of SPDY 3 */
             case SPDY_TYPE__NOOP:
-              ...
+              dsk_buffer_discard (&session->incoming, length);
               break;
-#endif
             case SPDY_TYPE__PING:
-              ...
+              if (length != 4)
+                goto packet_too_short;
+              {
+                uint8_t id_buf[4];
+                dsk_buffer_read (&session->incoming, 4, id_buf);
+                uint32_t id = dsk_uint32be_parse (id_buf);
+                /* We call it a 'pong' if it appears to be a response
+                   to a 'ping' we sent. */
+                dsk_boolean is_pong = (id & 1) == DSK_SPDY_SESSION_IS_CLIENT (session);
+                if (is_pong)
+                  {
+                    if (!session->ping_outstanding || session->ping_id != id)
+                      {
+                        dsk_warning ("got PING response, doesn't match an expected response");
+                      }
+                    else
+                      {
+                        int t = dsk_dispatch_default ()->last_dispatch_secs;
+                        int tu = dsk_dispatch_default ()->last_dispatch_usecs;
+                        int p = session->ping_secs;
+                        int pu = session->ping_usecs;
+                        int micros = (t-p)*1000000 + (tu-pu);
+                        if (micros < 0)
+                          micros = 0;
+                        session->has_roundtrip_time = DSK_TRUE;
+                        session->roundtrip_time = micros;
+                        session->ping_outstanding = DSK_FALSE;
+                        session->ping_id += 2;
+                      }
+                  }
+                else
+                  {
+                    /* Got PING, transmit PONG. */
+                    uint8_t *pong_buf = append_outgoing (session, NULL, 12);
+                    memcpy (pong_buf, hdr, 8);
+                    memcpy (pong_buf + 8, id_buf, 4);
+                  }
+              }
               break;
             case SPDY_TYPE__GOAWAY:
+              if (length != 4)
+                goto packet_too_short;
               ...
               break;
             case SPDY_TYPE__HEADERS:
