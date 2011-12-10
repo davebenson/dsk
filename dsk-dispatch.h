@@ -19,20 +19,20 @@ void                dsk_dispatch_free(DskDispatch *dispatch);
 
 DskDispatch        *dsk_dispatch_default (void);
 
-typedef void (*DskFDFunc)  (DskFileDescriptor   fd,
-                                            unsigned       events,
-                                            void          *callback_data);
 
 /* Registering file-descriptors to watch. */
-void  dsk_dispatch_watch_fd (DskDispatch *dispatch,
-                                    DskFileDescriptor        fd,
-                                    unsigned            events,
-                                    DskFDFunc callback,
-                                    void               *callback_data);
-void  dsk_dispatch_close_fd (DskDispatch *dispatch,
-                                    DskFileDescriptor        fd);
-void  dsk_dispatch_fd_closed(DskDispatch *dispatch,
-                                    DskFileDescriptor        fd);
+typedef void (*DskFDFunc)  (DskFileDescriptor fd,
+                            unsigned          events,
+                            void             *callback_data);
+void  dsk_dispatch_watch_fd (DskDispatch        *dispatch,
+                             DskFileDescriptor   fd,
+                             unsigned            events,
+                             DskFDFunc           callback,
+                             void               *callback_data);
+void  dsk_dispatch_close_fd (DskDispatch        *dispatch,
+                             DskFileDescriptor   fd);
+void  dsk_dispatch_fd_closed(DskDispatch        *dispatch,
+                             DskFileDescriptor   fd);
 
 /* Timers */
 typedef void (*DskTimerFunc) (void              *func_data);
@@ -42,17 +42,19 @@ DskDispatchTimer *
                                     unsigned           timeout_usecs,
                                     DskTimerFunc       func,
                                     void              *func_data);
-DskDispatchTimer *
-      dsk_dispatch_add_timer_millis
-                                   (DskDispatch       *dispatch,
-                                    unsigned           milliseconds,
-                                    DskTimerFunc       func,
-                                    void              *func_data);
 void  dsk_dispatch_adjust_timer    (DskDispatchTimer *timer,
                                     unsigned           timeout_secs,
                                     unsigned           timeout_usecs);
+
+/* if possible, these are keyed off a clock that ignores clock-resets */
+DskDispatchTimer *
+      dsk_dispatch_add_timer_millis(DskDispatch       *dispatch,
+                                    unsigned           milliseconds,
+                                    DskTimerFunc       func,
+                                    void              *func_data);
 void  dsk_dispatch_adjust_timer_millis (DskDispatchTimer *timer,
                                         unsigned          milliseconds);
+
 void  dsk_dispatch_remove_timer (DskDispatchTimer *);
 
 /* Idle functions */
@@ -93,8 +95,7 @@ void  dsk_dispatch_remove_child (DskDispatchChild  *handler);
 /* Where you are happy just to run poll(2). */
 
 /* dsk_dispatch_run() 
- * Run one main-loop iteration, using poll(2) (or some system-level event system);
- * 'timeout' is in milliseconds, -1 for no timeout.
+ * Run one main-loop iteration, using poll(2) (or some system-level event system).
  */
 void  dsk_dispatch_run      (DskDispatch *dispatch);
 
@@ -116,9 +117,9 @@ struct _DskFileDescriptorNotifyChange
   Dsk_Events events;
 };
 
-void  dsk_dispatch_dispatch (DskDispatch *dispatch,
-                                    size_t              n_notifies,
-                                    DskFileDescriptorNotify *notifies);
+void  dsk_dispatch_dispatch (DskDispatch             *dispatch,
+                             size_t                   n_notifies,
+                             DskFileDescriptorNotify *notifies);
 void  dsk_dispatch_clear_changes (DskDispatch *);
 
 

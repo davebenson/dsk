@@ -21,10 +21,18 @@ DskJsonValue *parse_value (const char *str)
   return v;
 }
 
+char *print_value (DskJsonValue *value)
+{
+  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  dsk_json_value_to_buffer (value, -1, &buffer);
+  return dsk_buffer_empty_to_string (&buffer);
+}
+
 int main(int argc, char **argv)
 {
   DskJsonValue *v;
   DskJsonMember *mem;
+  char *str;
 
   dsk_cmdline_init ("test JSON handling",
                     "Test JSON parsing",
@@ -151,6 +159,15 @@ int main(int argc, char **argv)
   dsk_assert (mem != NULL);
   dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (mem->value->v_number.value == 42);
+  dsk_json_value_free (v);
+
+  v = parse_value ("\"\\u0001\"");
+  dsk_assert (v->type == DSK_JSON_VALUE_STRING);
+  dsk_assert (v->v_string.length == 1);
+  dsk_assert (strcmp (v->v_string.str, "\1") == 0);
+  str = print_value (v);
+  dsk_assert (strcmp (str, "\"\\u0001\"") == 0);
+  dsk_free (str);
   dsk_json_value_free (v);
 
   dsk_cleanup ();

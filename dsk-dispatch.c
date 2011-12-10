@@ -553,15 +553,15 @@ dsk_dispatch_watch_fd (DskDispatch *dispatch,
 
 void
 dsk_dispatch_close_fd (DskDispatch *dispatch,
-                              int                 fd)
+                       int          fd)
 {
   dsk_dispatch_fd_closed (dispatch, fd);
   close (fd);
 }
 
 void
-dsk_dispatch_fd_closed(DskDispatch *dispatch,
-                              DskFileDescriptor        fd)
+dsk_dispatch_fd_closed(DskDispatch             *dispatch,
+                       DskFileDescriptor        fd)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   FDMap *fm;
@@ -585,19 +585,24 @@ free_timer (DskDispatchTimer *timer)
 }
 
 void
-dsk_dispatch_dispatch (DskDispatch *dispatch,
-                              size_t              n_notifies,
-                              DskFileDescriptorNotify *notifies)
+dsk_dispatch_dispatch (DskDispatch             *dispatch,
+                       size_t                   n_notifies,
+                       DskFileDescriptorNotify *notifies)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned fd_max;
   unsigned i;
   struct timeval tv;
 
+  /* Update the cached time-of-day. (this must be done before any
+   * callbacks are run.) */
   gettimeofday (&tv, NULL);
   dispatch->last_dispatch_secs = tv.tv_sec;
   dispatch->last_dispatch_usecs = tv.tv_usec;
 
+  /* If a notify comes in with a new file-descriptor (?? can it happen),
+     that's bigger than our allocation size,
+     we need to enlarge the fd_map. */
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)

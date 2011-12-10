@@ -2,6 +2,8 @@
 /* big-endian parsing */
 DSK_INLINE_FUNC uint16_t dsk_uint16be_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int16_t  dsk_int16be_parse  (const uint8_t *rep);
+DSK_INLINE_FUNC uint32_t dsk_uint24be_parse (const uint8_t *rep);
+DSK_INLINE_FUNC int32_t  dsk_int24be_parse  (const uint8_t *rep);
 DSK_INLINE_FUNC uint32_t dsk_uint32be_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int32_t  dsk_int32be_parse  (const uint8_t *rep);
 DSK_INLINE_FUNC uint64_t dsk_uint64be_parse (const uint8_t *rep);
@@ -10,12 +12,15 @@ DSK_INLINE_FUNC int64_t  dsk_int64be_parse  (const uint8_t *rep);
 /* little-endian parsing */
 DSK_INLINE_FUNC uint16_t dsk_uint16le_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int16_t  dsk_int16le_parse  (const uint8_t *rep);
+DSK_INLINE_FUNC uint32_t dsk_uint24le_parse (const uint8_t *rep);
+DSK_INLINE_FUNC int32_t  dsk_int24le_parse  (const uint8_t *rep);
 DSK_INLINE_FUNC uint32_t dsk_uint32le_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int32_t  dsk_int32le_parse  (const uint8_t *rep);
 DSK_INLINE_FUNC uint64_t dsk_uint64le_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int64_t  dsk_int64le_parse  (const uint8_t *rep);
 
 /* big-endian packing */
+/*TODO:24-bit packing*/
 DSK_INLINE_FUNC void     dsk_uint16be_pack  (uint16_t       value,
                                              uint8_t       *rep);
 DSK_INLINE_FUNC void     dsk_int16be_pack   (int16_t        value,
@@ -30,6 +35,7 @@ DSK_INLINE_FUNC void     dsk_int64be_pack   (int64_t        value,
                                              uint8_t       *rep);
 
 /* little-endian packing */
+/*TODO:24-bit packing*/
 DSK_INLINE_FUNC void     dsk_uint16le_pack  (uint16_t       value,
                                              uint8_t       *rep);
 DSK_INLINE_FUNC void     dsk_int16le_pack   (int16_t        value,
@@ -56,16 +62,29 @@ DSK_INLINE_FUNC int16_t  dsk_int16be_parse  (const uint8_t *rep)
 {
   return (int16_t) dsk_uint16be_parse (rep);
 }
+DSK_INLINE_FUNC uint32_t dsk_uint24be_parse (const uint8_t *rep)
+{
+  return (((uint32_t)rep[0]) << 16)
+       | (((uint32_t)rep[1]) << 8)
+       | (((uint32_t)rep[2]) << 0);
+}
+DSK_INLINE_FUNC int32_t dsk_int24be_parse (const uint8_t *rep)
+{
+  return ((rep[0]&0x80) ? 0xff000000 : 0)       /* sign extend */
+       | (((uint32_t)rep[0]) << 16)
+       | (((uint32_t)rep[1]) << 8)
+       | (((uint32_t)rep[2]) << 0);
+}
+DSK_INLINE_FUNC int32_t  dsk_int32be_parse  (const uint8_t *rep)
+{
+  return (int32_t) dsk_uint32be_parse (rep);
+}
 DSK_INLINE_FUNC uint32_t dsk_uint32be_parse (const uint8_t *rep)
 {
   return (((uint32_t)rep[0]) << 24)
        | (((uint32_t)rep[1]) << 16)
        | (((uint32_t)rep[2]) << 8)
        | (((uint32_t)rep[3]) << 0);
-}
-DSK_INLINE_FUNC int32_t  dsk_int32be_parse  (const uint8_t *rep)
-{
-  return (int32_t) dsk_uint32be_parse (rep);
 }
 DSK_INLINE_FUNC uint64_t dsk_uint64be_parse (const uint8_t *rep)
 {
@@ -98,6 +117,19 @@ DSK_INLINE_FUNC uint16_t dsk_uint16le_parse (const uint8_t *rep)
 DSK_INLINE_FUNC int16_t  dsk_int16le_parse  (const uint8_t *rep)
 {
   return (int16_t) dsk_uint16le_parse (rep);
+}
+DSK_INLINE_FUNC uint32_t dsk_uint24le_parse (const uint8_t *rep)
+{
+  return (((uint32_t)rep[2]) << 16)
+       | (((uint32_t)rep[1]) << 8)
+       | (((uint32_t)rep[0]) << 0);
+}
+DSK_INLINE_FUNC int32_t dsk_int24le_parse (const uint8_t *rep)
+{
+  return ((rep[2]&0x80) ? (int32_t)0xff000000 : 0)       /* sign extend */
+       | (((int32_t)rep[2]) << 16)
+       | (((int32_t)rep[1]) << 8)
+       | (((int32_t)rep[0]) << 0);
 }
 DSK_INLINE_FUNC uint32_t dsk_uint32le_parse (const uint8_t *rep)
 {
