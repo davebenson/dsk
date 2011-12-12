@@ -39,9 +39,10 @@ all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 install: all
 	@if test -z "$(PREFIX)"; then echo "you must specify PREFIX" 1>&2 ; exit 1; fi
 	mkdir -p "$(PREFIX)/include/dsk"
-	install -m 644 dsk-*.h "$(PREFIX)/include/dsk"
+	install -m 644 dsk-*.h dsk.h "$(PREFIX)/include/dsk"
 	mkdir -p "$(PREFIX)/lib"
 	install -m 644 libdsk.a "$(PREFIX)/lib"
+	install -m 755 $(PROGRAMS) "$(PREFIX)/bin"
 
 build-tests: test-build-dependencies $(TEST_PROGRAMS)
 build-examples: example-build-dependencies $(EXAMPLE_PROGRAMS)
