@@ -34,7 +34,7 @@
 #include "dsk-fd.h"
 #include "dsk-dispatch.h"
 #include "gskrbtreemacros.h"
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 
 #define DEBUG_DISPATCH_INTERNALS  0
 #define DEBUG_DISPATCH            0
@@ -636,7 +636,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
       DskDispatchIdle *idle = d->first_idle;
       DskIdleFunc func = idle->func;
       void *data = idle->func_data;
-      GSK_LIST_REMOVE_FIRST (GET_IDLE_LIST (d));
+      DSK_LIST_REMOVE_FIRST (GET_IDLE_LIST (d));
 
       idle->func = NULL;                /* set to NULL to render remove_idle a no-op */
       func (data);
@@ -953,7 +953,7 @@ dsk_dispatch_add_idle (DskDispatch        *dispatch,
     {
       rv = DSK_NEW (DskDispatchIdle);
     }
-  GSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
+  DSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
   rv->func = func;
   rv->func_data = func_data;
   rv->dispatch = d;
@@ -969,7 +969,7 @@ dsk_dispatch_remove_idle (DskDispatchIdle *idle)
   if (idle->func != NULL)
     {
       RealDispatch *d = idle->dispatch;
-      GSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
+      DSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
       idle->next = d->recycled_idles;
       d->recycled_idles = idle;
       if (d->first_idle == NULL)

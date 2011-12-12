@@ -3,7 +3,7 @@
 #include "../dsk.h"
 #include "generated/socnet.pb-c.h"
 #include "../gskrbtreemacros.h"
-#include "../gsklistmacros.h"
+#include "../dsk-list-macros.h"
 #include "../gskqsortmacro.h"
 #include <string.h>
 #include <stdio.h>

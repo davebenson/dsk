@@ -1,7 +1,7 @@
 #include "dsk.h"
 #include "dsk-table-checkpoint.h"
 #include "gskrbtreemacros.h"
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -331,6 +331,7 @@ create_possible_merge (DskTable *table,
   dsk_assert (b->prev_merge == NULL);
   a->next_merge = b->prev_merge = pm;
   GSK_RBTREE_INSERT (GET_POSSIBLE_MERGE_TREE (), pm, conflict);
+  dsk_assert (conflict == NULL);
 }
 
 static void
@@ -417,7 +418,7 @@ parse_checkpoint_data (DskTable *table,
       file->prev_merge = NULL;
       file->next_merge = NULL;
       file->used_by_last_checkpoint = DSK_TRUE;
-      GSK_LIST_APPEND (GET_FILE_LIST (), file);
+      DSK_LIST_APPEND (GET_FILE_LIST (), file);
       if (file->id >= table->next_id)
         table->next_id = file->id + 1;
     }
@@ -1285,7 +1286,7 @@ dsk_table_insert       (DskTable       *table,
       file->merge = NULL;
       file->prev_merge = file->next_merge = NULL;
       file->used_by_last_checkpoint = DSK_FALSE;
-      GSK_LIST_APPEND (GET_FILE_LIST (), file);
+      DSK_LIST_APPEND (GET_FILE_LIST (), file);
       if (file->prev)
         create_possible_merge (table, file->prev);
 

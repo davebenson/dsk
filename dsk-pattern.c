@@ -1,6 +1,6 @@
 #include <string.h>
 #include "dsk.h"
-#include "gsklistmacros.h"           /* TODO: USE THESE */
+#include "dsk-list-macros.h"
 #include "gskrbtreemacros.h"
 #define DANG_SIZEOF_SIZE_T DSK_SIZEOF_POINTER
 #include "gskqsortmacro.h"           /* TODO: USE THESE */
@@ -821,7 +821,7 @@ uniq_transitions (struct NFA_State *state, DskMemPool *pool)
   struct NFA_Transition *trans;
   /* sort transitions */
 #define COMPARE_TRANSITIONS(a,b, rv) rv = compare_transitions_by_state(a,b)
-  GSK_STACK_SORT (NFA_STATE_GET_TRANSITION_STACK (state), COMPARE_TRANSITIONS);
+  DSK_STACK_SORT (NFA_STATE_GET_TRANSITION_STACK (state), COMPARE_TRANSITIONS);
 #undef COMPARE_TRANSITIONS
 
   /* remove dups */

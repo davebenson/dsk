@@ -303,17 +303,32 @@ append_outgoing (DskSpdySession *session,
                  unsigned        length)
 {
   DskSpdyDataRing *node = dsk_malloc (sizeof (DskSpdyDataRing) + length);
-  node->stream = stream;
+  node->owner = stream;
+  node->length = length;
 
   /* put into outgoing list */
-  ...
+  unsigned pri_index;
+  if (stream == NULL)
+    pri_index = 0;
+  else
+    pri_index = (unsigned) stream->priority + 1;
+  DSK_RING_APPEND (GET_SESSION_DATA_RING (pri_index), node);
 
   /* if stream is non-NULL, put into stream list */
-  ...
+  if (stream)
+    {
+      DSK_RING_APPEND
+      ...
+    }
+  else
+    next->owner_prev = next->owner_next = NULL;
 
   /* ensure writability is trapped */
-  ...
-
+  if (session->writable_trap == NULL)
+    session->writable_trap = dsk_hook_trap (&sink->writable_hook,
+                                            spdy_handle_sink_writable,
+                                            session,
+                                            spdy_handle_sink_writable_destroy);
   return (uint8_t *) (node + 1);
 }
 
@@ -618,7 +633,7 @@ dsk_spdy_session_get_pending_stream_ids(DskSpdySession *session,
 
 /* Returns a reference that you must unref */
 DskSpdyStream  *
-dsk_spdy_session_get_stream           (DskSpdySession *session,
+dsk_spdy_session_retrieve_stream      (DskSpdySession *session,
                                        uint32_t        stream_id,
                                        DskSpdyHeaders *reply_headers)
 {

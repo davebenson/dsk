@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "dsk.h"
 #include "gskrbtreemacros.h"
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 
 #define MAX_CNAMES                 16
 #define TIME_WAIT_TO_RECYCLE_ID    60
@@ -824,7 +824,7 @@ raise_waiting_to_send_flag (DskDnsCacheEntryJob *job)
                              (DskHookFunc) handle_socket_writable,
                              NULL, NULL);
         }
-      GSK_LIST_APPEND (GET_WAITING_TO_SEND_LIST (), job);
+      DSK_LIST_APPEND (GET_WAITING_TO_SEND_LIST (), job);
       job->waiting_to_send = DSK_TRUE;
     }
 }
@@ -833,7 +833,7 @@ clear_waiting_to_send_flag (DskDnsCacheEntryJob *job)
 {
   if (job->waiting_to_send)
     {
-      GSK_LIST_REMOVE (GET_WAITING_TO_SEND_LIST (), job);
+      DSK_LIST_REMOVE (GET_WAITING_TO_SEND_LIST (), job);
       job->waiting_to_send = DSK_FALSE;
       if (first_waiting_to_send == NULL)
         {
