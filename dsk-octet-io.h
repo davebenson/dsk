@@ -9,7 +9,6 @@ struct _DskOctetSourceClass
 {
   DskObjectClass base_class;
 
-  /* returns -1 on error */
   DskIOResult (*read)        (DskOctetSource *source,
                               unsigned        max_len,
                               void           *data_out,
@@ -34,7 +33,6 @@ struct _DskOctetSinkClass
 {
   DskObjectClass base_class;
 
-  /* returns -1 on error */
   DskIOResult (*write)        (DskOctetSink   *sink,
                                unsigned        max_len,
                                const void     *data_out,
@@ -72,6 +70,8 @@ struct _DskOctetStream
 void dsk_octet_stream_set_last_error (DskOctetStream  *stream,
                                       const char      *format,
                                       ...) DSK_GNUC_PRINTF(2,3);
+void dsk_octet_stream_set_error      (DskOctetStream  *stream,
+                                      DskError        *error);
 
 #define DSK_OCTET_SOURCE(object) DSK_OBJECT_CAST(DskOctetSource, object, &dsk_octet_source_class)
 #define DSK_OCTET_SINK(object) DSK_OBJECT_CAST(DskOctetSink, object, &dsk_octet_sink_class)

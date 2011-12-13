@@ -10,18 +10,19 @@ struct _DskSslContextOptions
   const char     *password;
 };
 
-DskSslContext    *dsk_ssl_context_new   (DskSslContextOptions *options);
+DskSslContext    *dsk_ssl_context_new   (DskSslContextOptions *options,
+                                         DskError            **error);
   
 struct _DskSslStreamOptions
 {
-  dsk_boolean     is_server;
+  dsk_boolean     is_client;
   DskSslContext  *context;
   DskOctetSink   *sink;
   DskOctetSource *source;
 };
 
-dsk_boolean  dsk_ssl_stream_new          (DskStreamSslOptions   *options,
-                                          DskSslStream         **stream_out
+dsk_boolean  dsk_ssl_stream_new          (DskSslStreamOptions   *options,
+                                          DskSslStream         **stream_out,
 					  DskOctetSink         **sink_out,
                                           DskOctetSource       **source_out,
 					  DskError             **error);

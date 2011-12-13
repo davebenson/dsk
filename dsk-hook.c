@@ -144,7 +144,6 @@ dsk_hook_trap_destroy (DskHookTrap   *trap)
     destroy (data);
 }
 
-
 static void
 run_idle_notifications (void *data)
 {
