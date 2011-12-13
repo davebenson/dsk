@@ -1346,8 +1346,13 @@ dsk_dns_lookup_cache_entry (const char       *name,
         {
           unsigned j = status->searchpath_index;
           /* construct full name */
-          *out = '.';
-          strcpy (out + 1, resolv_conf_search_paths[j]);
+          if (status->searchpath_index == n_resolv_conf_search_paths)
+            *out = 0;
+          else
+            {
+              *out = '.';
+              strcpy (out + 1, resolv_conf_search_paths[j]);
+            }
 
           /* make request without searchpath */
           status->in_progress = DSK_TRUE;
