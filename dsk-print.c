@@ -21,7 +21,7 @@ struct _VarDef
 };
 #define COMPARE_VAR_DEFS(a,b, rv) rv = strcmp(a->key, b->key)
 #define GET_VARDEF_TREE(context) \
-  (context)->tree, VarDef *, GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  (context)->tree, VarDef *, DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, COMPARE_VAR_DEFS
 
 struct _StackNode

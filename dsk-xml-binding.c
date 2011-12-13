@@ -21,7 +21,7 @@ struct _NamespaceNode
 #define COMPARE_NAMESPACE_NODES(a,b, rv) rv = strcmp (a->ns->name, b->ns->name)
 #define NAMESPACE_TREE(binding) \
   binding->namespace_tree, NamespaceNode*, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_NAMESPACE_NODES
 

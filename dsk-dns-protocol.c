@@ -707,7 +707,7 @@ compare_dot_terminated_strs (const char *a,
 
 #define STR_NODE_GET_TREE(top) \
   (top), StrTreeNode*,  \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_STR_TREE_NODES
 

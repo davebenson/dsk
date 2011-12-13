@@ -232,7 +232,7 @@ struct _DskXmlParser
 #define COMPARE_STR_TO_NS_ABBREV_TREE(a,b,rv) rv = strcmp (a, b->abbrev)
 #define COMPARE_NS_ABBREV_TREE_NODES(a,b,rv) rv = strcmp (a->abbrev, b->abbrev)
 #define GET_NS_ABBREV_TREE(parser) \
-  (parser)->ns_map, NsAbbrevMap *, GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  (parser)->ns_map, NsAbbrevMap *, DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, COMPARE_NS_ABBREV_TREE_NODES
 
 /* utility: split our xml-path into components, checking for unallowed things. */

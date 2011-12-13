@@ -75,7 +75,7 @@ struct _DskTs0NamespaceNode
   rv = strcmp ((a), (char*)((b)+1))
 #define GET_SCOPE_NODE_TREE(top) \
   top, DskTs0NamespaceNode *, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, COMPARE_SCOPE_NODES
 
 static DskTs0NamespaceNode *

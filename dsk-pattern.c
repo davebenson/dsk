@@ -1201,7 +1201,7 @@ struct _DskPattern
   COMPARE_NFA_STATES_TO_DFA_TREE(a->n_nfa, a->states, b, rv)
 #define GET_NFA_SUBSET_TREE(tree_top) \
   (tree_top), struct DFA_TreeNode *, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_TREE_NODES
 

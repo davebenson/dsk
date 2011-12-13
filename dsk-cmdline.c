@@ -83,7 +83,7 @@ struct _DskCmdlineArg
 
 #define CMDLINE_ARG_GET_TREE(mode) \
   (mode)->arg_tree, DskCmdlineArg*,  \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_CMDLINE_ARG_NODES
 

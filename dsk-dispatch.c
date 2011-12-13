@@ -168,7 +168,7 @@ static int          global_signal_dispatch_fd;
   else rv = 0;
 #define GET_TIMER_TREE(d) \
   (d)->timer_tree, DskDispatchTimer *, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   TIMERS_COMPARE
 
@@ -199,7 +199,7 @@ static int          global_signal_dispatch_fd;
   COMPARE_SIGNO_TO_SIGNAL(a->signal, b, rv)
 #define GET_SIGNAL_TREE(d) \
   (d)->signal_tree, DskDispatchSignal *, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_SIGNALS
 
@@ -210,7 +210,7 @@ static int          global_signal_dispatch_fd;
   COMPARE_PID_TO_CHILD(a->process_id, b, rv)
 #define GET_CHILD_TREE(d) \
   (d)->child_tree, DskDispatchChild *, \
-  GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   COMPARE_PROCESSES
 
