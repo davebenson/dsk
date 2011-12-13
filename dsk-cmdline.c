@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"
 #include "dsk-error.h"
@@ -134,7 +134,7 @@ static DskCmdlineArg *
 try_option (const char *option_name)
 {
   DskCmdlineArg *rv;
-  GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (configuring),
+  DSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (configuring),
                                 option_name,
                                 COMPARE_STR_TO_ARG_NODE, rv);
   return rv;
@@ -154,7 +154,7 @@ add_option (const char *option_name)
   rv->flags = 0;
   rv->value_ptr = NULL;
   rv->func = NULL;
-  GSK_RBTREE_INSERT (CMDLINE_ARG_GET_TREE (configuring), rv, conflict);
+  DSK_RBTREE_INSERT (CMDLINE_ARG_GET_TREE (configuring), rv, conflict);
   dsk_assert (conflict == NULL);
   return rv;
 }
@@ -608,7 +608,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
               /* long option */
               const char *opt = argv[i] + 2;
               DskCmdlineArg *arg;
-              GSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (mode), opt,
+              DSK_RBTREE_LOOKUP_COMPARATOR (CMDLINE_ARG_GET_TREE (mode), opt,
                                             COMPARE_STR_EQUAL_TO_ARG_NODE, arg);
               if (arg == NULL)
                 {

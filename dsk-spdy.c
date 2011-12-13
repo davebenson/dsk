@@ -274,7 +274,7 @@ destroy_stream (DskSpdyStream     *stream,
   dsk_assert (is_terminated_state (new_state));
   if (stream->state == DSK_SPDY_STREAM_STATE_PENDING)
     GSK_LIST_REMOVE (GET_SESSION_PENDING_STREAMS (session), stream);
-  GSK_RBTREE_REMOVE (GET_SESSION_STREAMS_BY_ID (session), stream);
+  DSK_RBTREE_REMOVE (GET_SESSION_STREAMS_BY_ID (session), stream);
   stream->remote_reset = remote_reset;
 
   if (!remote_reset)

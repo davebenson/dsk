@@ -1,6 +1,6 @@
 #include "dsk.h"
 #include "dsk-table-checkpoint.h"
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #include "dsk-list-macros.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -191,7 +191,7 @@ lookup_tree_node (DskTable           *table,
                        b->key_length,          \
                        (const uint8_t*)(b+1),  \
                        table->compare_data)
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_SMALL_TREE (), unused,
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_SMALL_TREE (), unused,
                                 COMPARE_KEY_TO_NODE, result);
 #undef COMPARE_KEY_TO_NODE
   return result;
@@ -211,7 +211,7 @@ set_node_value (DskTable      *table,
       new_node->key_length = node->key_length;
       new_node->value_alloced = value_alloced;
       memcpy (new_node + 1, node + 1, node->key_length);
-      GSK_RBTREE_REPLACE_NODE (GET_SMALL_TREE (), node, new_node);
+      DSK_RBTREE_REPLACE_NODE (GET_SMALL_TREE (), node, new_node);
       dsk_free (node);
       node = new_node;
     }
@@ -238,7 +238,7 @@ add_to_tree (DskTable           *table,
       node->key_length = key_length;
       node->value_length = value_length;
       node->value_alloced = value_alloced;
-      GSK_RBTREE_INSERT (GET_SMALL_TREE (), node, conflict);
+      DSK_RBTREE_INSERT (GET_SMALL_TREE (), node, conflict);
       table->tree_size += 1;
       dsk_assert (conflict == NULL);
     }
@@ -273,7 +273,7 @@ add_to_tree (DskTable           *table,
 
 #if 0
         case DSK_TABLE_MERGE_DROP:
-          GSK_RBTREE_REMOVE (GET_SMALL_TREE (), node);
+          DSK_RBTREE_REMOVE (GET_SMALL_TREE (), node);
           table->tree_size -= 1;
           dsk_free (node);
           break;
@@ -330,7 +330,7 @@ create_possible_merge (DskTable *table,
   dsk_assert (a->next_merge == NULL);
   dsk_assert (b->prev_merge == NULL);
   a->next_merge = b->prev_merge = pm;
-  GSK_RBTREE_INSERT (GET_POSSIBLE_MERGE_TREE (), pm, conflict);
+  DSK_RBTREE_INSERT (GET_POSSIBLE_MERGE_TREE (), pm, conflict);
   dsk_assert (conflict == NULL);
 }
 
@@ -487,7 +487,7 @@ kill_possible_merge (DskTable *table,
 {
   dsk_assert (possible->a->next_merge == possible);
   dsk_assert (possible->b->prev_merge == possible);
-  GSK_RBTREE_REMOVE (GET_POSSIBLE_MERGE_TREE (), possible);
+  DSK_RBTREE_REMOVE (GET_POSSIBLE_MERGE_TREE (), possible);
   possible->a->next_merge = possible->b->prev_merge = NULL;
   dsk_free (possible);
 }
@@ -559,7 +559,7 @@ maybe_start_merge_jobs (DskTable *table,
   PossibleMerge *best;
   while (table->n_merge_jobs < table->max_merge_jobs)
     {
-      GSK_RBTREE_FIRST (GET_POSSIBLE_MERGE_TREE (), best);
+      DSK_RBTREE_FIRST (GET_POSSIBLE_MERGE_TREE (), best);
       if (best == NULL)
         return DSK_TRUE;
 

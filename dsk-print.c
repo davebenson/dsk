@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #include "dsk.h"
 
 typedef struct _VarDef VarDef;
@@ -99,9 +99,9 @@ add_var_def (DskPrint *context,
   def->next_in_stack_node = context->top->vars;
   context->top->vars = def;
 
-  GSK_RBTREE_INSERT (GET_VARDEF_TREE (context), def, existing);
+  DSK_RBTREE_INSERT (GET_VARDEF_TREE (context), def, existing);
   if (existing)
-    GSK_RBTREE_REPLACE_NODE (GET_VARDEF_TREE (context), existing, def);
+    DSK_RBTREE_REPLACE_NODE (GET_VARDEF_TREE (context), existing, def);
   def->next_with_same_key = existing;
 }
 
@@ -235,9 +235,9 @@ void dsk_print_pop (DskPrint *context)
       VarDef *next = vd->next_with_same_key;
       old->vars = vd->next_in_stack_node;
       if (next == NULL)
-        GSK_RBTREE_REMOVE (GET_VARDEF_TREE (context), vd);
+        DSK_RBTREE_REMOVE (GET_VARDEF_TREE (context), vd);
       else
-        GSK_RBTREE_REPLACE_NODE (GET_VARDEF_TREE (context), vd, next);
+        DSK_RBTREE_REPLACE_NODE (GET_VARDEF_TREE (context), vd, next);
       dsk_free (vd);
     }
   dsk_free (old);
@@ -302,7 +302,7 @@ handle_template_expression (DskPrint *context,
       rv = memcmp (start, b->key, length);            \
       if (rv == 0 && b->key[length] != '\0')          \
         rv = -1;
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_VARDEF_TREE (context),
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_VARDEF_TREE (context),
                                 unused, COMPARE_START_LEN_TO_VAR_DEF,
                                 result);
 #undef COMPARE_START_LEN_TO_VAR_DEF
