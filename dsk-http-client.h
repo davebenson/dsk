@@ -72,8 +72,10 @@ struct _DskHttpClient
 typedef struct _DskHttpClientOptions DskHttpClientOptions;
 struct _DskHttpClientOptions
 {
+  unsigned max_pipelined;
   unsigned max_connections;
   unsigned max_connections_per_host;
+  unsigned max_connections_total;
 
   /* logging options?  or maybe a "trap" system that can be used for it? */
 };
@@ -81,10 +83,10 @@ struct _DskHttpClientOptions
 /* TODO: provide some sort of evidence that these are good numbers */
 #define DSK_HTTP_CLIENT_OPTIONS_DEFAULT               \
 {                                                     \
-  3,        /* max_pipelined */                       \
+  0,        /* max_pipelined */                       \
   100,      /* max_connections */                     \
   5,        /* max_connections_per_host */            \
-  10000000  /* max_connections_total */               \
+  10000     /* max_connections_total */               \
 }
 
 DskHttpClient *dsk_http_client_new (DskHttpClientOptions *options);

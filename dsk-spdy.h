@@ -9,6 +9,7 @@ struct _DskSpdyDataRing
 {
   DskSpdyMessage *prev, *next;
   unsigned        length;
+  DskSpdyMessage *owner_prev, *owner_next;
   DskSpdyStream  *owner;
 };
 
@@ -30,6 +31,8 @@ struct _DskSpdySession
 
   uint32_t        next_stream_id;
   uint32_t        next_ping_id;
+
+  DskHookTrap    *writable_trap;
 
   /* ping information */
   unsigned        has_roundtrip_time : 1;
@@ -65,7 +68,7 @@ unsigned       dsk_spdy_session_get_pending_stream_ids(DskSpdySession *session,
                                                        uint32_t       *stream_ids_out);
 
 /* Returns a reference that you must unref */
-DskSpdyStream  *dsk_spdy_session_get_stream           (DskSpdySession *session,
+DskSpdyStream  *dsk_spdy_session_retrieve_stream      (DskSpdySession *session,
                                                        uint32_t        stream_id,
                                                        DskSpdyHeaders *reply_headers);
 
@@ -120,6 +123,7 @@ struct _DskSpdyStream
   DskOctetSink *sink;
   zstream header_compressor;
   zstream header_decompressor;
+  unsigned priority;            /* 0..7 */
 
   DskSpdyStream *left, *right, *parent;
   dsk_boolean is_red;

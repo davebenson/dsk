@@ -60,6 +60,9 @@ DSK_INLINE_FUNC DskHookTrap *dsk_hook_trap         (DskHook       *hook,
 DSK_INLINE_FUNC void         dsk_hook_trap_block   (DskHookTrap   *trap);
 DSK_INLINE_FUNC void         dsk_hook_trap_unblock (DskHookTrap   *trap);
 
+/* Like dsk_hook_trap_destroy(), but does not call 'destroy' callback. */
+DSK_INLINE_FUNC void         dsk_hook_trap_free    (DskHookTrap   *trap);
+
 /* for use by the underlying polling mechanism
  * (for hooks not using idle-notify)
  */
@@ -189,6 +192,14 @@ dsk_hook_set_funcs    (DskHook       *hook,
 {
   hook->funcs = static_funcs;
 }
+
+DSK_INLINE_FUNC void
+dsk_hook_trap_free (DskHookTrap   *trap)
+{
+  trap->callback_data_destroy = NULL;
+  dsk_hook_trap_destroy (trap);
+}
+
 #endif
 
 

@@ -1,8 +1,13 @@
 #include "dsk.h"
+#include "dsk-list-macros.h"
 
 #define SPDY_MIN_VERSION 2
 #define SPDY_MAX_VERSION 3              /* under construction */
 
+#define GET_SESSION_DATA_RING(session, pri_index) \
+  DskSpdyDataRing *, (session)->outgoing[pri_index], prev, next
+#define GET_STREAM_DATA_RING(stream)              \
+  DskSpdyDataRing *, (stream)->outgoing, owner_prev, owner_next
 
 /* The minimum length for a compressed name/value block.
    The minimum length of the uncompressed data is 2 bytes (4 for SPDY 3),
@@ -269,7 +274,7 @@ destroy_stream (DskSpdyStream     *stream,
   dsk_assert (is_terminated_state (new_state));
   if (stream->state == DSK_SPDY_STREAM_STATE_PENDING)
     GSK_LIST_REMOVE (GET_SESSION_PENDING_STREAMS (session), stream);
-  GSK_RBTREE_REMOVE (GET_SESSION_STREAMS_BY_ID (session), stream);
+  DSK_RBTREE_REMOVE (GET_SESSION_STREAMS_BY_ID (session), stream);
   stream->remote_reset = remote_reset;
 
   if (!remote_reset)
@@ -303,17 +308,29 @@ append_outgoing (DskSpdySession *session,
                  unsigned        length)
 {
   DskSpdyDataRing *node = dsk_malloc (sizeof (DskSpdyDataRing) + length);
-  node->stream = stream;
+  node->owner = stream;
+  node->length = length;
 
   /* put into outgoing list */
-  ...
+  unsigned pri_index;
+  if (stream == NULL)
+    pri_index = 0;
+  else
+    pri_index = (unsigned) stream->priority + 1;
+  DSK_RING_APPEND (GET_SESSION_DATA_RING (session, pri_index), node);
 
   /* if stream is non-NULL, put into stream list */
-  ...
+  if (stream)
+    DSK_RING_APPEND (GET_STREAM_DATA_RING (stream), node);
+  else
+    next->owner_prev = next->owner_next = NULL;  /* not needed */
 
   /* ensure writability is trapped */
-  ...
-
+  if (session->writable_trap == NULL)
+    session->writable_trap = dsk_hook_trap (&sink->writable_hook,
+                                            spdy_handle_sink_writable,
+                                            session,
+                                            spdy_handle_sink_writable_destroy);
   return (uint8_t *) (node + 1);
 }
 
@@ -540,16 +557,54 @@ try_processing_incoming (DskOctetSource *source,
               ...
               break;
             case SPDY_TYPE__HEADERS:
-              ...
+              /* parse headers */
+              if (length < 6 + MIN_NAME_VALUE_HEADER_LENGTH)
+                goto packet_too_short;
+              {
+                uint8_t hdr[6];
+                dsk_buffer_read (&session->incoming, 6, hdr);
+                DskSpdyHeaders *h = parse_name_value_block (session,
+                                                            length - 6, &e);
+                if (h == NULL)
+                  {
+                    dsk_buffer_discard (&session->incoming, length - 4);
+                    destroy_stream (session, stream_id, 
+                                    DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
+                                    SPDY_STATUS_PROTOCOL_ERROR,
+                                    DSK_FALSE);
+                    break;
+                  }
+
+                /* merge with existing headers */
+                ...
+              }
+
               break;
             default:
-              ...
+              dsk_warning ("unknown SPDY packet type %u (version %u, length %u, flags 0x%x)\n"
+                           type, version, length, flags)
+              dsk_buffer_discard (&session->incoming, length);
+              break;
             }
         }
       else
         {
           /* Handle data packet */
-          ...
+          DskSpdyStream *stream;
+          stream = dsk_spdy_session_lookup_stream (session, stream_id);
+          if (stream == NULL)
+            {
+              dsk_warning ("no stream %u for data packet", stream_id);
+              dsk_buffer_discard (&session->incoming, length);
+              continue;
+            }
+          else
+            {
+              dsk_buffer_transfer (&stream->incoming,
+                                   &session->incoming,
+                                   length);
+              dsk_hook_set_idle_notify (&stream->....);
+            }
         }
     }
   return DSK_TRUE;
@@ -618,7 +673,7 @@ dsk_spdy_session_get_pending_stream_ids(DskSpdySession *session,
 
 /* Returns a reference that you must unref */
 DskSpdyStream  *
-dsk_spdy_session_get_stream           (DskSpdySession *session,
+dsk_spdy_session_retrieve_stream      (DskSpdySession *session,
                                        uint32_t        stream_id,
                                        DskSpdyHeaders *reply_headers)
 {
@@ -627,9 +682,11 @@ dsk_spdy_session_get_stream           (DskSpdySession *session,
     return NULL;
   if (stream->state != DSK_SPDY_STREAM_STATE_PENDING)
     {
-      ...
+      dsk_warning ("retrieving stream %u in state %s: not allowed",
+                   stream_id, dsk_spdy_stream_state_name (stream->state));
+      return NULL;
     }
-  GSK_LIST_REMOVE (GET_PENDING_STREAM_LIST (session), stream);
+  DSK_LIST_REMOVE (GET_PENDING_STREAM_LIST (session), stream);
   stream->state = DSK_SPDY_STREAM_STATE_OK;
   /* There's no need to emit a stream-state-change notification,
      because no end user could have accessed this stream yet. */
@@ -651,7 +708,10 @@ DskSpdyHeaders *
 dsk_spdy_session_peek_stream_headers  (DskSpdySession *session,
                                        uint32_t        stream_id)
 {
-  ...
+  DskSpdyStream *stream = dsk_spdy_session_lookup_stream (session, stream_id);
+  if (stream == NULL)
+    return NULL;
+  return stream->request_headers;
 }
 
 

@@ -1,5 +1,5 @@
-#ifndef __GSK_RBTREE_MACROS_H_
-#define __GSK_RBTREE_MACROS_H_
+#ifndef __DSK_RBTREE_MACROS_H_
+#define __DSK_RBTREE_MACROS_H_
 
 /* Macros for construction of a red-black tree.
  * Like our other macro-based data-structures,
@@ -96,8 +96,8 @@
  *    comparator
  */
 
-#define GSK_STD_GET_IS_RED(n)     n->is_red
-#define GSK_STD_SET_IS_RED(n,v)   n->is_red = v
+#define DSK_STD_GET_IS_RED(n)     n->is_red
+#define DSK_STD_SET_IS_RED(n,v)   n->is_red = v
 
 /*
  * By and large, the red-black tree algorithms used here are from
@@ -108,36 +108,36 @@
  * The "rbctree" is my name for this idea (daveb),
  * which i suspect has been thought of and implemented before.
  */
-#define GSK_RBTREE_INSERT(tree, node, collision_node)                         \
-  GSK_RBTREE_INSERT_(tree, node, collision_node)
-#define GSK_RBTREE_INSERT_AT(tree, parent, is_red, node)                      \
-  GSK_RBTREE_INSERT_AT_(tree, parent, is_right, node)
-#define GSK_RBTREE_REPLACE_NODE(tree, old, replacement)                       \
-  GSK_RBTREE_REPLACE_NODE_(tree, old, replacement)
-#define GSK_RBTREE_REMOVE(tree, node)                                         \
-  GSK_RBTREE_REMOVE_(tree, node)
-#define GSK_RBTREE_LOOKUP(tree, key, out)                                     \
-  GSK_RBTREE_LOOKUP_(tree, key, out)
-#define GSK_RBTREE_LOOKUP_COMPARATOR(tree, key, key_comparator, out)          \
-  GSK_RBTREE_LOOKUP_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBTREE_INSERT(tree, node, collision_node)                         \
+  DSK_RBTREE_INSERT_(tree, node, collision_node)
+#define DSK_RBTREE_INSERT_AT(tree, parent, is_red, node)                      \
+  DSK_RBTREE_INSERT_AT_(tree, parent, is_right, node)
+#define DSK_RBTREE_REPLACE_NODE(tree, old, replacement)                       \
+  DSK_RBTREE_REPLACE_NODE_(tree, old, replacement)
+#define DSK_RBTREE_REMOVE(tree, node)                                         \
+  DSK_RBTREE_REMOVE_(tree, node)
+#define DSK_RBTREE_LOOKUP(tree, key, out)                                     \
+  DSK_RBTREE_LOOKUP_(tree, key, out)
+#define DSK_RBTREE_LOOKUP_COMPARATOR(tree, key, key_comparator, out)          \
+  DSK_RBTREE_LOOKUP_COMPARATOR_(tree, key, key_comparator, out)
 
-#define GSK_RBTREE_FIRST(tree, out)                                           \
-  GSK_RBTREE_FIRST_(tree, out)
-#define GSK_RBTREE_LAST(tree, out)                                            \
-  GSK_RBTREE_LAST_(tree, out)
-#define GSK_RBTREE_NEXT(tree, in, out)                                        \
-  GSK_RBTREE_NEXT_(tree, in, out)
-#define GSK_RBTREE_PREV(tree, in, out)                                        \
-  GSK_RBTREE_PREV_(tree, in, out)
+#define DSK_RBTREE_FIRST(tree, out)                                           \
+  DSK_RBTREE_FIRST_(tree, out)
+#define DSK_RBTREE_LAST(tree, out)                                            \
+  DSK_RBTREE_LAST_(tree, out)
+#define DSK_RBTREE_NEXT(tree, in, out)                                        \
+  DSK_RBTREE_NEXT_(tree, in, out)
+#define DSK_RBTREE_PREV(tree, in, out)                                        \
+  DSK_RBTREE_PREV_(tree, in, out)
 
-#define GSK_RBTREE_SUPREMUM(tree, key, out)                                   \
-  GSK_RBTREE_SUPREMUM_(tree, key, out)
-#define GSK_RBTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
-  GSK_RBTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
-#define GSK_RBTREE_INFIMUM(tree, key, out)                                    \
-  GSK_RBTREE_INFIMUM_(tree, key, out)
-#define GSK_RBTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
-  GSK_RBTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBTREE_SUPREMUM(tree, key, out)                                   \
+  DSK_RBTREE_SUPREMUM_(tree, key, out)
+#define DSK_RBTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
+  DSK_RBTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBTREE_INFIMUM(tree, key, out)                                    \
+  DSK_RBTREE_INFIMUM_(tree, key, out)
+#define DSK_RBTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
+  DSK_RBTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
 
 #if 1
 #undef G_STMT_START
@@ -146,7 +146,7 @@
 #define G_STMT_END while(0)
 #endif
 
-#define GSK_RBTREE_INSERT_(top,type,is_red,set_is_red,parent,left,right,comparator, node,collision_node) \
+#define DSK_RBTREE_INSERT_(top,type,is_red,set_is_red,parent,left,right,comparator, node,collision_node) \
 G_STMT_START{                                                                 \
   type _gsk_last = NULL;                                                      \
   type _gsk_at = (top);                                                       \
@@ -211,11 +211,11 @@ G_STMT_START{                                                                 \
                   if (_gsk_at == _gsk_at->parent->right)                      \
                     {                                                         \
                       _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
+                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
                     }                                                         \
                   set_is_red(_gsk_at->parent, 0);                             \
                   set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
+                  DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
                                            _gsk_at->parent->parent);          \
                 }                                                             \
             }                                                                 \
@@ -234,12 +234,12 @@ G_STMT_START{                                                                 \
                   if (_gsk_at == _gsk_at->parent->left)                       \
                     {                                                         \
                       _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
+                      DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
                                                _gsk_at);                      \
                     }                                                         \
                   set_is_red(_gsk_at->parent, 0);                             \
                   set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
+                  DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
                                           _gsk_at->parent->parent);           \
                 }                                                             \
             }                                                                 \
@@ -248,7 +248,7 @@ G_STMT_START{                                                                 \
     }                                                                         \
 }G_STMT_END
 
-#define GSK_RBTREE_INSERT_AT_(top,type,is_red,set_is_red,parent,left,right,comparator, parent_node,is_right,node) \
+#define DSK_RBTREE_INSERT_AT_(top,type,is_red,set_is_red,parent,left,right,comparator, parent_node,is_right,node) \
 G_STMT_START{                                                                 \
     {                                                                         \
       type _gsk_at;                                                           \
@@ -279,11 +279,11 @@ G_STMT_START{                                                                 \
                   if (_gsk_at == _gsk_at->parent->right)                      \
                     {                                                         \
                       _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
+                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
                     }                                                         \
                   set_is_red(_gsk_at->parent, 0);                             \
                   set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
+                  DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
                                            _gsk_at->parent->parent);          \
                 }                                                             \
             }                                                                 \
@@ -302,12 +302,12 @@ G_STMT_START{                                                                 \
                   if (_gsk_at == _gsk_at->parent->left)                       \
                     {                                                         \
                       _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
+                      DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
                                                _gsk_at);                      \
                     }                                                         \
                   set_is_red(_gsk_at->parent, 0);                             \
                   set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
+                  DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
                                           _gsk_at->parent->parent);           \
                 }                                                             \
             }                                                                 \
@@ -315,7 +315,7 @@ G_STMT_START{                                                                 \
       set_is_red((top), 0);                                                   \
     }                                                                         \
 }G_STMT_END
-#define GSK_RBTREE_REPLACE_NODE_(top,type,is_red,set_is_red,parent,left,right,comparator, old_node,replacement_node) \
+#define DSK_RBTREE_REPLACE_NODE_(top,type,is_red,set_is_red,parent,left,right,comparator, old_node,replacement_node) \
 G_STMT_START{                                                                 \
     int _gsk_old_is_red = is_red (old_node);                                  \
     set_is_red (replacement_node, _gsk_old_is_red);                           \
@@ -337,7 +337,7 @@ G_STMT_START{                                                                 \
       replacement_node->right->parent = replacement_node;                     \
 }G_STMT_END
 
-#define GSK_RBTREE_REMOVE_(top,type,is_red,set_is_red,parent,left,right,comparator, node) \
+#define DSK_RBTREE_REMOVE_(top,type,is_red,set_is_red,parent,left,right,comparator, node) \
 /* Algorithms:273. */                                                         \
 G_STMT_START{                                                                 \
   type _gsk_rb_del_z = (node);                                                \
@@ -349,7 +349,7 @@ G_STMT_START{                                                                 \
     _gsk_rb_del_y = _gsk_rb_del_z;                                            \
   else                                                                        \
     {                                                                         \
-      GSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
+      DSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
                         _gsk_rb_del_z, _gsk_rb_del_y);                        \
     }                                                                         \
   _gsk_rb_del_x = _gsk_rb_del_y->left ? _gsk_rb_del_y->left                   \
@@ -406,7 +406,7 @@ G_STMT_START{                                                                 \
                 {                                                             \
                   set_is_red (_gsk_rb_del_w, 0);                              \
                   set_is_red (_gsk_rb_del_xparent, 1);                        \
-                  GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
+                  DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
                                           _gsk_rb_del_xparent);               \
                   _gsk_rb_del_w = _gsk_rb_del_xparent->right;                 \
                 }                                                             \
@@ -423,14 +423,14 @@ G_STMT_START{                                                                 \
                       if (_gsk_rb_del_w->left)                                \
                         set_is_red (_gsk_rb_del_w->left, 0);                  \
                       set_is_red (_gsk_rb_del_w, 1);                          \
-                      GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
+                      DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
                                                _gsk_rb_del_w);                \
                       _gsk_rb_del_w = _gsk_rb_del_xparent->right;             \
                     }                                                         \
                   set_is_red (_gsk_rb_del_w, is_red (_gsk_rb_del_xparent));   \
                   set_is_red (_gsk_rb_del_xparent, 0);                        \
                   set_is_red (_gsk_rb_del_w->right, 0);                       \
-                  GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
+                  DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
                                           _gsk_rb_del_xparent);               \
                   _gsk_rb_del_x = top;                                        \
                 }                                                             \
@@ -442,7 +442,7 @@ G_STMT_START{                                                                 \
                 {                                                             \
                   set_is_red (_gsk_rb_del_w, 0);                              \
                   set_is_red (_gsk_rb_del_xparent, 1);                        \
-                  GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
+                  DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
                                            _gsk_rb_del_xparent);              \
                   _gsk_rb_del_w = _gsk_rb_del_xparent->left;                  \
                 }                                                             \
@@ -458,7 +458,7 @@ G_STMT_START{                                                                 \
                     {                                                         \
                       set_is_red (_gsk_rb_del_w->right, 0);                   \
                       set_is_red (_gsk_rb_del_w, 1);                          \
-                      GSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,     \
+                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,     \
                                               _gsk_rb_del_w);                 \
                       _gsk_rb_del_w = _gsk_rb_del_xparent->left;              \
                     }                                                         \
@@ -466,7 +466,7 @@ G_STMT_START{                                                                 \
                   set_is_red (_gsk_rb_del_xparent, 0);                        \
                   if (_gsk_rb_del_w->left)                                    \
                     set_is_red (_gsk_rb_del_w->left, 0);                      \
-                  GSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
+                  DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
                                            _gsk_rb_del_xparent);              \
                   _gsk_rb_del_x = top;                                        \
                 }                                                             \
@@ -480,7 +480,7 @@ G_STMT_START{                                                                 \
   _gsk_rb_del_z->parent = NULL;                                               \
 }G_STMT_END
 
-#define GSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
+#define DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
 G_STMT_START{                                                                 \
   type _gsk_lookup_at = (top);                                                \
@@ -499,7 +499,7 @@ G_STMT_START{                                                                 \
 }G_STMT_END
  /* see comments for 'SUPREMUM'; it is the same with the sense of the comparators
   * and left,right reversed. */
-#define GSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
+#define DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
 G_STMT_START{                                                                 \
   type _gsk_lookup_at = (top);                                                \
@@ -552,7 +552,7 @@ G_STMT_START{                                                                 \
  * a tree descent, keeping track of the best candidate you've found.
  * TODO: there's got to be a better way to describe it.
  */
-#define GSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
+#define DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
 G_STMT_START{                                                                 \
   type _gsk_lookup_at = (top);                                                \
@@ -571,18 +571,18 @@ G_STMT_START{                                                                 \
     }                                                                         \
   out = _gsk_lookup_rv;                                                       \
 }G_STMT_END
-#define GSK_RBTREE_LOOKUP_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define GSK_RBTREE_SUPREMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define GSK_RBTREE_INFIMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBTREE_LOOKUP_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBTREE_SUPREMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBTREE_INFIMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 
 /* these macros don't need the is_red/set_is_red macros, nor the comparator,
    so omit them, to keep the lines a bit shorter. */
-#define GSK_RBTREE_ROTATE_RIGHT(top,type,parent,left,right, node)             \
-  GSK_RBTREE_ROTATE_LEFT(top,type,parent,right,left, node)
-#define GSK_RBTREE_ROTATE_LEFT(top,type,parent,left,right, node)              \
+#define DSK_RBTREE_ROTATE_RIGHT(top,type,parent,left,right, node)             \
+  DSK_RBTREE_ROTATE_LEFT(top,type,parent,right,left, node)
+#define DSK_RBTREE_ROTATE_LEFT(top,type,parent,left,right, node)              \
 G_STMT_START{                                                                 \
   type _gsk_rot_x = (node);                                                   \
   type _gsk_rot_y = _gsk_rot_x->right;                                        \
@@ -602,7 +602,7 @@ G_STMT_START{                                                                 \
 }G_STMT_END
 
 /* iteration */
-#define GSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
+#define DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
 G_STMT_START{                                                                 \
   type _gsk_next_at = (in);                                                   \
   /*g_assert (_gsk_next_at != NULL);*/                                        \
@@ -627,10 +627,10 @@ G_STMT_START{                                                                 \
 }G_STMT_END
 
 /* prev is just next with left/right child reversed. */
-#define GSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
-  GSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,right,left,comparator, in, out)
+#define DSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
+  DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,right,left,comparator, in, out)
 
-#define GSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
+#define DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
 G_STMT_START{                                                                 \
   type _gsk_first_at = (top);                                                 \
   if (_gsk_first_at != NULL)                                                  \
@@ -638,8 +638,8 @@ G_STMT_START{                                                                 \
       _gsk_first_at = _gsk_first_at->left;                                    \
   out = _gsk_first_at;                                                        \
 }G_STMT_END
-#define GSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
-  GSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,right,left,comparator, out)
+#define DSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
+  DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,right,left,comparator, out)
 
  /* --- RBC-Tree --- */
 #define GSK_RBCTREE_INSERT(tree, node, collision_node)                         \
@@ -807,7 +807,7 @@ G_STMT_START{                                                                 \
     _gsk_rb_del_y = _gsk_rb_del_z;                                            \
   else                                                                        \
     {                                                                         \
-      GSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
+      DSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
                         _gsk_rb_del_z, _gsk_rb_del_y);                        \
     }                                                                         \
   _gsk_rb_del_x = _gsk_rb_del_y->left ? _gsk_rb_del_y->left                   \
@@ -945,27 +945,27 @@ G_STMT_START{                                                                 \
 
 #define GSK_RBCTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
- GSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_count,parent,left,right,comparator, key,key_comparator,out)
+ DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_count,parent,left,right,comparator, key,key_comparator,out)
 #define GSK_RBCTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
- GSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
+ DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
 #define GSK_RBCTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
- GSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
+ DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
 #define GSK_RBCTREE_LOOKUP_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+  DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 #define GSK_RBCTREE_SUPREMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+  DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 #define GSK_RBCTREE_INFIMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
-  GSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+  DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 #define GSK_RBCTREE_NEXT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, in, out)  \
-   GSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
+   DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
 #define GSK_RBCTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
-   GSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
+   DSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
 #define GSK_RBCTREE_FIRST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
-  GSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
+  DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
 #define GSK_RBCTREE_LAST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
-  GSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
+  DSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
 
 #define GSK_RBCTREE_GET_BY_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out) \
   G_STMT_START{                                                                \

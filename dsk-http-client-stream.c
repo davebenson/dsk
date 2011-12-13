@@ -1,6 +1,6 @@
 #include "dsk.h"
 #include "dsk-http-internals.h"
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -87,7 +87,7 @@ transfer_done (DskHttpClientStreamTransfer *xfer)
 {
   /* remove from list */
   DskHttpClientStreamTransfer *tmp;
-  GSK_QUEUE_DEQUEUE (GET_STREAM_XFER_QUEUE (xfer->owner), tmp);
+  DSK_QUEUE_DEQUEUE (GET_STREAM_XFER_QUEUE (xfer->owner), tmp);
   dsk_assert (tmp == xfer);
 
   if (xfer->content_decoder != NULL)
@@ -1337,7 +1337,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
     }
 
   xfer = DSK_NEW (DskHttpClientStreamTransfer);
-  GSK_QUEUE_ENQUEUE (GET_STREAM_XFER_QUEUE (stream), xfer);
+  DSK_QUEUE_ENQUEUE (GET_STREAM_XFER_QUEUE (stream), xfer);
   if (stream->outgoing_data_transfer == NULL)
     stream->outgoing_data_transfer = xfer;
   stream->n_pending_outgoing_requests++;

@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include "dsk.h"
 
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 
 
 /* === Request Matching Infrastructure === */
@@ -256,7 +256,7 @@ create_tester (MatchTestList *list)
 #define GET_MATCH_TEST_LIST(list) MatchTestList*, list, prev
 #define COMPARE_MATCH_TEST_LIST_BY_TEST_TYPE(a,b,rv) \
   rv = a->match_type < b->match_type ? -1 : a->match_type > b->match_type ? 1 : 0;
-  GSK_STACK_SORT (GET_MATCH_TEST_LIST (list),
+  DSK_STACK_SORT (GET_MATCH_TEST_LIST (list),
                   COMPARE_MATCH_TEST_LIST_BY_TEST_TYPE);
 #undef COMPARE_MATCH_TEST_LIST_BY_TEST_TYPE
 #undef GET_MATCH_TEST_LIST
@@ -356,7 +356,7 @@ add_handler_generic (DskHttpServer *server,
   handler->next = NULL;
 
   /* Add to handler list */
-  GSK_QUEUE_ENQUEUE (GET_HANDLER_QUEUE (server->current), handler);
+  DSK_QUEUE_ENQUEUE (GET_HANDLER_QUEUE (server->current), handler);
 
   return handler;
 }
@@ -1183,7 +1183,7 @@ http_server_stream_destroyed (ServerStream *sstream)
   if (sstream->bind_info != NULL)
     {
       DskHttpServerBindInfo *bind_info = sstream->bind_info;
-      GSK_LIST_REMOVE (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
+      DSK_LIST_REMOVE (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
     }
   if (sstream->http_stream)
     dsk_object_unref (sstream->http_stream);
@@ -1231,7 +1231,7 @@ handle_listener_ready (DskOctetListener *listener,
       memset (&sstream->ip_address, 0, sizeof (DskIpAddress));
       sstream->ip_port = 0;
     }
-  GSK_LIST_APPEND (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
+  DSK_LIST_APPEND (GET_BIND_INFO_STREAM_LIST (bind_info), sstream);
   sstream->http_stream = http_stream;
   sstream->trap = dsk_hook_trap (&http_stream->request_available,
                             (DskHookFunc) handle_http_server_request_available,
@@ -1381,7 +1381,7 @@ static void dsk_http_server_finalize (DskHttpServer *server)
         {
           ServerStream *ss = bind_info->first_stream;
           DskHttpServerStream *http_stream = ss->http_stream;
-          GSK_LIST_REMOVE_FIRST (GET_BIND_INFO_STREAM_LIST (bind_info));
+          DSK_LIST_REMOVE_FIRST (GET_BIND_INFO_STREAM_LIST (bind_info));
           ss->bind_info = NULL;
           ss->http_stream = NULL;
           dsk_http_server_stream_shutdown (http_stream);

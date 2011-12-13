@@ -1,9 +1,8 @@
 #include <string.h>
 #include "dsk.h"
-#include "gsklistmacros.h"           /* TODO: USE THESE */
-#include "gskrbtreemacros.h"
-#define DANG_SIZEOF_SIZE_T DSK_SIZEOF_POINTER
-#include "gskqsortmacro.h"           /* TODO: USE THESE */
+#include "dsk-list-macros.h"
+#include "dsk-rbtree-macros.h"
+#include "dsk-qsort-macro.h"
 
 #define DEBUG_TOKENIZE    0
 #define DEBUG_PARSE       0
@@ -821,7 +820,7 @@ uniq_transitions (struct NFA_State *state, DskMemPool *pool)
   struct NFA_Transition *trans;
   /* sort transitions */
 #define COMPARE_TRANSITIONS(a,b, rv) rv = compare_transitions_by_state(a,b)
-  GSK_STACK_SORT (NFA_STATE_GET_TRANSITION_STACK (state), COMPARE_TRANSITIONS);
+  DSK_STACK_SORT (NFA_STATE_GET_TRANSITION_STACK (state), COMPARE_TRANSITIONS);
 #undef COMPARE_TRANSITIONS
 
   /* remove dups */
@@ -1234,7 +1233,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
 
   /* Sort/unique nfa_states */
 #define COMPARE_NFA_STATES(a,b,rv) rv = (a<b) ? -1 : (a>b) ? 1 : 0;
-  GSK_QSORT (nfa_states, struct NFA_State *, n_nfa_states, COMPARE_NFA_STATES);
+  DSK_QSORT (nfa_states, struct NFA_State *, n_nfa_states, COMPARE_NFA_STATES);
 #undef COMPARE_NFA_STATES
   o = 0;
   for (i = 1; i < n_nfa_states; i++)
@@ -1250,7 +1249,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
 
 #define COMPARE_NFA_SUBSET(a,b, rv)                            \
   COMPARE_NFA_STATES_TO_DFA_TREE(n_nfa_states, nfa_states, b, rv)
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_NFA_SUBSET_TREE (*p_tree),
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_NFA_SUBSET_TREE (*p_tree),
                                 unused, COMPARE_NFA_SUBSET, tree_node);
   if (tree_node != NULL)
     return tree_node->state;
@@ -1280,7 +1279,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
     }
 
   /* add tree node to tree */
-  GSK_RBTREE_INSERT (GET_NFA_SUBSET_TREE (*p_tree), tree_node, conflict);
+  DSK_RBTREE_INSERT (GET_NFA_SUBSET_TREE (*p_tree), tree_node, conflict);
   dsk_assert (conflict == NULL);
 
   /* add tree node to skeletal_list */

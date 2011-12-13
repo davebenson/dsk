@@ -2,7 +2,7 @@
 #include <string.h>
 #include "dsk.h"
 #include "dsk-http-internals.h"
-#include "gsklistmacros.h"
+#include "dsk-list-macros.h"
 
 #define GET_XFER_QUEUE(server_stream) \
   DskHttpServerStreamTransfer *,      \
@@ -243,7 +243,7 @@ restart_processing:
       xfer = DSK_NEW0 (DskHttpServerStreamTransfer);
       xfer->owner = ss;
       xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_NEED_HEADER;
-      GSK_QUEUE_ENQUEUE (GET_XFER_QUEUE (ss), xfer);
+      DSK_QUEUE_ENQUEUE (GET_XFER_QUEUE (ss), xfer);
       ss->read_transfer = xfer;
     }
   else

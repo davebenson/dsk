@@ -2,7 +2,7 @@
 #include <string.h>
 #define DSK_INCLUDE_TS0
 #include "dsk.h"
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #include "dsk-ts0-builtins.h"
 
 #define MAX_TAG_DEPTH           64
@@ -83,7 +83,7 @@ lookup_namespace_node (DskTs0NamespaceNode *top,
                    const char      *key)
 {
   DskTs0NamespaceNode *rv;
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_SCOPE_NODE_TREE (top), key,
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_SCOPE_NODE_TREE (top), key,
                                 COMPARE_STRING_TO_SCOPE_NODE, rv);
   return rv;
 }
@@ -97,7 +97,7 @@ lookup_namespace_node_len (DskTs0NamespaceNode *top,
   rv = strncmp (key, (char*)(b+1), key_len); \
   if (rv == 0 && ((char*)(b+1))[key_len] != 0) \
     rv = -1;
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_SCOPE_NODE_TREE (top), unused,
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_SCOPE_NODE_TREE (top), unused,
                                 COMPARE_KEY_KEYLEN_TO_SCOPE_NODE, rv);
   return rv;
 }
@@ -109,7 +109,7 @@ force_namespace_node (DskTs0NamespaceNode **top_ptr,
   DskTs0NamespaceNode *rv = dsk_malloc (sizeof (DskTs0NamespaceNode) + key_length + 1);
   DskTs0NamespaceNode *conflict;
   memcpy (rv + 1, key, key_length + 1);
-  GSK_RBTREE_INSERT (GET_SCOPE_NODE_TREE ((*top_ptr)), rv, conflict);
+  DSK_RBTREE_INSERT (GET_SCOPE_NODE_TREE ((*top_ptr)), rv, conflict);
   if (conflict != NULL)
     {
       dsk_free (rv);

@@ -33,8 +33,8 @@
 #include "dsk-common.h"
 #include "dsk-fd.h"
 #include "dsk-dispatch.h"
-#include "gskrbtreemacros.h"
-#include "gsklistmacros.h"
+#include "dsk-rbtree-macros.h"
+#include "dsk-list-macros.h"
 
 #define DEBUG_DISPATCH_INTERNALS  0
 #define DEBUG_DISPATCH            0
@@ -157,7 +157,7 @@ struct _DskDispatchChild
 static DskDispatch *global_signal_dispatch;
 static int          global_signal_dispatch_fd;
 
-/* Define the tree of timers, as per gskrbtreemacros.h */
+/* Define the tree of timers, as per dsk-rbtree-macros.h */
 #define TIMERS_COMPARE(a,b, rv) \
   if (a->timeout_secs < b->timeout_secs) rv = -1; \
   else if (a->timeout_secs > b->timeout_secs) rv = 1; \
@@ -403,7 +403,7 @@ get_fd_map (RealDispatch *d, DskFileDescriptor fd)
     return d->fd_map + fd;
 #else
   FDMapNode *node;
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_FD_MAP_TREE (d), fd, COMPARE_FD_TO_FD_MAP_NODE, node);
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_FD_MAP_TREE (d), fd, COMPARE_FD_TO_FD_MAP_NODE, node);
   return node ? &node->map : NULL;
 #endif
 }
@@ -423,7 +423,7 @@ force_fd_map (RealDispatch *d, DskFileDescriptor fd)
         FDMapNode *conflict;
         node->fd = fd;
         memset (&node->map, 255, sizeof (FDMap));
-        GSK_RBTREE_INSERT (GET_FD_MAP_TREE (d), node, conflict);
+        DSK_RBTREE_INSERT (GET_FD_MAP_TREE (d), node, conflict);
         assert (conflict == NULL);
         fm = &node->map;
       }
@@ -636,7 +636,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
       DskDispatchIdle *idle = d->first_idle;
       DskIdleFunc func = idle->func;
       void *data = idle->func_data;
-      GSK_LIST_REMOVE_FIRST (GET_IDLE_LIST (d));
+      DSK_LIST_REMOVE_FIRST (GET_IDLE_LIST (d));
 
       idle->func = NULL;                /* set to NULL to render remove_idle a no-op */
       func (data);
@@ -651,12 +651,12 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
   while (d->timer_tree != NULL)
     {
       DskDispatchTimer *min_timer;
-      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
+      DSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
       if (min_timer->timeout_secs < (unsigned long) tv.tv_sec
        || (min_timer->timeout_secs == (unsigned long) tv.tv_sec
         && min_timer->timeout_usecs <= (unsigned) tv.tv_usec))
         {
-          GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), min_timer);
+          DSK_RBTREE_REMOVE (GET_TIMER_TREE (d), min_timer);
           min_timer->left = expired;
           min_timer->expired = DSK_TRUE;
           expired = min_timer;
@@ -826,7 +826,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
   rv->func_data = func_data;
   rv->dispatch = d;
   rv->expired = DSK_FALSE;
-  GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
+  DSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
   (void) conflict;              /* suppress warnings */
   
   /* is this the first element in the tree */
@@ -869,21 +869,21 @@ void  dsk_dispatch_adjust_timer    (DskDispatchTimer *timer,
   if (d->first_idle == NULL)
     {
       DskDispatchTimer *first;
-      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), first);
+      DSK_RBTREE_FIRST (GET_TIMER_TREE (d), first);
       if (first == timer)
         was_first = DSK_TRUE;
     }
   dsk_assert (timer->func != NULL);
-  GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
+  DSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
   timer->timeout_secs = timeout_secs;
   timer->timeout_usecs = timeout_usecs;
-  GSK_RBTREE_INSERT (GET_TIMER_TREE (d), timer, conflict);
+  DSK_RBTREE_INSERT (GET_TIMER_TREE (d), timer, conflict);
   dsk_assert (conflict == NULL);
 
   if (d->first_idle == NULL)
     {
       DskDispatchTimer *first;
-      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), first);
+      DSK_RBTREE_FIRST (GET_TIMER_TREE (d), first);
       if (was_first || first == timer)
         {
           d->base.timeout_secs = first->timeout_secs;
@@ -921,7 +921,7 @@ void  dsk_dispatch_remove_timer (DskDispatchTimer *timer)
   may_be_first = d->base.timeout_usecs == timer->timeout_usecs
               && d->base.timeout_secs == timer->timeout_secs;
 
-  GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
+  DSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
 
   if (may_be_first)
     {
@@ -930,7 +930,7 @@ void  dsk_dispatch_remove_timer (DskDispatchTimer *timer)
       else
         {
           DskDispatchTimer *min;
-          GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min);
+          DSK_RBTREE_FIRST (GET_TIMER_TREE (d), min);
           d->base.timeout_secs = min->timeout_secs;
           d->base.timeout_usecs = min->timeout_usecs;
         }
@@ -953,7 +953,7 @@ dsk_dispatch_add_idle (DskDispatch        *dispatch,
     {
       rv = DSK_NEW (DskDispatchIdle);
     }
-  GSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
+  DSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
   rv->func = func;
   rv->func_data = func_data;
   rv->dispatch = d;
@@ -969,7 +969,7 @@ dsk_dispatch_remove_idle (DskDispatchIdle *idle)
   if (idle->func != NULL)
     {
       RealDispatch *d = idle->dispatch;
-      GSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
+      DSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
       idle->next = d->recycled_idles;
       d->recycled_idles = idle;
       if (d->first_idle == NULL)
@@ -1041,7 +1041,7 @@ retry_read:
             continue;
           emitted[buf[i]>>3] |= (1 << (buf[i] & 7));
 
-          GSK_RBTREE_LOOKUP_COMPARATOR (GET_SIGNAL_TREE (d),
+          DSK_RBTREE_LOOKUP_COMPARATOR (GET_SIGNAL_TREE (d),
                                         buf[i], COMPARE_SIGNO_TO_SIGNAL,
                                         handler);
           if (handler != NULL)
@@ -1093,7 +1093,7 @@ retry_pipe:
     {
       dsk_die ("only one dispatcher may be used to handle signals");
     }
-  GSK_RBTREE_LOOKUP_COMPARATOR (GET_SIGNAL_TREE (d),
+  DSK_RBTREE_LOOKUP_COMPARATOR (GET_SIGNAL_TREE (d),
                                 signal_number, COMPARE_SIGNO_TO_SIGNAL,
                                 rv);
   dsk_return_val_if_fail (rv == NULL, "signal already trapped", NULL);
@@ -1116,7 +1116,7 @@ retry_sigaction:
   rv->signal = signal_number;
   rv->func = func;
   rv->func_data = func_data;
-  GSK_RBTREE_INSERT (GET_SIGNAL_TREE (d), rv, conflict);
+  DSK_RBTREE_INSERT (GET_SIGNAL_TREE (d), rv, conflict);
   dsk_assert (conflict == NULL);
 
   return rv;
@@ -1130,7 +1130,7 @@ void  dsk_dispatch_remove_signal (DskDispatchSignal *sig)
   signal (sig->signal, SIG_DFL);
 
   /* remove signal handler from tree */
-  GSK_RBTREE_REMOVE (GET_SIGNAL_TREE (d), sig);
+  DSK_RBTREE_REMOVE (GET_SIGNAL_TREE (d), sig);
 
   if (sig->is_notifying)
     sig->destroyed_while_notifying = 1;
@@ -1149,13 +1149,13 @@ do_waitpid_repeatedly (void *data)
       DskDispatchChild *child;
       if (pid == 0)
         break;
-      GSK_RBTREE_LOOKUP_COMPARATOR (GET_CHILD_TREE (d),
+      DSK_RBTREE_LOOKUP_COMPARATOR (GET_CHILD_TREE (d),
                                     pid, COMPARE_PID_TO_CHILD,
                                     child);
       if (child != NULL)
         {
           DskDispatchChildInfo child_info;
-          GSK_RBTREE_REMOVE (GET_CHILD_TREE (d), child);
+          DSK_RBTREE_REMOVE (GET_CHILD_TREE (d), child);
           child_info.process_id = pid;
           if (WIFSIGNALED (status))
             {
@@ -1208,7 +1208,7 @@ dsk_dispatch_add_child    (DskDispatch       *dispatch,
   child->func = func;
   child->func_data = func_data;
   child->is_notifying = DSK_FALSE;
-  GSK_RBTREE_INSERT (GET_CHILD_TREE (d), child, conflict);
+  DSK_RBTREE_INSERT (GET_CHILD_TREE (d), child, conflict);
   dsk_return_val_if_fail (conflict == NULL, "process-id trapped twice", NULL);
   return child;
 }
@@ -1219,7 +1219,7 @@ dsk_dispatch_remove_child (DskDispatchChild  *handler)
   RealDispatch *d = handler->dispatch;
   if (handler->is_notifying)
     return;
-  GSK_RBTREE_REMOVE (GET_CHILD_TREE (d), handler);
+  DSK_RBTREE_REMOVE (GET_CHILD_TREE (d), handler);
   dsk_free (handler);
 }
 

@@ -108,6 +108,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-print.o \
 	  dsk-codegen.o \
 	  dsk-checksum.o \
+	  dsk-ssl.o \
 	  dsk-file-util.o dsk-pattern.o \
 	  dsk-table-file-trivial.o \
 	  dsk-table-checkpoint-trivial.o \

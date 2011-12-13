@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "dsk.h"
-#include "gskqsortmacro.h"
+#include "dsk-qsort-macro.h"
 
 const char *dsk_json_value_type_name (DskJsonValueType type)
 {
@@ -61,7 +61,7 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
       smembers[i] = rv->v_object.members + i;
     }
 #define COMPARE_MEMBERS(a,b, rv)   rv = strcmp (a->name, b->name)
-  GSK_QSORT (smembers, DskJsonMember *, n_members, COMPARE_MEMBERS);
+  DSK_QSORT (smembers, DskJsonMember *, n_members, COMPARE_MEMBERS);
 #undef COMPARE_MEMBERS
   return rv;
 }

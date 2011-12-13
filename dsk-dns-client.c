@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "dsk.h"
-#include "gskrbtreemacros.h"
-#include "gsklistmacros.h"
+#include "dsk-rbtree-macros.h"
+#include "dsk-list-macros.h"
 
 #define MAX_CNAMES                 16
 #define TIME_WAIT_TO_RECYCLE_ID    60
@@ -261,7 +261,7 @@ handle_message (DskDnsMessage *message)
 
       dummy.name = (char *) q->name;
       dummy.is_ipv6 = is_ipv6;
-      GSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &dummy, entry);
+      DSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &dummy, entry);
       if (entry == NULL)
         {
           dsk_warning ("DNS system: unexpected packet pertaining to %s",
@@ -469,10 +469,10 @@ dsk_dns_try_init (DskError **error)
       host_entry->info.addr.i = 0;
       host_entry->info.addr.addresses[0] = addr;
 retry:
-      GSK_RBTREE_INSERT (GET_ETC_HOSTS_TREE (), host_entry, conflict);
+      DSK_RBTREE_INSERT (GET_ETC_HOSTS_TREE (), host_entry, conflict);
       if (conflict != NULL)
         {
-          GSK_RBTREE_REMOVE (GET_ETC_HOSTS_TREE (), conflict);
+          DSK_RBTREE_REMOVE (GET_ETC_HOSTS_TREE (), conflict);
           goto retry;
         }
     }
@@ -665,13 +665,13 @@ expunge_old_cache_entries (void)
   while (expiration_tree)
     {
       DskDnsCacheEntry *oldest;
-      GSK_RBTREE_FIRST (GET_EXPIRATION_TREE (), oldest);
+      DSK_RBTREE_FIRST (GET_EXPIRATION_TREE (), oldest);
       if (oldest->expire_time > cur_time)
         break;
 
       /* free oldest */
-      GSK_RBTREE_REMOVE (GET_CACHE_BY_NAME_TREE (), oldest);
-      GSK_RBTREE_REMOVE (GET_EXPIRATION_TREE (), oldest);
+      DSK_RBTREE_REMOVE (GET_CACHE_BY_NAME_TREE (), oldest);
+      DSK_RBTREE_REMOVE (GET_EXPIRATION_TREE (), oldest);
       switch (oldest->type)
         {
         case DSK_DNS_CACHE_ENTRY_IN_PROGRESS:
@@ -712,7 +712,7 @@ dsk_dns_lookup_nonblocking_entry (const char    *name,
   MAYBE_DNS_INIT_RETURN (error, NULL);
   ce.name = (char*) name;
   ce.is_ipv6 = is_ipv6 ? 1 : 0;
-  GSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
+  DSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
   return entry;
 }
 DskDnsLookupNonblockingResult
@@ -729,7 +729,7 @@ dsk_dns_lookup_nonblocking (const char *name,
       DskDnsCacheEntry *entry;
       ce.name = (char*) name;
       ce.is_ipv6 = is_ipv6 ? 1 : 0;
-      GSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
+      DSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
       if (entry == NULL)
         return DSK_DNS_LOOKUP_NONBLOCKING_MUST_BLOCK;
       switch (entry->type)
@@ -824,7 +824,7 @@ raise_waiting_to_send_flag (DskDnsCacheEntryJob *job)
                              (DskHookFunc) handle_socket_writable,
                              NULL, NULL);
         }
-      GSK_LIST_APPEND (GET_WAITING_TO_SEND_LIST (), job);
+      DSK_LIST_APPEND (GET_WAITING_TO_SEND_LIST (), job);
       job->waiting_to_send = DSK_TRUE;
     }
 }
@@ -833,7 +833,7 @@ clear_waiting_to_send_flag (DskDnsCacheEntryJob *job)
 {
   if (job->waiting_to_send)
     {
-      GSK_LIST_REMOVE (GET_WAITING_TO_SEND_LIST (), job);
+      DSK_LIST_REMOVE (GET_WAITING_TO_SEND_LIST (), job);
       job->waiting_to_send = DSK_FALSE;
       if (first_waiting_to_send == NULL)
         {
@@ -862,7 +862,7 @@ handle_timer_expired (void        *data)
       owner->type = DSK_DNS_CACHE_ENTRY_ERROR;
       owner->info.error.error = dsk_error_new ("timed out waiting for response");
       owner->expire_time = dsk_get_current_time () + 1;
-      GSK_RBTREE_INSERT (GET_EXPIRATION_TREE (), owner, conflict);
+      DSK_RBTREE_INSERT (GET_EXPIRATION_TREE (), owner, conflict);
       dsk_assert (conflict == NULL);
 
       job_notify_waiters_and_free (job);
@@ -982,7 +982,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
   /* lookup in /etc/hosts if enabled */
   if (config_flags & DSK_DNS_CONFIG_USE_ETC_HOSTS)
     {
-      GSK_RBTREE_LOOKUP (GET_ETC_HOSTS_TREE (), &ce, entry);
+      DSK_RBTREE_LOOKUP (GET_ETC_HOSTS_TREE (), &ce, entry);
       if (entry != NULL)
         {
           callback (entry, callback_data);
@@ -991,7 +991,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
     }
 
   /* lookup in cache */
-  GSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
+  DSK_RBTREE_LOOKUP (GET_CACHE_BY_NAME_TREE (), &ce, entry);
 
   /* --- do actual dns request --- */
 
@@ -1005,7 +1005,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
       entry->expire_time = NO_EXPIRE_TIME;
       entry->type = DSK_DNS_CACHE_ENTRY_IN_PROGRESS;
 
-      GSK_RBTREE_INSERT (GET_CACHE_BY_NAME_TREE (), entry, conflict);
+      DSK_RBTREE_INSERT (GET_CACHE_BY_NAME_TREE (), entry, conflict);
       dsk_assert (conflict == NULL);
       begin_dns_request (entry);
 

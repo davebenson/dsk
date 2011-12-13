@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include "dsk.h"
 #include "dsk-xml-binding-internals.h"
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #define DANG_SIZEOF_SIZE_T 8
-#include "gskqsortmacro.h"
+#include "dsk-qsort-macro.h"
 #define DSK_STRUCT_MEMBER_P(struct_p, struct_offset)   \
     ((void*) ((char*) (struct_p) + (long) (struct_offset)))
 #define DSK_STRUCT_MEMBER(member_type, struct_p, struct_offset)   \
@@ -94,7 +94,7 @@ dsk_xml_binding_try_ns         (DskXmlBinding *binding,
                                 const char    *name)
 {
   NamespaceNode *ns;
-  GSK_RBTREE_LOOKUP_COMPARATOR (NAMESPACE_TREE (binding),
+  DSK_RBTREE_LOOKUP_COMPARATOR (NAMESPACE_TREE (binding),
                                 name, COMPARE_STRING_TO_NAMESPACE_INFO,
                                 ns);
   return ns ? ns->ns : NULL;
@@ -168,7 +168,7 @@ dsk_xml_binding_get_ns         (DskXmlBinding *binding,
           /* add to tree */
           node = DSK_NEW (NamespaceNode);
           node->ns = real_ns;
-          GSK_RBTREE_INSERT (NAMESPACE_TREE (binding), node, conflict);
+          DSK_RBTREE_INSERT (NAMESPACE_TREE (binding), node, conflict);
           dsk_assert (conflict == NULL);
           dsk_free (contents);
           return real_ns;
@@ -916,7 +916,7 @@ add_type_to_namespace (DskXmlBindingNamespace *ns,
 
 #define COMPARE_TYPES_BY_NAME(a,b, rv) \
   rv = strcmp (ns->types[a]->name, ns->types[b]->name)
-  GSK_QSORT (ns->types_sorted_by_name, unsigned, ns->n_types,
+  DSK_QSORT (ns->types_sorted_by_name, unsigned, ns->n_types,
              COMPARE_TYPES_BY_NAME);
 #undef COMPARE_TYPES_BY_NAME
 }
@@ -1104,7 +1104,7 @@ dsk_xml_binding_type_struct_new (DskXmlBindingNamespace *ns,
   for (i = 0; i < n_members; i++)
     rv->members_sorted_by_name[i] = i;
 #define COMPARE_MEMBERS_BY_NAME(a,b, rv) rv = strcmp (members[a].name, members[b].name)
-  GSK_QSORT (rv->members_sorted_by_name, unsigned, n_members,
+  DSK_QSORT (rv->members_sorted_by_name, unsigned, n_members,
              COMPARE_MEMBERS_BY_NAME);
 #undef COMPARE_MEMBERS_BY_NAME
   for (i = 1; i < n_members; i++)
@@ -1344,7 +1344,7 @@ dsk_xml_binding_type_union_new (DskXmlBindingNamespace *ns,
   for (i = 0; i < n_cases; i++)
     rv->cases_sorted_by_name[i] = i;
 #define COMPARE_CASES_BY_NAME(a,b, rv) rv = strcmp (cases[a].name, cases[b].name)
-  GSK_QSORT (rv->cases_sorted_by_name, unsigned, n_cases,
+  DSK_QSORT (rv->cases_sorted_by_name, unsigned, n_cases,
              COMPARE_CASES_BY_NAME);
   for (i = 1; i < n_cases; i++)
     if (strcmp (cases[rv->cases_sorted_by_name[i-1]].name,

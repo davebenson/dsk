@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../dsk.h"
-#include "../gskrbtreemacros.h"
+#include "../dsk-rbtree-macros.h"
 
 #define IS_TOKEN  DSK_CTOKEN_IS
 
@@ -90,7 +90,7 @@ struct _JsonType
 #define JSON_TYPE_TREE_COMPARE(a,b,rv) rv = strcmp(a->name, b->name)
 #define JSON_TYPE_TREE_KEY_COMPARE(a,b,rv) rv = strcmp(a, b->name)
 #define GET_JSON_TYPE_TREE() \
-  tree_top, JsonType *, GSK_STD_GET_IS_RED, GSK_STD_SET_IS_RED, \
+  tree_top, JsonType *, DSK_STD_GET_IS_RED, DSK_STD_SET_IS_RED, \
   parent, left, right, \
   JSON_TYPE_TREE_COMPARE
 JsonType *tree_top = NULL;
@@ -102,7 +102,7 @@ static JsonType *
 force_type_by_name (const char *name, const char *cname)
 {
   JsonType *type;
-  GSK_RBTREE_LOOKUP_COMPARATOR(GET_JSON_TYPE_TREE(), name, JSON_TYPE_TREE_KEY_COMPARE, type);
+  DSK_RBTREE_LOOKUP_COMPARATOR(GET_JSON_TYPE_TREE(), name, JSON_TYPE_TREE_KEY_COMPARE, type);
   if (type != NULL)
     return type;
   type = dsk_malloc0 (sizeof (JsonType));
@@ -116,7 +116,7 @@ force_type_by_name (const char *name, const char *cname)
   else
     type->c_name = dsk_strdup_printf ("%s%s", namespace_struct_prefix, type->cc_name);
   JsonType *conflict;
-  GSK_RBTREE_INSERT (GET_JSON_TYPE_TREE (), type, conflict);
+  DSK_RBTREE_INSERT (GET_JSON_TYPE_TREE (), type, conflict);
   dsk_assert (conflict == NULL);
   n_types++;
   return type;

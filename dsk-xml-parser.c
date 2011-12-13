@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <search.h>             /* for the seldom-used lfind() */
 #include "dsk.h"
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 
 /* TODO:
    _ check for NUL
@@ -1117,10 +1117,10 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
                 defined_list = map;
 
                 /* insert/replace tree node */
-                GSK_RBTREE_INSERT (GET_NS_ABBREV_TREE (parser), map, existing);
+                DSK_RBTREE_INSERT (GET_NS_ABBREV_TREE (parser), map, existing);
                 map->masking = existing;
                 if (existing != NULL)
-                  GSK_RBTREE_REPLACE_NODE (GET_NS_ABBREV_TREE (parser), existing, map);
+                  DSK_RBTREE_REPLACE_NODE (GET_NS_ABBREV_TREE (parser), existing, map);
               }
           }
 
@@ -1143,7 +1143,7 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
           NsAbbrevMap *abbrev;
           const char *name_prefix;
           *colon = 0;
-          GSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), (char*)parser->buffer.data, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
+          DSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), (char*)parser->buffer.data, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
           *colon = ':';
           name_prefix = abbrev->translate->prefix;
           if (name_prefix[0] != 0)
@@ -1188,7 +1188,7 @@ static dsk_boolean handle_open_element (DskXmlParser *parser,
                   NsAbbrevMap *abbrev;
                   char *prefix = name;
                   *colon = 0;
-                  GSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), prefix, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
+                  DSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), prefix, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
                   *colon = ':';
                   if (abbrev == NULL)
                     {
@@ -1301,7 +1301,7 @@ static dsk_boolean handle_close_element (DskXmlParser *parser,
       {
         NsAbbrevMap *abbrev;
         *colon = 0;
-        GSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), orig, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
+        DSK_RBTREE_LOOKUP_COMPARATOR (GET_NS_ABBREV_TREE (parser), orig, COMPARE_STR_TO_NS_ABBREV_TREE, abbrev);
         if (abbrev)
           prefix = abbrev->translate->prefix;
         suffix = colon + 1;
@@ -1404,10 +1404,10 @@ static dsk_boolean handle_close_element (DskXmlParser *parser,
       else
         {
           if (kill->masking)
-            GSK_RBTREE_REPLACE_NODE (GET_NS_ABBREV_TREE (parser),
+            DSK_RBTREE_REPLACE_NODE (GET_NS_ABBREV_TREE (parser),
                                      kill, kill->masking);
           else
-            GSK_RBTREE_REMOVE (GET_NS_ABBREV_TREE (parser), kill);
+            DSK_RBTREE_REMOVE (GET_NS_ABBREV_TREE (parser), kill);
         }
       dsk_free (kill);
     }

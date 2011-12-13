@@ -166,7 +166,7 @@ force_host_info (DskHttpClientRequestOptions *options,
             rv = -1;                                          \
         }                                                     \
     }
-      GSK_RBTREE_LOOKUP_COMPARATOR(GET_HOST_TREE (client), unused, COMPARE, host_info);
+      DSK_RBTREE_LOOKUP_COMPARATOR(GET_HOST_TREE (client), unused, COMPARE, host_info);
 #undef COMPARE
       if (host_info == NULL)
         {
@@ -184,7 +184,7 @@ force_host_info (DskHttpClientRequestOptions *options,
         return -1;                                              \
       else                                                      \
         rv = strcmp (options->local_socket_path, hi->name);
-      GSK_RBTREE_LOOKUP_COMPARATOR(GET_HOST_TREE (client), unused, COMPARE, host_info);
+      DSK_RBTREE_LOOKUP_COMPARATOR(GET_HOST_TREE (client), unused, COMPARE, host_info);
 #undef COMPARE
       if (host_info == NULL)
         {
@@ -203,7 +203,7 @@ force_host_info (DskHttpClientRequestOptions *options,
 new_host_info:
   {
     HostInfo *conflict;
-    GSK_RBTREE_INSERT (GET_HOST_TREE (client), host_info, conflict);
+    DSK_RBTREE_INSERT (GET_HOST_TREE (client), host_info, conflict);
     dsk_assert (conflict == NULL);
   }
 
@@ -245,7 +245,7 @@ connection_fatal_fail (Connection *connection,
         HostInfo *host_info = connection->host_info;
 
         /* remove connection from host-info */
-        GSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), conn);
+        DSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), conn);
         host_info->n_connections--;
 
         /* comb the pipelined requests list for items that have
@@ -291,7 +291,7 @@ connection_fatal_fail (Connection *connection,
             connection->first_pipelined = to_move->next;
 
             Connection *new;
-            GSK_RBTREE_FIRST (GET_REUSABLE_CONNECTION_TREE (host_info), new);
+            DSK_RBTREE_FIRST (GET_REUSABLE_CONNECTION_TREE (host_info), new);
             if (new->n_pipelined >= host_info->max_pipelined)
               break;
 
@@ -317,9 +317,9 @@ connection_fatal_fail (Connection *connection,
               }
 
             /* Pipeline to_move to this new connection. */
-            GSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), new);
+            DSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), new);
             new->n_pipelined += 1;
-            GSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
+            DSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
           }
 
         if (connection->first_pipelined != NULL)
@@ -678,7 +678,7 @@ dsk_http_client_request  (DskHttpClient               *client,
   /* Do we have an existing connection that we can
      use for this request? */
   Connection *conn;
-  GSK_RBTREE_FIRST (GET_REUSABLE_CONNECTION_TREE (host_info), conn);
+  DSK_RBTREE_FIRST (GET_REUSABLE_CONNECTION_TREE (host_info), conn);
 
   /* If a connection has a pending request
      and the number of connections is below the "min_connections"
@@ -696,9 +696,9 @@ dsk_http_client_request  (DskHttpClient               *client,
     {
       /* Connection available for reuse */
       Transfer *conflict;
-      GSK_RBTREE_REMOVE (GET_CONNECTION_TREE (host_info), conn);
+      DSK_RBTREE_REMOVE (GET_CONNECTION_TREE (host_info), conn);
       ++(conn->n_pending);
-      GSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
+      DSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
       dsk_assert (conflict == NULL);
     }
   else if (host_info->n_connections < host_info->max_connections
@@ -726,7 +726,7 @@ dsk_http_client_request  (DskHttpClient               *client,
       dsk_object_unref (source);
       dsk_assert (conn->stream != NULL);
       conn->n_pending = 1;
-      GSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
+      DSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
       dsk_assert (conflict == NULL);
     }
   else (options->block_if_busy
@@ -761,7 +761,7 @@ dsk_http_client_request  (DskHttpClient               *client,
                                                       error);
   if (request->transfer == NULL)
     {
-      GSK_RBTREE_REMOVE (GET_CONNECTION_TREE (host_info), request);
+      DSK_RBTREE_REMOVE (GET_CONNECTION_TREE (host_info), request);
       dsk_free (request);
       return DSK_FALSE;
     }

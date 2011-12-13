@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>                      /* TMP: debugging */
-#include "gskrbtreemacros.h"
+#include "dsk-rbtree-macros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"
 #include "dsk-error.h"
@@ -736,7 +736,7 @@ get_name_size (const char     *name,
         cstart--;
       if (*p_at != NULL)
         /* lookup child with this name */
-        GSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (*p_at),
+        DSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (*p_at),
                                       cstart, COMPARE_STR_TO_TREE_NODE,
                                       child);
       else
@@ -756,7 +756,7 @@ get_name_size (const char     *name,
           child->str = cstart;
 
           /* insert node */
-          GSK_RBTREE_INSERT (STR_NODE_GET_TREE (*p_at), 
+          DSK_RBTREE_INSERT (STR_NODE_GET_TREE (*p_at), 
                              child, conflict);
           dsk_assert (conflict == NULL);
 
@@ -884,7 +884,7 @@ pack_domain_name  (const char     *name,
       beg = end;
       while (beg > name && beg[-1] != '.')
         beg--;
-      GSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (top),
+      DSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (top),
                                     beg, COMPARE_STR_TO_TREE_NODE,
                                     cur);
       dsk_assert (cur != NULL);
@@ -921,7 +921,7 @@ pack_domain_name  (const char     *name,
               beg = end;
               while (beg > name && beg[-1] != '.')
                 beg--;
-              GSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (top),
+              DSK_RBTREE_LOOKUP_COMPARATOR (STR_NODE_GET_TREE (top),
                                     beg, COMPARE_STR_TO_TREE_NODE,
                                     cur);
               dsk_assert (cur != NULL);

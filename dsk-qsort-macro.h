@@ -8,11 +8,11 @@ typedef struct _GskQsortStack GskQsortStack;
    on 32-bit, this uses 33*8=264 bytes;
    on 64-bit it uses 65*16=1040 bytes. */
 #if (DSK_SIZEOF_SIZE_T == 8)
-#define GSK_QSORT_STACK_MAX_SIZE  (65)
+#define DSK_QSORT_STACK_MAX_SIZE  (65)
 #elif (DSK_SIZEOF_SIZE_T == 4)
-#define GSK_QSORT_STACK_MAX_SIZE  (33)
+#define DSK_QSORT_STACK_MAX_SIZE  (33)
 #else
-#error "sizeof(size_t) is neither 4 nor 8: need GSK_QSORT_STACK_MAX_SIZE def"
+#error "sizeof(size_t) is neither 4 nor 8: need DSK_QSORT_STACK_MAX_SIZE def"
 #endif
 
 /* Maximum number of elements to sort with insertion sort instead of qsort */
@@ -24,25 +24,25 @@ struct _GskQsortStackNode
 };
 
 
-#define GSK_QSORT(array, type, n_elements, compare)		             \
-  GSK_QSORT_FULL(array, type, n_elements, compare,                           \
+#define DSK_QSORT(array, type, n_elements, compare)		             \
+  DSK_QSORT_FULL(array, type, n_elements, compare,                           \
                  GSK_INSERTION_SORT_THRESHOLD,                               \
-                 GSK_QSORT_STACK_MAX_SIZE,                                   \
+                 DSK_QSORT_STACK_MAX_SIZE,                                   \
                  /* no stack guard assertion */)
 
-#define GSK_QSORT_DEBUG(array, type, n_elements, compare)		     \
-  GSK_QSORT_FULL(array, type, n_elements, compare,                           \
+#define DSK_QSORT_DEBUG(array, type, n_elements, compare)		     \
+  DSK_QSORT_FULL(array, type, n_elements, compare,                           \
                  GSK_INSERTION_SORT_THRESHOLD,                               \
-                 GSK_QSORT_STACK_MAX_SIZE,                                   \
-                 GSK_QSORT_ASSERT_STACK_SIZE)
+                 DSK_QSORT_STACK_MAX_SIZE,                                   \
+                 DSK_QSORT_ASSERT_STACK_SIZE)
 
 #define GSK_QSELECT(array, type, n_elements, n_select, compare)		     \
   GSK_QSELECT_FULL(array, type, n_elements, n_select, compare,               \
                    GSK_INSERTION_SORT_THRESHOLD,                             \
-                   GSK_QSORT_STACK_MAX_SIZE,                                 \
+                   DSK_QSORT_STACK_MAX_SIZE,                                 \
                    /* no stack guard assertion */)
 
-#define GSK_QSORT_FULL(array, type, n_elements, compare, isort_threshold, stack_size, ss_assertion)    \
+#define DSK_QSORT_FULL(array, type, n_elements, compare, isort_threshold, stack_size, ss_assertion)    \
   do{                                                              \
     int gsk_rv;                                                             \
     unsigned  gsk_stack_size;                                                    \
@@ -414,7 +414,7 @@ struct _GskQsortStackNode
 
 /* Do not allow equality, since that would make the next push a
    stack overflow, and we might not detect it correctly to stack corruption. */
-#define GSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                          \
+#define DSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                          \
   g_assert(gsk_stack_size < stack_alloced)
 
 #define GSK_INSERTION_SORT(array, type, length, compare)                     \
@@ -440,7 +440,7 @@ struct _GskQsortStackNode
       }                                                                      \
   }while(0)
 
-#define GSK_QSORT_SIMPLE_COMPARATOR(a,b,compare_rv)                          \
+#define DSK_QSORT_SIMPLE_COMPARATOR(a,b,compare_rv)                          \
   do{                                                              \
     if ((a) < (b))                                                           \
       compare_rv = -1;                                                       \
