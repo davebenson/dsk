@@ -20,9 +20,16 @@ struct _DskSslStreamOptions
   DskOctetSink   *sink;
   DskOctetSource *source;
 };
+#define DSK_SSL_STREAM_OPTIONS_INIT             \
+{                                               \
+  DSK_FALSE,            /* is_client */         \
+  NULL,                 /* context */           \
+  NULL,                 /* sink */              \
+  NULL                  /* source */            \
+}                                               \
 
 dsk_boolean  dsk_ssl_stream_new          (DskSslStreamOptions   *options,
                                           DskSslStream         **stream_out,
-					  DskOctetSink         **sink_out,
                                           DskOctetSource       **source_out,
+					  DskOctetSink         **sink_out,
 					  DskError             **error);

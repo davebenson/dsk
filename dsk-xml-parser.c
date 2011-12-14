@@ -702,12 +702,11 @@ handle_char_entity (DskXmlParser *parser,
     default:
       if (b[0] == '#')
         goto unicode_by_value;
-      dsk_set_error (error, "character entity too long (%u bytes)", parser->entity_buf_len);
-      return DSK_FALSE;
+      break;
     }
-  dsk_set_error (error, "unknown character entity (&%.*s;)", (int) parser->entity_buf_len, parser->entity_buf);
+  dsk_set_error (error, "unknown character entity (&%.*s;)",
+                 (int) parser->entity_buf_len, parser->entity_buf);
   return DSK_FALSE;
-
 
 unicode_by_value:
   {

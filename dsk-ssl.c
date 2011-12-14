@@ -425,9 +425,11 @@ bio_dsk_bwrite (BIO *bio, const char *out, int length)
     case DSK_IO_RESULT_ERROR:
       dsk_octet_stream_set_error (DSK_OCTET_STREAM (stream), error);
       dsk_error_unref (error);
-      errno = EINVAL;                   /* ugh! */
-      return -1;
+      break;
     }
+  errno = EINVAL;                   /* ugh! */
+  return -1;
+
 }
 
 static int 
@@ -451,9 +453,12 @@ bio_dsk_bread (BIO *bio, char *in, int max_length)
     case DSK_IO_RESULT_ERROR:
       dsk_octet_stream_set_error (DSK_OCTET_STREAM (stream), error);
       dsk_error_unref (error);
-      errno = EINVAL;                   /* ugh! */
-      return -1;
+      break;
     }
+
+  errno = EINVAL;                   /* ugh! */
+  return -1;
+
 }
 
 static long 
@@ -676,8 +681,8 @@ dsk_ssl_source_init (DskSslSource *source)
 dsk_boolean
 dsk_ssl_stream_new         (DskSslStreamOptions   *options,
                             DskSslStream         **stream_out,
-                            DskOctetSink         **sink_out,
                             DskOctetSource       **source_out,
+                            DskOctetSink         **sink_out,
                             DskError             **error)
 {
   DskSslStream *stream;
