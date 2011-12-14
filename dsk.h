@@ -80,6 +80,7 @@
 #include "dsk-config.h"
 
 #include "dsk-ssl.h"
+#include "dsk-ssl-listener.h"
 
 #include "dsk-table.h"
 #include "dsk-table-file.h"
