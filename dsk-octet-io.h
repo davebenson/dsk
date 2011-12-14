@@ -91,6 +91,7 @@ DSK_INLINE_FUNC DskIOResult dsk_octet_source_read_buffer (void           *octet_
                                                   DskBuffer      *read_buffer,
                                                   DskError      **error);
 DSK_INLINE_FUNC void dsk_octet_source_shutdown   (void           *octet_source);
+DSK_INLINE_FUNC void dsk_octet_source_detach       (DskOctetSource *source);
 DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write (void           *octet_sink,
                                                   unsigned        max_len,
                                                   const void     *data,
@@ -100,6 +101,7 @@ DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write_buffer  (void           *octet_
                                                   DskBuffer      *write_buffer,
                                                   DskError      **error);
 DSK_INLINE_FUNC void dsk_octet_sink_shutdown     (void           *octet_sink);
+DSK_INLINE_FUNC void dsk_octet_sink_detach       (DskOctetSink   *sink);
 
 
 int64_t dsk_octet_source_get_length (DskOctetSource *source); /* BIG HACK; may return -1 */
@@ -264,6 +266,16 @@ DSK_INLINE_FUNC void dsk_octet_source_shutdown (void           *octet_source)
   if (c->shutdown != NULL)
     c->shutdown (octet_source);
 }
+DSK_INLINE_FUNC void dsk_octet_source_detach     (DskOctetSource *source)
+{
+  if (source->stream)
+    {
+      DskOctetStream *stream = source->stream;
+      stream->source = NULL;
+      source->stream = NULL;
+      dsk_object_unref (stream);
+    }
+}
 DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write (void           *octet_sink,
                                                   unsigned        max_len,
                                                   const void     *data,
@@ -285,6 +297,16 @@ DSK_INLINE_FUNC void dsk_octet_sink_shutdown     (void           *octet_sink)
   DskOctetSinkClass *c = DSK_OCTET_SINK_GET_CLASS (octet_sink);
   if (c->shutdown != NULL)
     c->shutdown (octet_sink);
+}
+DSK_INLINE_FUNC void dsk_octet_sink_detach     (DskOctetSink *sink)
+{
+  if (sink->stream)
+    {
+      DskOctetStream *stream = sink->stream;
+      stream->sink = NULL;
+      sink->stream = NULL;
+      dsk_object_unref (stream);
+    }
 }
 DSK_INLINE_FUNC void dsk_octet_connect       (DskOctetSource *source,
                                               DskOctetSink   *sink,
