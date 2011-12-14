@@ -606,6 +606,44 @@ static void test_ns_simple_1 (void)
   dsk_xml_parser_config_destroy (config);
 }
 
+static void
+test_numeric_char_entities (void)
+{
+  char *empty = "*";
+  DskError *error = NULL;
+  DskXml *xml;
+  DskXmlParserConfig *config = dsk_xml_parser_config_new (0, 0, NULL,
+                                                          1, &empty,
+                                                          &error);
+  if (config == NULL)
+    dsk_die ("error creating parser-config: %s", error->message);
+  xml = load_valid_xml ("<abc>&#xf;</abc>", config);
+  dsk_assert (xml->type == DSK_XML_ELEMENT);
+  dsk_assert (strcmp (xml->str, "abc") == 0);
+  dsk_assert (xml->n_children == 1);
+  dsk_assert (xml->children[0]->type == DSK_XML_TEXT);
+  dsk_assert (strcmp (xml->children[0]->str, "\017") == 0);
+  dsk_xml_unref (xml);
+
+  xml = load_valid_xml ("<abc>&#x1234;</abc>", config);
+  dsk_assert (xml->type == DSK_XML_ELEMENT);
+  dsk_assert (strcmp (xml->str, "abc") == 0);
+  dsk_assert (xml->n_children == 1);
+  dsk_assert (xml->children[0]->type == DSK_XML_TEXT);
+  dsk_assert (strcmp (xml->children[0]->str, "\341\210\264") == 0);
+  dsk_xml_unref (xml);
+
+  xml = load_valid_xml ("<abc>&#1234;</abc>", config);
+  dsk_assert (xml->type == DSK_XML_ELEMENT);
+  dsk_assert (strcmp (xml->str, "abc") == 0);
+  dsk_assert (xml->n_children == 1);
+  dsk_assert (xml->children[0]->type == DSK_XML_TEXT);
+  dsk_assert (strcmp (xml->children[0]->str, "\323\222") == 0);
+  dsk_xml_unref (xml);
+
+  dsk_xml_parser_config_destroy (config);
+}
+
 
 static struct 
 {
@@ -614,6 +652,7 @@ static struct
 } tests[] =
 {
   { "simple element", test_simple_0 },
+  { "numeric character entities", test_numeric_char_entities },
   { "simple element attribute (0)", test_simple_attrs_0 },
   { "simple element attribute (1)", test_simple_attrs_1 },
   { "simple element attribute (2)", test_simple_attrs_2 },
