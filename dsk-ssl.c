@@ -102,7 +102,6 @@ struct _DskSslStream
   DskOctetSource *underlying_source;
   DskSslContext *context;
   SSL *ssl;
-  BIO *bio;
   DskHookTrap *underlying_read;
   DskHookTrap *underlying_write;
 
@@ -132,19 +131,66 @@ struct _DskSslSource
   DskOctetSource base_instance;
 };
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskSslStream);
-static void        dsk_ssl_stream_init     (DskSslStream     *stream);
-static void        dsk_ssl_stream_finalize (DskSslStream     *stream);
+static void        dsk_ssl_stream_finalize (DskSslStream     *stream)
+{
+  dsk_assert (stream->ssl);
+  SSL_free (stream->ssl);
+  stream->ssl = NULL;
+  if (stream->underlying_read)
+    dsk_hook_trap_free (stream->underlying_read);
+  if (stream->underlying_write)
+    dsk_hook_trap_free (stream->underlying_write);
+  if (stream->underlying_sink)
+    dsk_object_unref (stream->underlying_sink);
+  if (stream->underlying_source)
+    dsk_object_unref (stream->underlying_source);
+  dsk_object_unref (stream->context);
+}
+
+static void
+dsk_ssl_stream_shutdown (DskSslStream *stream)
+{
+  if (stream->underlying_read)
+    {
+      dsk_hook_trap_free (stream->underlying_read);
+      stream->underlying_read = NULL;
+    }
+  if (stream->underlying_write)
+    {
+      dsk_hook_trap_free (stream->underlying_write);
+      stream->underlying_write = NULL;
+    }
+  if (stream->underlying_sink)
+    {
+      dsk_octet_sink_shutdown (stream->underlying_sink);
+      stream->underlying_sink = NULL;
+    }
+  if (stream->underlying_source)
+    {
+      dsk_octet_source_shutdown (stream->underlying_source);
+      stream->underlying_source = NULL;
+    }
+  if (stream->base_instance.sink)
+    dsk_octet_sink_detach (stream->base_instance.sink);
+  if (stream->base_instance.source)
+    dsk_octet_source_detach (stream->base_instance.source);
+  if (stream->ssl)
+    {
+      SSL_free (stream->ssl);
+      stream->ssl = NULL;
+    }
+}
+
 static DskSslStreamClass dsk_ssl_stream_class =
 {
   {
     DSK_OBJECT_CLASS_DEFINE(DskSslStream, &dsk_octet_stream_class,
-                            dsk_ssl_stream_init,
+                            NULL,
                             dsk_ssl_stream_finalize)
   }
 };
 
-static void        dsk_ssl_sink_init     (DskSslSink     *sink);
-static void        dsk_ssl_sink_finalize (DskSslSink     *sink);
+static void dsk_ssl_sink_init (DskSslSink *sink);
 static DskIOResult dsk_ssl_sink_write    (DskOctetSink   *sink,
                                           unsigned        max_len,
                                           const void     *data_out,
@@ -157,33 +203,33 @@ static DskSslSinkClass dsk_ssl_sink_class =
 {
   {
     DSK_OBJECT_CLASS_DEFINE(DskSslSink, &dsk_octet_sink_class,
-                            dsk_ssl_sink_init, dsk_ssl_sink_finalize),
+                            dsk_ssl_sink_init, NULL),
     dsk_ssl_sink_write,
     NULL,               /* write_buffer */
     dsk_ssl_sink_shutdown
   }
 };
 
-static void        dsk_ssl_source_init     (DskSslSource     *source);
-static void        dsk_ssl_source_finalize (DskSslSource     *source);
 static DskIOResult dsk_ssl_source_read     (DskOctetSource   *source,
                                             unsigned        max_len,
                                             void           *data,
                                             unsigned       *n_written_out,
                                             DskError      **error);
 static void        dsk_ssl_source_shutdown (DskOctetSource   *source);
+static void        dsk_ssl_source_init     (DskSslSource *source);
 
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskSslSource);
 static DskSslSourceClass dsk_ssl_source_class =
 {
   {
-    DSK_OBJECT_CLASS_DEFINE(DskSslSink, &dsk_octet_source_class,
-                            dsk_ssl_source_init, dsk_ssl_source_finalize),
+    DSK_OBJECT_CLASS_DEFINE(DskSslSource, &dsk_octet_source_class,
+                            dsk_ssl_source_init, NULL),
     dsk_ssl_source_read,
     NULL,               /* read_buffer */
     dsk_ssl_source_shutdown
   }
 };
+
 
 static dsk_boolean handle_underlying_readable (DskOctetSource *underlying,
                                                DskSslStream   *stream);
@@ -322,6 +368,18 @@ handle_underlying_readable (DskOctetSource *underlying,
     dsk_hook_notify (&stream->base_instance.source->readable_hook);
   return DSK_TRUE;
 }
+static void
+handle_underlying_read_destroy (DskSslStream *stream)
+{
+  stream->underlying_read = NULL;
+  dsk_ssl_stream_shutdown (stream);
+}
+static void
+handle_underlying_write_destroy (DskSslStream *stream)
+{
+  stream->underlying_write = NULL;
+  dsk_ssl_stream_shutdown (stream);
+}
 
 static dsk_boolean
 handle_underlying_writable (DskOctetSink *underlying,
@@ -438,7 +496,7 @@ bio_dsk_destroy (BIO *bio)
 {
   DskSslStream *stream = DSK_SSL_STREAM (bio->ptr);
   //DEBUG_BIO("bio_dsk_destroy (%p)", bio);
-  stream->bio = NULL;
+  DSK_UNUSED (stream);
   return 1;
 }
 
@@ -484,9 +542,11 @@ dsk_ssl_sink_write (DskOctetSink *sink,
 	{
 	case SSL_ERROR_WANT_READ:
 	  stream->read_needed_to_write = 1;
-	  break;
+          dsk_ssl_stream_update_traps (stream);
+	  return DSK_IO_RESULT_AGAIN;
 	case SSL_ERROR_WANT_WRITE:
-	  break;
+          dsk_ssl_stream_update_traps (stream);
+	  return DSK_IO_RESULT_AGAIN;
 	case SSL_ERROR_SYSCALL:
 	  dsk_set_error (error, "Gsk-BIO interface had problems writing");
 	  break;
@@ -507,6 +567,70 @@ dsk_ssl_sink_write (DskOctetSink *sink,
 	  }
 	}
     }
+  return DSK_IO_RESULT_ERROR;
+}
+static void        dsk_ssl_sink_shutdown (DskOctetSink   *sink)
+{
+  DskSslStream *stream = DSK_SSL_STREAM (sink->stream);
+  dsk_ssl_stream_shutdown (stream);
+}
+
+static DskIOResult dsk_ssl_source_read     (DskOctetSource   *source,
+                                            unsigned        max_len,
+                                            void           *data,
+                                            unsigned       *n_read_out,
+                                            DskError      **error)
+{
+  DskSslStream *stream = DSK_SSL_STREAM (source->stream);
+  if (stream->handshaking)
+    return DSK_IO_RESULT_AGAIN;
+  int rv = SSL_read (stream->ssl, data, max_len);
+  if (rv > 0)
+    {
+      *n_read_out = rv;
+      return DSK_IO_RESULT_SUCCESS;
+    }
+  if (rv == 0)
+    {
+      //dsk_set_error (error, "connection closed");
+      return DSK_IO_RESULT_EOF;
+    }
+  stream->write_needed_to_read = 0;
+  switch (rv)
+    {
+      switch (SSL_get_error (stream->ssl, rv))
+	{
+	case SSL_ERROR_WANT_READ:
+	  return DSK_IO_RESULT_AGAIN;
+	case SSL_ERROR_WANT_WRITE:
+	  stream->write_needed_to_read = 1;
+	  return DSK_IO_RESULT_AGAIN;
+	case SSL_ERROR_SYSCALL:
+	  dsk_set_error (error, "Gsk-BIO interface had problems reading");
+	  break;
+	case SSL_ERROR_NONE:
+	  dsk_set_error (error, "error reading from ssl stream, but error code set to none");
+	  break;
+	default:
+	  {
+	    unsigned long l;
+	    l = ERR_peek_error();
+	    dsk_set_error (error,
+			   "error reading from ssl stream [in the '%s' library]: %s: %s [is-client=%d]",
+			   ERR_lib_error_string(l),
+			   ERR_func_error_string(l),
+			   ERR_reason_error_string(l),
+			   stream->is_client);
+	    break;
+	  }
+	}
+    }
+  return DSK_IO_RESULT_ERROR;
+}
+static void        dsk_ssl_source_shutdown (DskOctetSource   *source)
+{
+  DskSslStream *stream = DSK_SSL_STREAM (source->stream);
+  dsk_ssl_stream_shutdown (stream);
 }
 
 static void
@@ -529,6 +653,26 @@ dsk_ssl_sink_init (DskSslSink *sink)
   dsk_hook_set_funcs (&sink->base_instance.writable_hook, &sink_hook_funcs);
 }
 
+static void
+dsk_ssl_source_set_poll (void *object,
+                       dsk_boolean is_trapped)
+{
+  DskOctetSource *source = DSK_OCTET_SOURCE (object);
+  dsk_assert (dsk_hook_is_trapped (&source->readable_hook) == is_trapped);
+  dsk_ssl_stream_update_traps (DSK_SSL_STREAM (source->stream));
+}
+
+static void
+dsk_ssl_source_init (DskSslSource *source)
+{
+  static DskHookFuncs source_hook_funcs = {
+    (DskHookObjectFunc) dsk_object_ref_f,
+    (DskHookObjectFunc) dsk_object_unref_f,
+    dsk_ssl_source_set_poll
+  };
+  dsk_hook_set_funcs (&source->base_instance.readable_hook, &source_hook_funcs);
+}
+
 dsk_boolean
 dsk_ssl_stream_new         (DskSslStreamOptions   *options,
                             DskSslStream         **stream_out,
@@ -536,7 +680,6 @@ dsk_ssl_stream_new         (DskSslStreamOptions   *options,
                             DskOctetSource       **source_out,
                             DskError             **error)
 {
-  BIO *bio;
   DskSslStream *stream;
   DskSslSink *sink;
   DskSslSource *source;
@@ -551,12 +694,13 @@ dsk_ssl_stream_new         (DskSslStreamOptions   *options,
   source = dsk_object_new (&dsk_ssl_source_class);
   stream = dsk_object_new (&dsk_ssl_stream_class);
 
-  stream->bio = BIO_new (&bio_method__ssl_underlying_stream);
-  stream->bio->ptr = stream;
-  stream->bio->init = 1;		/// HMM...
+  BIO *bio;
+  bio = BIO_new (&bio_method__ssl_underlying_stream);
+  bio->ptr = stream;
+  bio->init = 1;		/// HMM...
   stream->ssl = SSL_new (options->context->ctx);
   stream->context = dsk_object_ref (options->context);
-  SSL_set_bio (stream->ssl, stream->bio, stream->bio);
+  SSL_set_bio (stream->ssl, bio, bio);
   stream->base_instance.sink = DSK_OCTET_SINK (sink);        /* does not own */
   stream->base_instance.source = DSK_OCTET_SOURCE (source); /* does not own */
   stream->is_client = options->is_client ? 1 : 0;
