@@ -107,6 +107,7 @@ pr_quoted_string (unsigned              len,
           else
             {
               snprintf (tmp_buf, sizeof (tmp_buf), "\\u%04x", code);
+              append_func (6, tmp_buf, append_data);
               str += used;
               len -= used;
             }
