@@ -693,6 +693,20 @@ handle_char_entity (DskXmlParser *parser,
           break;
         }
       break;
+    case 5:
+      if (b[0] == '#' && (b[1] == 'x'||b[1] == 'X'))
+        {
+          unsigned unicode = (dsk_ascii_xdigit_value (b[2]) << 8)
+                           | (dsk_ascii_xdigit_value (b[3]) << 4)
+                           | (dsk_ascii_xdigit_value (b[4]) << 0);
+          if (unicode > 0x100000)
+            break;
+          char utf8[16];
+          unsigned utf8_len = dsk_utf8_encode_unichar (utf8, unicode);
+          simple_buffer_append (&parser->buffer, utf8_len, utf8);
+          return DSK_TRUE;
+        }
+      break;
     case 6:
       if (b[0] == '#' && (b[1] == 'x'||b[1] == 'X'))
         {
@@ -709,7 +723,10 @@ handle_char_entity (DskXmlParser *parser,
         }
       break;
     default:
-      dsk_set_error (error, "character entity too long (%u bytes)", parser->entity_buf_len);
+      dsk_set_error (error, "character entity too long (%u bytes) (%s:%u)",
+                     parser->entity_buf_len,
+                     parser->filename ? parser->filename->filename : "string",
+                     parser->line_no);
       return DSK_FALSE;
     }
   dsk_set_error (error, "unknown character entity (&%.*s;)", (int) parser->entity_buf_len, parser->entity_buf);
