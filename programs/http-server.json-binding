@@ -1,0 +1,27 @@
+
+struct BindingPort
+{
+  int? port;		// TCP
+  string? path;		// unix-domain socket
+  string protocol;	// http, https, spdy2
+};
+
+union MatchCondition
+{
+  MatchCondition[] or_list;
+  MatchCondition[] and_list;
+  MatchCondition[] not_list;
+  string host;		/// a pattern
+
+};
+
+struct MatchNode
+{
+  ...
+};
+
+
+struct Binding
+{
+  BindingPort[] ports;
+};

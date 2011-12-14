@@ -642,6 +642,8 @@ handle_char_entity (DskXmlParser *parser,
     case 2:
       switch (b[0])
         {
+        case '#':
+          goto unicode_by_value;
         case 'l': case 'L':
           if (b[1] == 't' || b[1] == 'T')
             {
@@ -661,6 +663,8 @@ handle_char_entity (DskXmlParser *parser,
     case 3:
       switch (parser->entity_buf[0])
         {
+        case '#':
+          goto unicode_by_value;
         case 'a': case 'A':
           if ((b[1] == 'm' || b[1] == 'M')
            || (b[2] == 'p' || b[2] == 'P'))
@@ -673,6 +677,8 @@ handle_char_entity (DskXmlParser *parser,
     case 4:
       switch (parser->entity_buf[0])
         {
+        case '#':
+          goto unicode_by_value;
         case 'a': case 'A':
           if ((b[1] == 'p' || b[1] == 'P')
            || (b[2] == 'o' || b[2] == 'O')
@@ -693,43 +699,54 @@ handle_char_entity (DskXmlParser *parser,
           break;
         }
       break;
-    case 5:
-      if (b[0] == '#' && (b[1] == 'x'||b[1] == 'X'))
-        {
-          unsigned unicode = (dsk_ascii_xdigit_value (b[2]) << 8)
-                           | (dsk_ascii_xdigit_value (b[3]) << 4)
-                           | (dsk_ascii_xdigit_value (b[4]) << 0);
-          if (unicode > 0x100000)
-            break;
-          char utf8[16];
-          unsigned utf8_len = dsk_utf8_encode_unichar (utf8, unicode);
-          simple_buffer_append (&parser->buffer, utf8_len, utf8);
-          return DSK_TRUE;
-        }
-      break;
-    case 6:
-      if (b[0] == '#' && (b[1] == 'x'||b[1] == 'X'))
-        {
-          unsigned unicode = (dsk_ascii_xdigit_value (b[2]) << 12)
-                           | (dsk_ascii_xdigit_value (b[3]) << 8)
-                           | (dsk_ascii_xdigit_value (b[4]) << 4)
-                           | (dsk_ascii_xdigit_value (b[5]) << 0);
-          if (unicode > 0x100000)
-            break;
-          char utf8[16];
-          unsigned utf8_len = dsk_utf8_encode_unichar (utf8, unicode);
-          simple_buffer_append (&parser->buffer, utf8_len, utf8);
-          return DSK_TRUE;
-        }
-      break;
     default:
-      dsk_set_error (error, "character entity too long (%u bytes) (%s:%u)",
-                     parser->entity_buf_len,
-                     parser->filename ? parser->filename->filename : "string",
-                     parser->line_no);
-      return DSK_FALSE;
+      if (b[0] == '#')
+        goto unicode_by_value;
+      break;
     }
-  dsk_set_error (error, "unknown character entity (&%.*s;)", (int) parser->entity_buf_len, parser->entity_buf);
+  dsk_set_error (error, "unknown character entity (&%.*s;)",
+                 (int) parser->entity_buf_len, parser->entity_buf);
+  return DSK_FALSE;
+
+unicode_by_value:
+  {
+    unsigned unicode = 0;
+    if (b[1] == 'x')
+      {
+        /* parse hex value */
+        unsigned i;
+        for (i = 2; i < parser->entity_buf_len; i++)
+          {
+            int v = dsk_ascii_xdigit_value (b[i]);
+            if (v < 0)
+              goto bad_number;
+            unicode <<= 4;
+            unicode += v;
+          }
+      }
+    else if (!dsk_ascii_isdigit (b[1]))
+      goto bad_number;
+    else
+      {
+        unsigned i;
+        for (i = 1; i < parser->entity_buf_len; i++)
+          {
+            int v = dsk_ascii_digit_value (b[i]);
+            if (v < 0)
+              goto bad_number;
+            unicode *= 10;
+            unicode += v;
+          }
+      }
+    char utf8[16];
+    unsigned utf8_len = dsk_utf8_encode_unichar (utf8, unicode);
+    simple_buffer_append (&parser->buffer, utf8_len, utf8);
+    return DSK_TRUE;
+  }
+
+bad_number:
+  dsk_set_error (error, "bad numeric character entity &%.*s;",
+                 (int) parser->entity_buf_len, parser->entity_buf);
   return DSK_FALSE;
 }
 
