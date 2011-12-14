@@ -2315,6 +2315,12 @@ dsk_xml_parser_free(DskXmlParser       *parser)
   simple_buffer_clear (&parser->stack_tag_strs);
   simple_buffer_clear (&parser->buffer);
 
+  if (parser->filename)
+    {
+      if (--(parser->filename->ref_count) == 0)
+        dsk_free (parser->filename);
+    }
+
   /* free config */
   dsk_xml_parser_config_unref (parser->config);
 
