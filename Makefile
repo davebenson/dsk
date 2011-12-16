@@ -134,11 +134,25 @@ dsk-base64-value-table.inc: mk-base64-to-value-table.pl
 	./$^ > $@
 dsk-pattern-char-classes.inc: mk-pattern-char-classes.pl
 	./$^ > $@
-dsk-codepage-latin1.inc: mk-codepage
-	./mk-codepage latin1 > $@
 
 mk-codepage: mk-codepage.c
 	gcc $(CC_FLAGS) -o $@ $^ 
+
+codepages: mk-codepage Makefile
+	mkdir -p codepages.tmp
+	set -e ; \
+	for cp in latin1 \
+		  CP1250 CP1251 CP1253 CP1254 CP1256 CP1257 \
+		  CP874 \
+		  ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 \
+		  ISO-8859-6 ISO-8859-7 ISO-8859-8 ISO-8859-9 ISO-8859-10 \
+		  ISO-8859-15 ISO-8859-16 ;\
+	do \
+	  echo "building codepage $$cp" ; \
+	  ./mk-codepage $$cp > codepages.tmp/codepage-$$cp.c ; \
+	done
+	rm -rf codepages
+	mv codepages.tmp codepages
 
 tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c: \
 	tests/xml-binding-ns/my.test programs/dsk-make-xml-binding
