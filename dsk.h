@@ -73,6 +73,8 @@
 
 #include "dsk-cmdline.h"
 
+#include "dsk-daemon.h"
+
 #include "dsk-checksum.h"
 
 #include "dsk-cleanup.h"
