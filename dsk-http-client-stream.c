@@ -132,8 +132,8 @@ transfer_done (DskHttpClientStreamTransfer *xfer)
   dsk_free (xfer);
 }
 
-static void
-do_shutdown (DskHttpClientStream *stream)
+void
+dsk_http_client_stream_shutdown (DskHttpClientStream *stream)
 {
   DskHttpClientStreamTransfer *xfer_list;
   dsk_boolean got_cancel;
@@ -312,7 +312,7 @@ handle_transport_source_readable (DskOctetSource *source,
                                stream->first_transfer,
                                "error reading from underlying transport: %s",
                                error->message);
-      do_shutdown (stream);
+      dsk_http_client_stream_shutdown (stream);
       dsk_error_unref (error);
       return DSK_TRUE;
     case DSK_IO_RESULT_EOF:
@@ -336,7 +336,7 @@ restart_processing:
             }
           stream->read_trap = NULL;
           client_stream_set_error (stream, xfer, "got data when none expected");
-          do_shutdown (stream);
+          dsk_http_client_stream_shutdown (stream);
           dsk_object_unref (stream);
           return DSK_FALSE;
         }
@@ -385,7 +385,7 @@ restart_processing:
                     client_stream_set_error (stream, xfer,
                                              "header too long (at least %u bytes)",
                                              (unsigned)xfer->read_info.need_header.checked);
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
@@ -401,7 +401,7 @@ restart_processing:
                 client_stream_set_error (stream, xfer,
                                          "parsing response header: %s",
                                          error->message);
-                do_shutdown (stream);
+                dsk_http_client_stream_shutdown (stream);
                 dsk_error_unref (error);
                 dsk_object_unref (stream);
                 return DSK_FALSE;
@@ -423,7 +423,7 @@ restart_processing:
                     client_stream_set_error (stream, xfer,
                                  "Switch Protocols (Status 101) only understood for websocket requests (path is %s)",
                                              xfer->request->path);
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     dsk_error_unref (error);
                     dsk_object_unref (stream);
                     return DSK_FALSE;
@@ -440,7 +440,7 @@ restart_processing:
                     client_stream_set_error (stream, xfer,
                                              "parsing response header: %s",
                                              error->message);
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     dsk_error_unref (error);
                     dsk_object_unref (stream);
                     return DSK_FALSE;
@@ -459,7 +459,7 @@ restart_processing:
                 client_stream_set_error (stream, xfer,
                              "Non-Websocket response to websocket request (%s)",
                                          xfer->request->path);
-                do_shutdown (stream);
+                dsk_http_client_stream_shutdown (stream);
                 dsk_error_unref (error);
                 dsk_object_unref (stream);
                 return DSK_FALSE;
@@ -562,7 +562,7 @@ restart_processing:
                 else
                   {
                     client_stream_set_error (stream, xfer, "unexpected char %s in 'chunked' header", dsk_ascii_byte_name (c));
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
@@ -579,7 +579,7 @@ restart_processing:
                 if (stream->incoming_data.size > MAX_XFER_CHUNKED_EXTENSION_LENGTH)
                   {
                     client_stream_set_error (stream, xfer, "in transfer-encoding-chunked header: extension too long");
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     dsk_object_unref (stream);
                     return DSK_FALSE;
                   }
@@ -630,7 +630,7 @@ restart_processing:
                 if (c == -1)
                   goto return_true;
                 client_stream_set_error (stream, xfer, "unexpected char %s after 'chunked' header", dsk_ascii_byte_name (c));
-                do_shutdown (stream);
+                dsk_http_client_stream_shutdown (stream);
                 dsk_object_unref (stream);
                 return DSK_FALSE;
               }
@@ -681,7 +681,7 @@ restart_processing:
                   {
                     client_stream_set_error (stream, xfer,
                                              "bad character after transfer-encoding: chunked; expected newline");
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     return DSK_FALSE;
                   }
               }
@@ -694,7 +694,7 @@ restart_processing:
           if (!make_websocket (stream, xfer, &error))
             {
               client_stream_take_error_literal (stream, xfer, error);
-              do_shutdown (stream);
+              dsk_http_client_stream_shutdown (stream);
               dsk_error_unref (error);
               dsk_object_unref (stream);
               return DSK_FALSE;
@@ -713,7 +713,7 @@ restart_processing:
     }
 return_true:
   if (got_eof)
-    do_shutdown (stream);
+    dsk_http_client_stream_shutdown (stream);
   dsk_object_unref (stream);
   return DSK_TRUE;
 }
@@ -813,7 +813,7 @@ handle_post_data_readable (DskOctetSource *source,
                                error->message);
       dsk_error_unref (error);
       xfer->write_info.in_content.post_data_trap = NULL;
-      do_shutdown (stream);
+      dsk_http_client_stream_shutdown (stream);
       return DSK_FALSE;
     }
   dsk_return_val_if_reached ("bad io-result writing post-data", DSK_FALSE);
@@ -880,7 +880,7 @@ handle_writable (DskOctetSink *sink,
                                                "got %llu bytes for a POST whose Content-Length was %llu",
                                                xfer->write_info.in_content.bytes,
                                                (uint64_t) xfer->request->content_length);
-                      do_shutdown (stream);
+                      dsk_http_client_stream_shutdown (stream);
                       return DSK_FALSE;
                     }
                 }
@@ -911,7 +911,7 @@ handle_writable (DskOctetSink *sink,
                                              "got too few (%llu) bytes for a POST whose Content-Length was %llu",
                                              xfer->write_info.in_content.bytes,
                                              (uint64_t) xfer->request->content_length);
-                    do_shutdown (stream);
+                    dsk_http_client_stream_shutdown (stream);
                     return DSK_FALSE;
                   }
                 if (xfer->request->transfer_encoding_chunked)
@@ -935,7 +935,7 @@ handle_writable (DskOctetSink *sink,
                                          "error reading post-data: %s",
                                          error->message);
                 dsk_error_unref (error);
-                do_shutdown (stream);
+                dsk_http_client_stream_shutdown (stream);
                 return DSK_FALSE;
               }
           }
@@ -967,7 +967,7 @@ handle_writable (DskOctetSink *sink,
                                "error writing to http-client sink: %s",
                                error->message);
       dsk_error_unref (error);
-      do_shutdown (stream);
+      dsk_http_client_stream_shutdown (stream);
       return DSK_FALSE;
     }
 
@@ -987,7 +987,7 @@ static void dsk_http_client_stream_init (DskHttpClientStream *stream)
 }
 static void dsk_http_client_stream_finalize (DskHttpClientStream *stream)
 {
-  do_shutdown (stream);
+  dsk_http_client_stream_shutdown (stream);
   if (stream->latest_error)
     dsk_error_unref (stream->latest_error);
   dsk_hook_clear (&stream->error_hook);

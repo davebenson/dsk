@@ -1111,6 +1111,8 @@ static void
 dsk_http_server_stream_finalize (DskHttpServerStream *stream)
 {
   do_shutdown (stream, NULL);
+  dsk_buffer_clear (&stream->incoming_data);
+  dsk_buffer_clear (&stream->outgoing_data);
   if (!stream->request_available.is_cleared)
     dsk_hook_clear (&stream->request_available);
 }

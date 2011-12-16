@@ -226,6 +226,7 @@ struct _DskHttpClientStreamTransfer
   } websocket_info;
 };
 
+void dsk_http_client_stream_shutdown (DskHttpClientStream *stream);
 
 /* --- interface to CONNECT --- */
 typedef void (*DskHttpClientStreamConnectFunc) (DskOctetSource  *source,
