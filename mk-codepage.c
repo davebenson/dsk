@@ -17,6 +17,10 @@ int main(int argc, char **argv)
       return 1;
     }
   const char *codepage = argv[1];
+  char *c_codepage = strdup (codepage);
+  for (i = 0; c_codepage[i]; i++)
+    if (c_codepage[i] == '-')
+      c_codepage[i] = '_';
 
   iconv_t ic = iconv_open ("UTF-8", codepage);
   if (ic == NULL || ic == (iconv_t)(-1))
@@ -26,7 +30,7 @@ int main(int argc, char **argv)
       return 1;
     }
   
-  printf ("static const uint8_t %s_heap[] = {", codepage);
+  printf ("static const uint8_t %s_heap[] = {", c_codepage);
   for (i = 128; i < 256; i++)
     {
       char c;
@@ -56,14 +60,14 @@ int main(int argc, char **argv)
       lengths[i-128] = cc;
     }
   printf ("};\n");
-  printf ("const DskCodepage dsk_codepage_%s = {\n  {", codepage);
+  printf ("const DskCodepage dsk_codepage_%s = {\n  {", c_codepage);
   unsigned cum = 0;
   for (i = 0; i < 128; i++)
     {
       printf ("%u,", cum);
       cum += lengths[i];
     }
-  printf ("%u}, %s_heap};\n", cum, codepage);
+  printf ("%u}, %s_heap};\n", cum, c_codepage);
 
   return 0;
 }
