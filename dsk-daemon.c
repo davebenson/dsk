@@ -1,6 +1,7 @@
 #include "dsk.h"
 
 static char       *dsk_daemon_log_template = NULL;
+static unsigned    dsk_daemon_log_interval = 3600;
 static char       *dsk_daemon_pid_filename = NULL;
 static dsk_boolean dsk_daemon_watchdog     = DSK_FALSE;
 static dsk_boolean dsk_daemon_do_fork      = DSK_FALSE;
@@ -15,7 +16,11 @@ static unsigned    dsk_daemon_n_alerts_suppressed = 0;
 
 static DSK_CMDLINE_ARG_CALLBACK(handle_dsk_log_template)
 {
-  ...
+  dsk_daemon_log_template = arg_value;
+
+  /* TODO: verify it's a valid format string,
+     and verify that log_interval is short enough. */
+  return DSK_TRUE;
 }
 
 void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix)
@@ -96,7 +101,43 @@ void dsk_daemon_handle (void)
     }
   if (dsk_daemon_pid_filename)
     {
-      ...
+retry_outer_pid_file_open:
+      if ((fd=open (dsk_daemon_pid_filename, O_CREAT|O_EXCL|O_WRONLY, 0666)) < 0)
+        {
+          if (errno == EINTR)
+            goto retry_outer_pid_file_open;
+          else if (errno == EEXIST)
+            {
+              /* open / lock-nonblocking / rewrite we get lock */
+retry_inner_pid_file_open:
+              if ((fd=open (dsk_daemon_pid_filename, O_WRONLY, 0666)) < 0)
+                {
+                  if (errno == EINTR)
+                    goto retry_inner_pid_file_open;
+                  dsk_die ("daemonize: error opening lock file %s: %s", dsk_daemon_pid_filename,
+                           strerror (errno));
+                }
+            }
+          else if (errno == ENOENT)
+            {
+              /* make directories, retry */
+              ...
+            }
+          else
+            dsk_die ("daemonize: error creating PID file %s: %s",
+                     dsk_daemon_pid_filename, strerror (errno));
+        }
+      if (flock (fd, LOCK_EX|LOCK_NB) < 0)
+        {
+          if (errno == EINTR)
+            goto retry_flock;
+          if (errno == EWOULDBLOCK)
+            {
+              /* TODO: print PID */
+              dsk_die ("daemonize: process already running");
+            }
+          dsk_die ("daemonize: error locking: %s", strerror (errno));
+        }
     }
   if (fork_pipe_fds[1] != -1)
     {
@@ -109,7 +150,7 @@ void dsk_daemon_handle (void)
         {
 	  /* NOTE: must never die, i guess */
 
-retry_watchdog_fork;
+retry_watchdog_fork:
 	  pid = fork ();
 	  if (pid < 0)
 	    {
@@ -156,6 +197,7 @@ retry_waitpid:
 	        time_delta = 0;
 	      if (time_delta > dsk_daemon_alert_interval)
 	        {
+                  /// XXX: switch to fork/exec
 		  if (system (dsk_daemon_alert_script) != 0)
 		    ...
 		  dsk_daemon_n_alerts_suppressed = 0;
