@@ -3,6 +3,7 @@ test-cgi
 test-checksum
 test-client-server-0
 test-ctoken
+test-daemonize
 test-date-0
 test-dispatch
 test-dns-protocol
