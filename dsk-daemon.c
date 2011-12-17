@@ -46,12 +46,16 @@ static DSK_CMDLINE_CALLBACK_DECLARE(handle_dsk_log_timezone)
                      arg_value, arg_name);
       return DSK_FALSE;
     }
+  dsk_daemon_tzoffset *= 60;
   return DSK_TRUE;
 }
 
 static void
 maybe_redirect_stdouterr (void)
 {
+  if (dsk_daemon_log_template == NULL)
+    return;
+
   time_t t = time (NULL);
   char buf[2048];
   struct tm tm;
@@ -87,6 +91,20 @@ retry_open:
   dup2 (fd, STDOUT_FILENO);
   dup2 (fd, STDERR_FILENO);
   close (fd);
+}
+static void
+add_maybe_redirect_timer (void)
+{
+  if (dsk_daemon_log_template == NULL)
+    return;
+
+  maybe_redirect_stdouterr ();
+
+  unsigned time = dsk_dispatch_default ()->last_dispatch_secs;
+  time -= time % dsk_daemon_log_interval;
+  time += dsk_daemon_log_interval;
+
+  dsk_main_add_timer (time, 0, (DskTimerFunc) add_maybe_redirect_timer, NULL);
 }
 
 #define TIME_STR_LENGTH    64
@@ -178,6 +196,7 @@ void dsk_daemon_handle (void)
         {
 	  /* child process: continue as the non-forking case. */
 	  close (fork_pipe_fds[0]);
+          setsid ();
 	}
     }
   int pid_file_fd = -1;
@@ -281,6 +300,8 @@ retry_watchdog_fork:
 	    {
               if (pid_file_fd >= 0)
                 close (pid_file_fd);
+              maybe_redirect_stdouterr ();
+              add_maybe_redirect_timer ();
 	      return;
 	    }
 	  maybe_redirect_stdouterr ();
