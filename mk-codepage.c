@@ -30,6 +30,7 @@ int main(int argc, char **argv)
       return 1;
     }
   
+  printf ("#include \"../dsk.h\"\n");
   printf ("static const uint8_t %s_heap[] = {", c_codepage);
   for (i = 128; i < 256; i++)
     {
