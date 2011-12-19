@@ -3,7 +3,7 @@
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
 		dsk-base64-char-table.inc dsk-base64-value-table.inc \
-		dsk-pattern-char-classes.inc dsk-codepage-latin1.inc
+		dsk-pattern-char-classes.inc
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
 		tests/test-endian \
@@ -116,9 +116,22 @@ libdsk.a: dsk-inlines.o \
 	  dsk-table-checkpoint-trivial.o \
 	  dsk-table-helper.o \
 	  dsk-table.o \
-	  dsk-ts0.o dsk-ts0-builtins.o
+	  dsk-ts0.o dsk-ts0-builtins.o \
+	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
+	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
+	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \
+	  codepages/codepage-CP874.o codepages/codepage-ISO-8859-10.o \
+	  codepages/codepage-ISO-8859-15.o codepages/codepage-ISO-8859-16.o \
+	  codepages/codepage-ISO-8859-1.o codepages/codepage-ISO-8859-2.o \
+	  codepages/codepage-ISO-8859-3.o codepages/codepage-ISO-8859-4.o \
+	  codepages/codepage-ISO-8859-5.o codepages/codepage-ISO-8859-6.o \
+	  codepages/codepage-ISO-8859-7.o codepages/codepage-ISO-8859-8.o \
+	  codepages/codepage-ISO-8859-9.o codepages/codepage-latin1.o \
+	  dsk-utf8-to-utf16.o
 	ar cru $@ $^
 
+codepages/%.o: codepages/%.c
+	gcc $(CC_FLAGS) -o $@ -c $^
 %.o: %.c
 	gcc $(CC_FLAGS) -c $^
 
