@@ -2,6 +2,24 @@
 #include "dsk-utf8.h"
 #include <string.h>
 
+
+
+/* See: http://www.bogofilter.org/pipermail/bogofilter/2003-March/001889.html */
+
+/* UTF-8: c2 a0      U+00A0 NO-BREAK SPACE 
+   UTF-8: e1 9a 80   U+1680 OGHAM SPACE MARK 
+   UTF-8: e2 80 80   U+2000 EN QUAD 
+   UTF-8: e2 80 81   U+2001 EM QUAD 
+   UTF-8: e2 80 84   U+2004 THREE-PER-EM SPACE 
+   UTF-8: e2 80 85   U+2005 FOUR-PER-EM SPACE 
+   UTF-8: e2 80 87   U+2007 FIGURE SPACE 
+   UTF-8: e2 80 88   U+2008 PUNCTUATION SPACE 
+   UTF-8: e2 80 89   U+2009 THIN SPACE 
+   UTF-8: e2 80 8a   U+200A HAIR SPACE 
+   UTF-8: e2 80 8b   U+200B ZERO WIDTH SPACE 
+   UTF-8: e2 81 9f   U+205F MEDIUM MATHEMATICAL SPACE 
+   UTF-8: e3 80 80   U+3000 IDEOGRAPHIC SPACE 
+ */
 void
 dsk_utf8_skip_whitespace (const char **p_str)
 {
@@ -11,8 +29,46 @@ dsk_utf8_skip_whitespace (const char **p_str)
       switch (*str)
         {
         case ' ': case '\t': case '\r': case '\n': str++;
+        case 0xe1: if (str[1] == (char)0x9a) str += 2;
+                   else { *p_str = (const char *) str; return; }
+        case 0xe2: if (str[1] == (char)0x80
+                    && (str[2] == (char)0x80 /* u+2000 en quad */
+                     || str[2] == (char)0x81 /* u+2001 em quad */
+                     || str[2] == (char)0x84 /* u+2004 three-per-em space */
+                     || str[2] == (char)0x85 /* u+2005 FOUR-PER-EM SPACE */
+                     || str[2] == (char)0x87 /* u+2007 FIGURE SPACE  */
+                     || str[2] == (char)0x88 /* u+2008 PUNCTUATION SPACE */
+                     || str[2] == (char)0x89 /* u+2009 THIN SPACE  */
+                     || str[2] == (char)0x8a /* u+200A HAIR SPACE  */
+                     || str[2] == (char)0x8b))/* u+200B ZERO WIDTH SPACE  */
+                     {
+                       str += 3;
+                     }
+                  else if (str[1] == (char)0x81
+                        && str[2] == (char)0x9f)
+                     {
+                       /* U+205F MEDIUM MATHEMATICAL SPACE  */
+                       str += 3;
+                     }
+                   else 
+                     {
+                       *p_str = (const char *) str;
+                       return;
+                     }
+                   break;
+        case 0xe3: if (str[1] == (char)0x80
+                    && str[2] == (char)0x80)
+                     {
+                       /* U+3000 IDEOGRAPHIC SPACE */
+                       str += 3;
+                     }
+                   else
+                     {
+                       *p_str = (const char *) str;
+                       return;
+                     }
+                   break;
         default: *p_str = (const char *) str; return;
-                 /* TODO: handle other spaces */
         }
     }
   *p_str = (const char *) str;
