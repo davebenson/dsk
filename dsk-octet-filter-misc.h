@@ -17,9 +17,22 @@ DskOctetFilter *dsk_xml_escaper_new                (void);
 DskOctetFilter *dsk_xml_unescaper_new              (void);
 #define dsk_html_escaper_new() dsk_xml_escaper_new()
 #define dsk_html_unescaper_new() dsk_xml_unescaper_new()
-DskOctetFilter *dsk_utf8_to_utf16_converter_new    (dsk_boolean big_endian);
-DskOctetFilter *dsk_utf16_to_utf8_converter_new    (dsk_boolean initially_big_endian,
-                                                    dsk_boolean require_endian_marker);
+
+typedef enum
+{
+  DSK_UTF16_WRITER_BIG_ENDIAN = (1<<0),
+  DSK_UTF16_WRITER_LITTLE_ENDIAN = (1<<1),
+  DSK_UTF16_WRITER_EMIT_MARKER = (1<<2)
+} DskUtf16WriterFlags;
+
+DskOctetFilter *dsk_utf8_to_utf16_converter_new    (DskUtf16WriterFlags flags);
+typedef enum
+{
+  DSK_UTF16_PARSER_LITTLE_ENDIAN,
+  DSK_UTF16_PARSER_BIG_ENDIAN,
+  DSK_UTF16_PARSER_REQUIRE_MARKER
+} DskUtf16ParserMode;
+DskOctetFilter *dsk_utf16_to_utf8_converter_new    (DskUtf16ParserMode mode);
 DskOctetFilter *dsk_byte_doubler_new               (uint8_t c);
 DskOctetFilter *dsk_byte_undoubler_new             (uint8_t c,
                                                     dsk_boolean ignore_errors);
