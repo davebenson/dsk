@@ -1,7 +1,5 @@
 #include "dsk.h"
 
-#include "dsk-codepage-latin1.inc"
-
 typedef struct _DskCodepageToUtf8Class DskCodepageToUtf8Class;
 typedef struct _DskCodepageToUtf8 DskCodepageToUtf8;
 struct _DskCodepageToUtf8Class
@@ -11,7 +9,7 @@ struct _DskCodepageToUtf8Class
 struct _DskCodepageToUtf8
 {
   DskOctetFilter base_instance;
-  DskCodepage *codepage;
+  const DskCodepage *codepage;
 };
 
 static dsk_boolean
