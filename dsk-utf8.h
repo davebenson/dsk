@@ -1,4 +1,8 @@
 
+/* For more sophisticated unicode handling, see libicu,
+ *           http://site.icu-project.org/
+ * 
+ */
 
 /* --- utf-8 string handling --- */
 void dsk_utf8_skip_whitespace (const char **p_str);
@@ -13,6 +17,8 @@ dsk_boolean dsk_utf8_decode_unichar (unsigned    buf_len,
                                      unsigned   *bytes_used_out,
                                      uint32_t   *unicode_value_out);
 
+DSK_INLINE_FUNC int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte);
+
 typedef enum
 {
   DSK_UTF8_VALIDATION_SUCCESS,
@@ -25,3 +31,21 @@ DskUtf8ValidationResult
                                      const char *data,
                                      unsigned   *length_out);
 
+#define DSK_UTF8_MAX_LENGTH 4
+
+#define DSK_UTF8_LENGTH_FROM_INIT_BYTE_DIV_8_STR \
+  ((int8_t*)"\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\377\377\377\377\377\377\377\377\2\2\2\2\3\3\4\377")
+
+
+/* UTF-16 and UTF-32 Byte-Order Mark (abbrev 'bom').
+   Used to tell the endianness of the content.  */
+#define DSK_UTF_BOM 0xfeff
+
+
+#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
+
+DSK_INLINE_FUNC int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte)
+{
+  return DSK_UTF8_LENGTH_FROM_INIT_BYTE_DIV_8_STR[initial_byte/8];
+}
+#endif
