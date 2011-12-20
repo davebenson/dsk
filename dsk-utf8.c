@@ -29,23 +29,23 @@ dsk_utf8_skip_whitespace (const char **p_str)
       switch (*str)
         {
         case ' ': case '\t': case '\r': case '\n': str++;
-        case 0xe1: if (str[1] == (char)0x9a) str += 2;
+        case 0xe1: if (str[1] == 0x9a) str += 2;
                    else { *p_str = (const char *) str; return; }
-        case 0xe2: if (str[1] == (char)0x80
-                    && (str[2] == (char)0x80 /* u+2000 en quad */
-                     || str[2] == (char)0x81 /* u+2001 em quad */
-                     || str[2] == (char)0x84 /* u+2004 three-per-em space */
-                     || str[2] == (char)0x85 /* u+2005 FOUR-PER-EM SPACE */
-                     || str[2] == (char)0x87 /* u+2007 FIGURE SPACE  */
-                     || str[2] == (char)0x88 /* u+2008 PUNCTUATION SPACE */
-                     || str[2] == (char)0x89 /* u+2009 THIN SPACE  */
-                     || str[2] == (char)0x8a /* u+200A HAIR SPACE  */
-                     || str[2] == (char)0x8b))/* u+200B ZERO WIDTH SPACE  */
+        case 0xe2: if (str[1] == 0x80
+                    && (str[2] == 0x80 /* u+2000 en quad */
+                     || str[2] == 0x81 /* u+2001 em quad */
+                     || str[2] == 0x84 /* u+2004 three-per-em space */
+                     || str[2] == 0x85 /* u+2005 FOUR-PER-EM SPACE */
+                     || str[2] == 0x87 /* u+2007 FIGURE SPACE  */
+                     || str[2] == 0x88 /* u+2008 PUNCTUATION SPACE */
+                     || str[2] == 0x89 /* u+2009 THIN SPACE  */
+                     || str[2] == 0x8a /* u+200A HAIR SPACE  */
+                     || str[2] == 0x8b))/* u+200B ZERO WIDTH SPACE  */
                      {
                        str += 3;
                      }
-                  else if (str[1] == (char)0x81
-                        && str[2] == (char)0x9f)
+                  else if (str[1] == 0x81
+                        && str[2] == 0x9f)
                      {
                        /* U+205F MEDIUM MATHEMATICAL SPACE  */
                        str += 3;
@@ -56,8 +56,8 @@ dsk_utf8_skip_whitespace (const char **p_str)
                        return;
                      }
                    break;
-        case 0xe3: if (str[1] == (char)0x80
-                    && str[2] == (char)0x80)
+        case 0xe3: if (str[1] == 0x80
+                    && str[2] == 0x80)
                      {
                        /* U+3000 IDEOGRAPHIC SPACE */
                        str += 3;
