@@ -1,5 +1,5 @@
 
-/* We define three data structures:
+/* We define four data structures:
  * 1.  a Stack.  a singly-ended, singly-linked list.
  * 2.  a Queue.  a doubly-ended, singly-linked list.
  * 3.  a List.  a doubly-ended, doubly-linked list.
