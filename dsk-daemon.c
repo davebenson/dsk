@@ -71,7 +71,7 @@ retry_open:
     {
       if (errno == EINTR)
         goto retry_open;
-      dsk_fd_creation_failed (error);
+      dsk_fd_creation_failed (errno);
       if (errno == ENOENT && !made_dir)
         {
           char *slash = strrchr (buf, '/');
