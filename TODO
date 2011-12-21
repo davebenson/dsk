@@ -139,7 +139,7 @@ _ JSON implementation
 _ UTF-8 tests
   _ encode char
   _ decode char
-  _ utf8_skip_whitespace (fct needs fixin')
+  _ utf8_skip_whitespace
 _ Websocket support:
   _ compute_response
   _ client-stream support
@@ -228,12 +228,17 @@ _ DskPattern:
     and the state transition graph should have one state of each of 'a', 'b', 'c':
     the highest character found.
 
-    A useful implementation might handle JUST .* which is very common.
+    !!!: A useful implementation might handle JUST .* which is very common.
+    Actually, this is probably the only needed optimization,
+    and it is super-important since trailing wildcards are extremely common
+    and any non-wildcard pattern tends to differentiate itself.
+
     A better implementation might allow any trailing expression, for example
     the same situation occurs with:
             .*ax*
 	    .*bx*
 	    .*cx*
+    (
   _ add 'flags' to DskPatternEntry with "ignore_case",
   _ utf-8 support
   _ implement some sort of NFA fallback
@@ -259,7 +264,7 @@ filters:
   x dsk_xml_encoder_new             
   x dsk_quote_printable_new         
   x dsk_unquote_printable_new      
-  _ dsk_utf8_to_utf16_converter_new
+  x dsk_utf8_to_utf16_converter_new
   _ dsk_utf16_to_utf8_converter_new
   x dsk_byte_doubler_new           
   x dsk_byte_undoubler_new         
@@ -283,7 +288,7 @@ _ HTTP Header Work:
     HTTP/1.0:
       Pragma: no-cache
 
-_ fix dsk_utf8_skip_whitespace()
+x fix dsk_utf8_skip_whitespace()
 _ other utf8 functions
   _ strdown? strup?
   _ diacritical normalization
