@@ -1,7 +1,7 @@
+/* UNTESTED */
+
 #include <string.h>
 #include "dsk.h"
-
-
 
 typedef struct _DskUtf8ToUtf16Class DskUtf8ToUtf16Class;
 typedef struct _DskUtf8ToUtf16 DskUtf8ToUtf16;
