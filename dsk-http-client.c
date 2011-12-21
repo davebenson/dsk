@@ -232,6 +232,119 @@ typedef enum
   TRANSFER_FATAL_ERROR_TOO_MANY_REDIRECTS
 } TransferFatalErrorType;
 
+static Connection *
+create_connection (DskHttpClient *client,
+                   HostInfo      *host_info)
+{
+  /* Create a new connection */
+  DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions hcs_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+
+  /* Setup client-stream options */
+  /* TODO: obey host, port, local_socket_path, has_ip_address */
+
+  if (!dsk_client_stream_new (&cs_options, NULL, &sink, &source, error))
+    {
+      ...
+    }
+
+  conn = DSK_NEW0 (Connection);;
+
+  /* Setup http-client-stream options */
+  ...
+
+  conn->stream = dsk_http_client_stream_new (sink, source, &hcs_options);
+  dsk_object_unref (sink);
+  dsk_object_unref (source);
+  dsk_assert (conn->stream != NULL);
+  conn->n_pending = 1;
+  DSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
+  dsk_assert (conflict == NULL);
+}
+
+/* Assumes that 'in', 'out' and 'in->request_options' have been initialized. */
+static dsk_boolean
+init_request_options (DskHttpClientRequestOptions *in,
+                      DskHttpClientStreamRequestOptions *out,
+                      Transfer *request,
+                      DskMemPool *mem_pool,
+                      DskError  **error)
+{
+  DskHttpRequestOptions *header_options = in->request_options;
+  ... = in->url
+  ... = in->path
+  ... = in->query
+  ... = in->n_extra_get_cgi_variables
+  ... = in->extra_get_cgi_variables
+  ... = in->always_pipeline
+  ... = in->never_pipeline
+  ... = in->n_post_cgi_variables
+  ... = in->post_cgi_variables
+  ... = in->request_body
+  ... = in->safe_mode
+  ... = in->may_restart_stream
+  ... = in->n_unparsed_headers
+  ... = in->unparsed_headers
+  ... = in->unparsed_misc_headers
+  ... = in->keepalive_millis
+  ... = in->connection_close
+  ... = in->allow_gzip
+  ... = in->has_postdata_md5sum
+  ... = in->postdata_md5sum_binary
+  ... = in->postdata_md5sum_hex
+  ... = in->gzip_post_data
+  ... = in->check_md5sum
+  ... = in->max_retries
+  ... = in->retry_sleep_millis
+  ... = in->max_redirects
+  ... = in->n_cookies
+  ... = in->cookies
+
+  header_options->... = ...;
+  header_options->path = 
+  out->post_data = ???.;
+  out->post_data_length = ???.;
+  out->post_data_slab = ???.;
+  out->gzip_compression_level = ???.;
+  out->gzip_compress_post_data = ???.;
+  out->post_data_is_gzipped = ???.;
+  out->uncompress_content = ???.;
+  out->n_cookies = ???;
+  out->cookies = ???;
+  out->funcs = &client_stream_request_funcs ???;
+  out->user_data = request;
+}
+
+static void
+add_transfer_to_connection (DskHttpClientTransfer *xfer,
+                            Connection            *dst)
+{
+  /* ???: copied from above.  is this adequate? */
+  DskHttpClientStreamRequestOptions sreq_options
+    = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+  char mem_pool_buf[1024];
+  options.request_options = &header_options;
+  DskMemPool mem_pool;
+  dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_buf), mem_pool_buf);
+  if (!init_request_options (options, &sreq_options, request, &mem_pool, error))
+    return DSK_FALSE;
+
+  if (!dsk_http_client_stream_request (dst->stream, &sreq_options, &error))
+    {
+      /* Presumably, there's something wrong with the
+         request, so don't retry it. */
+      xfer->funcs->handle_fail (xfer, error, xfer->func_data);
+      dsk_clear_error (&error);
+      transfer_unref (xfer);
+      continue;
+    }
+
+  /* Pipeline xfer to this new connection. */
+  DSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), dst);
+  dst->n_pipelined += 1;
+  DSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), dst, conflict);
+}
 
 static void
 connection_fatal_fail (Connection *connection,
@@ -295,31 +408,7 @@ connection_fatal_fail (Connection *connection,
             if (new->n_pipelined >= host_info->max_pipelined)
               break;
 
-            /* ???: copied from above.  is this adequate? */
-            DskHttpClientStreamRequestOptions sreq_options
-              = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
-            DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-            char mem_pool_buf[1024];
-            options.request_options = &header_options;
-            DskMemPool mem_pool;
-            dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_buf), mem_pool_buf);
-            if (!init_request_options (options, &sreq_options, request, &mem_pool, error))
-              return DSK_FALSE;
-
-            if (!dsk_http_client_stream_request (new->stream, &sreq_options, &error))
-              {
-                /* Presumably, there's something wrong with the
-                   request, so don't retry it. */
-                to_move->funcs->handle_fail (to_move, error, to_move->func_data);
-                dsk_clear_error (&error);
-                transfer_unref (to_move);
-                continue;
-              }
-
-            /* Pipeline to_move to this new connection. */
-            DSK_RBTREE_REMOVE (GET_REUSABLE_CONNECTION_TREE (host_info), new);
-            new->n_pipelined += 1;
-            DSK_RBTREE_INSERT (GET_REUSABLE_CONNECTION_TREE (host_info), new, conflict);
+            add_transfer_to_connection (to_move, new);
           }
 
         if (connection->first_pipelined != NULL)
@@ -328,6 +417,21 @@ connection_fatal_fail (Connection *connection,
                I guess 1 connection should be adequate,
                and we should always be able to create a new one,
                since our old one just failed. */
+            Connection *new = create_connection (client, host_info);
+            if (new)
+              {
+                ...
+              }
+          }
+        while (connection->first_pipelined != NULL
+            && host_info->n_unassigned_requests
+             < host_info->max_unassigned_requests)
+          {
+            ...
+          }
+        while (connection->first_pipelined != NULL)
+          {
+            /* drop pipelined request */
             ...
           }
 
@@ -593,58 +697,6 @@ static DskHttpClientStreamFuncs client_stream_request_funcs =
   client_stream__handle_destroy
 };
 
-/* Assumes that 'in', 'out' and 'in->request_options' have been initialized. */
-static dsk_boolean
-init_request_options (DskHttpClientRequestOptions *in,
-                      DskHttpClientStreamRequestOptions *out,
-                      Transfer *request,
-                      DskMemPool *mem_pool,
-                      DskError  **error)
-{
-  DskHttpRequestOptions *header_options = in->request_options;
-  ... = in->url
-  ... = in->path
-  ... = in->query
-  ... = in->n_extra_get_cgi_variables
-  ... = in->extra_get_cgi_variables
-  ... = in->always_pipeline
-  ... = in->never_pipeline
-  ... = in->n_post_cgi_variables
-  ... = in->post_cgi_variables
-  ... = in->request_body
-  ... = in->safe_mode
-  ... = in->may_restart_stream
-  ... = in->n_unparsed_headers
-  ... = in->unparsed_headers
-  ... = in->unparsed_misc_headers
-  ... = in->keepalive_millis
-  ... = in->connection_close
-  ... = in->allow_gzip
-  ... = in->has_postdata_md5sum
-  ... = in->postdata_md5sum_binary
-  ... = in->postdata_md5sum_hex
-  ... = in->gzip_post_data
-  ... = in->check_md5sum
-  ... = in->max_retries
-  ... = in->retry_sleep_millis
-  ... = in->max_redirects
-  ... = in->n_cookies
-  ... = in->cookies
-
-  header_options->... = ...;
-  out->post_data = ???.
-  out->post_data_length = ???.
-  out->post_data_slab = ???.
-  out->gzip_compression_level = ???.
-  out->gzip_compress_post_data = ???.
-  out->post_data_is_gzipped = ???.
-  out->uncompress_content = ???.
-  out->n_cookies = ???
-  out->cookies = ???
-  out->funcs = &client_stream_request_funcs ???
-  out->user_data = request;
-}
-
 dsk_boolean
 dsk_http_client_request  (DskHttpClient               *client,
                           DskHttpClientRequestOptions *options,
@@ -704,30 +756,7 @@ dsk_http_client_request  (DskHttpClient               *client,
   else if (host_info->n_connections < host_info->max_connections
         && client->n_connections < client->max_connections)
     {
-      /* Create a new connection */
-      DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
-      DskHttpClientStreamOptions hcs_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-
-      /* Setup client-stream options */
-      /* TODO: obey host, port, local_socket_path, has_ip_address */
-
-      if (!dsk_client_stream_new (&cs_options, NULL, &sink, &source, error))
-        {
-          ...
-        }
-
-      conn = DSK_NEW0 (Connection);;
-
-      /* Setup http-client-stream options */
-      ...
-
-      conn->stream = dsk_http_client_stream_new (sink, source, &hcs_options);
-      dsk_object_unref (sink);
-      dsk_object_unref (source);
-      dsk_assert (conn->stream != NULL);
-      conn->n_pending = 1;
-      DSK_RBTREE_INSERT (GET_CONNECTION_TREE (host_info), conn, conflict);
-      dsk_assert (conflict == NULL);
+      conn = create_connection (client, host_info);
     }
   else (options->block_if_busy
      && host_info->n_unassigned_requests < host_info->max_unassigned_requests)
