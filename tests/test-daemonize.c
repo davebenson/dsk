@@ -5,7 +5,7 @@
 
 /* dummy server configuration */
 unsigned cmdline_max = 10;
-unsigned cmdline_sleep = 1;
+unsigned cmdline_sleep_ms = 1;
 char *cmdline_hello = "hello";
 
 
@@ -24,7 +24,7 @@ handle_timeout (void *data)
     {
       printf ("%s\n", cmdline_hello);
       fflush (stdout);
-      dsk_main_add_timer_millis (cmdline_sleep, handle_timeout, NULL);
+      dsk_main_add_timer_millis (cmdline_sleep_ms, handle_timeout, NULL);
     }
 }
 
