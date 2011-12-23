@@ -78,6 +78,16 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
 
 int dsk_date_get_days_since_epoch (DskDate *);
 
+
+/* Returns maximum possible string output from 'format'
+   including the terminating NUL. */
+int  dsk_strftime_max_length      (const char *format);
+
+void dsk_date_strftime            (DskDate    *date,
+                                   const char *format,
+                                   unsigned    max_out,
+                                   char       *out);
+
 #if 0
 /* UNIMPLEMENTED:  this is the API to deal with localtime
    fully..  To use it requires being able to parse zoneinfo files.
