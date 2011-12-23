@@ -85,6 +85,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-http-header-parsing.o dsk-http-protocol.o \
 	  dsk-http-header-printing.o \
 	  dsk-http-server.o \
+	  dsk-https-server.o \
 	  dsk-websocket.o \
 	  dsk-cgi.o \
 	  dsk-date.o \
@@ -112,6 +113,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-daemon.o \
 	  dsk-ssl.o dsk-ssl-listener.o \
 	  dsk-file-util.o dsk-pattern.o \
+	  dsk-logger.o \
 	  dsk-table-file-trivial.o \
 	  dsk-table-checkpoint-trivial.o \
 	  dsk-table-helper.o \
