@@ -17,7 +17,7 @@ struct _DskOctetListenerSocket
 
   /* for TCP/IP sockets */
   DskIpAddress bind_address;
-  dsk_boolean bind_port;
+  unsigned bind_port;
   char *bind_iface;
   
   /* the underlying listening file descriptor */
