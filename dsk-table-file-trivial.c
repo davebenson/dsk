@@ -214,7 +214,7 @@ read_next_index_entry (TableFileTrivialReader *reader,
 
   if (ie.heap_offset != reader->next_heap_offset)
     {
-      dsk_set_error (error, "heap offset from index file was %llu instead of expected %llu",
+      dsk_set_error (error, "heap offset from index file was %"PRIu64" instead of expected %"PRIu64"",
                      ie.heap_offset, reader->next_heap_offset);
       return DSK_FALSE;
     }
@@ -288,7 +288,7 @@ new_reader  (DskTableLocation        *location,
     {
       if (lseek (fd, index_offset, SEEK_SET) != (off_t) index_offset)
         {
-          dsk_set_error (error, "error seeking in index file to offset %llu",
+          dsk_set_error (error, "error seeking in index file to offset %"PRIu64"",
                          index_offset);
           close (fd);
           return NULL;
@@ -307,7 +307,7 @@ new_reader  (DskTableLocation        *location,
     {
       if (lseek (fd, heap_offset, SEEK_SET) != (off_t) heap_offset)
         {
-          dsk_set_error (error, "error seeking in heap file to offset %llu",
+          dsk_set_error (error, "error seeking in heap file to offset %"PRIu64"",
                          heap_offset);
           close (fd);
           fclose (reader.index_fp);
@@ -372,13 +372,13 @@ read_index_entry (DskTableFileSeeker *seeker,
                                   index * SIZEOF_INDEX_ENTRY);
   if (nread < 0)
     {
-      dsk_set_error (error, "error reading index entry %llu: %s",
+      dsk_set_error (error, "error reading index entry %"PRIu64": %s",
                      index, strerror (errno));
       return DSK_FALSE;
     }
   if (nread < (int) SIZEOF_INDEX_ENTRY)
     {
-      dsk_set_error (error, "too short reading index entry %llu", index);
+      dsk_set_error (error, "too short reading index entry %"PRIu64"", index);
       return DSK_FALSE;
     }
   ie.heap_offset = UINT64_FROM_LE (ie.heap_offset);
@@ -387,7 +387,7 @@ read_index_entry (DskTableFileSeeker *seeker,
 
   if (!check_index_entry_lengths (&ie))
     {
-      dsk_set_error (error, "corrupted index entry %llu", index);
+      dsk_set_error (error, "corrupted index entry %"PRIu64"", index);
       return DSK_FALSE;
     }
   *out = ie;
@@ -433,7 +433,7 @@ run_cmp (TableFileTrivialSeeker *s,
       if (nread < (ssize_t) ie_out->key_length)
         {
           if (nread < 0)
-            dsk_set_error (error, "error reading from heap file at offset %llu: %s",
+            dsk_set_error (error, "error reading from heap file at offset %"PRIu64": %s",
                            ie_out->heap_offset, strerror (errno));
           else
             dsk_set_error (error, "premature EOF reading key from heap file");
@@ -583,7 +583,7 @@ table_file_trivial_seeker__find  (DskTableFileSeeker    *seeker,
           if (nread < (ssize_t) kv_len)
             {
               if (nread < 0)
-                dsk_set_error (error, "error reading from heap file at offset %llu: %s",
+                dsk_set_error (error, "error reading from heap file at offset %"PRIu64": %s",
                                ie.heap_offset, strerror (errno));
               else
                 dsk_set_error (error, "premature EOF reading key/value from heap file");
@@ -644,13 +644,13 @@ table_file_trivial_seeker__index (DskTableFileSeeker    *seeker,
                                       kv_len, ie.heap_offset);
       if (nread < 0)
         {
-          dsk_set_error (error, "error reading heap entry %llu: %s",
+          dsk_set_error (error, "error reading heap entry %"PRIu64": %s",
                          index, strerror (errno));
           return DSK_FALSE;
         }
       if (nread < (int) kv_len)
         {
-          dsk_set_error (error, "too short reading heap entry %llu (got %u of %u bytes)",
+          dsk_set_error (error, "too short reading heap entry %"PRIu64" (got %u of %u bytes)",
                          index, (unsigned) nread, kv_len);
           return DSK_FALSE;
         }
