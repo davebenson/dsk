@@ -43,9 +43,11 @@ logger_open_fd (DskLogger *logger,
   dsk_boolean did_mkdir = DSK_FALSE;
 
 retry_open:
+#if DSK_HAS_ATFILE_SUPPORT
   if (logger->openat_fd >= 0)
     fd = openat (logger->openat_fd, pad, O_CREAT|O_APPEND|O_WRONLY, 0666);
   else
+#endif
     fd = open (pad, O_CREAT|O_APPEND|O_WRONLY, 0666);
   if (fd < 0)
     {

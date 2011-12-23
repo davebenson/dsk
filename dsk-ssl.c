@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsk.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
