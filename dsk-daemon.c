@@ -71,6 +71,7 @@ retry_open:
     {
       if (errno == EINTR)
         goto retry_open;
+      dsk_fd_creation_failed (errno);
       if (errno == ENOENT && !made_dir)
         {
           char *slash = strrchr (buf, '/');
@@ -161,6 +162,7 @@ void dsk_daemon_handle (void)
         {
 	  if (errno == EINTR)
 	    goto retry_pipe;
+          dsk_fd_creation_failed (errno);
 	  dsk_die ("error creating pipe: %s", strerror (errno));
 	}
     retry_daemon_fork:
@@ -238,8 +240,11 @@ retry_inner_pid_file_open:
               goto retry_outer_pid_file_open;
             }
           else
-            dsk_die ("daemonize: error creating PID file %s: %s",
-                     dsk_daemon_pid_filename, strerror (errno));
+            {
+              dsk_fd_creation_failed (errno);
+              dsk_die ("daemonize: error creating PID file %s: %s",
+                       dsk_daemon_pid_filename, strerror (errno));
+            }
         }
 retry_flock:
       if (flock (pid_file_fd, LOCK_EX|LOCK_NB) < 0)

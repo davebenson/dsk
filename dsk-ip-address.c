@@ -217,74 +217,7 @@ dsk_boolean dsk_sockaddr_to_ip_address  (unsigned     addr_len,
   return DSK_TRUE;
 }
 
-#if 0
-void
-dsk_ip_address_to_sock_addr (DskIpAddress *address,
-                          unsigned port,
-                          void *out,
-                          unsigned *out_len)
-{
-  /* necessary? probably not for ipv4 */
-  memset (out, 0, sizeof (struct sockaddr_storage));
-
-  switch (address->type)
-    {
-    case DSK_IP_ADDRESS_IPV4:
-      {
-        struct sockaddr_in *a = (struct sockaddr_in *) out;
-        a->sin_family = PF_INET;
-        a->sin_port = htons (port);
-        memcpy (&a->sin_addr, address->info.address, 4);
-        break;
-      }
-    case DSK_IP_ADDRESS_IPV6:
-      {
-        struct sockaddr_in6 *a = (struct sockaddr_in6 *) out;
-        a->sin6_family = PF_INET6;
-        a->sin6_port = htons (port);
-        memcpy (&a->sin6_addr, address->info.address, 16);
-        break;
-      }
-    default:
-      dsk_assert_not_reached ();
-    }
-}
-
-void
-dsk_ip_address_to_sock_addr (DskIpAddress *address,
-                          unsigned port,
-                          void *out,
-                          unsigned *out_len)
-{
-  /* necessary? probably not for ipv4 */
-  memset (out, 0, sizeof (struct sockaddr_storage));
-
-  switch (address->type)
-    {
-    case DSK_IP_ADDRESS_IPV4:
-      {
-        struct sockaddr_in *a = (struct sockaddr_in *) out;
-        a->sin_family = PF_INET;
-        a->sin_port = htons (port);
-        memcpy (&a->sin_addr, address->info.address, 4);
-        break;
-      }
-    case DSK_IP_ADDRESS_IPV6:
-      {
-        struct sockaddr_in6 *a = (struct sockaddr_in6 *) out;
-        a->sin6_family = PF_INET6;
-        a->sin6_port = htons (port);
-        memcpy (&a->sin6_addr, address->info.address, 16);
-        break;
-      }
-    default:
-      dsk_assert_not_reached ();
-    }
-}
-
-#endif
-
-/* XXX: implementing using network-interface api */
+/* XXX: implement using network-interface api */
 void
 dsk_ip_address_localhost (DskIpAddress *out)
 {

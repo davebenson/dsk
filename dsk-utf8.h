@@ -37,10 +37,6 @@ DskUtf8ValidationResult
   ((int8_t*)"\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\377\377\377\377\377\377\377\377\2\2\2\2\3\3\4\377")
 
 
-/* UTF-16 and UTF-32 Byte-Order Mark (abbrev 'bom').
-   Used to tell the endianness of the content.  */
-#define DSK_UTF_BOM 0xfeff
-
 
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 

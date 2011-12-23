@@ -1,7 +1,7 @@
+/* UNTESTED */
+
 #include <string.h>
 #include "dsk.h"
-
-
 
 typedef struct _DskUtf8ToUtf16Class DskUtf8ToUtf16Class;
 typedef struct _DskUtf8ToUtf16 DskUtf8ToUtf16;
@@ -42,7 +42,7 @@ dsk_utf8_to_utf16_process (DskOctetFilter *filter,
   DskUtf8ToUtf16 *u8to16 = (DskUtf8ToUtf16 *) filter;
   if (DSK_UNLIKELY (u8to16->must_emit_bom))
     {
-      uint16_t bom = DSK_UTF_BOM;
+      uint16_t bom = DSK_UNICODE_BOM;
       if (u8to16->swap)
         uint16_array_swap (1, &bom);
       dsk_buffer_append (out, 2, &bom);
@@ -168,7 +168,7 @@ dsk_utf8_to_utf16_finish (DskOctetFilter *filter,
     }
   if (u8to16->must_emit_bom)
     {
-      uint16_t bom = DSK_UTF_BOM;
+      uint16_t bom = DSK_UNICODE_BOM;
       if (u8to16->swap)
         uint16_array_swap (1, &bom);
       dsk_buffer_append (out, 2, &bom);
