@@ -3,7 +3,7 @@
 typedef struct _DskHttpsServerOptions DskHttpsServerOptions;
 struct _DskHttpsServerOptions
 {
-  DskIpAddress          bind_addr;
+  DskIpAddress          bind_address;
   unsigned              port;
   DskSslContext        *context;
 };
