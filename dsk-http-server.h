@@ -80,6 +80,8 @@ dsk_boolean dsk_http_server_bind_tcp           (DskHttpServer        *server,
 dsk_boolean dsk_http_server_bind_local         (DskHttpServer        *server,
                                                 const char           *path,
                                                 DskError            **error);
+void        dsk_http_server_bind               (DskHttpServer        *server,
+                                                DskOctetListener     *listener);
 
 
 void
