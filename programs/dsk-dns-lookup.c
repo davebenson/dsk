@@ -50,7 +50,7 @@ handle_dns_result  (DskDnsLookupResult *result,
 
 int main(int argc, char **argv)
 {
-  DskDnsConfigFlags cfg_flags = DSK_DNS_CONFIG_FLAGS_DEFAULT;
+  DskDnsConfigFlags cfg_flags = DSK_DNS_CONFIG_FLAGS_INIT;
   dsk_boolean no_searchpath = DSK_FALSE;
   int i;
   dsk_cmdline_init ("perform DNS lookups",

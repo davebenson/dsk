@@ -518,7 +518,7 @@ implement_from_json_by_type (FILE *fp,
 
 int main(int argc, char **argv)
 {
-  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_DEFAULT;
+  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   unsigned i, j;
   dsk_boolean use_stdout = DSK_FALSE;
   dsk_boolean one_file = DSK_FALSE;
