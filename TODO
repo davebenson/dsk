@@ -340,5 +340,7 @@ _ s/octet/byte/ ?????
 _ break apart dsk-octet-io.h
 _ DskClientStreamSource BUT DskOctetStreamSourceFd.
   Fix this inconsistency and come up with a policy for naming derived classes
+_ note that we use TYPE_INIT everywhere now instead of TYPE_DEFAULT 
+  (and dropping STATIC from the name of the macro DSK_BUFFER_STATIC_INIT)
 
 SEE ALSO: DskTable-TODO
