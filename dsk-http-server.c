@@ -131,7 +131,7 @@ struct _DskHttpServer
 static void
 dsk_http_server_init (DskHttpServer *server)
 {
-  static DskHttpServerStreamOptions sso = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+  static DskHttpServerStreamOptions sso = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
   server->top.under_construction = DSK_TRUE;
   server->server_stream_options = sso;
   server->current = &server->top;
@@ -465,9 +465,9 @@ respond_error (DskHttpServerRequest *request,
 {
   /* Configure response */
   RealServerRequest *rreq = (RealServerRequest *) request;
-  DskHttpServerStreamResponseOptions resp_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
-  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
-  DskBuffer content_buffer = DSK_BUFFER_STATIC_INIT;
+  DskHttpServerStreamResponseOptions resp_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
+  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
+  DskBuffer content_buffer = DSK_BUFFER_INIT;
   DskPrint *print;
   uint8_t *content_data;
   DskError *error = NULL;
@@ -516,8 +516,8 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
                                                DskHttpServerResponseOptions *options)
 {
   RealServerRequest *rreq = (RealServerRequest *) request;
-  DskHttpServerStreamResponseOptions soptions = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
-  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpServerStreamResponseOptions soptions = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
+  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
   dsk_boolean must_unref_content_stream = DSK_FALSE;
   DskError *error = NULL;
 
@@ -542,7 +542,7 @@ void dsk_http_server_request_respond          (DskHttpServerRequest *request,
         {
           /* construct error message */
           int open_errno = errno;
-          DskBuffer content_buffer = DSK_BUFFER_STATIC_INIT;
+          DskBuffer content_buffer = DSK_BUFFER_INIT;
           DskPrint *print = dsk_print_new_buffer (&content_buffer);
           char *error_message;
           dsk_print_set_string (print, "filename", options->source_filename);
@@ -665,10 +665,10 @@ void dsk_http_server_request_redirect         (DskHttpServerRequest *request,
                                                DskHttpStatus         status,
                                                const char           *location)
 {
-  DskHttpServerStreamResponseOptions resp_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
-  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpServerStreamResponseOptions resp_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
+  DskHttpResponseOptions header_options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
   RealServerRequest *rreq = (RealServerRequest *) request;
-  DskBuffer content_buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer content_buffer = DSK_BUFFER_INIT;
   DskPrint *print;
   uint8_t *content_data;
   DskError *error = NULL;
@@ -1291,7 +1291,7 @@ dsk_boolean dsk_http_server_bind_tcp           (DskHttpServer        *server,
                                                 unsigned              port,
                                                 DskError            **error)
 {
-  DskOctetListenerSocketOptions listener_opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_DEFAULT;
+  DskOctetListenerSocketOptions listener_opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT;
   DskHttpServerBindInfo *bind_info;
   listener_opts.is_local = DSK_FALSE;
   if (bind_addr)
@@ -1310,7 +1310,7 @@ dsk_boolean dsk_http_server_bind_local         (DskHttpServer        *server,
                                                 const char           *path,
                                                 DskError            **error)
 {
-  DskOctetListenerSocketOptions listener_opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_DEFAULT;
+  DskOctetListenerSocketOptions listener_opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT;
   DskHttpServerBindInfo *bind_info;
   listener_opts.is_local = DSK_TRUE;
   listener_opts.local_path = path;

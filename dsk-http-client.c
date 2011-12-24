@@ -237,8 +237,8 @@ create_connection (DskHttpClient *client,
                    HostInfo      *host_info)
 {
   /* Create a new connection */
-  DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
-  DskHttpClientStreamOptions hcs_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_INIT;
+  DskHttpClientStreamOptions hcs_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
 
   /* Setup client-stream options */
   /* TODO: obey host, port, local_socket_path, has_ip_address */
@@ -321,8 +321,8 @@ add_transfer_to_connection (DskHttpClientTransfer *xfer,
 {
   /* ???: copied from above.  is this adequate? */
   DskHttpClientStreamRequestOptions sreq_options
-    = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
-  DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+    = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
+  DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
   char mem_pool_buf[1024];
   options.request_options = &header_options;
   DskMemPool mem_pool;
@@ -774,8 +774,8 @@ dsk_http_client_request  (DskHttpClient               *client,
 
   /* --- Set up request options --- */
   DskHttpClientStreamRequestOptions sreq_options
-    = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
-  DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+    = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
+  DskHttpRequestOptions header_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
   char mem_pool_buf[1024];
   options.request_options = &header_options;
   DskMemPool mem_pool;

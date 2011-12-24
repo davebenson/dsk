@@ -80,7 +80,7 @@ struct _DskCTokenScannerConfig
 
   void        (*destruct_data)  (DskCToken   *token);
 };
-#define DSK_CTOKEN_SCANNER_CONFIG_DEFAULT                           \
+#define DSK_CTOKEN_SCANNER_CONFIG_INIT                           \
 {                                                                   \
   dsk_ctoken_scan_quoted__default,                                  \
   DSK_FALSE,                    /* no backtick string support */    \

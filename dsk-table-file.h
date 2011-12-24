@@ -116,7 +116,7 @@ struct _DskTableFileNewOptions
      long URLs and the like. */
   dsk_boolean prefix_compress;
 };
-#define DSK_TABLE_FILE_NEW_OPTIONS_DEFAULT              \
+#define DSK_TABLE_FILE_NEW_OPTIONS_INIT              \
 {                                                       \
   &dsk_table_file_compressor_gzip[3],                   \
   64,                           /* n_compress */        \

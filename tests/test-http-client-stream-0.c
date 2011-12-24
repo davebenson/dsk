@@ -18,7 +18,7 @@ static dsk_boolean cmdline_verbose = DSK_FALSE;
 static dsk_boolean cmdline_print_error_messages = DSK_FALSE;
 #define REQUEST_DATA_DEFAULT { NULL, NULL, NULL, NULL, NULL,    \
                                DSK_FALSE,       /* content_complete */ \
-                               DSK_BUFFER_STATIC_INIT, \
+                               DSK_BUFFER_INIT, \
                                DSK_FALSE,       /* destroyed */ \
                              }
 
@@ -152,10 +152,10 @@ test_simple (dsk_boolean byte_by_byte)
   for (iter = 0; iter < DSK_N_ELEMENTS (response_content_versions); iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       const char *content;
@@ -236,14 +236,14 @@ test_transfer_encoding_chunked (void)
   for (iter = 0; iter < 3; iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
       const char *content = NULL;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       unsigned pass;
       switch (iter)
         {
@@ -362,10 +362,10 @@ static void
 test_simple_post (void)
 {
   DskHttpClientStream *stream;
-  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
   RequestData request_data = REQUEST_DATA_DEFAULT;
-  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
   DskHttpClientStreamTransfer *xfer;
   DskHttpClientStreamFuncs request_funcs_0;
   DskError *error = NULL;
@@ -489,9 +489,9 @@ test_transfer_encoding_chunked_post (void)
   for (iter = 0; iter < 4; iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
@@ -655,7 +655,7 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
       DskHttpClientStream *stream;
       DskMemorySource *source;
       DskMemorySink *sink;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       DskError *error = NULL;
 
       source = dsk_memory_source_new ();
@@ -696,8 +696,8 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
               /* === queries === */
             case 'Q':
               {
-                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
                 DskHttpClientStreamTransfer *xfer;
                 req_options.verb = DSK_HTTP_VERB_GET;
                 req_options.host = "localhost";
@@ -712,8 +712,8 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
               break;
             case 'P':
               {
-                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
                 DskHttpClientStreamTransfer *xfer;
                 const char *pd_str = "this is post data\n";
                 DskMemorySource *post_data;
@@ -736,8 +736,8 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
               break;
             case 'T':
               {
-                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+                DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+                DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
                 DskHttpClientStreamTransfer *xfer;
                 const char *pd_str = "this is post data\n";
                 DskMemorySource *post_data;
@@ -853,10 +853,10 @@ static DskError *
 test_bad_response (const char *response)
 {
   DskHttpClientStream *stream;
-  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
   RequestData request_data = REQUEST_DATA_DEFAULT;
-  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
   DskHttpClientStreamFuncs request_funcs_0;
   DskError *error = NULL;
   memset (&request_funcs_0, 0, sizeof (request_funcs_0));
@@ -1018,10 +1018,10 @@ test_gzip_download (void)
       for (iter = 0; iter < DSK_N_ELEMENTS (response_content_versions); iter++)
         {
           DskHttpClientStream *stream;
-          DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+          DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
           RequestData request_data = REQUEST_DATA_DEFAULT;
-          DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-          DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+          DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+          DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
           DskHttpClientStreamTransfer *xfer;
           DskHttpClientStreamFuncs request_funcs_0;
           DskError *error = NULL;
@@ -1112,10 +1112,10 @@ static void
 test_pre_gzipped_post_data_0 (void)
 {
   DskHttpClientStream *stream;
-  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
   RequestData request_data = REQUEST_DATA_DEFAULT;
-  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
   DskHttpClientStreamTransfer *xfer;
   DskHttpClientStreamFuncs request_funcs_0;
   DskError *error = NULL;
@@ -1204,10 +1204,10 @@ static void
 test_pre_gzipped_post_data_1 (void)
 {
   DskHttpClientStream *stream;
-  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
   RequestData request_data = REQUEST_DATA_DEFAULT;
-  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
   DskHttpClientStreamTransfer *xfer;
   DskHttpClientStreamFuncs request_funcs_0;
   DskError *error = NULL;
@@ -1423,10 +1423,10 @@ test_bad_gzip (void)
       for (iter = 0; iter < DSK_N_ELEMENTS (response_content_versions); iter++)
         {
           DskHttpClientStream *stream;
-          DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+          DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
           RequestData request_data = REQUEST_DATA_DEFAULT;
-          DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-          DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+          DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+          DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
           DskHttpClientStreamTransfer *xfer;
           DskHttpClientStreamFuncs request_funcs_0;
           DskError *error = NULL;
@@ -1534,10 +1534,10 @@ test_transport_errors_reading (void)
   for (iter = 0; iter < DSK_N_ELEMENTS (response_content_versions); iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
@@ -1595,10 +1595,10 @@ test_random_response (void)
   for (iter = 0; iter < 6400; iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       unsigned i;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
@@ -1692,10 +1692,10 @@ test_head_simple (dsk_boolean byte_by_byte)
   for (iter = 0; iter < DSK_N_ELEMENTS (response_content_versions); iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
@@ -1769,14 +1769,14 @@ test_head_transfer_encoding_chunked (void)
   for (iter = 0; iter < 3; iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
       RequestData request_data = REQUEST_DATA_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_0;
       DskError *error = NULL;
       const char *content;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       unsigned pass;
       switch (iter)
         {
@@ -1883,13 +1883,13 @@ test_simple_websocket (void)
   for (iter = 0; iter < 1; iter++)
     {
       DskHttpClientStream *stream;
-      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamOptions options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
+      DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
       DskHttpClientStreamTransfer *xfer;
       DskHttpClientStreamFuncs request_funcs_websocket;
       DskError *error = NULL;
       const char *content;
-      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+      DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
       unsigned pass;
       switch (iter)
         {

@@ -293,7 +293,7 @@ DskHttpRequest *dsk_http_request_new (DskHttpRequestOptions *options,
 void            dsk_http_request_init_options (DskHttpRequest *request,
                                                DskHttpRequestOptions *out);
 
-#define DSK_HTTP_REQUEST_OPTIONS_DEFAULT \
+#define DSK_HTTP_REQUEST_OPTIONS_INIT \
 {                                                               \
   DSK_HTTP_VERB_GET,            /* status_code */               \
   1,                            /* http_major_version */        \
@@ -370,7 +370,7 @@ struct _DskHttpResponseOptions
   dsk_boolean parsed_transfer_encoding_chunked;
   dsk_boolean parsed_connection_close;
 };
-#define DSK_HTTP_RESPONSE_OPTIONS_DEFAULT                       \
+#define DSK_HTTP_RESPONSE_OPTIONS_INIT                       \
 {                                                               \
   NULL,                         /* request */                   \
   200,                          /* status_code */               \

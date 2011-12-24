@@ -301,7 +301,7 @@ char *dsk_cgi_make_path (unsigned pre_query_len,
                          unsigned    n_cgi,
                          DskCgiVariable *cgi)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   unsigned i, j;
   dsk_buffer_append (&buffer, pre_query_len, pre_query);
   for (i = 0; i < n_cgi; i++)

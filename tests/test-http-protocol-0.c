@@ -9,7 +9,7 @@ try_parse_request_from_string (const char *str,
                                DskError  **error)
 {
   unsigned len = strlen (str);
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskHttpRequest *rv;
   dsk_buffer_append (&buffer, len, str);
   rv = dsk_http_request_parse_buffer (&buffer, len, error);

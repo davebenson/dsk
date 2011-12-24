@@ -130,7 +130,7 @@ static void
 test_table_trivial (void)
 {
   DskTable *table;
-  DskTableConfig config = DSK_TABLE_CONFIG_DEFAULT;
+  DskTableConfig config = DSK_TABLE_CONFIG_INIT;
   unsigned value_len;
   const uint8_t *value_data;
   DskError *error = NULL;
@@ -164,7 +164,7 @@ test_table_simple (unsigned         rand_test_size,
   char *dir;
 
   DskTable *table;
-  DskTableConfig config = DSK_TABLE_CONFIG_DEFAULT;
+  DskTableConfig config = DSK_TABLE_CONFIG_INIT;
   DskTableReader *reader;
   table = dsk_table_new (&config, &error);
   if (table == NULL)

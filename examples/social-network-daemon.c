@@ -483,7 +483,7 @@ cgi_handler__lookup_user (DskHttpServerRequest *request,
     }
 
   /* return JSON */
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskHttpServerResponseOptions resp_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
   dsk_buffer_append_string (&buffer, "{\"user\":\"");
 
@@ -893,7 +893,7 @@ cgi_handler__search    (DskHttpServerRequest *request,
   unsigned n_scored = 0;
 
   /* lookup blathers until we have enough */
-  DskBuffer response = DSK_BUFFER_STATIC_INIT;
+  DskBuffer response = DSK_BUFFER_INIT;
   unsigned n_blathers_scored;
   for (n_blathers_scored = 0; n_blathers_scored < at; n_blathers_scored++)
     {

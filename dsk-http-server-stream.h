@@ -51,7 +51,7 @@ struct _DskHttpServerStreamOptions
   uint64_t max_post_data_size;
   unsigned max_outgoing_buffer_size;
 };
-#define DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT          \
+#define DSK_HTTP_SERVER_STREAM_OPTIONS_INIT          \
 {                                                       \
   DSK_TRUE,             /* wait_for_content_complete */ \
   16*1024,              /* max_header_size */           \
@@ -149,7 +149,7 @@ struct  _DskHttpServerStreamResponseOptions
   int64_t content_length;            /* -1 means "no content_data */
   const uint8_t *content_body;
 };
-#define DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT \
+#define DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT \
 {                                                       \
   NULL,                 /* header_options */            \
   NULL,                 /* header */                    \

@@ -569,7 +569,7 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
   ParseInfo pi;
   char *at;
   char *tmp;
-  DskHttpRequestOptions options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions options = DSK_HTTP_REQUEST_OPTIONS_INIT;
   DskHttpRequest *rv;
   unsigned i;
 #define DEFAULT_INIT_N_MISC_HEADERS             8       /* must be power-of-two */
@@ -784,7 +784,7 @@ dsk_http_response_parse_buffer  (DskBuffer *buffer,
   char scratch[4096];
   ParseInfo pi;
   char *at;
-  DskHttpResponseOptions options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpResponseOptions options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
   DskHttpResponse *rv;
   char *misc_header_padding[DEFAULT_INIT_N_MISC_HEADERS*2];
   unsigned i;

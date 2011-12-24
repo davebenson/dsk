@@ -286,7 +286,7 @@ parse_byte_spec (const char *spec, uint8_t *out, DskError **error)
   else if (spec[0] == '\\')
     {
       /* fire up c-unquoter */
-      DskBuffer buf = DSK_BUFFER_STATIC_INIT;
+      DskBuffer buf = DSK_BUFFER_INIT;
       DskOctetFilter *f = dsk_c_unquoter_new (DSK_FALSE);
       if (!dsk_octet_filter_process (f, &buf, strlen (spec), (uint8_t*)spec, error)
        || !dsk_octet_filter_finish (f, &buf, error))
@@ -387,8 +387,8 @@ int main(int argc, char **argv)
 {
   DskError *error = NULL;
   DskOctetFilter *filter;
-  DskBuffer in = DSK_BUFFER_STATIC_INIT;
-  DskBuffer out = DSK_BUFFER_STATIC_INIT;
+  DskBuffer in = DSK_BUFFER_INIT;
+  DskBuffer out = DSK_BUFFER_INIT;
   dsk_cmdline_init ("run various filters",
                     "Run a chain of DskOctetFilters, mostly useful for testing.\n",
                     NULL, 0);

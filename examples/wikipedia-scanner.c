@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
   size_t nread;
   uint8_t buf[4096];
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   while ((nread=fread (buf, 1, sizeof (buf), fp)) != 0)
     {
       DskError *error = NULL;

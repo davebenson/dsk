@@ -11,7 +11,7 @@ struct _DskIpAddress
   DskIpAddressType type;
   uint8_t address[16];          /* enough for ipv4 or ipv6 */
 };
-#define DSK_IP_ADDRESS_DEFAULT {0,{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}
+#define DSK_IP_ADDRESS_INIT {0,{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}
   
 dsk_boolean dsk_hostname_looks_numeric (const char *str);
 dsk_boolean dsk_ip_address_parse_numeric (const char *str,

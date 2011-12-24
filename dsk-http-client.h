@@ -81,7 +81,7 @@ struct _DskHttpClientOptions
 };
 
 /* TODO: provide some sort of evidence that these are good numbers */
-#define DSK_HTTP_CLIENT_OPTIONS_DEFAULT               \
+#define DSK_HTTP_CLIENT_OPTIONS_INIT               \
 {                                                     \
   0,        /* max_pipelined */                       \
   100,      /* max_connections */                     \
@@ -98,7 +98,7 @@ struct _DskHttpClientHostOptions
   int max_pipelined;
   int max_connections;
 };
-#define DSK_HTTP_CLIENT_HOST_OPTIONS_DEFAULT         \
+#define DSK_HTTP_CLIENT_HOST_OPTIONS_INIT         \
 {                                                    \
   -1,                                                \
   -1                                                 \

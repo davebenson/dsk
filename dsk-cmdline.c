@@ -501,7 +501,7 @@ check_mutually_exclusive_args (DskCmdlineMode *mode,
           }
       if (got_arg_name == NULL && at->one_required)
         {
-          DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+          DskBuffer buffer = DSK_BUFFER_INIT;
           for (i = 0; i < at->n_args; i++)
             {
               dsk_buffer_append_string (&buffer, " --");

@@ -71,6 +71,9 @@ unsigned       dsk_spdy_session_get_pending_stream_ids(DskSpdySession *session,
 DskSpdyStream  *dsk_spdy_session_retrieve_stream      (DskSpdySession *session,
                                                        uint32_t        stream_id,
                                                        DskSpdyHeaders *reply_headers);
+void            dsk_spdy_session_reject_stream        (DskSpdySession *session,
+                                                       uint32_t        stream_id);
+
 
 DskSpdyHeaders *dsk_spdy_session_peek_stream_headers  (DskSpdySession *session,
                                                        uint32_t        stream_id);

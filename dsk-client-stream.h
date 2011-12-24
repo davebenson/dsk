@@ -88,7 +88,7 @@ struct _DskClientStreamOptions
   int reconnect_time;        /* in milliseconds */
   int idle_disconnect_time;  /* in milliseconds */
 };
-#define DSK_CLIENT_STREAM_OPTIONS_DEFAULT \
+#define DSK_CLIENT_STREAM_OPTIONS_INIT \
 { NULL,                                     /* hostname */               \
   0,                                        /* port */                   \
   { 0, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} }, /* address */                \

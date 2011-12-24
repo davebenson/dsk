@@ -25,7 +25,7 @@ struct _DskBuffer
   DskBufferFragment    *last_frag;
 };
 
-#define DSK_BUFFER_STATIC_INIT		{ 0, NULL, NULL }
+#define DSK_BUFFER_INIT		{ 0, NULL, NULL }
 
 
 void     dsk_buffer_init                (DskBuffer       *buffer);

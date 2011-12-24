@@ -21,7 +21,7 @@ static dsk_boolean
 read_into_buffer (DskOctetSourceFilter *filter,
                   DskError            **error)
 {
-  DskBuffer tmp = DSK_BUFFER_STATIC_INIT;
+  DskBuffer tmp = DSK_BUFFER_INIT;
   switch (dsk_octet_source_read_buffer (filter->sub, &tmp, error))
     {
     case DSK_IO_RESULT_SUCCESS:

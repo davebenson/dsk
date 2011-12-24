@@ -34,7 +34,7 @@ parse_name_value_block (DskSpdySession *session,
                         unsigned        n_bytes,
                         DskError      **error)
 {
-  DskBuffer decompressed = DSK_BUFFER_STATIC_INIT;
+  DskBuffer decompressed = DSK_BUFFER_INIT;
   DskError *e = NULL;
   if (!dsk_octet_filter_process_buffer (session->decompressor, &decompressed,
                                         n_bytes, &session->incoming, DSK_FALSE,
@@ -648,6 +648,7 @@ DskSpdySession *
 dsk_spdy_session_new_client_tcp       (const char     *name,
                                        DskIpAddress   *address,
                                        unsigned        port,
+                                       DskSslContext  *ssl_context,
                                        DskError      **error)
 {
   DskClientStream *stream;

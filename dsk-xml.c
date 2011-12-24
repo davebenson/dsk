@@ -260,7 +260,7 @@ get_all_text_to_buffer (const DskXml *xml,
 
 char *dsk_xml_get_all_text (const DskXml *xml)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   char *rv;
   get_all_text_to_buffer (xml, &buffer);
   rv = dsk_malloc (buffer.size + 1);

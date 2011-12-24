@@ -57,7 +57,7 @@ struct _DskTableConfig
      that support range queries. */
   unsigned quantiles_n;
 };
-#define DSK_TABLE_CONFIG_DEFAULT                                       \
+#define DSK_TABLE_CONFIG_INIT                                       \
 {                                                                      \
   NULL, NULL,           /* standard comparator */                      \
   NULL, NULL,           /* standard replacement merge */               \
