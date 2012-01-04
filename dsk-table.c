@@ -36,7 +36,7 @@
  */
 
 #define MAX_ID_LENGTH     20
-#define FILE_BASENAME_FORMAT   "%llx"
+#define FILE_BASENAME_FORMAT   "%"PRIx64
 
 typedef struct _Merge Merge;
 typedef struct _PossibleMerge PossibleMerge;
