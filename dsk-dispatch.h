@@ -49,13 +49,25 @@ void  dsk_dispatch_adjust_timer    (DskDispatchTimer *timer,
 /* if possible, these are keyed off a clock that ignores clock-resets */
 DskDispatchTimer *
       dsk_dispatch_add_timer_millis(DskDispatch       *dispatch,
-                                    unsigned           milliseconds,
+                                    uint64_t           milliseconds,
                                     DskTimerFunc       func,
                                     void              *func_data);
 void  dsk_dispatch_adjust_timer_millis (DskDispatchTimer *timer,
-                                        unsigned          milliseconds);
+                                        uint64_t          milliseconds);
 
 void  dsk_dispatch_remove_timer (DskDispatchTimer *);
+
+
+/* querying the timer (UNIMPLEMENTED) */
+
+dsk_boolean  dsk_dispatch_timer_is_wallclock (DskDispatchTimer *);
+uint64_t     dsk_dispatch_timer_get_expiration_millis (DskDispatchTimer *);
+
+
+/* see effective-timers.txt
+   
+ */
+dsk_boolean  dsk_supports_effective_timers (void);
 
 /* Idle functions */
 typedef void (*DskIdleFunc)   (void               *func_data);
