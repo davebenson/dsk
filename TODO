@@ -25,6 +25,11 @@ x mode-based programs:
 STEAL:
 _ glib's timezone code
 
+TIMERS:
+_ add boolean in DskDispatchTimer for whether it's keyed off
+  wall-clock time (for absolute time timers)
+  or unsettable timer (for relative timers)
+
 TESTS:
 _ request header parsing
 _ response header parsing
