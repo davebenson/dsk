@@ -79,7 +79,8 @@ struct _Merge
   DskTableFileWriter *writer;
   uint64_t entries_written;
   uint64_t inputs_remaining;
-  dsk_boolean is_complete;
+  unsigned is_complete : 1;
+  unsigned finishing_writer : 1;
 
   Merge *next;
 };
@@ -535,6 +536,8 @@ start_merge_job (DskTable *table,
   /* TODO: it is also complete if all preceding files are of 0 length.
      Not sure if it is worth checking for that. */
   merge->is_complete = merge->a->first_entry_index == 0ULL;
+
+  merge->finishing_writer = DSK_FALSE;
 
   /* insert sorted into list of running merges */
   p_next = &table->running_merges;
@@ -1055,12 +1058,26 @@ delete_file (DskTable *table,
 }
 
 static dsk_boolean
-merge_job_finished (DskTable  *table,
-                    Merge     *merge,
-                    DskError **error)
+merge_job_readers_at_eof (DskTable  *table,
+                          Merge     *merge,
+                          DskError **error)
 {
   File *new;
   unsigned i;
+  if (merge->writer->finish != NULL)
+    {
+      switch (merge->writer->finish (merge->writer, error))
+        {
+        case DSK_TABLE_FILE_WRITER_FINISHED:
+          break;
+        case DSK_TABLE_FILE_WRITER_FINISHING:
+          merge->finishing_writer = DSK_TRUE;
+          return DSK_TRUE;
+        case DSK_TABLE_FILE_WRITER_FINISH_FAILED:
+          return DSK_FALSE;
+        }
+    }
+
   /* close writer */
   if (!merge->writer->close (merge->writer, error))
     {
@@ -1119,10 +1136,18 @@ merge_job_finished (DskTable  *table,
         }
     }
 
+  dsk_assert (merge == table->running_merges);
+  table->running_merges = merge->next;
+  merge->a_reader->destroy (merge->a_reader);
+  merge->b_reader->destroy (merge->b_reader);
+  merge->writer->destroy (merge->writer);
+  dsk_free (merge);
+
+
   /* deal with new possible merge jobs */
-  if (new->prev->merge == NULL)
+  if (new->prev != NULL && new->prev->merge == NULL)
     create_possible_merge (table, new->prev);
-  if (new->next->merge == NULL)
+  if (new->next != NULL && new->next->merge == NULL)
     create_possible_merge (table, new);
 
   /* maybe time to start another merge job running */
@@ -1137,12 +1162,14 @@ run_first_merge_job (DskTable *table,
                      DskError **error)
 {
   Merge *merge = table->running_merges;
+  if (merge->finishing_writer)
+    return merge_job_readers_at_eof (table, merge, error);
   if (merge->a_reader->at_eof)
     {
       if (merge->b_reader->at_eof)
         {
           /* done */
-          if (!merge_job_finished (table, merge, error))
+          if (!merge_job_readers_at_eof (table, merge, error))
             return DSK_FALSE;
         }
       else

@@ -3,6 +3,13 @@ typedef struct _DskTableFileWriter DskTableFileWriter;
 typedef struct _DskTableFileSeeker DskTableFileSeeker;
 typedef struct _DskTableFileCompressor DskTableFileCompressor;
 
+typedef enum
+{
+  DSK_TABLE_FILE_WRITER_FINISHED,
+  DSK_TABLE_FILE_WRITER_FINISHING,
+  DSK_TABLE_FILE_WRITER_FINISH_FAILED
+} DskTableFileWriterFinish;
+
 struct _DskTableFileWriter
 {
   dsk_boolean (*write)  (DskTableFileWriter *writer,
@@ -10,6 +17,9 @@ struct _DskTableFileWriter
                          const uint8_t      *key_data,
                          unsigned            value_length,
                          const uint8_t      *value_data,
+                         DskError          **error);
+  DskTableFileWriterFinish (*finish) 
+                        (DskTableFileWriter *writer,
                          DskError          **error);
   dsk_boolean (*close)  (DskTableFileWriter *writer,
                          DskError          **error);

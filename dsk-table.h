@@ -10,6 +10,7 @@ struct _DskTableBuffer
   uint8_t *data;
   unsigned alloced;
 };
+#define DSK_TABLE_BUFFER_INIT {0,NULL,0}
 DSK_INLINE_FUNC uint8_t *
 dsk_table_buffer_set_size (DskTableBuffer *buffer,
                            unsigned        length);
@@ -70,6 +71,8 @@ struct _DskTableConfig
 
 DskTable   *dsk_table_new          (DskTableConfig *config,
                                     DskError      **error);
+
+/* Returns FALSE on error or on "not found". */
 dsk_boolean dsk_table_lookup       (DskTable       *table,
                                     unsigned        key_length,
                                     const uint8_t  *key_data,

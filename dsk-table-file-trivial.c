@@ -139,6 +139,7 @@ table_file_trivial__new_writer (DskTableFileInterface   *iface,
   {
     {
       table_file_trivial_writer__write,
+      NULL,                     /* no finish */
       table_file_trivial_writer__close,
       table_file_trivial_writer__destroy
     },
