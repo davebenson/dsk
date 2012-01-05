@@ -244,13 +244,56 @@ str_table_rbtree__set(DskStrTable   *str_table,
   memcpy (nv, value, rbtree->value_size);
 }
 
+static dsk_boolean
+foreach_recursive (DskStrTableRbtree *rbtree,
+                   unsigned prefix_length,
+                   const char *prefix,
+                   DskStrTableRbtreeNode *node,
+                   DskStrTableForeachFind foreach,
+                   void          *foreach_data)
+{
+  int cmp = 0;
+  char *node_str = GET_NODE_STRING (node);
+  for (i = 0; i < prefix_length && cmp == 0; i++)
+    {
+      if (node_str[i] == 0)
+        {
+          cmp = 1;
+          break;
+        }
+      cmp = (int)(uint8_t)prefix[i] - (int)(uint8_t)node_str[i];
+    }
+  if (cmp <= 0 && node->left != NULL)
+    {
+      if (foreach_recursive (rbtree, prefix_length, prefix, node->left,
+                             foreach, foreach_data))
+        return DSK_TRUE;
+    }
+  if (cmp == 0)
+    if (foreach (node_str, node + 1, foreach_data))
+      return DSK_TRUE;
+  if (cmp >= 0 && node->right != NULL)
+    {
+      if (foreach_recursive (rbtree, prefix_length, prefix, node->right,
+                             foreach, foreach_data))
+        return DSK_TRUE;
+    }
+  return DSK_FALSE;
+}
+
 static dsk_boolean 
 str_table_rbtree__foreach(DskStrTable   *str_table,
                           const char    *prefix,
                           DskStrTableForeachFind foreach,
                           void          *foreach_data)
 {
-  ...
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  unsigned prefix_length = strlen (prefix);
+  DskStrTableRbtreeNode *at = rbtree->top;
+  if (at)
+    return foreach_recursive (prefix_length, prefix, at, foreach, foreach_data);
+  else
+    return DSK_FALSE;
 }
 
 DskStrTableInterface dsk_str_table_interface_rbtree =
