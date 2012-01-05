@@ -18,6 +18,8 @@
 #include "dsk-dns-client.h"
 #include "dsk-octet-listener.h"
 
+#include "dsk-str-table.h"
+
 #include "dsk-network-interface-list.h"
 
 #include "dsk-dns-protocol.h"
@@ -95,6 +97,7 @@
 #ifdef DSK_INCLUDE_TS0
 #include "dsk-ts0.h"
 #endif
+
 
 #undef _dsk_inline_assert
 

@@ -1,4 +1,6 @@
 
+typedef struct _DskStrTable DskStrTable;
+typedef struct _DskStrTableInterface DskStrTableInterface;
 
 
 DskStrTable *dsk_str_table_new (size_t value_size,

@@ -1,22 +1,25 @@
-#include "dsk-str-table.h"
+#include <string.h>
+#include "dsk.h"
+#include "dsk-rbtree-macros.h"
 
 typedef struct _DskStrTableRbtree DskStrTableRbtree;
+typedef struct _DskStrTableRbtreeNode DskStrTableRbtreeNode;
+
 struct _DskStrTableRbtree
 {
-  DskStrtableRbtreeNode *top;
+  DskStrTableRbtreeNode *top;
   size_t value_size;
   void *default_value;
 };
-typedef struct _DskStrTableRbtreeNode DskStrTableRbtreeNode;
 struct _DskStrTableRbtreeNode
 {
-  DskStrtableRbtreeNode *parent, *left, *right;
+  DskStrTableRbtreeNode *parent, *left, *right;
   dsk_boolean is_red;
   /* value follows, then string follows that */
 };
 
 #define GET_NODE_STRING(node) \
-  ((char*)(node) + sizeof (DskStrtableRbtreeNode) + rbtree->value_size)
+  ((char*)(node) + sizeof (DskStrTableRbtreeNode) + rbtree->value_size)
 
 #define COMPARE_RBTREE_NODES(a,b, rv) \
   rv = strcmp (GET_NODE_STRING (a), GET_NODE_STRING (b))
@@ -24,7 +27,7 @@ struct _DskStrTableRbtreeNode
   rv = strcmp (a, GET_NODE_STRING (b))
 
 #define GET_RBTREE()   \
-  rbtree->top, DskStrtableRbtreeNode *, DSK_STD_GET_IS_RED, \
+  rbtree->top, DskStrTableRbtreeNode *, DSK_STD_GET_IS_RED, \
   DSK_STD_SET_IS_RED, parent, left, right, \
   COMPARE_RBTREE_NODES
 
@@ -46,8 +49,8 @@ static void *
 str_table_rbtree__get (DskStrTable   *table,
                        const char    *str)
 {
-  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) to_init;
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  DskStrTableRbtreeNode *node;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (), str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
   if (node == NULL)
@@ -61,6 +64,8 @@ str_table_rbtree__get_prev     (DskStrTable   *table,
                      const char    *str,
                      const char   **key_out)
 {
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  DskStrTableRbtreeNode *node;
   DSK_RBTREE_INFIMUM_COMPARATOR (GET_RBTREE (), str, COMPARE_STR_TO_RBTREE_NODE,
                                  node);
   if (node == NULL)
@@ -70,7 +75,7 @@ str_table_rbtree__get_prev     (DskStrTable   *table,
   if (node == NULL)
     return NULL;
   if (key_out != NULL)
-    key_out = GET_NODE_STRING (node);
+    *key_out = GET_NODE_STRING (node);
   return node + 1;
 }
 
@@ -79,6 +84,8 @@ str_table_rbtree__get_next     (DskStrTable   *table,
                      const char    *str,
                      const char   **key_out)
 {
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  DskStrTableRbtreeNode *node;
   DSK_RBTREE_SUPREMUM_COMPARATOR (GET_RBTREE (),
                                   str, COMPARE_STR_TO_RBTREE_NODE,
                                   node);
@@ -89,7 +96,7 @@ str_table_rbtree__get_next     (DskStrTable   *table,
   if (node == NULL)
     return NULL;
   if (key_out != NULL)
-    key_out = GET_NODE_STRING (node);
+    *key_out = GET_NODE_STRING (node);
   return node + 1;
 }
 
@@ -98,14 +105,16 @@ str_table_rbtree__force        (DskStrTable   *table,
                                 const char    *str)
 {
   DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtreeNode *node;
+  unsigned len;
+  DskStrTableRbtreeNode *conflict;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (),
                                 str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
   if (node != NULL)
     return node + 1;
   len = strlen (str);
-  node = dsk_malloc (sizeof (DskStrtableRbtreeNode) + rbtree->value_size
+  node = dsk_malloc (sizeof (DskStrTableRbtreeNode) + rbtree->value_size
                      + len + 1);
   memcpy (GET_NODE_STRING (node), str, len + 1);
   DSK_RBTREE_INSERT (GET_RBTREE (), node, conflict);
@@ -123,7 +132,9 @@ str_table_rbtree__force_noinit (DskStrTable   *table,
                                 dsk_boolean *created_opt_out)
 {
   DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtreeNode *node;
+  unsigned len;
+  DskStrTableRbtreeNode *conflict;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (),
                                 str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
@@ -134,7 +145,7 @@ str_table_rbtree__force_noinit (DskStrTable   *table,
       return node + 1;
     }
   len = strlen (str);
-  node = dsk_malloc (sizeof (DskStrtableRbtreeNode) + rbtree->value_size
+  node = dsk_malloc (sizeof (DskStrTableRbtreeNode) + rbtree->value_size
                      + len + 1);
   memcpy (GET_NODE_STRING (node), str, len + 1);
   DSK_RBTREE_INSERT (GET_RBTREE (), node, conflict);
@@ -149,16 +160,16 @@ str_table_rbtree__create       (DskStrTable   *table,
                                 const char    *str)
 {
   DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtreeNode *node;
   unsigned len;
-  DskStrtableRbtreeNode *conflict;
+  DskStrTableRbtreeNode *conflict;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (),
                                 str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
   if (node != NULL)
     return NULL;
   len = strlen (str);
-  node = dsk_malloc (sizeof (DskStrtableRbtreeNode) + rbtree->value_size
+  node = dsk_malloc (sizeof (DskStrTableRbtreeNode) + rbtree->value_size
                      + len + 1);
   memcpy (GET_NODE_STRING (node), str, len + 1);
   DSK_RBTREE_INSERT (GET_RBTREE (), node, conflict);
@@ -175,7 +186,8 @@ str_table_rbtree__remove(DskStrTable   *table,
                          const char    *str,
                          void          *value_opt_out)
 {
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  DskStrTableRbtreeNode *node;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (),
                                 str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
@@ -190,11 +202,11 @@ str_table_rbtree__remove(DskStrTable   *table,
 
 static void *
 str_table_rbtree__create_or_remove_noinit
-                    (DskStrTable   *str_table,
+                    (DskStrTable   *table,
                      const char    *str)
 {
-  ...
-  DskStrtableRbtreeNode *node;
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
+  DskStrTableRbtreeNode *node;
   DSK_RBTREE_LOOKUP_COMPARATOR (GET_RBTREE (),
                                 str, COMPARE_STR_TO_RBTREE_NODE,
                                 node);
@@ -208,9 +220,9 @@ str_table_rbtree__create_or_remove_noinit
     {
       /* create */
       unsigned len = strlen (str);
-      DskStrtableRbtreeNode *node = dsk_malloc (sizeof (DskStrtableRbtreeNode) + rbtree->value_size
+      DskStrTableRbtreeNode *node = dsk_malloc (sizeof (DskStrTableRbtreeNode) + rbtree->value_size
                          + len + 1);
-      DskStrtableRbtreeNode *conflict;
+      DskStrTableRbtreeNode *conflict;
       memcpy (GET_NODE_STRING (node), str, len + 1);
       DSK_RBTREE_INSERT (GET_RBTREE (), node, conflict);
       dsk_assert (conflict == NULL);
@@ -223,6 +235,7 @@ str_table_rbtree__create_or_remove
                     (DskStrTable   *table,
                      const char    *str)
 {
+  DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
   void *rv = str_table_rbtree__create_or_remove_noinit (table, str);
   if (rv != NULL)
     {
@@ -235,12 +248,12 @@ str_table_rbtree__create_or_remove
 }
 
 static void  
-str_table_rbtree__set(DskStrTable   *str_table,
+str_table_rbtree__set(DskStrTable   *table,
                       const char    *str,
                       const void    *value)
 {
   DskStrTableRbtree *rbtree = (DskStrTableRbtree *) table;
-  void *nv = str_table_rbtree__force_noinit (str_table, str, NULL);
+  void *nv = str_table_rbtree__force_noinit (table, str, NULL);
   memcpy (nv, value, rbtree->value_size);
 }
 
@@ -254,6 +267,7 @@ foreach_recursive (DskStrTableRbtree *rbtree,
 {
   int cmp = 0;
   char *node_str = GET_NODE_STRING (node);
+  unsigned i;
   for (i = 0; i < prefix_length && cmp == 0; i++)
     {
       if (node_str[i] == 0)
@@ -282,7 +296,7 @@ foreach_recursive (DskStrTableRbtree *rbtree,
 }
 
 static dsk_boolean 
-str_table_rbtree__foreach(DskStrTable   *str_table,
+str_table_rbtree__foreach(DskStrTable   *table,
                           const char    *prefix,
                           DskStrTableForeachFind foreach,
                           void          *foreach_data)
@@ -291,7 +305,7 @@ str_table_rbtree__foreach(DskStrTable   *str_table,
   unsigned prefix_length = strlen (prefix);
   DskStrTableRbtreeNode *at = rbtree->top;
   if (at)
-    return foreach_recursive (prefix_length, prefix, at, foreach, foreach_data);
+    return foreach_recursive (rbtree, prefix_length, prefix, at, foreach, foreach_data);
   else
     return DSK_FALSE;
 }
