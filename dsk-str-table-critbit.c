@@ -115,7 +115,6 @@ str_table_critbit__get (DskStrTable   *table,
                        const char    *str)
 {
   DskStrTableCritbit *critbit = (DskStrTableCritbit *) table;
-  uint8_t *in = (uint8_t*) str;
   unsigned bit_at = 0;
   unsigned n_bits = strlen (str) * 8;
 
@@ -134,7 +133,7 @@ str_table_critbit__get (DskStrTable   *table,
   for (;;)   /* While processing inner nodes: */
     {
       /* scan common bits */
-      int cmp = compare_aligned_bits (table, bit_at, inner->n_common_bits, str, (const uint8_t*)(inner+1));
+      int cmp = compare_aligned_bits (bit_at, inner->n_common_bits, str, (const uint8_t*)(inner+1));
       if (cmp != 0)
         return NULL;
       bit_at += inner->n_common_bits;
@@ -146,8 +145,10 @@ str_table_critbit__get (DskStrTable   *table,
         }
 
       /* jump as appropriate */
-      child = inner->children[(((uint8_t)(str[bit_at/8])) >> (7-(bit_at%8))) & 1];
+      intptr_t child = inner->children[(str[bit_at/8] >> (7-(bit_at%8))) & 1];
       bit_at++;
+      if (child == 0)
+        return NULL;
       if (IS_CHILD_LEAF (child))
         {
           leaf = CHILD_LEAF (child);
@@ -158,7 +159,7 @@ str_table_critbit__get (DskStrTable   *table,
 
 at_leaf:
   /* scan remaining bits */
-  if (compare_aligned_bits (table, bit_at, leaf->n_remaining_bits,
+  if (compare_aligned_bits (bit_at, leaf->n_remaining_bits,
                             str, (const uint8_t*)(leaf + 1)) != 0)
     return NULL;
   return ((char*)(leaf) - critbit->value_size_aligned);
@@ -166,17 +167,49 @@ at_leaf:
 
 static void *
 str_table_critbit__get_prev     (DskStrTable   *table,
-                     const char    *str,
-                     const char   **key_out)
+                                 const char    *str,
+                                 const char   **key_out)
 {
   DskStrTableCritbit *critbit = (DskStrTableCritbit *) table;
+  DskStrTableCritbitInnerNode *last_right_parent = NULL;
+  DskStrTableCritbitLeafNode *leaf = NULL;
+  unsigned bit_at = 0;
+  if (critbit->top == 0)
+    return NULL;
+  if (IS_CHILD_LEAF (critbit->top))
+    {
+      leaf = CHILD_LEAF (critbit->top);
+      goto handle_leaf;
+    }
+  else
+    {
+      DskStrTableCritbitInnerNode *inner = CHILD_INNER (critbit->top);
+      for (;;)
+        {
+          int cmp = compare_aligned_bits (...);
+          if (cmp < 0)  /* str < node */
+            {
+              ...
+            }
+          else if (cmp > 0) /* str > node */
+            {
+              ...
+            }
+          else
+            {
+              bit_at += ...;
+            }
+        }
+    }
+
+handle_leaf:
   ...
 }
 
 static void *
 str_table_critbit__get_next     (DskStrTable   *table,
-                     const char    *str,
-                     const char   **key_out)
+                                 const char    *str,
+                                 const char   **key_out)
 {
   DskStrTableCritbit *critbit = (DskStrTableCritbit *) table;
   ...
