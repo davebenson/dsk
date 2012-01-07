@@ -70,6 +70,11 @@
  * LOOKUP_LT and LOOKUP_GT would be natural methods too-- for lookups
  * that don't permit equality.
  *
+ * XXX (cont): or better, rename LOOKUP_COMPARATOR to FIND and rename
+ * INFIMUM_COMPARATOR, SUPREMUM_COMPARATOR to FIND_PREV_EQ, FIND_NEXT_EL resp.
+ * Ditch INFIMUM, SUPREMUM (since it's trivial to pass the comparator in
+ * in the worst case).
+ *
  *
  * Occasionally, you may need the "RBCTREE", which has the is_red flag,
  * but also keeps a "count" field at every node telling the size of that subtree.
