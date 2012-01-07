@@ -1,8 +1,8 @@
 
 #include "dsk-config.h"
 
-typedef struct _GskQsortStackNode GskQsortStackNode;
-typedef struct _GskQsortStack GskQsortStack;
+typedef struct _DskQsortStackNode DskQsortStackNode;
+typedef struct _DskQsortStack DskQsortStack;
 
 /* Amount of stack to allocate: should be log2(max_array_size)+1.
    on 32-bit, this uses 33*8=264 bytes;
@@ -16,9 +16,9 @@ typedef struct _GskQsortStack GskQsortStack;
 #endif
 
 /* Maximum number of elements to sort with insertion sort instead of qsort */
-#define GSK_INSERTION_SORT_THRESHOLD	4
+#define DSK_INSERTION_SORT_THRESHOLD	4
 
-struct _GskQsortStackNode
+struct _DskQsortStackNode
 {
   size_t start, len;
 };
@@ -26,386 +26,390 @@ struct _GskQsortStackNode
 
 #define DSK_QSORT(array, type, n_elements, compare)		             \
   DSK_QSORT_FULL(array, type, n_elements, compare,                           \
-                 GSK_INSERTION_SORT_THRESHOLD,                               \
+                 DSK_INSERTION_SORT_THRESHOLD,                               \
                  DSK_QSORT_STACK_MAX_SIZE,                                   \
                  /* no stack guard assertion */)
 
 #define DSK_QSORT_DEBUG(array, type, n_elements, compare)		     \
   DSK_QSORT_FULL(array, type, n_elements, compare,                           \
-                 GSK_INSERTION_SORT_THRESHOLD,                               \
+                 DSK_INSERTION_SORT_THRESHOLD,                               \
                  DSK_QSORT_STACK_MAX_SIZE,                                   \
                  DSK_QSORT_ASSERT_STACK_SIZE)
 
-#define GSK_QSELECT(array, type, n_elements, n_select, compare)		     \
-  GSK_QSELECT_FULL(array, type, n_elements, n_select, compare,               \
-                   GSK_INSERTION_SORT_THRESHOLD,                             \
+/* Return the top n_select elements.  (They are sorted)
+   The remaining elements are at the end of the array, not
+   in any particular order. */
+#define DSK_QSELECT(array, type, n_elements, n_select, compare)		     \
+  DSK_QSELECT_FULL(array, type, n_elements, n_select, compare,               \
+                   DSK_INSERTION_SORT_THRESHOLD,                             \
                    DSK_QSORT_STACK_MAX_SIZE,                                 \
                    /* no stack guard assertion */)
 
-#define DSK_QSORT_FULL(array, type, n_elements, compare, isort_threshold, stack_size, ss_assertion)    \
-  do{                                                              \
-    int gsk_rv;                                                             \
-    unsigned  gsk_stack_size;                                                    \
-    GskQsortStackNode gsk_stack[stack_size];                                 \
-    type gsk_tmp_swap;                                                       \
-    GskQsortStackNode gsk_node;                                              \
-    gsk_node.start = 0;                                                      \
-    gsk_node.len = (n_elements);                                             \
-    gsk_stack_size = 0;                                                      \
+#define DSK_QSORT_FULL(array, type, n_elements, compare, isort_threshold, stack_size, ss_assertion) \
+  do{                                                                        \
+    int dsk_rv;                                                              \
+    unsigned  dsk_stack_size;                                                \
+    DskQsortStackNode dsk_stack[stack_size];                                 \
+    type dsk_tmp_swap;                                                       \
+    DskQsortStackNode dsk_node;                                              \
+    dsk_node.start = 0;                                                      \
+    dsk_node.len = (n_elements);                                             \
+    dsk_stack_size = 0;                                                      \
     if (n_elements <= isort_threshold)                                       \
-      GSK_INSERTION_SORT(array,type,n_elements,compare);                     \
+      DSK_INSERTION_SORT(array,type,n_elements,compare);                     \
     else                                                                     \
       for(;;)                                                                \
         {                                                                    \
-          GskQsortStackNode gsk_stack_nodes[2];                              \
+          DskQsortStackNode dsk_stack_nodes[2];                              \
           /* implement median-of-three; sort so that  */                     \
-          /* *gsk_a <= *gsk_b <= *gsk_c               */                     \
-          type *gsk_lo = array + gsk_node.start;                             \
-          type *gsk_hi = gsk_lo + gsk_node.len - 1;                          \
-          type *gsk_a = gsk_lo;                                              \
-          type *gsk_b = array + gsk_node.start + gsk_node.len / 2;           \
-          type *gsk_c = gsk_hi;                                              \
-          compare((*gsk_a), (*gsk_b), gsk_rv);                               \
-          if (gsk_rv < 0)                                                    \
+          /* *dsk_a <= *dsk_b <= *dsk_c               */                     \
+          type *dsk_lo = array + dsk_node.start;                             \
+          type *dsk_hi = dsk_lo + dsk_node.len - 1;                          \
+          type *dsk_a = dsk_lo;                                              \
+          type *dsk_b = array + dsk_node.start + dsk_node.len / 2;           \
+          type *dsk_c = dsk_hi;                                              \
+          compare((*dsk_a), (*dsk_b), dsk_rv);                               \
+          if (dsk_rv < 0)                                                    \
             {                                                                \
-              compare((*gsk_b), (*gsk_c), gsk_rv);                           \
-              if (gsk_rv <= 0)                                               \
+              compare((*dsk_b), (*dsk_c), dsk_rv);                           \
+              if (dsk_rv <= 0)                                               \
                 {                                                            \
                   /* a <= b <= c: already sorted */                          \
                 }                                                            \
               else                                                           \
                 {                                                            \
-                  compare((*gsk_a), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv <= 0)                                           \
+                  compare((*dsk_a), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv <= 0)                                           \
                     {                                                        \
                       /* a <= c <= b */                                      \
-                      gsk_tmp_swap = *gsk_b;                                 \
-                      *gsk_b = *gsk_c;                                       \
-                      *gsk_c = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_b;                                 \
+                      *dsk_b = *dsk_c;                                       \
+                      *dsk_c = dsk_tmp_swap;                                 \
                     }                                                        \
                   else                                                       \
                     {                                                        \
                       /* c <= a <= b */                                      \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_c;                                       \
-                      *gsk_c = *gsk_b;                                       \
-                      *gsk_b = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_c;                                       \
+                      *dsk_c = *dsk_b;                                       \
+                      *dsk_b = dsk_tmp_swap;                                 \
                     }                                                        \
                 }                                                            \
             }                                                                \
           else                                                               \
             {                                                                \
               /* *b < *a */                                                  \
-              compare((*gsk_b), (*gsk_c), gsk_rv);                           \
-              if (gsk_rv >= 0)                                               \
+              compare((*dsk_b), (*dsk_c), dsk_rv);                           \
+              if (dsk_rv >= 0)                                               \
                 {                                                            \
                   /* *c <= *b < *a */                                        \
-                  gsk_tmp_swap = *gsk_c;                                     \
-                  *gsk_c = *gsk_a;                                           \
-                  *gsk_a = gsk_tmp_swap;                                     \
+                  dsk_tmp_swap = *dsk_c;                                     \
+                  *dsk_c = *dsk_a;                                           \
+                  *dsk_a = dsk_tmp_swap;                                     \
                 }                                                            \
               else                                                           \
                 {                                                            \
                   /* b<a, b<c */                                             \
-                  compare((*gsk_a), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_a), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     {                                                        \
                       /* b < c <= a */                                       \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_b;                                       \
-                      *gsk_b = *gsk_c;                                       \
-                      *gsk_c = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_b;                                       \
+                      *dsk_b = *dsk_c;                                       \
+                      *dsk_c = dsk_tmp_swap;                                 \
                     }                                                        \
                   else                                                       \
                     {                                                        \
                       /* b < a < c */                                        \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_b;                                       \
-                      *gsk_b = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_b;                                       \
+                      *dsk_b = dsk_tmp_swap;                                 \
                     }                                                        \
                 }                                                            \
             }                                                                \
                                                                              \
-          /* ok, phew, now *gsk_a <= *gsk_b <= *gsk_c */                     \
+          /* ok, phew, now *dsk_a <= *dsk_b <= *dsk_c */                     \
                                                                              \
           /* partition this range of the array */                            \
-          gsk_a++;                                                           \
-          gsk_c--;                                                           \
+          dsk_a++;                                                           \
+          dsk_c--;                                                           \
           do                                                                 \
             {                                                                \
-              /* advance gsk_a to a element that violates */                 \
-              /* partitioning (or it hits gsk_b) */                          \
+              /* advance dsk_a to an element that violates */                \
+              /* partitioning (or it hits dsk_b) */                          \
               for (;;)                                                       \
                 {                                                            \
-                  compare((*gsk_a), (*gsk_b), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_a), (*dsk_b), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     break;                                                   \
-                  gsk_a++;                                                   \
+                  dsk_a++;                                                   \
                 }                                                            \
-              /* advance gsk_c to a element that violates */                 \
-              /* partitioning (or it hits gsk_b) */                          \
+              /* decrease dsk_c to an element that violates */               \
+              /* partitioning (or it hits dsk_b) */                          \
               for (;;)                                                       \
                 {                                                            \
-                  compare((*gsk_b), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_b), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     break;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_c--;                                                   \
                 }                                                            \
-              if (gsk_a < gsk_c)                                             \
+              if (dsk_a < dsk_c)                                             \
                 {                                                            \
-                  gsk_tmp_swap = *gsk_a;                                     \
-                  *gsk_a = *gsk_c;                                           \
-                  *gsk_c = gsk_tmp_swap;                                     \
-                  if (gsk_a == gsk_b)                                        \
-                    gsk_b = gsk_c;                                           \
-                  else if (gsk_b == gsk_c)                                   \
-                    gsk_b = gsk_a;                                           \
-                  gsk_a++;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_tmp_swap = *dsk_a;                                     \
+                  *dsk_a = *dsk_c;                                           \
+                  *dsk_c = dsk_tmp_swap;                                     \
+                  if (dsk_a == dsk_b)                                        \
+                    dsk_b = dsk_c;                                           \
+                  else if (dsk_b == dsk_c)                                   \
+                    dsk_b = dsk_a;                                           \
+                  dsk_a++;                                                   \
+                  dsk_c--;                                                   \
                 }                                                            \
-              else if (gsk_a == gsk_c)                                       \
+              else if (dsk_a == dsk_c)                                       \
                 {                                                            \
-                  gsk_a++;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_a++;                                                   \
+                  dsk_c--;                                                   \
                   break;                                                     \
                 }                                                            \
             }                                                                \
-          while (gsk_a <= gsk_c);                                            \
+          while (dsk_a <= dsk_c);                                            \
                                                                              \
           /* the two partitions are [lo,c] and [a,hi], */                    \
           /* which are disjoint since (a > b) by the above loop guard */     \
                                                                              \
-          /*{type*gsk_tmp2; for (gsk_tmp2=gsk_lo;gsk_tmp2<=gsk_c;gsk_tmp2++){ compare(*gsk_tmp2,*gsk_b,gsk_rv); g_assert(gsk_rv<=0); }}*/ \
-          /*{type*gsk_tmp2; for (gsk_tmp2=gsk_a;gsk_tmp2<=gsk_hi;gsk_tmp2++){ compare(*gsk_tmp2,*gsk_b,gsk_rv); g_assert(gsk_rv>=0); }}*/ \
-          /*{type*gsk_tmp2; for (gsk_tmp2=gsk_c+1;gsk_tmp2<gsk_a;gsk_tmp2++){ compare(*gsk_tmp2,*gsk_b,gsk_rv); g_assert(gsk_rv==0); }}*/ \
+          /* These commented-out macros validate that the partitioning worked. */ \
+          /*{type*dsk_tmp2; for (dsk_tmp2=dsk_lo;dsk_tmp2<=dsk_c;dsk_tmp2++){ compare(*dsk_tmp2,*dsk_b,dsk_rv); dsk_assert(dsk_rv<=0); }}*/ \
+          /*{type*dsk_tmp2; for (dsk_tmp2=dsk_a;dsk_tmp2<=dsk_hi;dsk_tmp2++){ compare(*dsk_tmp2,*dsk_b,dsk_rv); dsk_assert(dsk_rv>=0); }}*/ \
+          /*{type*dsk_tmp2; for (dsk_tmp2=dsk_c+1;dsk_tmp2<dsk_a;dsk_tmp2++){ compare(*dsk_tmp2,*dsk_b,dsk_rv); dsk_assert(dsk_rv==0); }}*/ \
                                                                              \
           /* push parts onto stack:  the bigger half must be pushed    */    \
           /* on first to guarantee that the max stack depth is O(log N) */   \
-          gsk_stack_nodes[0].start = gsk_node.start;                         \
-          gsk_stack_nodes[0].len = gsk_c - gsk_lo + 1;                       \
-          gsk_stack_nodes[1].start = gsk_a - (array);                        \
-          gsk_stack_nodes[1].len = gsk_hi - gsk_a + 1;                       \
-          if (gsk_stack_nodes[0].len < gsk_stack_nodes[1].len)               \
+          dsk_stack_nodes[0].start = dsk_node.start;                         \
+          dsk_stack_nodes[0].len = dsk_c - dsk_lo + 1;                       \
+          dsk_stack_nodes[1].start = dsk_a - (array);                        \
+          dsk_stack_nodes[1].len = dsk_hi - dsk_a + 1;                       \
+          if (dsk_stack_nodes[0].len < dsk_stack_nodes[1].len)               \
             {                                                                \
-              GskQsortStackNode gsk_stack_node_tmp = gsk_stack_nodes[0];     \
-              gsk_stack_nodes[0] = gsk_stack_nodes[1];                       \
-              gsk_stack_nodes[1] = gsk_stack_node_tmp;                       \
+              DskQsortStackNode dsk_stack_node_tmp = dsk_stack_nodes[0];     \
+              dsk_stack_nodes[0] = dsk_stack_nodes[1];                       \
+              dsk_stack_nodes[1] = dsk_stack_node_tmp;                       \
             }                                                                \
-          if (gsk_stack_nodes[0].len > isort_threshold)                      \
+          if (dsk_stack_nodes[0].len > isort_threshold)                      \
             {                                                                \
-              if (gsk_stack_nodes[1].len > isort_threshold)                  \
+              if (dsk_stack_nodes[1].len > isort_threshold)                  \
                 {                                                            \
-                  gsk_stack[gsk_stack_size++] = gsk_stack_nodes[0];          \
-                  gsk_node = gsk_stack_nodes[1];                             \
+                  dsk_stack[dsk_stack_size++] = dsk_stack_nodes[0];          \
+                  dsk_node = dsk_stack_nodes[1];                             \
                 }                                                            \
               else                                                           \
                 {                                                            \
-                  GSK_INSERTION_SORT ((array) + gsk_stack_nodes[1].start,    \
-                                      type, gsk_stack_nodes[1].len, compare);\
-                  gsk_node = gsk_stack_nodes[0];                             \
+                  DSK_INSERTION_SORT ((array) + dsk_stack_nodes[1].start,    \
+                                      type, dsk_stack_nodes[1].len, compare);\
+                  dsk_node = dsk_stack_nodes[0];                             \
                 }                                                            \
             }                                                                \
           else                                                               \
             {                                                                \
-              GSK_INSERTION_SORT ((array) + gsk_stack_nodes[0].start,        \
-                                  type, gsk_stack_nodes[0].len, compare);    \
-              GSK_INSERTION_SORT ((array) + gsk_stack_nodes[1].start,        \
-                                  type, gsk_stack_nodes[1].len, compare);    \
-              if (gsk_stack_size == 0)                                       \
+              DSK_INSERTION_SORT ((array) + dsk_stack_nodes[0].start,        \
+                                  type, dsk_stack_nodes[0].len, compare);    \
+              DSK_INSERTION_SORT ((array) + dsk_stack_nodes[1].start,        \
+                                  type, dsk_stack_nodes[1].len, compare);    \
+              if (dsk_stack_size == 0)                                       \
                 break;                                                       \
-              gsk_node = gsk_stack[--gsk_stack_size];                        \
+              dsk_node = dsk_stack[--dsk_stack_size];                        \
             }                                                                \
           ss_assertion;                                                      \
         }                                                                    \
   }while(0)
 
-/* TODO: do we want GSK_INSERTION_SELECT for use here internally? */
-#define GSK_QSELECT_FULL(array, type, n_elements, n_select, compare, isort_threshold, stack_size, ss_assertion)    \
+/* TODO: do we want DSK_INSERTION_SELECT for use here internally? */
+#define DSK_QSELECT_FULL(array, type, n_elements, n_select, compare, isort_threshold, stack_size, ss_assertion)    \
   do{                                                              \
-    int gsk_rv;                                                             \
-    unsigned gsk_stack_size;                                                    \
-    GskQsortStackNode gsk_stack[stack_size];                                 \
-    type gsk_tmp_swap;                                                       \
-    GskQsortStackNode gsk_node;                                              \
-    gsk_node.start = 0;                                                      \
-    gsk_node.len = (n_elements);                                             \
-    gsk_stack_size = 0;                                                      \
+    int dsk_rv;                                                             \
+    unsigned dsk_stack_size;                                                    \
+    DskQsortStackNode dsk_stack[stack_size];                                 \
+    type dsk_tmp_swap;                                                       \
+    DskQsortStackNode dsk_node;                                              \
+    dsk_node.start = 0;                                                      \
+    dsk_node.len = (n_elements);                                             \
+    dsk_stack_size = 0;                                                      \
     if (n_elements <= isort_threshold)                                       \
-      GSK_INSERTION_SORT(array,type,n_elements,compare);                     \
+      DSK_INSERTION_SORT(array,type,n_elements,compare);                     \
     else                                                                     \
       for(;;)                                                                \
         {                                                                    \
-          GskQsortStackNode gsk_stack_nodes[2];                              \
+          DskQsortStackNode dsk_stack_nodes[2];                              \
           /* implement median-of-three; sort so that  */                     \
-          /* *gsk_a <= *gsk_b <= *gsk_c               */                     \
-          type *gsk_lo = array + gsk_node.start;                             \
-          type *gsk_hi = gsk_lo + gsk_node.len - 1;                          \
-          type *gsk_a = gsk_lo;                                              \
-          type *gsk_b = array + gsk_node.start + gsk_node.len / 2;           \
-          type *gsk_c = gsk_hi;                                              \
-          compare((*gsk_a), (*gsk_b), gsk_rv);                               \
-          if (gsk_rv < 0)                                                    \
+          /* *dsk_a <= *dsk_b <= *dsk_c               */                     \
+          type *dsk_lo = array + dsk_node.start;                             \
+          type *dsk_hi = dsk_lo + dsk_node.len - 1;                          \
+          type *dsk_a = dsk_lo;                                              \
+          type *dsk_b = array + dsk_node.start + dsk_node.len / 2;           \
+          type *dsk_c = dsk_hi;                                              \
+          compare((*dsk_a), (*dsk_b), dsk_rv);                               \
+          if (dsk_rv < 0)                                                    \
             {                                                                \
-              compare((*gsk_b), (*gsk_c), gsk_rv);                           \
-              if (gsk_rv <= 0)                                               \
+              compare((*dsk_b), (*dsk_c), dsk_rv);                           \
+              if (dsk_rv <= 0)                                               \
                 {                                                            \
                   /* a <= b <= c: already sorted */                          \
                 }                                                            \
               else                                                           \
                 {                                                            \
-                  compare((*gsk_a), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv <= 0)                                           \
+                  compare((*dsk_a), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv <= 0)                                           \
                     {                                                        \
                       /* a <= c <= b */                                      \
-                      gsk_tmp_swap = *gsk_b;                                 \
-                      *gsk_b = *gsk_c;                                       \
-                      *gsk_c = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_b;                                 \
+                      *dsk_b = *dsk_c;                                       \
+                      *dsk_c = dsk_tmp_swap;                                 \
                     }                                                        \
                   else                                                       \
                     {                                                        \
                       /* c <= a <= b */                                      \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_c;                                       \
-                      *gsk_c = *gsk_b;                                       \
-                      *gsk_b = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_c;                                       \
+                      *dsk_c = *dsk_b;                                       \
+                      *dsk_b = dsk_tmp_swap;                                 \
                     }                                                        \
                 }                                                            \
             }                                                                \
           else                                                               \
             {                                                                \
               /* *b < *a */                                                  \
-              compare((*gsk_b), (*gsk_c), gsk_rv);                           \
-              if (gsk_rv >= 0)                                               \
+              compare((*dsk_b), (*dsk_c), dsk_rv);                           \
+              if (dsk_rv >= 0)                                               \
                 {                                                            \
                   /* *c <= *b < *a */                                        \
-                  gsk_tmp_swap = *gsk_c;                                     \
-                  *gsk_c = *gsk_a;                                           \
-                  *gsk_a = gsk_tmp_swap;                                     \
+                  dsk_tmp_swap = *dsk_c;                                     \
+                  *dsk_c = *dsk_a;                                           \
+                  *dsk_a = dsk_tmp_swap;                                     \
                 }                                                            \
               else                                                           \
                 {                                                            \
                   /* b<a, b<c */                                             \
-                  compare((*gsk_a), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_a), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     {                                                        \
                       /* b < c <= a */                                       \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_b;                                       \
-                      *gsk_b = *gsk_c;                                       \
-                      *gsk_c = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_b;                                       \
+                      *dsk_b = *dsk_c;                                       \
+                      *dsk_c = dsk_tmp_swap;                                 \
                     }                                                        \
                   else                                                       \
                     {                                                        \
                       /* b < a < c */                                        \
-                      gsk_tmp_swap = *gsk_a;                                 \
-                      *gsk_a = *gsk_b;                                       \
-                      *gsk_b = gsk_tmp_swap;                                 \
+                      dsk_tmp_swap = *dsk_a;                                 \
+                      *dsk_a = *dsk_b;                                       \
+                      *dsk_b = dsk_tmp_swap;                                 \
                     }                                                        \
                 }                                                            \
             }                                                                \
                                                                              \
-          /* ok, phew, now *gsk_a <= *gsk_b <= *gsk_c */                     \
+          /* ok, phew, now *dsk_a <= *dsk_b <= *dsk_c */                     \
                                                                              \
           /* partition this range of the array */                            \
-          gsk_a++;                                                           \
-          gsk_c--;                                                           \
+          dsk_a++;                                                           \
+          dsk_c--;                                                           \
           do                                                                 \
             {                                                                \
-              /* advance gsk_a to a element that violates */                 \
-              /* partitioning (or it hits gsk_b) */                          \
+              /* advance dsk_a to a element that violates */                 \
+              /* partitioning (or it hits dsk_b) */                          \
               for (;;)                                                       \
                 {                                                            \
-                  compare((*gsk_a), (*gsk_b), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_a), (*dsk_b), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     break;                                                   \
-                  gsk_a++;                                                   \
+                  dsk_a++;                                                   \
                 }                                                            \
-              /* advance gsk_c to a element that violates */                 \
-              /* partitioning (or it hits gsk_b) */                          \
+              /* advance dsk_c to a element that violates */                 \
+              /* partitioning (or it hits dsk_b) */                          \
               for (;;)                                                       \
                 {                                                            \
-                  compare((*gsk_b), (*gsk_c), gsk_rv);                       \
-                  if (gsk_rv >= 0)                                           \
+                  compare((*dsk_b), (*dsk_c), dsk_rv);                       \
+                  if (dsk_rv >= 0)                                           \
                     break;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_c--;                                                   \
                 }                                                            \
-              if (gsk_a < gsk_c)                                             \
+              if (dsk_a < dsk_c)                                             \
                 {                                                            \
-                  gsk_tmp_swap = *gsk_a;                                     \
-                  *gsk_a = *gsk_c;                                           \
-                  *gsk_c = gsk_tmp_swap;                                     \
-                  if (gsk_a == gsk_b)                                        \
-                    gsk_b = gsk_c;                                           \
-                  else if (gsk_b == gsk_c)                                   \
-                    gsk_b = gsk_a;                                           \
-                  gsk_a++;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_tmp_swap = *dsk_a;                                     \
+                  *dsk_a = *dsk_c;                                           \
+                  *dsk_c = dsk_tmp_swap;                                     \
+                  if (dsk_a == dsk_b)                                        \
+                    dsk_b = dsk_c;                                           \
+                  else if (dsk_b == dsk_c)                                   \
+                    dsk_b = dsk_a;                                           \
+                  dsk_a++;                                                   \
+                  dsk_c--;                                                   \
                 }                                                            \
-              else if (gsk_a == gsk_c)                                       \
+              else if (dsk_a == dsk_c)                                       \
                 {                                                            \
-                  gsk_a++;                                                   \
-                  gsk_c--;                                                   \
+                  dsk_a++;                                                   \
+                  dsk_c--;                                                   \
                   break;                                                     \
                 }                                                            \
             }                                                                \
-          while (gsk_a <= gsk_c);                                            \
+          while (dsk_a <= dsk_c);                                            \
                                                                              \
           /* the two partitions are [lo,c] and [a,hi], */                    \
           /* which are disjoint since (a > b) by the above loop guard */     \
                                                                              \
           /* push parts onto stack:  the bigger half must be pushed    */    \
           /* on first to guarantee that the max stack depth is O(log N) */   \
-          gsk_stack_nodes[0].start = gsk_node.start;                         \
-          gsk_stack_nodes[0].len = gsk_c - gsk_lo + 1;                       \
-          gsk_stack_nodes[1].start = gsk_a - (array);                        \
-          gsk_stack_nodes[1].len = gsk_hi - gsk_a + 1;                       \
-          if (gsk_stack_nodes[1].start >= n_select)                          \
+          dsk_stack_nodes[0].start = dsk_node.start;                         \
+          dsk_stack_nodes[0].len = dsk_c - dsk_lo + 1;                       \
+          dsk_stack_nodes[1].start = dsk_a - (array);                        \
+          dsk_stack_nodes[1].len = dsk_hi - dsk_a + 1;                       \
+          if (dsk_stack_nodes[1].start >= n_select)                          \
             {                                                                \
-              if (gsk_stack_nodes[0].len > isort_threshold)                  \
+              if (dsk_stack_nodes[0].len > isort_threshold)                  \
                 {                                                            \
-                  gsk_node = gsk_stack_nodes[0];                             \
+                  dsk_node = dsk_stack_nodes[0];                             \
                 }                                                            \
               else                                                           \
                 {                                                            \
-                  GSK_INSERTION_SORT ((array) + gsk_stack_nodes[0].start,    \
-                                      type, gsk_stack_nodes[0].len, compare);\
-                  if (gsk_stack_size == 0)                                   \
+                  DSK_INSERTION_SORT ((array) + dsk_stack_nodes[0].start,    \
+                                      type, dsk_stack_nodes[0].len, compare);\
+                  if (dsk_stack_size == 0)                                   \
                     break;                                                   \
-                  gsk_node = gsk_stack[--gsk_stack_size];                    \
+                  dsk_node = dsk_stack[--dsk_stack_size];                    \
                 }                                                            \
             }                                                                \
           else                                                               \
             {                                                                \
-              if (gsk_stack_nodes[0].len < gsk_stack_nodes[1].len)           \
+              if (dsk_stack_nodes[0].len < dsk_stack_nodes[1].len)           \
                 {                                                            \
-                  GskQsortStackNode gsk_stack_node_tmp = gsk_stack_nodes[0]; \
-                  gsk_stack_nodes[0] = gsk_stack_nodes[1];                   \
-                  gsk_stack_nodes[1] = gsk_stack_node_tmp;                   \
+                  DskQsortStackNode dsk_stack_node_tmp = dsk_stack_nodes[0]; \
+                  dsk_stack_nodes[0] = dsk_stack_nodes[1];                   \
+                  dsk_stack_nodes[1] = dsk_stack_node_tmp;                   \
                 }                                                            \
-              if (gsk_stack_nodes[0].len > isort_threshold)                  \
+              if (dsk_stack_nodes[0].len > isort_threshold)                  \
                 {                                                            \
-                  if (gsk_stack_nodes[1].len > isort_threshold)              \
+                  if (dsk_stack_nodes[1].len > isort_threshold)              \
                     {                                                        \
-                      gsk_stack[gsk_stack_size++] = gsk_stack_nodes[0];      \
-                      gsk_node = gsk_stack_nodes[1];                         \
+                      dsk_stack[dsk_stack_size++] = dsk_stack_nodes[0];      \
+                      dsk_node = dsk_stack_nodes[1];                         \
                       ss_assertion;                                          \
                     }                                                        \
                   else                                                       \
                     {                                                        \
-                      GSK_INSERTION_SORT ((array) + gsk_stack_nodes[1].start,\
-                                          type, gsk_stack_nodes[1].len, compare);\
-                      gsk_node = gsk_stack_nodes[0];                         \
+                      DSK_INSERTION_SORT ((array) + dsk_stack_nodes[1].start,\
+                                          type, dsk_stack_nodes[1].len, compare);\
+                      dsk_node = dsk_stack_nodes[0];                         \
                     }                                                        \
                 }                                                            \
               else                                                           \
                 {                                                            \
-                  GSK_INSERTION_SORT ((array) + gsk_stack_nodes[0].start,    \
-                                      type, gsk_stack_nodes[0].len, compare);\
-                  GSK_INSERTION_SORT ((array) + gsk_stack_nodes[1].start,    \
-                                  type, gsk_stack_nodes[1].len, compare);    \
-                  if (gsk_stack_size == 0)                                   \
+                  DSK_INSERTION_SORT ((array) + dsk_stack_nodes[0].start,    \
+                                      type, dsk_stack_nodes[0].len, compare);\
+                  DSK_INSERTION_SORT ((array) + dsk_stack_nodes[1].start,    \
+                                  type, dsk_stack_nodes[1].len, compare);    \
+                  if (dsk_stack_size == 0)                                   \
                     break;                                                   \
-                  gsk_node = gsk_stack[--gsk_stack_size];                    \
+                  dsk_node = dsk_stack[--dsk_stack_size];                    \
                 }                                                            \
             }                                                                \
         }                                                                    \
@@ -415,28 +419,28 @@ struct _GskQsortStackNode
 /* Do not allow equality, since that would make the next push a
    stack overflow, and we might not detect it correctly to stack corruption. */
 #define DSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                          \
-  g_assert(gsk_stack_size < stack_alloced)
+  g_assert(dsk_stack_size < stack_alloced)
 
-#define GSK_INSERTION_SORT(array, type, length, compare)                     \
+#define DSK_INSERTION_SORT(array, type, length, compare)                     \
   do{                                                              \
-    unsigned gsk_ins_i, gsk_ins_j;                                           \
-    type gsk_ins_tmp;                                                        \
-    for (gsk_ins_i = 1; gsk_ins_i < length; gsk_ins_i++)                     \
+    unsigned dsk_ins_i, dsk_ins_j;                                           \
+    type dsk_ins_tmp;                                                        \
+    for (dsk_ins_i = 1; dsk_ins_i < length; dsk_ins_i++)                     \
       {                                                                      \
-        /* move (gsk_ins_i-1) into place */                                  \
-        unsigned gsk_ins_min = gsk_ins_i - 1;                                \
-        int gsk_ins_compare_rv;                                              \
-        for (gsk_ins_j = gsk_ins_i; gsk_ins_j < length; gsk_ins_j++)         \
+        /* move (dsk_ins_i-1) into place */                                  \
+        unsigned dsk_ins_min = dsk_ins_i - 1;                                \
+        int dsk_ins_compare_rv;                                              \
+        for (dsk_ins_j = dsk_ins_i; dsk_ins_j < length; dsk_ins_j++)         \
           {                                                                  \
-            compare(((array)[gsk_ins_min]), ((array)[gsk_ins_j]),            \
-                    gsk_ins_compare_rv);                                     \
-            if (gsk_ins_compare_rv > 0)                                      \
-              gsk_ins_min = gsk_ins_j;                                       \
+            compare(((array)[dsk_ins_min]), ((array)[dsk_ins_j]),            \
+                    dsk_ins_compare_rv);                                     \
+            if (dsk_ins_compare_rv > 0)                                      \
+              dsk_ins_min = dsk_ins_j;                                       \
           }                                                                  \
-        /* swap gsk_ins_min and (gsk_ins_i-1) */                             \
-        gsk_ins_tmp = (array)[gsk_ins_min];                                  \
-        (array)[gsk_ins_min] = (array)[gsk_ins_i - 1];                       \
-        (array)[gsk_ins_i - 1] = gsk_ins_tmp;                                \
+        /* swap dsk_ins_min and (dsk_ins_i-1) */                             \
+        dsk_ins_tmp = (array)[dsk_ins_min];                                  \
+        (array)[dsk_ins_min] = (array)[dsk_ins_i - 1];                       \
+        (array)[dsk_ins_i - 1] = dsk_ins_tmp;                                \
       }                                                                      \
   }while(0)
 
