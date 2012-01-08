@@ -52,6 +52,9 @@ DSK_INLINE_FUNC void     dsk_mem_pool_fixed_init_buf
                                                   void    *         buffer);
 void     dsk_mem_pool_fixed_init (DskMemPoolFixed  *pool,
                                        unsigned           size);
+
+/* (for technical discussion about inlining these functions
+   see inlining-notes.txt) */
 void * dsk_mem_pool_fixed_alloc     (DskMemPoolFixed  *pool);
 void * dsk_mem_pool_fixed_alloc0    (DskMemPoolFixed  *pool);
 void     dsk_mem_pool_fixed_free      (DskMemPoolFixed  *pool,
