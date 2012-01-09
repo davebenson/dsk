@@ -5,20 +5,44 @@ typedef struct _DskStrTableCritbitInnerNode DskStrTableCritbitInnerNode;
 typedef struct _DskStrTableCritbit DskStrTableCritbit;
 typedef struct _DskStrTableCritbitLeafNode DskStrTableCritbitLeafNode;
 
+typedef enum
+{
+  CRITBIT_NODE_LEAF,
+  CRITBIT_NODE_EXTENSION,
+  CRITBIT_NODE_INNER
+} CritbitNodeType;    /* the type is encoded in the pointer to the node(!) */
+
+#if DSK_SIZEOF_SIZE_T == 4
+/* Sizeof the nodes is 20 */
+#define SIZEOF_CRITBIT_NODE   20
+#else
+#define SIZEOF_CRITBIT_NODE   32
+#endif
+
+#define N_INNER_NODE_BYTES     (SIZEOF_CRITBIT_NODE - (sizeof (void*)*2 + 4))
+#define N_LEAF_NODE_BYTES      (SIZEOF_CRITBIT_NODE - 4)
+#define N_EXTENSION_NODE_BYTES (SIZEOF_CRITBIT_NODE - (sizeof (void*) + 4))
+
 struct _DskStrTableCritbitLeafNode
 {
-  unsigned n_remaining_bits;
-  /* bits follow, value precedes node */
+  uint32_t n_remaining_bits;
+  uint8_t bits[N_LEAF_NODE_BYTES];
 };
-
+struct _DskStrTableCritbitExtensionNode
+{
+  intptr_t unique_child;
+  uint32_t has_value : 1;
+  uint32_t n_extension_bits : 31;
+  uint8_t bits[N_EXTENSION_NODE_BYTES];
+};
 struct _DskStrTableCritbitInnerNode
 {
   intptr_t children[2];		/* may be inner or leaf node;
                                    both children always exist */
-  unsigned has_value : 1;
-  unsigned n_common_bits : 31;
+  uint32_t has_value : 1;
+  uint32_t n_common_bits : 31;
 
-  /* bits follow, value precedes node */
+  uint8_t bits[N_INNER_NODE_BYTES];
 };
 
 struct _DskStrTableCritbit
@@ -29,6 +53,7 @@ struct _DskStrTableCritbit
   char *buf;
   unsigned value_size_aligned;
   void *default_value;
+  DskMemPoolFixed node_pool;
 
   intptr_t top;         /* leaf or inner */
 };
@@ -165,6 +190,7 @@ at_leaf:
   return ((char*)(leaf) - critbit->value_size_aligned);
 }
 
+#if 0
 static void *
 str_table_critbit__get_prev     (DskStrTable   *table,
                                  const char    *str,
@@ -186,7 +212,8 @@ str_table_critbit__get_prev     (DskStrTable   *table,
       DskStrTableCritbitInnerNode *inner = CHILD_INNER (critbit->top);
       for (;;)
         {
-          int cmp = compare_aligned_bits (...);
+          int cmp = compare_aligned_bits (bit_at, inner->n_common_bits,
+                                          str, (uint8_t*)(inner+1));
           if (cmp < 0)  /* str < node */
             {
               ...
@@ -214,13 +241,67 @@ str_table_critbit__get_next     (DskStrTable   *table,
   DskStrTableCritbit *critbit = (DskStrTableCritbit *) table;
   ...
 }
+#else
+#define str_table_critbit__get_prev NULL   /* temporary, unless critbit sucks */
+#define str_table_critbit__get_next NULL   /* temporary, unless critbit sucks */
+#endif
 
 static void *
 str_table_critbit__force        (DskStrTable   *table,
                                 const char    *str)
 {
   DskStrTableCritbit *critbit = (DskStrTableCritbit *) table;
-  ...
+  unsigned bit_at = 0;
+  unsigned n_bits = strlen (str) * 8;
+
+  DskStrTableCritbitInnerNode *inner;
+  DskStrTableCritbitLeafNode *leaf;
+
+  if (critbit->top == 0)
+    {
+      /* create unique leaf */
+      ...
+    }
+  else if (IS_CHILD_LEAF (critbit->top))
+    {
+      p_leaf = ???;
+      goto at_leaf;
+    }
+
+  inner = CHILD_INNER (critbit->top);
+  for (;;)   /* While processing inner nodes: */
+    {
+      /* scan common bits */
+      int cmp = compare_aligned_bits (bit_at, inner->n_common_bits, str, (const uint8_t*)(inner+1));
+      if (cmp != 0)
+        return NULL;
+      bit_at += inner->n_common_bits;
+      if (bit_at == n_bits)
+        {
+          return inner->has_value
+               ? ((char*)(inner) - critbit->value_size_aligned)
+               : NULL;
+        }
+
+      /* jump as appropriate */
+      intptr_t child = inner->children[(str[bit_at/8] >> (7-(bit_at%8))) & 1];
+      bit_at++;
+      if (child == 0)
+        return NULL;
+      if (IS_CHILD_LEAF (child))
+        {
+          leaf = CHILD_LEAF (child);
+          goto at_leaf;
+        }
+      inner = CHILD_INNER (child);
+    }
+
+at_leaf:
+  /* scan remaining bits */
+  if (compare_aligned_bits (bit_at, leaf->n_remaining_bits,
+                            str, (const uint8_t*)(leaf + 1)) != 0)
+    return NULL;
+  return ((char*)(leaf) - critbit->value_size_aligned);
 }
 
 static void *
