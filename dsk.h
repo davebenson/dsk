@@ -30,26 +30,27 @@
    which is a typical situation at the end of a function impl. */
 #include "dsk-mem-pool.h"
 
-...
+/* DskHook is a lightweight notification system. */
 #include "dsk-hook.h"
 
-...
+/* DskBuffer: Binary-Data queue. */
 #include "dsk-buffer.h"
 
-...
+/* Input/output stream halves. */
 #include "dsk-octet-io.h"
 
-...
+/* Input from memory, and output to memory. */
 #include "dsk-memory.h"
 
-...
+/* DskIpAddress: n IPv4 or IPv6 address. */
 #include "dsk-ip-address.h"
 
-...
+/* DskEthernetAddress: a MAC address. */
 #include "dsk-ethernet-address.h"
 
-...
+/* Simple DNS Client. */
 #include "dsk-dns-client.h"
+
 #include "dsk-octet-listener.h"
 
 #include "dsk-network-interface-list.h"
