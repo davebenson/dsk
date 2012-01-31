@@ -22,7 +22,8 @@ typedef enum
   DSK_TABLE_MERGE_RETURN_B_FINAL,
   DSK_TABLE_MERGE_RETURN_B,
   DSK_TABLE_MERGE_RETURN_BUFFER_FINAL,
-  DSK_TABLE_MERGE_RETURN_BUFFER
+  DSK_TABLE_MERGE_RETURN_BUFFER,
+  DSK_TABLE_MERGE_DROP
 } DskTableMergeResult;
 
 typedef DskTableMergeResult (*DskTableMergeFunc)  (unsigned       key_length,

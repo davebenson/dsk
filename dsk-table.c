@@ -272,13 +272,11 @@ add_to_tree (DskTable           *table,
                           table->merge_buffers[0].data);
           break;
 
-#if 0
         case DSK_TABLE_MERGE_DROP:
           DSK_RBTREE_REMOVE (GET_SMALL_TREE (), node);
           table->tree_size -= 1;
           dsk_free (node);
           break;
-#endif
         }
     }
 }
@@ -870,11 +868,9 @@ lookup_do_merge_or_set (DskTable *table,
         case DSK_TABLE_MERGE_RETURN_BUFFER:
           *res_index_inout = 1 - *res_index_inout;
           return;
-#if 0
         case DSK_TABLE_MERGE_DROP:
           *res_index_inout = -1;
           return;
-#endif
         default:
           dsk_return_if_reached ("bad ret-val from merge");
         }
@@ -1242,10 +1238,9 @@ run_first_merge_job (DskTable *table,
                     return DSK_FALSE;
                   merge->entries_written += 1;
                   break;
-#if 0
                 case DSK_TABLE_MERGE_DROP:
+                  ...
                   break;
-#endif
                 }
 
               merge->inputs_remaining -= 2;
@@ -1764,6 +1759,8 @@ merge2_setup_output (TableReaderMerge2 *merge2)
           merge2->base.value_length = merge2->buffer.length;
           merge2->base.value_data = merge2->buffer.data;
           break;
+        case DSK_TABLE_MERGE_DROP:
+          ...
         }
     }
 }
