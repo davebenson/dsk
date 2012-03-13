@@ -1239,7 +1239,6 @@ run_first_merge_job (DskTable *table,
                   merge->entries_written += 1;
                   break;
                 case DSK_TABLE_MERGE_DROP:
-                  ...
                   break;
                 }
 
