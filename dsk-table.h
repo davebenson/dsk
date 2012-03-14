@@ -146,7 +146,8 @@ typedef struct {
 /* internals */
 DskTableReader *dsk_table_reader_new_merge2 (DskTable       *table,
                                              DskTableReader *a,
-                                             DskTableReader *b);
+                                             DskTableReader *b,
+                                             DskError      **error);
 
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC uint8_t *

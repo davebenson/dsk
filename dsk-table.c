@@ -1580,7 +1580,8 @@ dsk_table_new_reader (DskTable    *table,
       planner[best_i].reader
         = dsk_table_reader_new_merge2 (table,
                                        planner[best_i].reader,
-                                       planner[best_i+1].reader);
+                                       planner[best_i+1].reader,
+                                       error);
       if (planner[best_i].reader == NULL)
         {
           for (i = 0; i < best_i; i++)
@@ -1708,7 +1709,7 @@ merge2_copy_kv_data (DskTableReader *dst,
   dst->value_data = src->value_data;
 }
 
-static void
+static dsk_boolean
 merge2_setup_output (TableReaderMerge2 *merge2)
 {
   DskTableReader *a = merge2->a;
@@ -1759,9 +1760,11 @@ merge2_setup_output (TableReaderMerge2 *merge2)
           merge2->base.value_data = merge2->buffer.data;
           break;
         case DSK_TABLE_MERGE_DROP:
-          ...
+          merge2->state = TABLE_READER_MERGE2_BOTH;
+          return DSK_FALSE;
         }
     }
+  return DSK_TRUE;
 }
 
 static dsk_boolean
@@ -1769,6 +1772,7 @@ merge2_advance (DskTableReader *reader,
                 DskError      **error)
 {
   TableReaderMerge2 *merge2 = (TableReaderMerge2 *) reader;
+restart_advance:
   switch (merge2->state)
     {
     case TABLE_READER_MERGE2_A:
@@ -1804,7 +1808,10 @@ merge2_advance (DskTableReader *reader,
       merge2->state = TABLE_READER_MERGE2_A;
     }
   else
-    merge2_setup_output (merge2);
+    {
+      if (!merge2_setup_output (merge2))
+        goto restart_advance;
+    }
   return DSK_TRUE;
 }
 
@@ -1821,7 +1828,8 @@ merge2_destroy (DskTableReader *reader)
 DskTableReader *
 dsk_table_reader_new_merge2 (DskTable *table,
                              DskTableReader *a,
-                             DskTableReader *b)
+                             DskTableReader *b,
+                             DskError      **error)
 {
   TableReaderMerge2 *merge2;
 
@@ -1853,7 +1861,14 @@ dsk_table_reader_new_merge2 (DskTable *table,
   merge2->buffer.data = NULL;
   merge2->buffer.alloced = 0;
 
-  merge2_setup_output (merge2);
+  if (!merge2_setup_output (merge2))
+    {
+      if (!merge2_advance (&merge2->base, error))
+        {
+          merge2_destroy (&merge2->base);
+          return NULL;
+        }
+    }
 
   return &merge2->base;
 }
