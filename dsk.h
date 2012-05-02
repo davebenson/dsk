@@ -1,24 +1,57 @@
 #ifndef DSK_H__INCLUDED
 #define DSK_H__INCLUDED
 
+/* Univerisally needed functions and typedefs (like the int## types) */
 #include "dsk-common.h"
-#include "dsk-endian.h"
-#include "dsk-fd.h"
-#include "dsk-dispatch.h"
-#include "dsk-main.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-mem-pool.h"
-#include "dsk-hook.h"
-#include "dsk-buffer.h"
-#include "dsk-octet-io.h"
-#include "dsk-memory.h"
-#include "dsk-ip-address.h"
-#include "dsk-ethernet-address.h"
-#include "dsk-dns-client.h"
-#include "dsk-octet-listener.h"
 
-#include "dsk-str-table.h"
+/* Parsing and formatting ints in endian-specific ways. */
+#include "dsk-endian.h"
+
+/* File-descriptors and ways to manipulate them. */
+#include "dsk-fd.h"
+
+/* DskDispatch is an event-loop */
+#include "dsk-dispatch.h"
+
+/* Shorthands for using the default DskDispatch. */
+#include "dsk-main.h"
+
+/* Base-class for the object system. */
+#include "dsk-object.h"
+
+/* Base-class for the error system. */
+#include "dsk-error.h"
+
+/* DskMemPoolFixed is for a pool of fixed-length allocations that can
+   be allocated and freed (which means returning them to a free-list
+   that will be returned at next alloc.)
+
+   DskMemPool is a alloc-only pool that can be freed all-at-once,
+   which is a typical situation at the end of a function impl. */
+#include "dsk-mem-pool.h"
+
+/* DskHook is a lightweight notification system. */
+#include "dsk-hook.h"
+
+/* DskBuffer: Binary-Data queue. */
+#include "dsk-buffer.h"
+
+/* Input/output stream halves. */
+#include "dsk-octet-io.h"
+
+/* Input from memory, and output to memory. */
+#include "dsk-memory.h"
+
+/* DskIpAddress: n IPv4 or IPv6 address. */
+#include "dsk-ip-address.h"
+
+/* DskEthernetAddress: a MAC address. */
+#include "dsk-ethernet-address.h"
+
+/* Simple DNS Client. */
+#include "dsk-dns-client.h"
+
+#include "dsk-octet-listener.h"
 
 #include "dsk-network-interface-list.h"
 

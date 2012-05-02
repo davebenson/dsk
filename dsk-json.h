@@ -79,6 +79,8 @@ void           dsk_json_parser_destroy  (DskJsonParser *parser);
 DskJsonValue * dsk_json_parse           (size_t         len,
                                          const uint8_t *data,
                                          DskError     **error);
+DskJsonValue * dsk_json_parse_file      (const char    *filename,
+                                         DskError     **error);
 
 /* --- values --- */
 DskJsonValue *dsk_json_value_new_null   (void);
