@@ -13,7 +13,7 @@ typedef enum
   DSK_ERLANG_TYPE_FLOAT
 } DskErlangType;
 
-union _DskErlangValue
+union _DskErlangTerm
 {
   DskErlangType type;
   DskErlangValueAtom atom;
@@ -21,5 +21,3 @@ union _DskErlangValue
   DskErlangValueList li;
 };
 
-
-Dsk
