@@ -1,0 +1,33 @@
+\documentclass{article}
+\title{Scalable Key-Value Data-Structures}
+\author{David Benson}
+\frenchspacing
+\usepackage{amsfonts,amsmath,amssymb,epsfig,eucal}
+\pagestyle{headings}
+\begin{document}
+\maketitle
+
+\section{Overview}
+\section{Data Types Supported}
+\subsection{List}
+\subsubsection{Allocating Index Strings???}
+has this been researched?
+what is a good way to allocate IDs with the following methods:
+\begin{verbatim}
+  alloc_id_between(PREV, NEXT)
+\end{verbatim}
+where there are special tokens for sadasd´´´´´´´´´
+\subsection{Map}
+\subsection{Set}
+\subsection{ScoredSet}
+\section{Sort-Merge Tables}
+\section{Robustly Updatable Objects}
+\section{Combining Local Stores into a Highly-Available Global Store}
+\section{Handling Failed Nodes}
+\section{Tuning Reliability Versus Latency}
+\section{Multiple Datacenter Support}
+\section{Administration}
+\subsection{Backups}
+
+
+\end{document}
