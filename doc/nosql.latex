@@ -8,20 +8,71 @@
 \maketitle
 
 \section{Overview}
+
+\subsection{Goals}
+\begin{itemize}
+\item zero-conf: ... trivial administration
+\item cloudish backup strategy:
+\item easy to use data-structures:
+\item fast
+\end{itemize}
+
 \section{Data Types Supported}
+\subsection{String}
+A string is our convenient name for ``binary data'' -- we treat the data as opaque.  It
+is not necessarily character-data -- for example, it need not be valid UTF-8.
+
+When string values are set, the one with the greatest timestamp wins (ie assumes the value).
+
+Deletion tombstones (that is, markers for preserving deletion status) also have timestamps.
+The difference is that tombstones may be removed if the deletion is old enough.
+
 \subsection{List}
+...
+
+\subsection{Map}
+This is a string-to-string map.
+
+\subsection{Set}
+...
+\subsection{ScoredSet}
+
+\subsection{BigSet}
+...
+\subsection{BigScoredSet}
+...
+\subsection{BigList???}
+...
+
 \subsubsection{Allocating Index Strings???}
 has this been researched?
 what is a good way to allocate IDs with the following methods:
 \begin{verbatim}
   alloc_id_between(PREV, NEXT)
 \end{verbatim}
-where there are special tokens for sadasd´´´´´´´´´
-\subsection{Map}
-\subsection{Set}
-\subsection{ScoredSet}
+where there are special tokens called {\tt FIRST} and {\tt LAST} that can be used for
+{\tt prev} and {\tt {\tt next} respectively, to mean ``no limit''.
+
+I guess easily proven that for any partitioning scheme,
+there exists some set of $N$ choices of adjacent {\tt PREV}/{\tt NEXT} tokens that leads
+a string $N/8$ long.  This mostly means that we 
+
 \section{Sort-Merge Tables}
 \section{Robustly Updatable Objects}
+In all cases, the objects (ie the binary values stored) consist of a optional timestamped
+core, plus a sequence of timestamped updates.  The update timestamps are allocated
+by the server that receives the update request.
+
+When the update queue gets too long (it has a max length and a max age),
+additional updates are accumulated into a new timestamped core (either updating the old core or
+creating a fresh one).
+
+Updates with the same timestamp and content are viewed as idempotent, that is, they are combined.
+Updates to objects whose core is later than the update are dropped.
+
+When reading an object, if two machines have different update sets than expected, the differences
+are sent to the servers.
+
 \section{Combining Local Stores into a Highly-Available Global Store}
 \section{Handling Failed Nodes}
 \section{Tuning Reliability Versus Latency}
