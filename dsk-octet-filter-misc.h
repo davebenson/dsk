@@ -15,6 +15,7 @@ DskOctetFilter *dsk_quote_printable_new            (void);
 DskOctetFilter *dsk_unquote_printable_new          (void);
 DskOctetFilter *dsk_xml_escaper_new                (void);
 DskOctetFilter *dsk_xml_unescaper_new              (void);
+DskOctetFilter *dsk_json_prettier_new              (void);
 #define dsk_html_escaper_new() dsk_xml_escaper_new()
 #define dsk_html_unescaper_new() dsk_xml_unescaper_new()
 

@@ -383,6 +383,14 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_latin1_to_utf8)
   return DSK_TRUE;
 }
 
+DSK_CMDLINE_CALLBACK_DECLARE(handle_json_prettier)
+{
+  DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
+  DSK_UNUSED (arg_value); DSK_UNUSED (error);
+  add_filter (dsk_json_prettier_new ());
+  return DSK_TRUE;
+}
+
 int main(int argc, char **argv)
 {
   DskError *error = NULL;
@@ -441,6 +449,8 @@ int main(int argc, char **argv)
                         handle_utf8_fixer, NULL);
   dsk_cmdline_add_func ("latin1-to-utf8", "convert latin1 to UTF-8", NULL, 0,
                         handle_latin1_to_utf8, NULL);
+  dsk_cmdline_add_func ("json-prettier", "add spaces to make JSON more readable", NULL, 0,
+                        handle_json_prettier, NULL);
   dsk_cmdline_process_args (&argc, &argv);
 
 
