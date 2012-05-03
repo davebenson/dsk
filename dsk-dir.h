@@ -13,6 +13,7 @@ struct _DskDir
   unsigned buf_alloced;
   char *buf;
   unsigned buf_length;
+  dsk_boolean locked;
 
   DskDir *alias;
 };
