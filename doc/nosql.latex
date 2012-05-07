@@ -27,8 +27,34 @@ When string values are set, the one with the greatest timestamp wins (ie assumes
 Deletion tombstones (that is, markers for preserving deletion status) also have timestamps.
 The difference is that tombstones may be removed if the deletion is old enough.
 
+Here are the operations on a string:
+
+\begin{tabular}{lp{3in}}
+{\bf operation} & {\bf description} \\
+{\tt ASSIGN} & set hte value of the string \\
+{\tt LADD} & add a new string value on the left \\
+{\tt RADD} & add a new string value on the right \\
+{\tt DELETE} & delete the entry 
+\end{tabular}
+
+
 \subsection{List}
-...
+This is a two-ended list.  Duplicate entries are permitted.  Operations:
+
+\begin{tabular}{lp{3in}}
+{\bf operation} & {\bf description} \\
+{\tt LPUSH} & insert entry on left-end of list \\
+{\tt RPUSH} & insert entry on right-end of list \\
+{\tt LPOP} & remove left-most entry from list \\
+{\tt RPOP} & remove right-most entry from list \\
+{\tt LTRIM} & keep the $N$ leftmost elements, delete the rest \\
+{\tt RTRIM} & keep the $N$ rightmost elements, delete the rest \\
+{\tt LREMOVE} & remove matching entry, starting at left \\
+{\tt RREMOVE} & remove matching entry, starting at right \\
+{\tt REMOVE\_ALL} & remove all matching entries \\
+{\tt ASSIGN} & set the entire list \\
+{\tt DELETE} & delete the entry 
+\end{tabular}
 
 \subsection{Map}
 This is a string-to-string map.
@@ -51,7 +77,7 @@ what is a good way to allocate IDs with the following methods:
   alloc_id_between(PREV, NEXT)
 \end{verbatim}
 where there are special tokens called {\tt FIRST} and {\tt LAST} that can be used for
-{\tt prev} and {\tt {\tt next} respectively, to mean ``no limit''.
+{\tt prev} and {\tt next} respectively, to mean ``no limit''.
 
 I guess easily proven that for any partitioning scheme,
 there exists some set of $N$ choices of adjacent {\tt PREV}/{\tt NEXT} tokens that leads
@@ -73,12 +99,55 @@ Updates to objects whose core is later than the update are dropped.
 When reading an object, if two machines have different update sets than expected, the differences
 are sent to the servers.
 
-\section{Combining Local Stores into a Highly-Available Global Store}
-\section{Handling Failed Nodes}
-\section{Tuning Reliability Versus Latency}
-\section{Multiple Datacenter Support}
-\section{Administration}
-\subsection{Backups}
+In pretty much all cases the updates match the update primitives.
 
+\section{Implementing {\tt merge}}
+This function takes two robust objects (above) and combines them into a new robust object.
+A reduce phase follows that cuts down the number of object updates required.
+
+{\bf Step 1}: {\it Reconciling the base objects (if any).}
+
+If there are no base objects, the result of the merge also has no base object.
+
+If there is only one base object, assuming that any updates from the non-base object that occurred
+before the base object's timestamp should be discarded, and the only base object is THE base object.
+
+If there are two base objects, take the later object, discard any updates before that timestamp.
+All other updates are merged: they must have the same timestamp and t
+
+{\bf Step 2}: {\it Merging the list of updates.}
+
+{\bf Step 3}.  Use {\tt reduce} to limit the object size.
+
+\section{Implementing {\tt reduce}}
+Reduce has two purposes:
+\begin{itemize}
+\item to bound the size of updatable objects
+\item to deliver a final object to the user
+\end{itemize}
+
+The general format of reduce takes a maximum number of updates and a
+maximum age, and condenses early updates with the base object.
+
+\section{Combining Local Stores into a Highly-Available Global Store}
+...
+
+\section{Handling Failed Nodes}
+...
+
+\section{Tuning Reliability Versus Latency}
+...
+
+\section{Multiple Datacenter Support}
+...
+
+\section{Administration}
+...
+
+\subsection{Backups}
+...
+
+\section{Appendix:  Data Formats}
+...
 
 \end{document}
