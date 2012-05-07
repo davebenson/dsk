@@ -292,6 +292,63 @@ dsk_boolean dsk_mkdir_recursive (const char *dir,
 #undef SCAN_THROUGH_SLASHES
 }
 
+#if DSK_HAS_ATFILE_SUPPORT
+dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
+                                    const char *dir,
+                                    unsigned    permissions,
+                                    DskError  **error)
+{
+  unsigned dir_len = strlen (dir);
+  char *dir_buf = alloca (dir_len + 1);
+  unsigned cur_len = 0;
+
+  if (dsk_file_test_is_dir (dir))
+    return DSK_TRUE;
+
+  /* append to dir_buf any number of consecutive '/'
+     characters. */
+#define SCAN_THROUGH_SLASHES()  \
+  do{                 \
+    while (cur_len < dir_len && dir[cur_len] == DSK_DIR_SEPARATOR) \
+      dir_buf[cur_len++] = DSK_DIR_SEPARATOR; \
+  }while(0)
+
+  SCAN_THROUGH_SLASHES();
+  while (cur_len < dir_len)
+    {
+      const char *slash = strchr (dir + cur_len, DSK_DIR_SEPARATOR);    /* not UTF8 */
+      unsigned new_cur_len;
+      if (slash == NULL)
+        new_cur_len = dir_len;
+      else
+        new_cur_len = slash - dir;
+
+      memcpy (dir_buf + cur_len, dir + cur_len, new_cur_len - cur_len);
+      dir_buf[new_cur_len] = 0;
+      cur_len = new_cur_len;
+
+      if (dsk_file_test_is_dir...at (openat_fd, dir_buf))
+        ;
+      else
+        {
+          if (mkdirat (openat_fd, dir_buf, permissions) < 0)
+            {
+              if (errno != EEXIST)
+                {
+                  dsk_set_error (error, "error making directory %s: %s",
+                               dir_buf, strerror (errno));
+                  return DSK_FALSE;
+                }
+            }
+        }
+
+      SCAN_THROUGH_SLASHES();
+    }
+  return DSK_TRUE;
+#undef SCAN_THROUGH_SLASHES
+}
+
+
 static const char default_tmpdir[] = "/tmp";
 static char *tmp_dir = NULL;
 
