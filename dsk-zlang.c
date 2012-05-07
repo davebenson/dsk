@@ -68,7 +68,7 @@ dsk_boolean      dsk_zlang_context_parse_file (DskZLangContext *context,
 {
   size_t size;
   char *contents = dsk_file_get_contents (filename, &size, error);
-  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_DEFAULT;
+  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   if (content == NULL)
     return DSK_FALSE;
   config.error_filename = filename;

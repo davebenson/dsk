@@ -34,11 +34,11 @@ struct _DskOctetListenerSocketOptions
   const char *bind_iface;
   unsigned max_pending_connections;
 };
-#define DSK_OCTET_LISTENER_SOCKET_OPTIONS_DEFAULT               \
+#define DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT               \
 {                                                               \
   DSK_FALSE,                                                    \
   NULL,                                 /* local_path */        \
-  DSK_IP_ADDRESS_DEFAULT,               /* bind_address */      \
+  DSK_IP_ADDRESS_INIT,               /* bind_address */      \
   0,                                    /* bind_port */         \
   NULL,                                 /* bind_iface */        \
   128                                   /* max_pending_connections */ \

@@ -459,7 +459,7 @@ function_invoke_strict_generic (DskTs0Function *function,
 {
   unsigned *lengths = alloca (sizeof (unsigned) * n_args);
   char **arg_strings = alloca (sizeof (char *) * n_args);
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   unsigned last_size = 0;
   unsigned i;
   for (i = 0; i < n_args; i++)
@@ -752,7 +752,7 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
             DskTs0Namespace *new_ns = dsk_ts0_namespace_new (ns);
             for (i = 0; i < p->info.tag.n_args; i++)
               {
-                DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+                DskBuffer buffer = DSK_BUFFER_INIT;
                 if (!dsk_ts0_expr_evaluate (p->info.tag.args[i].expr,
                                             ns, &buffer, error))
                   {
@@ -2022,7 +2022,7 @@ restart_parse:
       const char *iq_start = tokens[0].start + 1;
       const char *iq_end = tokens[0].end - 1;
       const char *at = iq_start;
-      DskBuffer dst = DSK_BUFFER_STATIC_INIT;
+      DskBuffer dst = DSK_BUFFER_INIT;
       dsk_boolean do_dollar_variable_interpolation = DSK_TRUE; /* TODO: tunable */
       unsigned line_no = tokens[0].start_line_no;
       unsigned max_pieces = 1;

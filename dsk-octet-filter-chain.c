@@ -24,8 +24,8 @@ dsk_octet_filter_chain_process (DskOctetFilter *filter,
                                 const uint8_t  *in_data,
                                 DskError      **error)
 {
-  DskBuffer b1 = DSK_BUFFER_STATIC_INIT;
-  DskBuffer b2 = DSK_BUFFER_STATIC_INIT;
+  DskBuffer b1 = DSK_BUFFER_INIT;
+  DskBuffer b2 = DSK_BUFFER_INIT;
   DskOctetFilterChain *chain = (DskOctetFilterChain *) filter;
   unsigned i;
 
@@ -65,8 +65,8 @@ dsk_octet_filter_chain_finish  (DskOctetFilter *filter,
   DskOctetFilterChain *chain = (DskOctetFilterChain *) filter;
   for (i = 0; i < chain->n_filters; i++)
     {
-      DskBuffer b1 = DSK_BUFFER_STATIC_INIT;
-      DskBuffer b2 = DSK_BUFFER_STATIC_INIT;
+      DskBuffer b1 = DSK_BUFFER_INIT;
+      DskBuffer b2 = DSK_BUFFER_INIT;
       if (!dsk_octet_filter_finish (chain->filters[i],
                                     (i+1 == chain->n_filters) ? out : &b1,
                                     error))

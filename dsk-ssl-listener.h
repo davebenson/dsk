@@ -18,7 +18,7 @@ struct _DskSslListenerOptions
 
 #define DSK_SSL_LISTENER_OPTIONS_INIT               \
 {                                                   \
-  DSK_OCTET_LISTENER_SOCKET_OPTIONS_DEFAULT,        \
+  DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT,        \
   NULL                                              \
 }
 

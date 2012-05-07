@@ -191,6 +191,8 @@ dsk_http_client_stream_shutdown (DskHttpClientStream *stream)
 
 /* See RFC 2616 Section 4.3.  We rely on the header parser to error out
    if it encounters bad Content-Length or Transfer-Encoding headers. */
+/* TODO ALSO: DSK_HTTP_STATUS_NO_CONTENT(204) and DSK_HTTP_STATUS_NOT_MODIFIED(304)
+   should not have a content body. (check NOT_MODIFIED's content-length situation) */
 static dsk_boolean
 has_response_body (DskHttpRequest *request,
                    DskHttpResponse *response)
@@ -229,7 +231,6 @@ static void
 transfer_content (DskHttpClientStreamTransfer *xfer,
                   unsigned                     amount)
 {
-  /* TODO: handle compressing */
   if (xfer->content_decoder != NULL)
     {
       DskError *error = NULL;
@@ -753,7 +754,7 @@ static dsk_boolean
 handle_post_data_readable (DskOctetSource *source,
                            DskHttpClientStreamTransfer *xfer)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskBuffer *buf = &buffer;
   DskError *error = NULL;
   DskHttpClientStream *stream = xfer->owner;
@@ -855,7 +856,7 @@ handle_writable (DskOctetSink *sink,
         case DSK_HTTP_CLIENT_STREAM_WRITE_CONTENT:
           {
             DskBuffer *buf;
-            DskBuffer b = DSK_BUFFER_STATIC_INIT;
+            DskBuffer b = DSK_BUFFER_INIT;
             unsigned old_buf_size;
             /* continue writing body */
             if (xfer->request->transfer_encoding_chunked)
@@ -1189,7 +1190,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
 {
   DskHttpClientStreamTransfer *xfer;
   DskHttpRequest *request;
-  DskBuffer compressed_data = DSK_BUFFER_STATIC_INIT;
+  DskBuffer compressed_data = DSK_BUFFER_INIT;
   DskOctetSource *post_data;
   uint8_t websocket_key3[8], websocket_response[16];
   if (options->post_data_length >= 0

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
           /* Load uri, render as c-escaped */
           dsk_print_push (print);
-          DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+          DskBuffer buffer = DSK_BUFFER_INIT;
           load_file_to_buffer (uri, &buffer);
           dsk_print_set_uint (print, "in_size", buffer.size);
           dsk_print_set_filtered_buffer (print, "in", &buffer, dsk_c_quoter_new (DSK_TRUE, DSK_TRUE));

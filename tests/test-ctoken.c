@@ -12,7 +12,7 @@ static dsk_boolean cmdline_verbose = DSK_FALSE;
 static void
 test_trivial (void)
 {
-  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_DEFAULT;
+  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   DskCToken *token;
   DskError *error = NULL;
 

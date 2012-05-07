@@ -1,18 +1,4 @@
 STUDY:
-_ make a survey of existing HTTP Client APIs
-  _ wget
-  _ curl
-  _ java
-  _ c#
-  _ gnet
-  _ qt
-  _ libwww
-  _ libsoup
-  _ php:curl
-  _ python
-  _ ruby
-  _ apache
-
 _ HTTP server access log (hook)
 _ file rotation service
 
@@ -24,6 +10,60 @@ x mode-based programs:
 
 STEAL:
 _ glib's timezone code
+
+TIMERS:
+_ add boolean in DskDispatchTimer for whether it's keyed off
+  wall-clock time (for absolute time timers)
+  or unsettable timer (for relative timers)
+
+_ Get-If-Modified Server support 
+  _ On serving a file:
+    _ include modification time header (is that a Date header??)
+    _ Obey If-Modified-Since header (with a flag to suppress?)
+  _ A simple flag for non-file data
+
+_ content_type_kv_pairs
+  _ in request-parser
+  _ in response-parser
+  _ in request_new
+  _ in response_new
+  _ in request_init_options
+
+_ Range-support in HTTP (client & server)
+
+_ HTTP Client implementation (search for TODO in dsk-http-client.h)
+_ client support for receiving trailers (and server too, on principle)
+_ remove DskObjectWeakPointer ?
+_ Authentication support in DskHttpServer.
+  _ support for HTTP auth
+  _ support for Cookie-based auth
+_ Authentication support in DskHttpClient.
+_ Cookie support in DskHttpClient
+_ dsk_utf16_to_utf8_converter_new
+_ remove persistency support from DskClientStream !?!
+_ dsk_buffer_transfer, dsk_buffer_drain: consolidate fragments
+  if they are both small.
+_ figure out a way to tune buffer allocations
+  (perhaps a way to build to write a behavior log?)
+_ Is the post_data hack of dsk_http_server_stream_respond() really ok?
+_ Review dsk-dispatch API... has_idle and has_timeout are clearly bogus...
+  implement epoll support.
+_ Date:
+  _ dsk_date_print_rfc850()
+  _ dsk_date_print_iso8601()
+_ HTTP Header Work:
+  _ "no_cache" response:
+    HTTP/1.1:
+      Cache-Control: no-store, no-cache, must-revalidate
+      Cache-Control: post-check=0, pre-check=0
+    HTTP/1.0:
+      Pragma: no-cache
+
+x fix dsk_utf8_skip_whitespace()
+_ other utf8 functions
+  _ strdown? strup?
+  _ diacritical normalization
+
 
 TESTS:
 _ request header parsing
@@ -155,29 +195,12 @@ _ make XML parser:
     and so, adding both is redundant; maybe WHITESPACE_HANDLING_PRESERVE,
     WHITESPACE_HANDLING_SUPPRESS, WHITESPACE_HANDLING_CONDENSE is needed)
 
-_ Get-If-Modified Server support 
-  _ On serving a file:
-    _ include modification time header (is that a Date header??)
-    _ Obey If-Modified-Since header (with a flag to suppress?)
-  _ A simple flag for non-file data
-
 _ SPDY protocol as an HTTP-like layer
-
-_ content_type_kv_pairs
-  _ in request-parser
-  _ in response-parser
-  _ in request_new
-  _ in response_new
-  _ in request_init_options
-
-_ Range-support in HTTP (client & server)
 
 _ websocket support
   _ test computing response hash (in spec)
   _ http-server-stream
   _ http-client-stream
-
-WORK ON LUSK - the LUA/DSK HTTP Server
 
 _ XML Parser: ignore doctype and processing-instructions
 x XML Parser: multiple return paths
@@ -202,98 +225,6 @@ _ more checksum tests
 WARNING CONDITIONS:
 _ high trap counts?
 
-TODO:
-_ HTTP Client implementation (search for TODO in dsk-http-client.h)
-_ client support for receiving trailers (and server too, on principle)
-_ remove DskObjectWeakPointer ?
-_ Authentication support in DskHttpServer.
-  _ support for HTTP auth
-  _ support for Cookie-based auth
-_ Authentication support in DskHttpClient.
-_ Cookie support in DskHttpClient
-
-_ DskPattern:
-  _ optimize certain patterns.  e.g. q*q* ==> q*
-                                     q+q* ==> q+
-                                     q*q+ ==> q+
-    in fact, maybe we should always use q+ => qq*
-  _ IMPORTANT OPTIMIZATION: implement "state-trumping"
-    PROBLEM: currently something like:
-            .*a.*
-	    .*b.*
-	    .*c.*
-    Generates 2^N states (where N is the number of unanchored regexes).
-    To minimize this, note that if we have gotten 'a' and 'b', then we will
-    always return 'a', so keeping track of 'b' is unneeded,
-    and the state transition graph should have one state of each of 'a', 'b', 'c':
-    the highest character found.
-
-    !!!: A useful implementation might handle JUST .* which is very common.
-    Actually, this is probably the only needed optimization,
-    and it is super-important since trailing wildcards are extremely common
-    and any non-wildcard pattern tends to differentiate itself.
-
-    A better implementation might allow any trailing expression, for example
-    the same situation occurs with:
-            .*ax*
-	    .*bx*
-	    .*cx*
-    (
-  _ add 'flags' to DskPatternEntry with "ignore_case",
-  _ utf-8 support
-  _ implement some sort of NFA fallback
-  _ support captures (ugh)
-  _ TEST:
-    _ empty list of patterns
-
-x HTTP Client Stream        KEEP UNTIL DONE TESTING
-  x content-encoding gzip
-    x message body
-    x POST data
-      x make dsk_http_client_stream_request_new take a
-	DskHttpClientStreamRequestOptions
-      x add force_post_data_gzip to Options; if given a static buffer,
-        compress at request time; if given a stream, make a post-data-encoder.
-	content-length must be handled carefullly.
-
-filters:
-  x dsk_hex_encoder_new             
-  x dsk_hex_decoder_new             
-  x dsk_url_encoder_new             
-  x dsk_url_decoder_new
-  x dsk_xml_encoder_new             
-  x dsk_quote_printable_new         
-  x dsk_unquote_printable_new      
-  x dsk_utf8_to_utf16_converter_new
-  _ dsk_utf16_to_utf8_converter_new
-  x dsk_byte_doubler_new           
-  x dsk_byte_undoubler_new         
-  x dsk_octet_filter_chain_new_take [steal from programs/dsk-octet-filter.c]
-_ remove persistency support from DskClientStream !?!
-_ dsk_buffer_transfer, dsk_buffer_drain: consolidate fragments
-  if they are both small.
-_ figure out a way to tune buffer allocations
-  (perhaps a way to build to write a behavior log?)
-_ Is the post_data hack of dsk_http_server_stream_respond() really ok?
-_ Review dsk-dispatch API... has_idle and has_timeout are clearly bogus...
-  implement epoll support.
-_ Date:
-  _ dsk_date_print_rfc850()
-  _ dsk_date_print_iso8601()
-_ HTTP Header Work:
-  _ "no_cache" response:
-    HTTP/1.1:
-      Cache-Control: no-store, no-cache, must-revalidate
-      Cache-Control: post-check=0, pre-check=0
-    HTTP/1.0:
-      Pragma: no-cache
-
-x fix dsk_utf8_skip_whitespace()
-_ other utf8 functions
-  _ strdown? strup?
-  _ diacritical normalization
-
-
 
 _ HTTP Server Stream implementation
   _ content-encoding gzip
@@ -306,7 +237,7 @@ _ HTTP Server Stream implementation
     _ body, data in slab with size
       (gzip and provide content-length=compressed-size)
 _ HTTP Server implementation
-_ MIME Multipart Impl
+_ MIME Multipart Encoder
 _ XML implementation
   x xml node object
   x parser
@@ -321,11 +252,7 @@ _ XML implementation
   _ printer / pretty-printer
 _ dsk_octet_filter_sink()
 
-LATER
 _ SSL and HTTPS [see file TODO-SSL]
-_ YAML implementation
-  _ parser
-  _ printer
 
 DOCUMENTATION
 *everything needs docs, but just remind ourselves of subtle stuff*
@@ -340,5 +267,7 @@ _ s/octet/byte/ ?????
 _ break apart dsk-octet-io.h
 _ DskClientStreamSource BUT DskOctetStreamSourceFd.
   Fix this inconsistency and come up with a policy for naming derived classes
+_ note that we use TYPE_INIT everywhere now instead of TYPE_DEFAULT 
+  (and dropping STATIC from the name of the macro DSK_BUFFER_STATIC_INIT)
 
 SEE ALSO: DskTable-TODO

@@ -398,7 +398,7 @@ dsk_print_set_template_string (DskPrint *context,
                                const char *variable_name,
                                const char *template_string)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskError *error = NULL;
 
   /* save append/append_func */
@@ -448,7 +448,7 @@ void dsk_print_set_filtered_buffer   (DskPrint    *context,
 			            const DskBuffer *buffer,
                                     DskOctetFilter *filter)
 {
-  DskBuffer output = DSK_BUFFER_STATIC_INIT;
+  DskBuffer output = DSK_BUFFER_INIT;
   const DskBufferFragment *in = buffer->first_frag;
   DskError *error = NULL;
   while (in)

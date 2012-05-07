@@ -17,7 +17,7 @@ struct _DskUtf8ToUtf16
   uint8_t n_utf8_bytes : 4;
   uint8_t swap : 1;
   uint8_t must_emit_bom : 1;
-  uint8_t utf8_bytes[DSK_UTF8_MAX_LENGTH-1];
+  uint8_t utf8_bytes[DSK_UTF8_MAX_LENGTH];
 };
 
 static void

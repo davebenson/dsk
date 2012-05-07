@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 
   /* Test str_index_of */
   {
-    DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+    DskBuffer buffer = DSK_BUFFER_INIT;
     dsk_buffer_append_foreign (&buffer, 3, "abc", NULL, NULL);
     dsk_buffer_append_foreign (&buffer, 3, "def", NULL, NULL);
     dsk_buffer_append_foreign (&buffer, 3, "gad", NULL, NULL);
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
     for (pi = 0; pi < DSK_N_ELEMENTS (placeholder_strs); pi++)
       for (ai = 0; ai < DSK_N_ELEMENTS (after_strs); ai++)
         {
-          DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+          DskBuffer buffer = DSK_BUFFER_INIT;
           const char *pi_str = placeholder_strs[pi];
           DskBufferPlaceholder placeholder;
           dsk_buffer_append_string (&buffer, before_strs[bi]);

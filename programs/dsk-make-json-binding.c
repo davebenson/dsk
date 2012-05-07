@@ -362,7 +362,7 @@ compute_type_order (JsonType *type)
     return DSK_FALSE;
   if (type->computing_order)
     {
-      DskBuffer list = DSK_BUFFER_STATIC_INIT;
+      DskBuffer list = DSK_BUFFER_INIT;
       dsk_buffer_append_string (&list, type->name);
       JsonType *at = type;
       do
@@ -518,7 +518,7 @@ implement_from_json_by_type (FILE *fp,
 
 int main(int argc, char **argv)
 {
-  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_DEFAULT;
+  DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   unsigned i, j;
   dsk_boolean use_stdout = DSK_FALSE;
   dsk_boolean one_file = DSK_FALSE;
@@ -618,9 +618,9 @@ int main(int argc, char **argv)
       at++;             /* skip semicolon */
 
       /* handle namespaces */
-      DskBuffer lc_ns = DSK_BUFFER_STATIC_INIT,
-                uc_ns = DSK_BUFFER_STATIC_INIT,
-                mixed_ns = DSK_BUFFER_STATIC_INIT;
+      DskBuffer lc_ns = DSK_BUFFER_INIT,
+                uc_ns = DSK_BUFFER_INIT,
+                mixed_ns = DSK_BUFFER_INIT;
       unsigned tmp;
       for (tmp = first_bareword; tmp < at; tmp += 2)
         {

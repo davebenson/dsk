@@ -27,7 +27,7 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
 #define EVALUATE_STANZA(result, init_ns_code, stanza) \
   do{ \
     DskError *e_e = NULL; \
-    DskBuffer buffer = DSK_BUFFER_STATIC_INIT; \
+    DskBuffer buffer = DSK_BUFFER_INIT; \
     DskTs0Namespace *ns = dsk_ts0_namespace_new (dsk_ts0_namespace_global ()); \
     init_ns_code; \
     if (!dsk_ts0_stanza_evaluate (ns, stanza, &buffer, &e_e)) \
@@ -39,7 +39,7 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
 #define EVALUATE_STANZA_FAIL(init_ns_code, stanza) \
   do{ \
     DskError *e_e = NULL; \
-    DskBuffer buffer = DSK_BUFFER_STATIC_INIT; \
+    DskBuffer buffer = DSK_BUFFER_INIT; \
     DskTs0Namespace *ns = dsk_ts0_namespace_new (dsk_ts0_namespace_global ()); \
     init_ns_code; \
     if (!dsk_ts0_stanza_evaluate (ns, stanza, &buffer, &e_e)) \
@@ -60,7 +60,7 @@ static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
 
 void dump_stanza (DskTs0Stanza *stanza)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskError *error = NULL;
   dsk_ts0_stanza_dump (stanza, 2, &buffer);
   if (!dsk_buffer_write_all_to_fd (&buffer, STDERR_FILENO, &error))

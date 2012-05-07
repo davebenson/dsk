@@ -11,7 +11,7 @@ typedef struct {
 #define CLIENT_REQUEST_DATA_DEFAULT \
 { \
   NULL, \
-  DSK_BUFFER_STATIC_INIT, \
+  DSK_BUFFER_INIT, \
   NULL, \
   DSK_FALSE, \
   DSK_FALSE \
@@ -66,13 +66,13 @@ test_simple_connection_close (void)
 {
   DskOctetSource *source1, *source2;
   DskOctetSink *sink1, *sink2;
-  DskHttpClientStreamOptions client_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-  DskHttpServerStreamOptions server_options = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+  DskHttpClientStreamOptions client_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
+  DskHttpServerStreamOptions server_options = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
   ClientRequestData client_request_data = CLIENT_REQUEST_DATA_DEFAULT;
   DskHttpClientStreamTransfer *client_xfer;
   DskHttpServerStreamTransfer *server_xfer;
-  DskHttpRequestOptions request_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
+  DskHttpRequestOptions request_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
   DskError *error = NULL;
   DskHttpClientStream *client;
   DskHttpServerStream *server;
@@ -98,8 +98,8 @@ test_simple_connection_close (void)
 
   /* server respond */
   {
-  DskHttpServerStreamResponseOptions response_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
-  DskHttpResponseOptions response_hdr_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpServerStreamResponseOptions response_options = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
+  DskHttpResponseOptions response_hdr_options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
   response_options.header_options = &response_hdr_options;
   response_options.content_length = 7;
   response_options.content_body = (const void *) "hi mom\n";

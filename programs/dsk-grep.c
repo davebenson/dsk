@@ -11,8 +11,8 @@ handle_fd (DskPattern *pattern,
            unsigned    buffer_size,
            int         fd)
 {
-  DskBuffer in = DSK_BUFFER_STATIC_INIT;
-  DskBuffer out = DSK_BUFFER_STATIC_INIT;
+  DskBuffer in = DSK_BUFFER_INIT;
+  DskBuffer out = DSK_BUFFER_INIT;
   for (;;)
     {
       int rv = dsk_buffer_readv (&in, fd);

@@ -10,6 +10,7 @@ struct _DskTableBuffer
   uint8_t *data;
   unsigned alloced;
 };
+#define DSK_TABLE_BUFFER_INIT {0,NULL,0}
 DSK_INLINE_FUNC uint8_t *
 dsk_table_buffer_set_size (DskTableBuffer *buffer,
                            unsigned        length);
@@ -21,7 +22,8 @@ typedef enum
   DSK_TABLE_MERGE_RETURN_B_FINAL,
   DSK_TABLE_MERGE_RETURN_B,
   DSK_TABLE_MERGE_RETURN_BUFFER_FINAL,
-  DSK_TABLE_MERGE_RETURN_BUFFER
+  DSK_TABLE_MERGE_RETURN_BUFFER,
+  DSK_TABLE_MERGE_DROP
 } DskTableMergeResult;
 
 typedef DskTableMergeResult (*DskTableMergeFunc)  (unsigned       key_length,
@@ -57,7 +59,7 @@ struct _DskTableConfig
      that support range queries. */
   unsigned quantiles_n;
 };
-#define DSK_TABLE_CONFIG_DEFAULT                                       \
+#define DSK_TABLE_CONFIG_INIT                                       \
 {                                                                      \
   NULL, NULL,           /* standard comparator */                      \
   NULL, NULL,           /* standard replacement merge */               \
@@ -70,6 +72,8 @@ struct _DskTableConfig
 
 DskTable   *dsk_table_new          (DskTableConfig *config,
                                     DskError      **error);
+
+/* Returns FALSE on error or on "not found". */
 dsk_boolean dsk_table_lookup       (DskTable       *table,
                                     unsigned        key_length,
                                     const uint8_t  *key_data,
@@ -142,7 +146,8 @@ typedef struct {
 /* internals */
 DskTableReader *dsk_table_reader_new_merge2 (DskTable       *table,
                                              DskTableReader *a,
-                                             DskTableReader *b);
+                                             DskTableReader *b,
+                                             DskError      **error);
 
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC uint8_t *

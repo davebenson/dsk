@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 static dsk_boolean cmdline_verbose = DSK_FALSE;
 
@@ -130,7 +131,7 @@ static void
 test_table_trivial (void)
 {
   DskTable *table;
-  DskTableConfig config = DSK_TABLE_CONFIG_DEFAULT;
+  DskTableConfig config = DSK_TABLE_CONFIG_INIT;
   unsigned value_len;
   const uint8_t *value_data;
   DskError *error = NULL;
@@ -151,6 +152,16 @@ test_table_trivial (void)
 
   dsk_table_destroy_erase (table);
 }
+
+static double
+compute_n_per_sec (const struct timeval *pre,
+                   const struct timeval *post,
+                   uint64_t              N)
+{
+  int d_micro = post->tv_usec - pre->tv_usec;
+  int d_sec = post->tv_sec - pre->tv_sec;
+  return N / ((double)d_sec + 1e-6 * d_micro);
+}
 static void
 test_table_simple (unsigned         rand_test_size,
                    RandTestOrdering ordering,
@@ -164,7 +175,7 @@ test_table_simple (unsigned         rand_test_size,
   char *dir;
 
   DskTable *table;
-  DskTableConfig config = DSK_TABLE_CONFIG_DEFAULT;
+  DskTableConfig config = DSK_TABLE_CONFIG_INIT;
   DskTableReader *reader;
   table = dsk_table_new (&config, &error);
   if (table == NULL)
@@ -176,6 +187,8 @@ test_table_simple (unsigned         rand_test_size,
   order = generate_ordering (rand_test_size, ordering);
   fprintf(stderr, ".");
 
+  struct timeval pre, after_inserts, after_lookups, after_dump;
+  gettimeofday (&pre, NULL);
   for (insert_iter = 0; insert_iter < insert_count; insert_iter++)
     {
       for (i = 0; i < rand_test_size; i++)
@@ -190,6 +203,7 @@ test_table_simple (unsigned         rand_test_size,
                                              &error));
         }
     }
+  gettimeofday (&after_inserts, NULL);
   fprintf(stderr, ".");
   for (i = 0; i < rand_test_size; i++)
     {
@@ -204,6 +218,7 @@ test_table_simple (unsigned         rand_test_size,
       dsk_assert (vl == strlen (kv.value));
       dsk_assert (memcmp (kv.value, value, vl) == 0);
     }
+  gettimeofday (&after_lookups, NULL);
   fprintf(stderr, ".");
 
   reader = dsk_table_new_reader (table, &error);
@@ -229,6 +244,7 @@ test_table_simple (unsigned         rand_test_size,
     }
   dsk_assert (reader->at_eof);
   reader->destroy (reader);
+  gettimeofday (&after_dump, NULL);
   fprintf(stderr, ".");
 
   dir = dsk_strdup (dsk_table_peek_dir (table));
@@ -268,6 +284,11 @@ test_table_simple (unsigned         rand_test_size,
     destruct_key_value (kvs + i);
   dsk_free (kvs);
   dsk_free (order);
+
+  fprintf (stderr, "%.1f inserts/sec; %.1f lookups/sec; %.1f dump-reads/sec\n",
+           compute_n_per_sec (&pre, &after_inserts, rand_test_size*insert_count),
+           compute_n_per_sec (&after_inserts, &after_lookups, rand_test_size),
+           compute_n_per_sec (&after_lookups, &after_dump, rand_test_size));
 
   dsk_table_destroy_erase (table);
   dsk_free (dir);

@@ -135,7 +135,7 @@ static DskOctetListener *global_listener = NULL;
 static void
 create_server (void)
 {
-  DskOctetListenerSocketOptions opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_DEFAULT;
+  DskOctetListenerSocketOptions opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT;
   DskOctetListener *listener;
   DskError *error = NULL;
   opts.is_local = !cmdline_is_tcp;
@@ -167,7 +167,7 @@ static dsk_boolean cmdline_debug_client = DSK_FALSE;
 static void
 create_client (void)
 {
-  DskClientStreamOptions options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskClientStreamOptions options = DSK_CLIENT_STREAM_OPTIONS_INIT;
   DskError *error = NULL;
   if (cmdline_is_tcp)
     {
@@ -217,7 +217,7 @@ write_then_read (unsigned write_len,
   unsigned n_written = 0;
   dsk_boolean timer_expired = DSK_FALSE;
   DskDispatchTimer *timer;
-  DskBuffer readbuf = DSK_BUFFER_STATIC_INIT;
+  DskBuffer readbuf = DSK_BUFFER_INIT;
   if (cmdline_debug_client)
     dsk_warning ("write_then_read: trying to write %u bytes; timeout=%u millis", write_len, time_millis);
   timer = dsk_main_add_timer_millis (time_millis, handle_timeout, &timer_expired);

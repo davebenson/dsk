@@ -56,11 +56,11 @@ test_simple (void)
           DskMemorySink *csink = dsk_memory_sink_new ();
           DskHttpServerStream *stream;
           DskHttpServerStreamOptions server_opts 
-            = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
           DskHttpResponseOptions resp_opts
-            = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_RESPONSE_OPTIONS_INIT;
           DskHttpServerStreamResponseOptions stream_resp_opts
-            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
           dsk_boolean got_notify;
           DskHttpServerStreamTransfer *xfer;
           DskMemorySource *content_source = NULL;
@@ -240,11 +240,11 @@ test_response_keepalive (void)
           DskMemorySink *csink = dsk_memory_sink_new ();
           DskHttpServerStream *stream;
           DskHttpServerStreamOptions server_opts 
-            = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
           DskHttpResponseOptions resp_opts
-            = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_RESPONSE_OPTIONS_INIT;
           DskHttpServerStreamResponseOptions stream_resp_opts
-            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
           csink->max_buffer_size = 128*1024;
           if (cmdline_verbose)
             dsk_warning ("request style: %s; writing data mode: %s; response style: %s",
@@ -396,7 +396,7 @@ test_response_keepalive (void)
               dsk_assert (!chunked || content_length == -1);
               if (chunked)
                 {
-                  DskBuffer content = DSK_BUFFER_STATIC_INIT;
+                  DskBuffer content = DSK_BUFFER_INIT;
                   for (;;)
                     {
                       unsigned chunk_len;
@@ -462,11 +462,11 @@ test_pipelining (void)
           DskMemorySink *csink = dsk_memory_sink_new ();
           DskHttpServerStream *stream;
           DskHttpServerStreamOptions server_opts 
-            = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
           DskHttpResponseOptions resp_opts
-            = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_RESPONSE_OPTIONS_INIT;
           DskHttpServerStreamResponseOptions stream_resp_opts
-            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
+            = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
           dsk_boolean got_notify;
           DskHttpServerStreamTransfer *xfer;
           unsigned reqno;
@@ -610,7 +610,7 @@ test_pipelining (void)
               dsk_assert (line != NULL);
               if (chunked)
                 {
-                  DskBuffer tmp = DSK_BUFFER_STATIC_INIT;
+                  DskBuffer tmp = DSK_BUFFER_INIT;
                   char buf[7];
                   for (;;)
                     {
@@ -706,16 +706,16 @@ test_simple_post (void)
         DskMemorySink *csink = dsk_memory_sink_new ();
         DskHttpServerStream *stream;
         DskHttpServerStreamOptions server_opts 
-          = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+          = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
         DskHttpResponseOptions resp_opts
-          = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+          = DSK_HTTP_RESPONSE_OPTIONS_INIT;
         DskHttpServerStreamResponseOptions stream_resp_opts
-          = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_DEFAULT;
+          = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
         dsk_boolean got_notify;
         DskHttpServerStreamTransfer *xfer;
         DskOctetSource *post_data;
         dsk_boolean done;
-        DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+        DskBuffer buffer = DSK_BUFFER_INIT;
         char *line;
         csink->max_buffer_size = 128*1024;
         if (cmdline_verbose)
@@ -873,7 +873,7 @@ test_simple_websocket (void)
         DskMemorySink *csink = dsk_memory_sink_new ();
         DskHttpServerStream *stream;
         DskHttpServerStreamOptions server_opts 
-          = DSK_HTTP_SERVER_STREAM_OPTIONS_DEFAULT;
+          = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
         dsk_boolean got_notify;
         DskHttpServerStreamTransfer *xfer;
         DskWebsocket *websocket;

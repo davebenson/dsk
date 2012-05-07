@@ -286,7 +286,7 @@ parse_byte_spec (const char *spec, uint8_t *out, DskError **error)
   else if (spec[0] == '\\')
     {
       /* fire up c-unquoter */
-      DskBuffer buf = DSK_BUFFER_STATIC_INIT;
+      DskBuffer buf = DSK_BUFFER_INIT;
       DskOctetFilter *f = dsk_c_unquoter_new (DSK_FALSE);
       if (!dsk_octet_filter_process (f, &buf, strlen (spec), (uint8_t*)spec, error)
        || !dsk_octet_filter_finish (f, &buf, error))
@@ -383,12 +383,20 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_latin1_to_utf8)
   return DSK_TRUE;
 }
 
+DSK_CMDLINE_CALLBACK_DECLARE(handle_json_prettier)
+{
+  DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
+  DSK_UNUSED (arg_value); DSK_UNUSED (error);
+  add_filter (dsk_json_prettier_new ());
+  return DSK_TRUE;
+}
+
 int main(int argc, char **argv)
 {
   DskError *error = NULL;
   DskOctetFilter *filter;
-  DskBuffer in = DSK_BUFFER_STATIC_INIT;
-  DskBuffer out = DSK_BUFFER_STATIC_INIT;
+  DskBuffer in = DSK_BUFFER_INIT;
+  DskBuffer out = DSK_BUFFER_INIT;
   dsk_cmdline_init ("run various filters",
                     "Run a chain of DskOctetFilters, mostly useful for testing.\n",
                     NULL, 0);
@@ -441,6 +449,8 @@ int main(int argc, char **argv)
                         handle_utf8_fixer, NULL);
   dsk_cmdline_add_func ("latin1-to-utf8", "convert latin1 to UTF-8", NULL, 0,
                         handle_latin1_to_utf8, NULL);
+  dsk_cmdline_add_func ("json-prettier", "add spaces to make JSON more readable", NULL, 0,
+                        handle_json_prettier, NULL);
   dsk_cmdline_process_args (&argc, &argv);
 
 

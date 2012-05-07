@@ -11,7 +11,7 @@ static void
 respond_text_string (DskHttpServerRequest *request,
                      void                 *func_data)
 {
-  DskHttpServerResponseOptions response_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpServerResponseOptions response_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_INIT;
   const char *str = (const char *) func_data;
   unsigned length = strlen (str);
   DskMemorySource *source = dsk_memory_source_new ();
@@ -28,7 +28,7 @@ static void
 respond_sum (DskHttpServerRequest *request,
                      void                 *func_data)
 {
-  DskHttpServerResponseOptions response_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpServerResponseOptions response_options = DSK_HTTP_SERVER_RESPONSE_OPTIONS_INIT;
   int a = 0, b = 0;
   char sum_str[100];
   DskCgiVariable *var;
@@ -77,7 +77,7 @@ struct _SimpleRequestInfo
   DskBuffer content_buffer;
   DskHttpStatus status_code;
 };
-#define SIMPLE_REQUEST_INFO_INIT { DSK_FALSE, DSK_FALSE, DSK_BUFFER_STATIC_INIT, 0 }
+#define SIMPLE_REQUEST_INFO_INIT { DSK_FALSE, DSK_FALSE, DSK_BUFFER_INIT, 0 }
 
 static void simple__handle_response (DskHttpClientStreamTransfer *xfer)
 {
@@ -139,7 +139,7 @@ do_request (DskHttpClientStream *http_client_stream,
     case 2:
       {
         const char *in = request_options->request_options->path;
-        DskBuffer path = DSK_BUFFER_STATIC_INIT;
+        DskBuffer path = DSK_BUFFER_INIT;
         DskOctetFilter *urlenc;
         if (mode == 1)
           dsk_buffer_append_string (&path, "/internal-redirect?path=");
@@ -208,10 +208,10 @@ test_simple_http_server (void)
 
   /* use a client-stream to fetch hello.txt */
   {
-  DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
-  DskHttpClientStreamOptions http_client_stream_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT;
-  DskHttpClientStreamRequestOptions request_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT;
-  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_DEFAULT;
+  DskClientStreamOptions cs_options = DSK_CLIENT_STREAM_OPTIONS_INIT;
+  DskHttpClientStreamOptions http_client_stream_options = DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT;
+  DskHttpClientStreamRequestOptions request_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
+  DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
   int mode;
   request_options.request_options = &req_options;
   cs_options.path = "tests/sockets/http-server.socket";

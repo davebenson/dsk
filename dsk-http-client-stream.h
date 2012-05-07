@@ -45,7 +45,7 @@ struct _DskHttpClientStreamOptions
   dsk_boolean print_warnings;
 };
 
-#define DSK_HTTP_CLIENT_STREAM_OPTIONS_DEFAULT              \
+#define DSK_HTTP_CLIENT_STREAM_OPTIONS_INIT              \
 {                                                           \
   8192,                 /* max_header_size */               \
   4,                    /* max_pipelined_requests */        \
@@ -128,7 +128,7 @@ struct _DskHttpClientStreamRequestOptions
 
 };
 
-#define DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_DEFAULT \
+#define DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT \
 {                                                      \
   NULL,                /* request_options */           \
   NULL,                /* request */                   \

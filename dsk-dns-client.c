@@ -148,7 +148,7 @@ static unsigned n_resolv_conf_search_paths = 0;
 static char **resolv_conf_search_paths = NULL;
 static unsigned max_resolv_conf_searchpath_len = 0;
 static DskDnsCacheEntry *etc_hosts_tree = NULL;
-static DskDnsConfigFlags config_flags = DSK_DNS_CONFIG_FLAGS_DEFAULT;
+static DskDnsConfigFlags config_flags = DSK_DNS_CONFIG_FLAGS_INIT;
 static dsk_boolean dns_initialized = DSK_FALSE;
 
 #define CACHE_ENTRY_NAME_IS_RED(n)  n->name_type_is_red

@@ -185,12 +185,33 @@ struct _TableFileWriter
   unsigned n_entries_in_incoming;
   DskTableFileCompressor *compressor;
 
-  FILE *compressed_heap;
+  int compressed_heap_fd;
+  DskBuffer compressed_heap_buffer;
   uint64_t compressed_heap_offset;
 
   unsigned n_index_levels;
   WriterIndexLevel *index_levels;
 };
+
+static void 
+append_to_incoming__prefix_compressed (TableFileWriter    *writer,
+                                       unsigned            key_length,
+                                       const uint8_t      *key_data,
+                                       unsigned            value_length,
+                                       const uint8_t      *value_data)
+{
+  ...
+}
+
+static void 
+append_to_incoming__raw               (TableFileWriter    *writer,
+                                       unsigned            key_length,
+                                       const uint8_t      *key_data,
+                                       unsigned            value_length,
+                                       const uint8_t      *value_data)
+{
+  ...
+}
 
 static dsk_boolean
 write_index0_entry           (TableFileWriter *writer,
@@ -346,12 +367,16 @@ do_compress (TableFileWriter *w,
     }
   heap_offset = w->compressed_heap_offset;
   vli_len = encode_uint32_b128 (vli, outgoing_len);
-  if (FWRITE (vli, vli_len, 1, w->compressed_heap) != 1
-   || (outgoing_len != 0
-       && FWRITE (outgoing_data, outgoing_len, 1, w->compressed_heap) != 1))
+  dsk_buffer_append (&w->compressed_heap_buffer, vli_len, vli);
+  dsk_buffer_append (&w->compressed_heap_buffer, outgoing_len, outgoing_data);
+  while (w->compressed_heap_buffer > MAX_COMPRESSED_HEAP_BUFFER)
     {
-      dsk_set_error (error, "error writing compressed heap blob to disk");
-      return DSK_FALSE;
+      if (dsk_buffer_writev (&w->compressed_heap_buffer, w->compressed_heap_fd) < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          ...
+        }
     }
   w->compressed_heap_offset += vli_len + outgoing_len;
   *vli_len_out = vli_len;
@@ -567,13 +592,20 @@ table_file_writer_new (DskTableLocation        *location
   w->base_filename = memcpy (w + 1, base_filename, base_filename_len);
   dsk_table_buffer_init (&w->incoming);
   dsk_table_buffer_init (&w->prefix_buffer);
-  w->append_to_incoming = prefix_compress ? ...
-                                          : ...;
+  w->append_to_incoming = prefix_compress ? append_to_incoming__prefix_compressed
+                                          : append_to_incoming__raw;
   w->n_entries_in_incoming = 0;
   w->compressor = compressor;
 
-  compressed_heap_fd = dsk_table_helper_openat (...);
-  w->compressed_heap = fdopen (...);
+  w->compressed_heap_fd = dsk_table_helper_openat (w->location,
+                                                ..., ...,
+                                                O_CREAT|O_TRUNC|O_WRONLY,
+                                                0666, error);
+  if (w->compressed_heap_fd < 0)
+    {
+      ...
+    }
+  dsk_buffer_init (&w->compressed_heap_buffer);
   w->compressed_heap_offset = 0ULL;
 
   w->n_index_levels = 1;

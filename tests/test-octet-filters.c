@@ -13,7 +13,7 @@ static void
 dequote (const char *c_quoted, unsigned line,
          unsigned *len_out, uint8_t **data_out)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   DskOctetFilter *filter = dsk_c_unquoter_new (DSK_FALSE);
   if (!dsk_octet_filter_process (filter, &buffer, strlen (c_quoted),
                                  (uint8_t*) c_quoted, NULL)

@@ -1,0 +1,25 @@
+Is the timer support on your system really correct?  Do we support it?
+
+Here are some things an "effective" timer-system provides:
+  (1) dsk_dispatch_add_timer_millis(),
+      dsk_dispatch_adjust_timer_millis() operate 
+      with a monotonic clock, unaffected by settimeofday()
+  (2) dsk_dispatch_add_timer, dsk_dispatch_adjust_timer
+      operate with a wall-clock time clock that will notify us
+      if someone calls settimeofday().
+
+Most users don't even really notice an ineffective timer system,
+b/c everyone has low hopes regarding settimeofday() handling,
+(although some major fixes are easy: eg lack of settimeofday() notification).
+
+Changes in user's timezone are a different (but very related) issue.
+
+
+BACKWARDS SYSTEMS SUPPORTED:
+  - just using gettimeofday() (which means assuming the wall-clock
+    is a good monotonic clock)
+
+UNSUPPORTED SYSTEMS:
+  - linux's create_timer_fd
+
+SUPPORTED SYSTEMS:

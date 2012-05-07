@@ -734,7 +734,7 @@ static dsk_boolean
 handle_content_readable (DskOctetSource *content,
                          DskHttpServerStreamTransfer *xfer)
 {
-  DskBuffer tmp_buf = DSK_BUFFER_STATIC_INIT;
+  DskBuffer tmp_buf = DSK_BUFFER_INIT;
   DskBuffer *out = &xfer->owner->outgoing_data;
   DskBuffer *buf;
   DskError *error = NULL;
@@ -941,7 +941,7 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
     {
 invalid_arguments:
       {
-        DskHttpResponseOptions opts = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+        DskHttpResponseOptions opts = DSK_HTTP_RESPONSE_OPTIONS_INIT;
         DskMemorySource *msource = dsk_memory_source_new ();
         DskError *e = NULL;
         opts.request = transfer->request;
@@ -992,7 +992,7 @@ dsk_http_server_stream_respond_websocket
                                 const char *protocol,
                                 DskWebsocket **websocket_out)
 {
-  DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_DEFAULT;
+  DskHttpResponseOptions resp_options = DSK_HTTP_RESPONSE_OPTIONS_INIT;
   DskHttpResponse *response;
   DskHttpServerStream *stream = transfer->owner;
   const char *origin = dsk_http_request_get (transfer->request, "Origin");

@@ -1,0 +1,44 @@
+
+I.  How inlining is implemented
+
+II.  Note about DskMemPoolFixed
+
+It would be nice to inline dsk_mem_pool_fixed_free()
+and also to inline the common case for dsk_mem_pool_fixed_alloc().
+This is more tricky than usual b/c inlining can lead you into
+somewhat unexpected effects of C's "Strict Aliasing" rules.
+
+For example:
+
+   element->value = 42.0;
+   dsk_mem_pool_fixed_free (pool, element);
+
+Is inlined to:
+
+   element->value = 42.0;
+   _DSK_MEM_POOL_SLAB_GET_NEXT_PTR(element) = pool->free_list;
+   pool->free_list = element;
+
+Which is preprocessed into:
+
+   element->value = 42.0;
+   * (void**) element = pool->free_list;
+   pool->free_list = element;
+
+And now, b/c of strict-aliasing rules, this can be reordered to:
+
+   * (void**) element = pool->free_list;
+!  element->value = 42.0;
+   pool->free_list = element;
+
+or
+
+   * (void**) element = pool->free_list;
+   pool->free_list = element;
+!  element->value = 42.0;
+
+In each case the "42.0" assignment damages the list structure.
+(Note that the pointer assignments can't be reordered relative
+to each other:  the strict aliasing rules only apply to 
+assignments to different types)
+

@@ -3,11 +3,11 @@
 #define DSK_HAVE_IPV6  1
 
 
-#include <assert.h>
-#include <inttypes.h>
-#include <stddef.h>
-#include <stdarg.h>
-#include <errno.h>
+#include <assert.h>             /* temporary */
+#include <inttypes.h>           /* for int8_t, ..., uint64_t; etc. */
+#include <stddef.h>             /* for size_t, offsetof */
+#include <stdarg.h>             /* for va_ macros */
+#include <errno.h>              /* for E* definitions */
 
 typedef int dsk_boolean;
 #define DSK_FALSE		0
@@ -205,5 +205,6 @@ void dsk_bzero_pointers (void *ptrs, unsigned n_ptrs);
 
 char *dsk_strdup_vprintf (const char *str, va_list args);
 char *dsk_strdup_printf (const char *str, ...) DSK_GNUC_PRINTF(1,2);
+#define dsk_asprintf dsk_strdup_printf
 
 dsk_boolean dsk_parse_boolean (const char *str, dsk_boolean *out);

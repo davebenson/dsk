@@ -36,7 +36,7 @@
  */
 
 #define MAX_ID_LENGTH     20
-#define FILE_BASENAME_FORMAT   "%llx"
+#define FILE_BASENAME_FORMAT   "%"PRIx64
 
 typedef struct _Merge Merge;
 typedef struct _PossibleMerge PossibleMerge;
@@ -79,7 +79,8 @@ struct _Merge
   DskTableFileWriter *writer;
   uint64_t entries_written;
   uint64_t inputs_remaining;
-  dsk_boolean is_complete;
+  unsigned is_complete : 1;
+  unsigned finishing_writer : 1;
 
   Merge *next;
 };
@@ -271,13 +272,11 @@ add_to_tree (DskTable           *table,
                           table->merge_buffers[0].data);
           break;
 
-#if 0
         case DSK_TABLE_MERGE_DROP:
           DSK_RBTREE_REMOVE (GET_SMALL_TREE (), node);
           table->tree_size -= 1;
           dsk_free (node);
           break;
-#endif
         }
     }
 }
@@ -535,6 +534,8 @@ start_merge_job (DskTable *table,
   /* TODO: it is also complete if all preceding files are of 0 length.
      Not sure if it is worth checking for that. */
   merge->is_complete = merge->a->first_entry_index == 0ULL;
+
+  merge->finishing_writer = DSK_FALSE;
 
   /* insert sorted into list of running merges */
   p_next = &table->running_merges;
@@ -867,11 +868,9 @@ lookup_do_merge_or_set (DskTable *table,
         case DSK_TABLE_MERGE_RETURN_BUFFER:
           *res_index_inout = 1 - *res_index_inout;
           return;
-#if 0
         case DSK_TABLE_MERGE_DROP:
           *res_index_inout = -1;
           return;
-#endif
         default:
           dsk_return_if_reached ("bad ret-val from merge");
         }
@@ -1055,12 +1054,26 @@ delete_file (DskTable *table,
 }
 
 static dsk_boolean
-merge_job_finished (DskTable  *table,
-                    Merge     *merge,
-                    DskError **error)
+merge_job_readers_at_eof (DskTable  *table,
+                          Merge     *merge,
+                          DskError **error)
 {
   File *new;
   unsigned i;
+  if (merge->writer->finish != NULL)
+    {
+      switch (merge->writer->finish (merge->writer, error))
+        {
+        case DSK_TABLE_FILE_WRITER_FINISHED:
+          break;
+        case DSK_TABLE_FILE_WRITER_FINISHING:
+          merge->finishing_writer = DSK_TRUE;
+          return DSK_TRUE;
+        case DSK_TABLE_FILE_WRITER_FINISH_FAILED:
+          return DSK_FALSE;
+        }
+    }
+
   /* close writer */
   if (!merge->writer->close (merge->writer, error))
     {
@@ -1119,10 +1132,18 @@ merge_job_finished (DskTable  *table,
         }
     }
 
+  dsk_assert (merge == table->running_merges);
+  table->running_merges = merge->next;
+  merge->a_reader->destroy (merge->a_reader);
+  merge->b_reader->destroy (merge->b_reader);
+  merge->writer->destroy (merge->writer);
+  dsk_free (merge);
+
+
   /* deal with new possible merge jobs */
-  if (new->prev->merge == NULL)
+  if (new->prev != NULL && new->prev->merge == NULL)
     create_possible_merge (table, new->prev);
-  if (new->next->merge == NULL)
+  if (new->next != NULL && new->next->merge == NULL)
     create_possible_merge (table, new);
 
   /* maybe time to start another merge job running */
@@ -1137,12 +1158,14 @@ run_first_merge_job (DskTable *table,
                      DskError **error)
 {
   Merge *merge = table->running_merges;
+  if (merge->finishing_writer)
+    return merge_job_readers_at_eof (table, merge, error);
   if (merge->a_reader->at_eof)
     {
       if (merge->b_reader->at_eof)
         {
           /* done */
-          if (!merge_job_finished (table, merge, error))
+          if (!merge_job_readers_at_eof (table, merge, error))
             return DSK_FALSE;
         }
       else
@@ -1215,10 +1238,8 @@ run_first_merge_job (DskTable *table,
                     return DSK_FALSE;
                   merge->entries_written += 1;
                   break;
-#if 0
                 case DSK_TABLE_MERGE_DROP:
                   break;
-#endif
                 }
 
               merge->inputs_remaining -= 2;
@@ -1559,7 +1580,8 @@ dsk_table_new_reader (DskTable    *table,
       planner[best_i].reader
         = dsk_table_reader_new_merge2 (table,
                                        planner[best_i].reader,
-                                       planner[best_i+1].reader);
+                                       planner[best_i+1].reader,
+                                       error);
       if (planner[best_i].reader == NULL)
         {
           for (i = 0; i < best_i; i++)
@@ -1687,7 +1709,7 @@ merge2_copy_kv_data (DskTableReader *dst,
   dst->value_data = src->value_data;
 }
 
-static void
+static dsk_boolean
 merge2_setup_output (TableReaderMerge2 *merge2)
 {
   DskTableReader *a = merge2->a;
@@ -1737,8 +1759,12 @@ merge2_setup_output (TableReaderMerge2 *merge2)
           merge2->base.value_length = merge2->buffer.length;
           merge2->base.value_data = merge2->buffer.data;
           break;
+        case DSK_TABLE_MERGE_DROP:
+          merge2->state = TABLE_READER_MERGE2_BOTH;
+          return DSK_FALSE;
         }
     }
+  return DSK_TRUE;
 }
 
 static dsk_boolean
@@ -1746,6 +1772,7 @@ merge2_advance (DskTableReader *reader,
                 DskError      **error)
 {
   TableReaderMerge2 *merge2 = (TableReaderMerge2 *) reader;
+restart_advance:
   switch (merge2->state)
     {
     case TABLE_READER_MERGE2_A:
@@ -1781,7 +1808,10 @@ merge2_advance (DskTableReader *reader,
       merge2->state = TABLE_READER_MERGE2_A;
     }
   else
-    merge2_setup_output (merge2);
+    {
+      if (!merge2_setup_output (merge2))
+        goto restart_advance;
+    }
   return DSK_TRUE;
 }
 
@@ -1798,7 +1828,8 @@ merge2_destroy (DskTableReader *reader)
 DskTableReader *
 dsk_table_reader_new_merge2 (DskTable *table,
                              DskTableReader *a,
-                             DskTableReader *b)
+                             DskTableReader *b,
+                             DskError      **error)
 {
   TableReaderMerge2 *merge2;
 
@@ -1830,7 +1861,14 @@ dsk_table_reader_new_merge2 (DskTable *table,
   merge2->buffer.data = NULL;
   merge2->buffer.alloced = 0;
 
-  merge2_setup_output (merge2);
+  if (!merge2_setup_output (merge2))
+    {
+      if (!merge2_advance (&merge2->base, error))
+        {
+          merge2_destroy (&merge2->base);
+          return NULL;
+        }
+    }
 
   return &merge2->base;
 }

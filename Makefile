@@ -103,6 +103,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-url-encoder.o dsk-url-decoder.o \
 	  dsk-byte-doubler.o dsk-byte-undoubler.o \
 	  dsk-utf8-fixer.o \
+	  dsk-json-prettier.o \
 	  dsk-codepage.o \
 	  dsk-strv.o \
 	  dsk-mime-multipart.o \

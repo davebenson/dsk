@@ -23,7 +23,7 @@ DskJsonValue *parse_value (const char *str)
 
 char *print_value (DskJsonValue *value)
 {
-  DskBuffer buffer = DSK_BUFFER_STATIC_INIT;
+  DskBuffer buffer = DSK_BUFFER_INIT;
   dsk_json_value_to_buffer (value, -1, &buffer);
   return dsk_buffer_empty_to_string (&buffer);
 }

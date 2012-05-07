@@ -11,7 +11,7 @@ static char *local_path = NULL;
 
 int main(int argc, char **argv)
 {
-  DskClientStreamOptions options = DSK_CLIENT_STREAM_OPTIONS_DEFAULT;
+  DskClientStreamOptions options = DSK_CLIENT_STREAM_OPTIONS_INIT;
   dsk_cmdline_init ("connect to a server or listen for a connection",
                     "Connect to a server or listen for a client; write data from socket to standard-output; any data collected on standard-input will be sent to the connection.",
                     "[HOST:PORT]",
