@@ -14,8 +14,6 @@ struct _DskDir
   char *buf;
   unsigned buf_length;
   dsk_boolean locked;
-
-  DskDir *alias;
 };
 
 DskDir      *dsk_dir_open                    (DskDir *parent,
