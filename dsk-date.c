@@ -318,7 +318,7 @@ static const unsigned month_starts_in_days[12]
    whose year fits in an unsigned integer. (therefore, no B.C. dates)
  */
 /* dsk_unixtime_to_date() always sets the date_out->zone_offset to 0 (ie GMT) */
-int64_t     dsk_date_to_unixtime (DskDate *date)
+int64_t     dsk_date_to_unixtime (const DskDate *date)
 {
   unsigned days_since_epoch, secs_since_midnight;
 
@@ -630,7 +630,7 @@ unsigned    dsk_date_get_day_of_year (DskDate *date)
        + (is_after_leap ? 1 : 0);
 }
 
-int    dsk_date_get_days_since_epoch (DskDate *date)
+int    dsk_date_get_days_since_epoch (const DskDate *date)
 {
   unsigned year = date->year;
   /* we need to find the number of leap years between 1970
@@ -655,6 +655,7 @@ int    dsk_date_get_days_since_epoch (DskDate *date)
        + (date->day - 1);
 }
 
+#if 0
 unsigned
 dsk_date_get_day_of_week (DskDate *date)
 {
@@ -664,6 +665,7 @@ dsk_date_get_day_of_week (DskDate *date)
      Hence we want thursday == 4 */
   return (day + 4) % 7;
 }
+#endif
 
 /* Sun, 06 Nov 1994 08:49:37 GMT */
 void        dsk_date_print_rfc822 (DskDate *date,
@@ -697,4 +699,233 @@ void        dsk_date_print_rfc822 (DskDate *date,
   buf[27] = 'M';
   buf[28] = 'T';
   buf[29] = '\0';
+}
+
+static const char *day_of_week_names[7] = {
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+};
+static const char *month_names[12] = {
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+};
+
+static const char day_of_week_abbrevs[21] = "SunMonTueWedThuFriSat";
+static const char month_abbrevs[36] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+
+/* TODO: support years >= 10000 */
+dsk_boolean
+dsk_date_strftime (const DskDate *date,
+                   const char    *format,
+                   unsigned       max_out,
+                   char          *out)
+{
+  char buf[64];
+  char *end_out = out + max_out;
+#define MAYBE_APPEND(str_length, str_value)       \
+  do{                                             \
+    if (out + str_length >= end_out)              \
+      {                                           \
+        memcpy (out, str_value, end_out - out);   \
+        return DSK_FALSE;                         \
+      }                                           \
+    else                                          \
+      {                                           \
+        memcpy (out, str_value, str_length);      \
+        out += str_length;                        \
+      }                                           \
+  }while(0)
+
+#define MAYBE_APPEND_STRING(str_value)            \
+  do{                                             \
+    const char *tmp_mas_str = (str_value);        \
+    unsigned tmp_mas_len = strlen (tmp_mas_str);  \
+    MAYBE_APPEND(tmp_mas_len,tmp_mas_str);        \
+  }while(0)
+  while (*format != '\0' && out < end_out)
+    {
+      if (*format != '%')
+        {
+          *out++ = *format++;
+          break;
+        }
+      switch (format[1])
+        {
+        case 'A':
+          MAYBE_APPEND_STRING (day_of_week_names[dsk_date_get_day_of_week (date)]);
+          format += 2;
+          break;
+        case 'a':
+          MAYBE_APPEND(3, day_of_week_abbrevs
+                          + 3 * dsk_date_get_day_of_week (date));
+          format += 2;
+          break;
+        case 'B':
+          MAYBE_APPEND_STRING(month_names[date->month]);
+          format += 2;
+          break;
+        case 'b':
+        case 'h':
+          MAYBE_APPEND(3, month_abbrevs + 3 * date->month);
+          format += 2;
+          break;
+        case 'C':
+          buf[0] = '0' + (date->year / 1000 % 10);
+          buf[1] = '0' + (date->year / 100 % 10);
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 'd':
+          ...
+        case 'e':
+        case 'F':
+          /* %Y-%m-%d */
+          ...
+            format += 2;
+          break;
+        //case 'G':
+        //case 'g':   ///////// "is replaced by a year as a decimal number with century.  This year is the one that contains the greater part of the week (Monday as the first day of the week).
+
+        case 'H':
+          buf[0] = '0' + date->hour / 10;
+          buf[1] = '0' + date->hour % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 'I':
+          {
+            unsigned h = date->hour % 12;
+            buf[0] = '0' + h / 10;
+            buf[1] = '0' + h % 10;
+            MAYBE_APPEND(2, buf);
+            format += 2;
+          }
+          break;
+        case 'j':
+          .... day-of-year 001-366
+            format += 2;
+        case 'k':
+          ... 0-23 space-padded 
+            format += 2;
+
+        case 'l':
+          {
+            unsigned h = date->hour % 12;
+            if (h == 0)
+              h = 12;
+            buf[0] = '0' + h / 10;
+            buf[1] = '0' + h % 10;
+            MAYBE_APPEND(2, buf);
+            format += 2;
+          }
+          break;
+        case 'M':
+          buf[0] = '0' + date->minute / 10;
+          buf[1] = '0' + date->minute % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 'm':
+          buf[0] = '0' + (date->month+1) / 10;
+          buf[1] = '0' + (date->month+1) % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 'n':
+          buf[0] = '\n';
+          MAYBE_APPEND(1, buf);
+          format += 2;
+          break;
+
+        case 'O':
+        case 'E':
+          ...
+            format += 2;
+
+        case 'p':
+          buf[0] = date->hour >= 12 ? 'P' : 'A';
+          buf[1] = 'M';
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 'R':
+          ... %H:%M
+            format += 2;
+        case 'r':
+          ... %I:%M
+            format += 2;
+        case 'S':
+          buf[0] = '0' + date->second / 10;
+          buf[1] = '0' + date->second % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        case 's':
+          ...
+          format += 2;
+          break;
+        case 'S':
+          ...
+          format += 2;
+          break;
+        case 'T':
+          ...
+          format += 2;
+          break;
+        case 't':
+          buf[0] = '\t';
+          MAYBE_APPEND(1, buf);
+          format += 2;
+          break;
+        case 'Y':
+          buf[0] = '0' + date->year / 1000;
+          buf[1] = '0' + date->year / 100 % 10;
+          buf[2] = '0' + date->year / 10 % 10;
+          buf[3] = '0' + date->year % 10;
+          MAYBE_APPEND(4, buf);
+          format += 2;
+          break;
+        case 'y':
+          buf[0] = '0' + date->year / 10 % 10;
+          buf[1] = '0' + date->year % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
+        /* TO HANDLE: c,D,U,u,V,v,W,w,X,x,Z */
+        case '%':
+          buf[0] = '%';
+          MAYBE_APPEND(1, buf);
+          format += 2;
+          break;
+        case 0:
+          /* unfollowed '%' */
+          format++;
+          break;
+        default:
+          /* ignore unknown format codes */
+          format += 2;
+          break;
+        }
+    }
+#undef MAYBE_APPEND
+#undef MAYBE_APPEND_STRING
+  if (out == end_out)
+    return DSK_FALSE;
+  *out = 0;
+  return DSK_TRUE;
 }
