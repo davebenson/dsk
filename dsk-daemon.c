@@ -89,6 +89,7 @@ retry_open:
       dsk_die ("error creating %s: %s", buf, strerror (errno));
     }
   fflush (stdout);
+  fflush (stderr);
   dup2 (fd, STDOUT_FILENO);
   dup2 (fd, STDERR_FILENO);
   close (fd);
