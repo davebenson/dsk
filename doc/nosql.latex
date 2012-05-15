@@ -31,9 +31,9 @@ Here are the operations on a string:
 
 \begin{tabular}{lp{3in}}
 {\bf operation} & {\bf description} \\
-{\tt ASSIGN} & set hte value of the string \\
-{\tt LADD} & add a new string value on the left \\
-{\tt RADD} & add a new string value on the right \\
+{\tt ASSIGN} & set the value of the string \\
+{\tt LADD} & prepend to (or create) \\
+{\tt RADD} & append to (or create) \\
 {\tt DELETE} & delete the entry 
 \end{tabular}
 
@@ -84,6 +84,22 @@ there exists some set of $N$ choices of adjacent {\tt PREV}/{\tt NEXT} tokens th
 a string $N/8$ long.  This mostly means that we 
 
 \section{Sort-Merge Tables}
+\subsection{Deletion}
+describe tombstones
+
+also, if a node is no longer responsible for a bucket, we will filter it out whenever possible.
+hmm, how will we distinguish buckets that are removed and readded?  answer: for each bucket, we need to know the max-age of the thing (which we can just use the file id for, since that's ascending...).
+\subsection{Tuning}
+\begin{itemize}
+\item compression
+ \begin{itemize}
+ \item generic chunkwise compression (zlib, snappy)
+ \item prefix compression
+ \end{itemize}
+\item index-spread
+\item CPU v space
+\end{itemize}
+
 \section{Robustly Updatable Objects}
 In all cases, the objects (ie the binary values stored) consist of a optional timestamped
 core, plus a sequence of timestamped updates.  The update timestamps are allocated
@@ -130,7 +146,34 @@ The general format of reduce takes a maximum number of updates and a
 maximum age, and condenses early updates with the base object.
 
 \section{Combining Local Stores into a Highly-Available Global Store}
-...
+We are use consistent hashing:  each node in the system takes responsibility for
+a subset of the hash-buckets.
+
+The client library should probably have a load-balancing option, but we distribute
+the queries internally as best we can.  At minimum, have your clients connect to
+a server at random.
+
+When a node joins the cluster for the first time:
+\begin{itemize}
+\item the node connects to all existing nodes in the cluster,
+getting the cluster information.
+\item if there is a problem it drops the connection and returns an error.
+\item it sends a message that it has joined, along with a list of buckets it plans to assume
+ \begin{itemize}
+ \item should we begin a N-way read and attempt to resolve conflicts?
+ \item should the N-way read be backgroundable?
+ \end{itemize}
+
+\end{itemize}
+
+Anyway, the nodes in the cluster are densely connected with sockets
+and they speak a protocol to handle the following situations:
+\begin{itemize}
+\item new node connected
+\item query (on behalf of client)
+\item update (on behalf of client)
+\item transfer buckets - implemented via dump+filter.  use some sort of flow control to minimize incast.
+\end{itemize}
 
 \section{Handling Failed Nodes}
 ...
