@@ -103,4 +103,11 @@ dsk_boolean dsk_timezone_query (DskTimezone *timezone,
                                 int         *minutes_offset_out,
                                 const char **timezone_name_out,
                                 DskError   **error);
+
+/* note: start == end_out is allowed. */
+/* note: tz==NULL is interpreted as UTC/GMT with leap-seconds ignored. */
+void dsk_date_change_timezone  (DskTimezone *start_tz,
+                                const DskDate *start,
+                                DskTimezone *end_tz,
+                                DskDate     *end_out);
 #endif
