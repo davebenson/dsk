@@ -62,7 +62,7 @@ void        dsk_date_print_iso8601 (DskDate *date, /* unimplemented */
  */
 
 /* dsk_unixtime_to_date() always sets the date_out->zone_offset to 0 (ie GMT) */
-dsk_time_t  dsk_date_to_unixtime (DskDate *date);
+dsk_time_t  dsk_date_to_unixtime (const DskDate *date);
 void        dsk_unixtime_to_date (dsk_time_t unixtime,
                                   DskDate *date_out);
 
@@ -76,14 +76,18 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
                                      char **end,
 				     int *zone_offset_out);
 
-int dsk_date_get_days_since_epoch (DskDate *);
+/* Day 0 was a Thursday, FYI, so we implement day-of-week macros below. */
+int dsk_date_get_days_since_epoch (const DskDate *);
 
+/* day-of-week, where Sunday is day 0 */
+#define dsk_date_get_day_of_week(date) \
+  ((dsk_date_get_days_since_epoch(date) + 4) % 7)
 
 /* Returns maximum possible string output from 'format'
    including the terminating NUL. */
 int  dsk_strftime_max_length      (const char *format);
 
-void dsk_date_strftime            (DskDate    *date,
+dsk_boolean  dsk_date_strftime    (const DskDate *date,
                                    const char *format,
                                    unsigned    max_out,
                                    char       *out);

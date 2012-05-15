@@ -26,15 +26,17 @@ logger_open_fd (DskLogger *logger,
                 DskError **error)
 {
   char *pad = alloca (logger->max_length);
-  char *at = pad;
+  char *at;
   DskDate date;
   int fd;
 
   if (logger->openat_dir)
     {
-      strcpy (pad, logger->openat_dir);
-      at = strchr (pad, 0);
+      at = dsk_stpcpy (pad, logger->openat_dir);
+      *at++ = '/';
     }
+  else
+    at = pad;
 
   dsk_unixtime_to_date (dsk_dispatch_default ()->last_dispatch_secs
                         + logger->tz_offset, &date);
@@ -98,13 +100,16 @@ DskLogger *dsk_logger_new         (DskLoggerOptions *options,
 #if DSK_HAS_ATFILE_SUPPORT
   logger->openat_fd = options->openat_fd;
   logger->openat_dir = NULL;
+  logger->max_length = 0;
 #else
   logger->openat_fd = -1;
   logger->openat_dir = dsk_strdup (options->openat_dir);
+  logger->max_length = strlen (logger->openat_dir) + 1; /* add 1 for '/' */
 #endif
   logger->tz_offset = options->tz_offset;
   logger->max_buffer = options->max_buffer;
   logger->period = options->period;
+ 
   dsk_buffer_init (&logger->buffer);
   logger->fd = -1;
 
