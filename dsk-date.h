@@ -79,6 +79,10 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
 /* Day 0 was a Thursday, FYI, so we implement day-of-week macros below. */
 int dsk_date_get_days_since_epoch (const DskDate *);
 
+
+/* NOTE: Jan1 == day 0! */
+unsigned dsk_date_get_day_of_year (const DskDate *date);
+
 /* day-of-week, where Sunday is day 0 */
 #define dsk_date_get_day_of_week(date) \
   ((dsk_date_get_days_since_epoch(date) + 4) % 7)

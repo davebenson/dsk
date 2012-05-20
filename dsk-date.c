@@ -369,10 +369,15 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
       year = 1600;
       delta = days_since_epoch - JAN1_1600;
     }
-  else if (unixtime >= JAN1_2400)
+  else if (days_since_epoch >= JAN1_2400)
     {
       year = 2000 + (days_since_epoch - JAN1_2000) / FOURHUND_PERIOD;
       delta = (days_since_epoch - JAN1_2000) % FOURHUND_PERIOD;
+      while (delta >= FOURHUND_PERIOD)
+        {
+          year += 400;
+          delta -= FOURHUND_PERIOD;
+        }
     }
   else
     {
@@ -622,7 +627,7 @@ dsk_date_is_leap_year (unsigned year)
      && ((year % 100 != 0) || (year % 400 == 0));
 }
 
-unsigned    dsk_date_get_day_of_year (DskDate *date)
+unsigned    dsk_date_get_day_of_year (const DskDate *date)
 {
   dsk_boolean is_after_leap = date->month >= 3 && dsk_date_is_leap_year (date->year);
   dsk_assert (1 <= date->month && date->month <= 12);
@@ -791,12 +796,31 @@ dsk_date_strftime (const DskDate *date,
           format += 2;
           break;
         case 'd':
-          ...
+          buf[0] = '0' + date->day / 10;
+          buf[1] = '0' + date->day % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
         case 'e':
+          buf[0] = date->day < 10 ? ' ' : ('0' + date->day / 10);
+          buf[1] = '0' + date->day % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
         case 'F':
           /* %Y-%m-%d */
-          ...
-            format += 2;
+          buf[0] = '0' + date->year / 1000;
+          buf[1] = '0' + date->year / 100 % 10;
+          buf[2] = '0' + date->year / 10 % 10;
+          buf[3] = '0' + date->year % 10;
+          buf[4] = '-';
+          buf[5] = '0' + (date->month+1) / 10;
+          buf[6] = '0' + (date->month+1) % 10;
+          buf[7] = '-';
+          buf[8] = '0' + date->day / 10;
+          buf[9] = '0' + date->day % 10;
+          MAYBE_APPEND(10, buf);
+          format += 2;
           break;
         //case 'G':
         //case 'g':   ///////// "is replaced by a year as a decimal number with century.  This year is the one that contains the greater part of the week (Monday as the first day of the week).
@@ -817,12 +841,21 @@ dsk_date_strftime (const DskDate *date,
           }
           break;
         case 'j':
-          .... day-of-year 001-366
+          {
+            unsigned doy = dsk_date_get_day_of_year (date) + 1;
+            buf[0] = '0' + doy / 100;
+            buf[1] = '0' + doy / 10 % 10;
+            buf[2] = '0' + doy % 10;
+            MAYBE_APPEND(3, buf);
             format += 2;
+          }
+          break;
         case 'k':
-          ... 0-23 space-padded 
-            format += 2;
-
+          buf[0] = date->hour < 10 ? ' ' : ('0' + date->hour/10);
+          buf[1] = '0' + date->hour % 10;
+          MAYBE_APPEND(2, buf);
+          format += 2;
+          break;
         case 'l':
           {
             unsigned h = date->hour % 12;
@@ -854,8 +887,9 @@ dsk_date_strftime (const DskDate *date,
 
         case 'O':
         case 'E':
-          ...
-            format += 2;
+          /* NOTE: alternate formats (roman numerals???) not supported,
+             fun as it would be. */
+          return DSK_FALSE;
 
         case 'p':
           buf[0] = date->hour >= 12 ? 'P' : 'A';
@@ -864,11 +898,26 @@ dsk_date_strftime (const DskDate *date,
           format += 2;
           break;
         case 'R':
-          ... %H:%M
-            format += 2;
+          buf[0] = '0' + date->hour / 10;
+          buf[1] = '0' + date->hour % 10;
+          buf[2] = ':';
+          buf[3] = '0' + date->minute / 10;
+          buf[4] = '0' + date->minute % 10;
+          MAYBE_APPEND(5, buf);
+          format += 2;
+          break;
         case 'r':
-          ... %I:%M
-            format += 2;
+          {
+            unsigned h = date->hour % 12;
+            buf[0] = '0' + h / 10;
+            buf[1] = '0' + h % 10;
+          }
+          buf[2] = ':';
+          buf[3] = '0' + date->minute / 10;
+          buf[4] = '0' + date->minute % 10;
+          MAYBE_APPEND(5, buf);
+          format += 2;
+          break;
         case 'S':
           buf[0] = '0' + date->second / 10;
           buf[1] = '0' + date->second % 10;
@@ -876,15 +925,24 @@ dsk_date_strftime (const DskDate *date,
           format += 2;
           break;
         case 's':
-          ...
-          format += 2;
-          break;
-        case 'S':
-          ...
-          format += 2;
-          break;
+          {
+           unsigned n_print = snprintf (buf, sizeof (buf),
+                                        "%llu",
+                                        (unsigned long long) dsk_date_to_unixtime (date));
+           MAYBE_APPEND (n_print, buf);
+            format += 2;
+            break;
+          }
         case 'T':
-          ...
+          buf[0] = '0' + date->hour / 10;
+          buf[1] = '0' + date->hour % 10;
+          buf[2] = ':';
+          buf[3] = '0' + date->minute / 10;
+          buf[4] = '0' + date->minute % 10;
+          buf[5] = ':';
+          buf[6] = '0' + date->second / 10;
+          buf[7] = '0' + date->second % 10;
+          MAYBE_APPEND(8, buf);
           format += 2;
           break;
         case 't':
