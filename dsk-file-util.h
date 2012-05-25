@@ -14,7 +14,7 @@ dsk_boolean dsk_file_test_exists  (const char *filename);
 dsk_boolean dsk_mkdir_recursive (const char *dir,
                                  unsigned    permissions,
                                  DskError  **error);
-dsk_boolean dsk_mkdir_recursive_at (unsigned at_file,
+dsk_boolean dsk_mkdir_recursive_at (int         at_file,
                                     const char *dir,
                                     unsigned    permissions,
                                     DskError  **error);
