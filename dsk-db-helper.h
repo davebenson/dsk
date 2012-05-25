@@ -34,6 +34,7 @@ struct _DskDiskhash
 
   DskDbHelperFile *table;
   DskDbHelperFile **chains;
+  uint64_t *chain_counts; /* cached sizes of the chains */
   DskDbHelperFile **values;
 
   /* While resizing */
@@ -41,6 +42,7 @@ struct _DskDiskhash
   unsigned resize_bucket_at;  /* index in starting size array */
   DskDbHelperFile *new_table;
   DskDbHelperFile **new_chains;
+  uint64_t *new_chain_counts;
 
   /* While backing up */
   dsk_boolean backing_up;
@@ -91,11 +93,21 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
     }
   unsigned donate_cycles = 32;
   uint64_t n_buckets = 1ULL << hash->n_buckets_log2;
+
+  /* Both resize/backup try to avoid writing to the transaction log as much as possible. */
   if (hash->resizing)
     {
       while (donate_cycles > 0 && hash->resize_bucket_at < n_buckets)
         {
-          ...
+          unsigned n_cycles_used;
+          if (!resize_split_chain (hash, hash->resize_bucket_at, &n_cycles_used, error))
+            return DSK_FALSE;
+          n_cycles_used += 1;           /* count the chain as a cycle too */
+          hash->resize_bucket_at += 1;
+          if (n_cycles_used >= donate_cycles)
+            donate_cycles = 0;
+          else
+            donate_cycles -= n_cycles_used;
         }
       if (hash->resize_bucket_at == n_buckets)
         {
@@ -115,13 +127,25 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
     }
   if (hash->backing_up && donate_cycles > 0)
     {
-      ...
+      while (donate_cycles > 0 && hash->backup_bucket_at < n_buckets)
+        {
+          unsigned n_cycles_used;
+          if (!backup_chain (hash, hash->backup_bucket_at, &n_cycles_used, error))
+            return DSK_FALSE;
+          n_cycles_used += 1;           /* count the chain as a cycle too */
+          hash->backup_bucket_at += 1;
+          if (n_cycles_used >= donate_cycles)
+            donate_cycles = 0;
+          else
+            donate_cycles -= n_cycles_used;
+        }
 
       /* if done with backup, may be done with resize, if resize was blocked on backup */
       if (hash->backup_bucket_at == n_buckets)
         {
           /* finish backup */
-          ...
+          if (!backup_done (hash, error))
+            return DSK_FALSE;
 
           if (hash->resizing && hash->resize_bucket_at == n_buckets)
             {
@@ -168,6 +192,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
           return DSK_FALSE;
         }
       unsigned size_index = cur_which_chain_size_index - 1;
+
       /* read key and pointer to value */
       DskDbHelperFile *chain_file = hash->chains[size_index];
       if (chain_file == NULL)
@@ -190,24 +215,27 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
        //&& cur_extra_hash == extra_hash
        && memcmp (key_data, cur_key_data, key_length) == 0)
         {
-          if (value fits)
+          unsigned value_bucket_size = hash->value_fixed_sizes[value_file_index];
+          if (value_bucket_size >= value_length)
             {
               /* set it in-place, using transaction */
+              uint64_t value_offset = dsk_uint64_parse_le (table_entry_data + 16);
               dsk_db_helper_begin_transaction (hash->helper);
-              value_entry_size = VALUE_FILE_ENTRY_SIZE (hash->value_entry_size
+              value_entry_size = VALUE_FILE_ENTRY_SIZE (value_bucket_size);
               dsk_db_helper_file_write (hash->value_files[value_file_index],
-                                        VALUE_
-void             dsk_db_helper_file_write         (DskDbHelperFile *file,
-                                                   uint64_t         offset,
-			                           unsigned         length,
-			                           const uint8_t   *data);
-              ...
+                                        VALUE_FILE_HEADER_SIZE + value_offset * value_entry_size,
+                                        value_length, value_data);
+              dsk_db_helper_file_write (chain_file, chain_offset + CHAIN_OFFSET_VALUE_LENGTH,
+                                        4, new_value_length_bytes);
+              dsk_db_helper_end_transaction (hash->helper);
             }
           else
             {
               /* allocate new location, free old location:
                  if done in that order, value write can evade transaction */
+              dsk_db_helper_begin_transaction (hash->helper);
               ...
+              dsk_db_helper_end_transaction (hash->helper);
             }
 
           return DSK_TRUE;
@@ -222,8 +250,7 @@ void             dsk_db_helper_file_write         (DskDbHelperFile *file,
 
   /* Entry does not exist. */
 
-  /* Create transaction */
-  ...
+  dsk_db_helper_begin_transaction (hash->helper);
 
   /* Allocate key-chain */
   ...
@@ -232,10 +259,10 @@ void             dsk_db_helper_file_write         (DskDbHelperFile *file,
   ...
 
   /* Write value (can evade transaction) */
-  ...
+  dsk_db_helper_file_write_thru (...);
 
   /* Commit transaction */
-  ...
+  dsk_db_helper_end_transaction (hash->helper);
 
   return DSK_TRUE;
 }
