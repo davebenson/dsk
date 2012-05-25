@@ -2,6 +2,8 @@ STUDY:
 _ HTTP server access log (hook)
 _ file rotation service
 
+_ out-of-fds should be fatal
+
 cmdline:
 _ wrapper programs where the first non-hyphen-prefixed argument stops processing
 x mode-based programs:
