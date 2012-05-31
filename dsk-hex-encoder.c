@@ -1,8 +1,6 @@
 #include <string.h>
 #include "dsk.h"
 
-#define BASE64_LINE_LENGTH             64        /* must be a multiple of 4; may be 1 longer at end */
-
 /* --- encoder --- */
 typedef struct _DskHexEncoderClass DskHexEncoderClass;
 struct _DskHexEncoderClass
