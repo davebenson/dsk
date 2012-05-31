@@ -49,7 +49,7 @@ emit_block (DskBase64Encoder *enc,
       if (enc->length_remaining <= 4)
         {
           dsk_buffer_append_byte (out, '\n');
-          enc->length_remaining = 0;
+          enc->length_remaining = BASE64_LINE_LENGTH;
         }
       else
         enc->length_remaining -= 4;
