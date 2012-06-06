@@ -158,11 +158,9 @@ When a node joins the cluster for the first time:
 \item the node connects to all existing nodes in the cluster,
 getting the cluster information.
 \item if there is a problem it drops the connection and returns an error.
-\item it sends a message that it has joined, along with a list of buckets it plans to assume
- \begin{itemize}
- \item should we begin a N-way read and attempt to resolve conflicts?
- \item should the N-way read be backgroundable?
- \end{itemize}
+\item it sends a message that it has joined, along with consistent hashing probe angles.
+if it is restarting, it should also give information about when it stopped (ie the last update
+timestamp in its journal.)
 
 \end{itemize}
 
@@ -174,6 +172,7 @@ and they speak a protocol to handle the following situations:
 \item update (on behalf of client)
 \item transfer buckets - implemented via dump+filter.  use some sort of flow control to minimize incast.
 \end{itemize}
+
 
 \section{Handling Failed Nodes}
 ...
@@ -192,5 +191,71 @@ and they speak a protocol to handle the following situations:
 
 \section{Appendix:  Data Formats}
 ...
+
+\section{Appendix:  Node Protocol}
+A client and another node connect via a similar protocol handshake.\footnote{
+All integer formats are little-endian.
+
+\begin{tabular}{|rrp{3in}|}
+{\bf offset} & {\bf length} & {\bf description} \\
+0 & 4 & length of message that follows \\
+4 & 8 & magic: {\tt f1 88 64 73 6b 65 64 62} \\
+12 & 4 & type: \begin{tabular}{rl} \\
+                {\tt 0} & a recovered node \\
+		{\tt 1} & a new node \\
+		{\tt 2} & a client
+	       \end{tabular} \\
+\hline
+\end{tabular}
+}  Let's take the client first.
+
+
+\subsection{Client Protocol}
+In response to the handshake, the server sends an OK message.\footnote{...}
+
+The client can issue requests;\footnote{
+\begin{tabular}{|rrp{3in}|}
+{\bf offset} & {\bf length} & {\bf description} \\
+0 & 4 & length of message that follows \\
+4 & 4 & request type: \begin{tabular}{rl} \\
+                        {\tt 9111} & query \\
+                        {\tt 9112} & update
+		      \end{tabular} \\
+8 & 8 & request-id (used to match requests and responses) \\
+16 & 4 & flags: none defined yet \\
+20 & variable & request-type specific payload \\
+\hline
+\end{tabular}
+} and the server responds to them.\footnote{
+\begin{tabular}{|rrp{3in}|}
+{\bf offset} & {\bf length} & {\bf description} \\
+0 & 4 & length of message that follows \\
+4 & 4 & request type (matches request) \\
+8 & 8 & request-id (matches request) \\
+16 & 4 & flags \begin{tabular}{rl} \\
+                 {\tt 1} & response is last message for given request
+	       \end{tabular} \\
+20 & variable & request-type specific payload \\
+\hline
+\end{tabular}
+}
+
+The client can {\tt query}\footnote{...} the database.
+It has options for how many servers to wait for; however,
+consistency should usually be guaranteed by the update/replication layers
+(and the database will resolve conflicts without the client's involvement on every read, regardless of
+the {\tt n\_replicas} value).  Usually, the response will be a simple value\footnote{...} or an uncomplicated not-found message\footnote{...}.  But a number of errors are also possible\footnote{...}.
+
+The client can also do a {\tt modify}\footnote{...}
+which is actually a combination of assignments
+(ie operations that discard the previous value),
+updates (differential updates), and deletions.
+(Internally, they are both implemented as timestamped-updates,
+in order to avoid race-conditions.)
+In many cases, you can avoid waiting for responses, and the {\tt ignore\_response} flag
+is passed through to the nodes that actually have the value.
+
+\subsection{Node Protocol}
+
 
 \end{document}
