@@ -70,6 +70,7 @@
 #include "dsk-date.h"
 
 #include "dsk-file-util.h"
+#include "dsk-path.h"
 
 #include "dsk-pattern.h"
 
