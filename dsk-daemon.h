@@ -15,9 +15,10 @@ void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix);
 /* After you run this function, you should go about the non-terminating
    stuff your process presumably does.
    
-   dsk_daemon_handle() will call fork as needed,
+   dsk_daemon_maybe_fork() will call fork as needed,
    and this call may be returned from multiple
    times in different processes.  We do guarantee that we won't return
    until the previous process (that is, that last process we returned in),
    if any, has terminated. */
-void dsk_daemon_handle (void);
+void dsk_daemon_maybe_fork (void);
+#define dsk_daemon_handle dsk_daemon_maybe_fork
