@@ -45,7 +45,7 @@ parse_comma_sep (const char *flag_str,
       while (dsk_ascii_isspace (*start))
         start++;
       end = start;
-      while (!dsk_ascii_isspace (*end) && *end != ',')
+      while (*end != '\0' && !dsk_ascii_isspace (*end) && *end != ',')
         end++;
       if (start < end)
         {
