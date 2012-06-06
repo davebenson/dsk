@@ -244,5 +244,68 @@ int          dsk_dir_sys_cp                  (DskDir       *dir,
                                               const char   *src,
                                               const char   *dst,
                                               DskDirCpFlags flags);
-
 #endif
+
+dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
+                                 const char *path,
+                                 DskDirMkdirFlags flags,
+                                 DskError  **error)
+{
+  unsigned perms = 0777;
+
+  /* Handle non-recursive case. */
+  if ((flags & DSK_DIR_MKDIR_RECURSIVE) == 0)
+    {
+      if (dsk_dir_sys_mkdir (dir, path, perms) < 0)
+        {
+          dsk_set_error (error, "mkdir %s: %s", path, strerror (errno));
+          return DSK_FALSE;
+        }
+      return DSK_TRUE;
+    }
+
+  /* Normalize path:  remove "." and ".."; remove multiple consecutive slashes. */
+  unsigned orig_path_len = strlen (path);
+  char *buf = alloca (orig_path_len + 1);
+  memcpy (buf, path, orig_path_len + 1);
+  if (!dsk_path_normalize_inplace (buf))
+    {
+      dsk_set_error (...);
+      return DSK_FALSE;
+    }
+  if (buf[0] == DSK_DIR_SEPARATOR)
+    buf++;
+
+  /* Count components */
+  ...
+
+  for (i = n_comp; i != 0; )
+    {
+      if (dsk_dir_sys_mkdir (dir, buf, perms) == 0)
+        break;
+      else if (errno == EEXIST)
+        break;
+      else if (errno == ENOENT)
+        {
+          /* trim path */
+          i--;
+          *(components[i]) = 0;
+        }
+      else
+        {
+          dsk_set_error (error, "mkdir %s recursive: error making %s: %s", path, buf, strerror (errno));
+          return DSK_FALSE;
+        }
+    }
+  while (i < n_comp)
+    {
+      *(components[i]) = DSK_DIR_SEPARATOR;
+      i++;
+      if (dsk_dir_sys_mkdir (dir, buf, perms) == 0)
+        continue;
+      dsk_set_error (error, "mkdir %s recursive: error making %s: %s", path, buf, strerror (errno));
+      return DSK_FALSE;
+    }
+  return DSK_TRUE;
+}
+
