@@ -113,7 +113,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-checksum.o \
 	  dsk-daemon.o \
 	  dsk-ssl.o dsk-ssl-listener.o \
-	  dsk-file-util.o dsk-path.o dsk-pattern.o \
+	  dsk-file-util.o dsk-path.o dsk-pattern.o dsk-dir.o \
 	  dsk-logger.o \
 	  dsk-table-file-trivial.o \
 	  dsk-table-checkpoint-trivial.o \
