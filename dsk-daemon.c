@@ -365,7 +365,7 @@ retry_waitpid:
                 }
 	      if (alert_pid == 0 && clamped_delta > dsk_daemon_alert_interval)
 	        {
-retry_alert_fork:
+                  retry_alert_fork:
                   alert_pid = fork ();
                   if (alert_pid < 0)
                     {
