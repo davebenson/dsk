@@ -175,6 +175,10 @@ void        dsk_uint64_print_decimal (uint64_t     in,
   if ((in >> 32) == 0)
     dsk_uint32_print_decimal (in, out);
   else
+    {
+      /* how many digits is it? */
+      ...
+    }
 
 void        dsk_int64_print_decimal  (int64_t      in,
                                       char        *out);
