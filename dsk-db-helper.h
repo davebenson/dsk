@@ -179,9 +179,8 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
   if (!dsk_db_helper_file_peek_read (hash->table, hash_table_index * HASH_ENTRY_SIZE + HASH_HEADER_SIZE, HASH_ENTRY_SIZE, &table_entry_data, error))
     return DSK_FALSE;
   uint32_t cur_which_chain_size_index = dsk_uint32_parse_le (table_entry_data + 0);
-  //uint32_t cur_extra_hash = dsk_uint32_parse_le (table_entry_data + 4);
+  uint32_t cur_key_length = dsk_uint32_parse_le (table_entry_data + 4);
   uint64_t cur_bucket_offset = dsk_uint64_parse_le (table_entry_data + 8);
-  uint32_t cur_key_length = ...;
 
   while (cur_which_chain_size_index != 0)
     {
@@ -234,7 +233,33 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
               /* allocate new location, free old location:
                  if done in that order, value write can evade transaction */
               dsk_db_helper_begin_transaction (hash->helper);
-              ...
+              if (!allocate_location (hash->helper,
+                                      hash->n_value_fixed_sizes,
+                                      hash->value_fixed_sizes
+                                      hash->value_files,
+                                      &new_value_file, &new_value_offset,
+                                      error))
+                {
+                  dsk_db_helper_abort_transaction (hash->helper);
+                  return DSK_FALSE;
+                }
+              if (!free_location (hash->helper,
+                                  hash->n_value_fixed_sizes,
+                                  hash->value_fixed_sizes
+                                  hash->value_files,
+                                  old_value, old_offset,
+                                  error))
+                {
+                  dsk_db_helper_abort_transaction (hash->helper);
+                  return DSK_FALSE;
+                }
+
+              /* NOTE: this function is only called if the two bucket sizes differ,
+                 therefore, there is no way this write (to a newly allocated area)
+                 can need to interact with the transaction. (write_thru asserts that
+                 the location does not conflict with the transaction's writes) */
+              dsk_db_helper_file_write_thru (...);
+
               dsk_db_helper_end_transaction (hash->helper);
             }
 
