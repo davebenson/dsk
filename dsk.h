@@ -71,6 +71,7 @@
 
 #include "dsk-file-util.h"
 #include "dsk-path.h"
+#include "dsk-dir.h"
 
 #include "dsk-pattern.h"
 
