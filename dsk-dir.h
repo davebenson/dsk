@@ -2,15 +2,16 @@
 /* openat() and friends implemented in a portable way.
    Systems without "atfile" support use normal system calls. */
 
+typedef struct _DskDir DskDir;
 
 typedef enum
 {
-  DSK_DIR_OPEN_SKIP_LOCKING = (1<<0),
-  DSK_DIR_OPEN_BLOCK_LOCKING = (1<<1),
-  DSK_DIR_OPEN_MAYBE_CREATE = (1<<2)
-} DskDirOpenFlags;
+  DSK_DIR_NEW_SKIP_LOCKING = (1<<0),
+  DSK_DIR_NEW_BLOCK_LOCKING = (1<<1),
+  DSK_DIR_NEW_MAYBE_CREATE = (1<<2)
+} DskDirNewFlags;
 
-DskDir      *dsk_dir_open                    (DskDir         *parent,
+DskDir      *dsk_dir_new                     (DskDir         *parent,
                                               const char     *dir,
                                               DskDirOpenFlags flags,
                                               DskError      **error);
@@ -34,16 +35,47 @@ int          dsk_dir_sys_unlink              (DskDir         *dir,
                                               const char     *path);
 int          dsk_dir_sys_rmdir               (DskDir         *dir,
                                               const char     *path);
+int          dsk_dir_sys_mkdir               (DskDir         *dir,
+                                              const char     *path,
+                                              unsigned        mode);
+
+
+typedef enum
+{
+  DSK_DIR_OPENFD_MUST_CREATE = (1<<0),
+  DSK_DIR_OPENFD_MAY_CREATE = (1<<1),
+  DSK_DIR_OPENFD_MUST_EXIST = 0,        /* the default */
+
+  DSK_DIR_OPENFD_WRITABLE = (1<<3),
+  DSK_DIR_OPENFD_TRUNCATE = (1<<3),
+  DSK_DIR_OPENFD_APPEND = (1<<4),
+
+  /* opening readonly is the default,
+     so you can just pass in 0 
+     to get simple reader behavior. */
+  DSK_DIR_OPENFD_READONLY = DSK_DIR_OPENFD_EXIST
+} DskDirOpenfdFlags;
+
+int          dsk_dir_openfd
 
 //xxx
 typedef enum
 {
   DSK_DIR_RM_RECURSIVE = (1<<0),
+
+  /* in theory, this is redundant, and you could do something like 
+       if (dsk_error_get_errno (error, &tmp_errno) && tmp_errno == ENOENT)
+         ... ignore error
+       else
+         ... error
+     but it's far nicer to just treat "not-found" failure as success
+     in many cases, for 'rm', at least. */
   DSK_DIR_RM_IGNORE_MISSING = (1<<1)
 } DskDirRmFlags;
-int          dsk_dir_rm                      (DskDir       *dir,
+dsk_boolean  dsk_dir_rm                      (DskDir       *dir,
                                               const char   *path,
                                               DskDirRmFlags flags,
+                                              DskDirRmStats*stats_out_optional,
                                               DskError    **error);
 typedef enum
 {
@@ -53,6 +85,7 @@ int          dsk_dir_cp                      (DskDir       *dir,
                                               const char   *src,
                                               const char   *dst,
                                               DskDirCpFlags flags,
+                                              DskDirCpStats*stats_out_optional,
                                               DskError    **error);
 
 typedef enum

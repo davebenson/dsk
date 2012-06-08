@@ -6,6 +6,14 @@
 
 static void dsk_error_finalize (DskError *error)
 {
+  while (error->data_list)
+    {
+      DskErrorData *d = error->data_list;
+      error->data_list = d->next;
+      if (d->type->clear)
+        d->type->clear (d->type, d + 1);
+      dsk_free (d);
+    }
   dsk_free (error->message);
 }
 
@@ -117,3 +125,55 @@ void      dsk_add_error_suffix (DskError   **error,
   (*error)->message = new_message;
 }
 
+void       *dsk_error_force_data (DskError   *error,
+                                  DskErrorDataType *data_type,
+                                  dsk_boolean *created_out)
+{
+  char *data = dsk_error_find_data (error, data_type);
+  if (data)
+    {
+      if (created_out)
+        *created_out = DSK_FALSE;
+      return data;
+    }
+  if (created_out)
+    *created_out = DSK_TRUE;
+  DskErrorData *at = dsk_malloc (sizeof (DskErrorData) + data_type->size);
+  at->type = data_type;
+  at->next = error->data_list;
+  error->data_list = at;
+  return at + 1;
+}
+
+void       *dsk_error_find_data  (DskError   *error,
+                                  DskErrorDataType *data_type)
+{
+  DskErrorData *at;
+  for (at = error->data_list; at; at = at->next)
+    if (at->type == data_type)
+      return at + 1;
+  return NULL;
+}
+
+DskErrorDataType dsk_error_data_type_errno = {
+  "errno",
+  sizeof(int),
+  NULL
+};
+void        dsk_error_set_errno  (DskError   *error,
+                                  int         error_no)
+{
+  * (int *) dsk_error_force_data (error, &dsk_error_data_type_errno, NULL) = error_no;
+}
+
+dsk_boolean dsk_error_get_errno  (DskError   *error,
+                                  int        *error_no_out)
+{
+  int *e = dsk_error_find_data (error, &dsk_error_data_type_errno);
+  if (e)
+    {
+      *error_no_out = *e;
+      return DSK_TRUE;
+    }
+  return DSK_FALSE;
+}
