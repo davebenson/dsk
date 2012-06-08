@@ -292,6 +292,7 @@ dsk_boolean dsk_mkdir_recursive (const char *dir,
 #undef SCAN_THROUGH_SLASHES
 }
 
+#if 0
 #if DSK_HAS_ATFILE_SUPPORT
 dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
                                     const char *dir,
@@ -347,6 +348,8 @@ dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
   return DSK_TRUE;
 #undef SCAN_THROUGH_SLASHES
 }
+#endif
+#endif
 
 
 static const char default_tmpdir[] = "/tmp";
