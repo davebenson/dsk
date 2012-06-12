@@ -54,6 +54,9 @@ void       *dsk_error_find_data  (DskError   *error,
 DskError   *dsk_error_ref        (DskError   *error);
 void        dsk_error_unref      (DskError   *error);
 
+void        dsk_propagate_error  (DskError  **dst,
+                                  DskError   *src);
+
 extern DskErrorDataType dsk_error_data_type_errno;
 void        dsk_error_set_errno  (DskError   *error,
                                   int         error_no);

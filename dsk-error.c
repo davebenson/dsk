@@ -177,3 +177,16 @@ dsk_boolean dsk_error_get_errno  (DskError   *error,
     }
   return DSK_FALSE;
 }
+
+void        dsk_propagate_error  (DskError  **dst,
+                                  DskError   *src)
+{
+  dsk_assert (src != NULL);
+  if (dst)
+    {
+      dsk_assert (*dst == NULL);
+      *dst = src;
+    }
+  else
+    dsk_error_unref (src);
+}
