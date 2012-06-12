@@ -49,7 +49,7 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
     {
       if (errno == ENOENT && (flags & DSK_DIR_NEW_MAYBE_CREATE) != 0)
         {
-          if (! dsk_dir_mkdir (parent, dir, DSK_DIR_MKDIR_RECURSIVE, error))
+          if (! dsk_dir_mkdir (parent, dir, 0, NULL, error))
             {
               return NULL;
             }
@@ -269,17 +269,24 @@ int          dsk_dir_sys_cp                  (DskDir       *dir,
 dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
                                  const char *path,
                                  DskDirMkdirFlags flags,
+                                 DskDirMkdirStats *stats,
                                  DskError  **error)
 {
   unsigned perms = 0777;
+  unsigned dirs_made = 0;
 
   /* Handle non-recursive case. */
-  if ((flags & DSK_DIR_MKDIR_RECURSIVE) == 0)
+  if ((flags & DSK_DIR_MKDIR_NONRECURSIVE) == DSK_DIR_MKDIR_NONRECURSIVE)
     {
       if (dsk_dir_sys_mkdir (dir, path, perms) < 0)
         {
           dsk_set_error (error, "mkdir %s: %s", path, strerror (errno));
           return DSK_FALSE;
+        }
+      ++dirs_made;
+      if (stats)
+        {
+          stats->dirs_made = dirs_made;
         }
       return DSK_TRUE;
     }
@@ -336,7 +343,10 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
     for (i = n_comp; i != 0; )
       {
         if (dsk_dir_sys_mkdir (dir, buf, perms) == 0)
-          break;
+          {
+            ++dirs_made;
+            break;
+          }
         else if (errno == EEXIST)
           break;
         else if (errno == ENOENT)
@@ -360,6 +370,10 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
         dsk_set_error (error, "mkdir %s recursive: error making %s: %s", path, buf, strerror (errno));
         return DSK_FALSE;
       }
+      if (stats)
+        {
+          stats->dirs_made = dirs_made;
+        }
   }
   return DSK_TRUE;
 }
@@ -371,31 +385,50 @@ dsk_dir_set_contents (DskDir                 *dir,
                       const char             *path,
                       unsigned                mode,
                       DskDirSetContentsFlags  flags,
+                      size_t                  data_length,
+                      const uint8_t          *data,
                       DskError              **error)
 {
-  DskDirOpenFdFlags openfd_flags =
-    ((flags & DSK_DIR_SET_CONTENTS_MKDIR) ? DSK_DIR_OPENFD_MKDIR : 0)
-    | DSK_DIR_OPENFD_MUST_CREATE
-    ;
+  dsk_boolean use_tmp = (flags & DSK_DIR_SET_CONTENTS_NO_TMP_FILE) == 0;
+  DskDirOpenfdFlags openfd_flags =
+    ((flags & DSK_DIR_SET_CONTENTS_NO_MKDIR) ? DSK_DIR_OPENFD_NO_MKDIR : 0);
   int fd = -1;
-  char *tmp_path;
+  char *tmp_path = NULL;
   unsigned retries = 0;
 
   /* open a tmp file in the same dir */
-  while (fd < 0)
+  if (use_tmp)
     {
-      tmp_path = dsk_strdup_printf ("%s.%08x", path, dsk_random_uint32 ());
-      fd = dsk_dir_open_fd (dir, tmp_path, mode, openfd_flags, error);
-      if (fd < 0)
+      openfd_flags |= DSK_DIR_OPENFD_MUST_CREATE;
+      while (fd < 0)
         {
-          dsk_free (tmp_path);
-          if (dsk_error_get_errno (error, &e) && e == EEXIST && retries++ < MAX_RETRIES)
-            continue;
-          return DSK_FALSE;
+          DskError *er = NULL;
+          tmp_path = dsk_strdup_printf ("%s.%08x", path, dsk_random_uint32 ());
+          fd = dsk_dir_openfd (dir, tmp_path, mode, openfd_flags, &er);
+          if (fd < 0)
+            {
+              int e;
+              dsk_free (tmp_path);
+              if (dsk_error_get_errno (er, &e) && e == EEXIST && retries++ < MAX_RETRIES)
+                {
+                  dsk_error_unref (er);
+                  continue;
+                }
+              dsk_propagate_error (error, er);
+              return DSK_FALSE;
+            }
         }
+    }
+  else
+    {
+      openfd_flags |= DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE;
+      fd = dsk_dir_openfd (dir, path, mode, openfd_flags, error);
+      if (fd < 0)
+        return DSK_FALSE;
     }
 
   /* write data */
+  size_t at = 0;
   while (at < data_length)
     {
       ssize_t write_rv = write (fd, data + at, data_length - at);
@@ -413,12 +446,15 @@ dsk_dir_set_contents (DskDir                 *dir,
   close (fd);
   
   /* move tmp file to real file */
-  if (dsk_dir_sys_rename (dir, tmp_path, path) < 0)
+  if (use_tmp)
     {
-      dsk_set_error (error, "error renaming %s to %s: %s", tmp_path, path, strerror (errno));
+      if (dsk_dir_sys_rename (dir, tmp_path, path) < 0)
+        {
+          dsk_set_error (error, "error renaming %s to %s: %s", tmp_path, path, strerror (errno));
+          dsk_free (tmp_path);
+          return DSK_FALSE;
+        }
       dsk_free (tmp_path);
-      return DSK_FALSE;
     }
-  dsk_free (tmp_path);
   return DSK_TRUE;
 }

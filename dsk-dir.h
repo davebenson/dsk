@@ -13,7 +13,7 @@ typedef enum
 
 DskDir      *dsk_dir_new                     (DskDir         *parent,
                                               const char     *dir,
-                                              DskDirOpenFlags flags,
+                                              DskDirNewFlags flags,
                                               DskError      **error);
 
 /* note: these functions passthru NULL safely (as does all this API) */
@@ -47,16 +47,35 @@ typedef enum
   DSK_DIR_OPENFD_MUST_EXIST = 0,        /* the default */
 
   DSK_DIR_OPENFD_WRITABLE = (1<<3),
-  DSK_DIR_OPENFD_TRUNCATE = (1<<3),
-  DSK_DIR_OPENFD_APPEND = (1<<4),
+  DSK_DIR_OPENFD_TRUNCATE = (1<<4),
+  DSK_DIR_OPENFD_APPEND = (1<<5),
+
+  DSK_DIR_OPENFD_NO_MKDIR = (1<<6),
 
   /* opening readonly is the default,
      so you can just pass in 0 
      to get simple reader behavior. */
-  DSK_DIR_OPENFD_READONLY = DSK_DIR_OPENFD_EXIST
+  DSK_DIR_OPENFD_READONLY = DSK_DIR_OPENFD_MUST_EXIST
 } DskDirOpenfdFlags;
 
-int          dsk_dir_openfd
+int          dsk_dir_openfd (DskDir            *dir,
+                             const char        *path,
+                             unsigned           mode,
+                             DskDirOpenfdFlags  flags,
+                             DskError         **error);
+
+typedef enum
+{
+  DSK_DIR_SET_CONTENTS_NO_MKDIR = (1<<0),
+  DSK_DIR_SET_CONTENTS_NO_TMP_FILE = (1<<1)
+} DskDirSetContentsFlags;
+dsk_boolean  dsk_dir_set_contents (DskDir                 *dir,
+                                   const char             *path,
+                                   unsigned                mode,
+                                   DskDirSetContentsFlags  flags,
+                                   size_t                  data_length,
+                                   const uint8_t          *data,
+                                   DskError              **error);
 
 //xxx
 typedef enum
@@ -72,6 +91,12 @@ typedef enum
      in many cases, for 'rm', at least. */
   DSK_DIR_RM_IGNORE_MISSING = (1<<1)
 } DskDirRmFlags;
+typedef struct
+{
+  unsigned n_dirs_deleted;
+  unsigned n_files_deleted;
+} DskDirRmStats;
+
 dsk_boolean  dsk_dir_rm                      (DskDir       *dir,
                                               const char   *path,
                                               DskDirRmFlags flags,
@@ -81,6 +106,12 @@ typedef enum
 {
   DSK_DIR_CP_RECURSIVE = (1<<0)
 } DskDirCpFlags;
+typedef struct 
+{
+  uint64_t bytes_copied;
+  unsigned files_copied;
+  unsigned dirs_copied;
+} DskDirCpStats;
 int          dsk_dir_cp                      (DskDir       *dir,
                                               const char   *src,
                                               const char   *dst,
@@ -90,9 +121,15 @@ int          dsk_dir_cp                      (DskDir       *dir,
 
 typedef enum
 {
-  DSK_DIR_MKDIR_RECURSIVE = (1<<0)
+  DSK_DIR_MKDIR_NONRECURSIVE = (1<<0), /* cf dsk_dir_sys_mkdir() */
+  DSK_DIR_MKDIR_MUST_CREATE = (1<<1)
 } DskDirMkdirFlags;
+typedef struct
+{
+  unsigned dirs_made;
+} DskDirMkdirStats;
 int          dsk_dir_mkdir                   (DskDir       *dir,
                                               const char   *src,
                                               DskDirMkdirFlags flags,
+                                              DskDirMkdirStats *stats,
                                               DskError    **error);
