@@ -619,32 +619,34 @@ table_file_writer__destroy(DskTableFileWriter *writer)
 }
 
 static TableFileWriter *
-table_file_writer_new (DskTableLocation        *location
+table_file_writer_new (DskDir                  *dir,
                        const char              *base_filename,
-                       DskTableFileCompressor *compressor,
+                       DskTableFileNewOptions  *options,
                        dsk_boolean              prefix_compress,
                        unsigned                 n_compress,
                        unsigned                 index_ratio,
-                       DskError                **error)
+                       DskError               **error)
 {
   unsigned base_filename_len = strlen (base_filename);
   TableFileWriter *w = dsk_malloc (sizeof (TableFileWriter)
                                    + base_filename_len
                                    + FILENAME_EXTENSION_MAX
                                    + 1);
-  w->location = location;
+  w->dir = dir;
   w->base_filename = memcpy (w + 1, base_filename, base_filename_len);
   dsk_table_buffer_init (&w->incoming);
   dsk_table_buffer_init (&w->prefix_buffer);
-  w->append_to_incoming = prefix_compress ? append_to_incoming__prefix_compressed
-                                          : append_to_incoming__raw;
+  if (options->prefix_compress)
+    w->append_to_incoming = append_to_incoming__prefix_compressed;
+  else
+    w->append_to_incoming = append_to_incoming__raw;
   w->n_entries_in_incoming = 0;
   w->compressor = compressor;
 
-  w->compressed_heap_fd = dsk_table_helper_openat (w->location,
-                                                ..., ...,
-                                                O_CREAT|O_TRUNC|O_WRONLY,
-                                                0666, error);
+  w->compressed_heap_fd = dsk_dir_openfd (dir,
+                                          path..., 0666,
+                                          DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE,
+                                          error);
   if (w->compressed_heap_fd < 0)
     {
       ...
@@ -671,11 +673,12 @@ struct _TableFileInterface
 
 static DskTableFileWriter *
 file_interface__new_writer  (DskTableFileInterface   *iface,
-                             DskTableLocation        *location,
+                             DskTableDir             *location,
                              const char              *base_filename,
                              DskError               **error)
 {
-  return (DskTableFileWriter *) table_file_writer_new (location, base_filename,
+  TableFileInterface *I = (TableFileInterface *) iface;
+  return (DskTableFileWriter *) table_file_writer_new (dir, base_filename,
                                                        I->prefix_compress,
                                                        I->n_compress,
                                                        I->index_ratio,
