@@ -16,7 +16,12 @@ struct _DskDiskhashFile
   DskDiskhashFileType type;
   unsigned index;
   int fd;
-  uint64_t length;
+
+  /* Caching length of the actual file.  Note that this may including
+     padding allocation, so the conceptual length of the file must
+     be stored (on disk) elsewhere. */
+  uint64_t physical_length;
+
   void *mmapped;
 };
 
@@ -33,21 +38,22 @@ struct _FixedLengthFilesetPosition
 {
   uint32_t file_index;
   uint32_t length;
-  uint64_t offset;
+  uint64_t offset;              /* in bytes */
 };
 #define POSITION_SIZE           16
 #define FILE_INDEX_EOL   0xffffffff
 #define HASH_TABLE_ENTRY_SIZE   POSITION_SIZE
 
-typedef struct _HashTableHeader HashTableHeader;
-struct _HashTableHeader
+typedef struct _FixedLengthFileHeader FixedLengthFileHeader;
+struct _FixedLengthFileHeader
 {
   uint32_t magic;
   uint32_t reserved;
   uint64_t free_list;
+  uint64_t free_start;
 };
-#define HASH_TABLE_HEADER_SIZE  16
-#define HASH_TABLE_HEADER_FREE_LIST_OFFSET 8
+#define FIXED_LENGTH_FILE_HEADER_SIZE  16
+#define FIXED_LENGTH_FILE_HEADER_FREE_LIST_OFFSET 8
 
 struct _DskDiskhash
 {
@@ -207,7 +213,15 @@ allocate_location (DskDiskhash *diskhash,
   if (fileset->files[index].fd < 0)
     {
       /* creating a new object of this size. */
-      ...
+      uint8_t *data = dsk_mem_pool_alloc_unaligned (&diskhash->transaction_pool,
+                                                    FIXED_LENGTH_FILE_HEADER_SIZE);
+      dsk_uint32le_pack (FIXED_LENGTH_FILE_HEADER_MAGIC, data + 0);
+      dsk_uint32le_pack (fileset->fixed_sizes[index], data + 4);
+      dsk_uint64le_pack (FREE_LIST_EMPTY, data + 8);
+      add_transaction (diskhash, &fileset->files[index],
+                       0, FIXED_LENGTH_FILE_HEADER_SIZE,
+                       data);
+      pos_out->offset = FIXED_LENGTH_FILE_HEADER_SIZE;
     }
   else
     {

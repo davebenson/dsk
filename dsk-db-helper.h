@@ -1,21 +1,100 @@
 
+struct _DskDbHelperFile
+{
+  DskDbHelper *owner;
+  ...
+ 
+  /* Sorted by position. */
+  DskDbHelperTransactionEntry *transactions;
+}
+
+struct _DskDbHelperPoolAllocator
+{
+  unsigned n_sizes;
+  size_t *sizes;
+  DskDbHelperFile **files;              /* created lazily */
+  DskDbHelperPoolAllocator *next_allocator;
+};
+
+struct _DskDbHelperPoolPosition
+{
+  unsigned file_index;
+  uint32_t length;
+  uint64_t offset;
+};
+
+struct _DskDbHelperTransactionEntry
+{
+  DskDbHelperFile *file;
+  uint64_t position;
+  unsigned length;
+  uint8_t *data;
+
+  DskDbHelperTransactionEntry *prev_helper_entry, *next_helper_entry;
+
+  /* per-file tree, sorted by start position. */
+  DskDbHelperTransactionEntry *file_left, *file_right, *file_parent;
+  dsk_boolean file_is_red;
+};
+
 struct _DskDbHelper
 {
+  DskDir *dir;
+
+  DskDbHelperFile *files_by_name;
+  DskMemPoolFixed file_pool;
+
+  DskDbHelperTransactionEntry *transaction_entries;
+  DskMemPoolFixed transaction_pool;
+  DskDbHelperFile *transaction_files;
   int openat_fd;
-  unsigned n_files;
-  DskDbHelperFile **files;
 };
 
 DskDbHelper     *dsk_db_helper_new                (const char      *dir,
                                                    DskError       **error);
 void             dsk_db_helper_begin_transaction  (DskDbHelper     *helper);
+void             dsk_db_helper_abort_transaction  (DskDbHelper     *helper);
+dsk_boolean      dsk_db_helper_end_transaction    (DskDbHelper     *helper,
+                                                   DskError       **error);
+
+/* --- file api --- */
+DskDbHelperFile *dsk_db_helper_create_file        (DskDbHelper     *helper,
+                                                   const char      *filename);
 DskDbHelperFile *dsk_db_helper_create_file_printf (DskDbHelper     *helper,
                                                    const char      *filename_format,
 						   ...);
+dsk_boolean      dsk_db_helper_file_peek_read     (DskDbHelperFile *file,
+                                                   uint64_t         offset,
+			                           unsigned         length,
+                                                   uint8_t        **data_out,
+                                                   DskError       **error);
+
 void             dsk_db_helper_file_write         (DskDbHelperFile *file,
                                                    uint64_t         offset,
 			                           unsigned         length,
 			                           const uint8_t   *data);
+void             dsk_db_helper_file_write_thru    (DskDbHelperFile *file,
+                                                   uint64_t         offset,
+			                           unsigned         length,
+			                           const uint8_t   *data);
+/* --- allocator api --- */
+struct _DskDbHelperPoolConfig
+{
+  unsigned n_lengths;
+  uint32_t *lengths;
+  dsk_boolean builtin;
+};
+extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_2;
+extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_sqrt2;
+extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_2__sesqui;
+DskDbHelperPoolAllocator *
+                 dsk_db_helper_pool_allocator_new (DskDbHelper     *helper,
+                                                   DskDbHelperPoolConfig *config);
+dsk_boolean      dsk_db_helper_pool_alloc         (DskDbHelperPoolAllocator *allocator,
+                                                   uint32_t         size,
+                                                   DskDbHelperPoolPosition *position_out,
+                                                   DskError       **error);
+
 
 
 struct _DskDiskhash
