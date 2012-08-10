@@ -200,7 +200,36 @@ append_to_incoming__prefix_compressed (TableFileWriter    *writer,
                                        unsigned            value_length,
                                        const uint8_t      *value_data)
 {
-  ...
+  unsigned max_common = DSK_MIN (key_length, prefix_buffer.length);
+  unsigned common;
+  uint8 header_buf[10];
+  unsigned header_length = 0;
+  for (common = 0; common < max_common; common++)
+    if (key_data[common] != prefix_buffer.data[common])
+      break;
+
+  unsigned header_length1 = encode_uint32_b128 (common, header_buf);
+  unsigned header_length2 = encode_uint32_b128 (key_length - common, header_buf + header_length1);
+  unsigned header_length = header_length1 + header_length2;
+
+  uint8_t value_header[5];
+  uint8_t vheader_length = encode_uint32_b128 (value_length, value_header);
+
+  unsigned entry_size = header_length
+                      + (key_length - common)
+                      + vheader_length
+                      + value_length;
+
+  unsigned old_length = writer->incoming.length;
+  dsk_table_buffer_set_size (&writer->incoming, old_length + entry_size);
+  uint8_t *at = writer->incoming.data + old_length;
+  memcpy (at, header_buf, header_length);
+  at += header_length;
+  memcpy (at, key_data + common, key_length - common);
+  at += key_length - common;
+  memcpy (at, value_header, vheader_length);
+  at += vheader_length;
+  memcpy (at, value_data, value_length);
 }
 
 static void 
@@ -210,7 +239,22 @@ append_to_incoming__raw               (TableFileWriter    *writer,
                                        unsigned            value_length,
                                        const uint8_t      *value_data)
 {
-  ...
+  uint8_t kheader_buf[5];
+  uint8_t vheader_buf[5];
+  unsigned kheader_length = encode_uint32_b128 (key_length, kheader_buf);
+  unsigned vheader_length = encode_uint32_b128 (value_length, vheader_buf);
+  unsigned entry_size = kheader_length + key_length
+                      + vheader_length + value_length;
+  unsigned old_length = writer->incoming.length;
+  dsk_table_buffer_set_size (&writer->incoming, old_length + entry_size);
+  uint8_t *at = writer->incoming.data + old_length;
+  memcpy (at, kheader_buf, kheader_length);
+  at += kheader_length;
+  memcpy (at, key_data, key_length);
+  at += key_length;
+  memcpy (at, vheader_buf, vheader_length);
+  at += vheader_length;
+  memcpy (at, value_data, value_length);
 }
 
 static dsk_boolean
