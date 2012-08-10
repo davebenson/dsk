@@ -54,11 +54,12 @@ typedef void (*DskHttpServerWebsocketFunc)   (DskHttpServerRequest*request,
 
 typedef enum
 {
+  DSK_HTTP_SERVER_MATCH_VERB,
   DSK_HTTP_SERVER_MATCH_PATH,
   DSK_HTTP_SERVER_MATCH_HOST,
   DSK_HTTP_SERVER_MATCH_USER_AGENT,
   DSK_HTTP_SERVER_MATCH_BIND_PORT,
-  DSK_HTTP_SERVER_MATCH_BIND_PATH
+  DSK_HTTP_SERVER_MATCH_BIND_PATH,
 } DskHttpServerMatchType;
 
 DskHttpServer * dsk_http_server_new (void);
@@ -66,6 +67,8 @@ DskHttpServer * dsk_http_server_new (void);
 void dsk_http_server_add_match                 (DskHttpServer        *server,
                                                 DskHttpServerMatchType type,
                                                 const char           *pattern);
+void dsk_http_server_add_match_verb            (DskHttpServer        *server,
+                                                DskHttpVerb           verb);
 void dsk_http_server_match_save                (DskHttpServer        *server);
 void dsk_http_server_match_restore             (DskHttpServer        *server);
 

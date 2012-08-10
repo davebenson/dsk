@@ -41,6 +41,12 @@ struct _MatchTesterStandard
   MatchTypeAndPattern types[1];
 };
 
+struct _MatchTesterVerb
+{
+  MatchTester base;
+  DskHttpVerb verb;
+};
+
 /* an uncompiled list of match information */
 typedef struct _MatchTestList MatchTestList;
 struct _MatchTestList
@@ -170,7 +176,10 @@ void dsk_http_server_add_match                 (DskHttpServer        *server,
   new_node->prev = server->current->test_list;
   server->current->test_list = new_node;
   if (server->current->tester != NULL)
-    server->current->tester->destroy (server->current->tester);
+    {
+      server->current->tester->destroy (server->current->tester);
+      server->current->tester = NULL;
+    }
 }
 
 void dsk_http_server_match_save                (DskHttpServer        *server)
@@ -225,6 +234,9 @@ match_tester_standard_test (MatchTester *tester,
           if (!request->bind_info->is_local)
             test_str = request->bind_info->bind_local_path;
           break;
+        case DSK_HTTP_SERVER_MATCH_VERB:
+          test_str = dsk_http_verb_name (request->request_header->verb);
+          break;
         }
       if (test_str == NULL)
         return DSK_FALSE;
@@ -232,6 +244,15 @@ match_tester_standard_test (MatchTester *tester,
         return DSK_FALSE;
     }
   return DSK_TRUE;
+}
+
+void
+dsk_http_server_add_match_verb            (DskHttpServer        *server,
+                                           DskHttpVerb           verb)
+{
+  dsk_http_server_add_match (server,
+                             DSK_HTTP_SERVER_MATCH_VERB,
+                             dsk_http_verb_name (verb));
 }
 
 static void
