@@ -277,7 +277,7 @@ write_index0_entry           (TableFileWriter *writer,
                                         compressed_heap_offset);
 
   /* is it bigger than the current size? */
-  level0 = w->index_levels + 0;
+  WriterIndexLevel *level0 = w->index_levels + 0;
   index = IE_SIZE_TO_COUNT_INDEX__LEVEL0 (packed_entry_len);
   if (level0->size_index < index)
     {
@@ -308,11 +308,44 @@ write_index0_entry           (TableFileWriter *writer,
 
 static dsk_boolean
 write_indexnon0_entry        (TableFileWriter *writer,
+                              unsigned         index_level,
                               unsigned         first_key_length,
                               uint64_t         first_key_offset,
                               DskError       **error)
 {
-  ....
+  uint8_t packed_entry[B128_UINT32_MAX_SIZE + B128_UINT64_MAX_SIZE];
+  unsigned packed_entry_len = encode_uint32_b128 (packed_entry, first_key_length);
+  packed_entry_len += encode_uint64_b128 (packed_entry + packed_entry_len,
+                                          first_key_offset);
+
+  /* is it bigger than the current size? */
+  WriterIndexLevel *level = w->index_levels + index_level;
+  unsigned index = IE_SIZE_TO_COUNT_INDEX__LEVELNON0 (packed_entry_len);
+  if (level->size_index < index)
+    {
+      level->max_size = IE_COUNT_INDEX_TO_MAX_SIZE__LEVELNON0 (index);
+      level->size_index = index;
+    }
+
+  /* increase count of this size of index-entry */
+  level0->index_entry_size_to_count[level0->size_index] += 1;
+
+  if (level0->max_size > packed_entry_len)
+    {
+      /* zero pad */
+      unsigned pad_len = level0->max_size - packed_entry_len;
+      memset (packed_entry + packed_entry_len, 0, pad_len);
+      packed_entry_len = level0->max_size;
+    }
+
+  /* write packed (and padded) entry */
+  if (FWRITE (packed_entry, packed_entry_len, 1, level->index_fp) != 1)
+    {
+      dsk_set_error (error, "error writing to level0 index");
+      return DSK_FALSE;
+    }
+
+  return DSK_TRUE;
 }
 
 /* hackery:  for the "write" function we use a virtual function
