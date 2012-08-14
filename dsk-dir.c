@@ -236,6 +236,11 @@ int          dsk_dir_sys_rmdir               (DskDir       *dir,
 #endif
 }
 
+const char *dsk_dir_get_str (DskDir *dir)
+{
+  return dir ? dir->openat_dir : ".";
+}
+
 #if 0
 //xxx
 typedef enum

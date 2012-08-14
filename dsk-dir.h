@@ -39,6 +39,7 @@ int          dsk_dir_sys_mkdir               (DskDir         *dir,
                                               const char     *path,
                                               unsigned        mode);
 
+const char  *dsk_dir_get_str                 (DskDir         *dir);
 
 typedef enum
 {
