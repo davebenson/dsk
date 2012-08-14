@@ -140,10 +140,69 @@ decode_uint64_b128 (const uint8_t *data,
 
 /* --- The TableFileWriter interface --- */
 
+typedef struct _WriterFile WriterFile;
+struct _WriterFile
+{
+  dsk_boolean memory_mapped;
+  int fd;
+  uint8_t *buf;
+  unsigned buf_at;
+  unsigned buf_length;
+  uint64_t buf_offset;
+};
+
+static dsk_boolean
+writer_file_new (DskDir *dir,
+                 const char *filename,
+                 DskDirOpenfdFlags open_flags,
+                 dsk_boolean memory_mapped,
+                 unsigned buf_length,
+                 WriterFile *out,
+                 DskError **error)
+{
+  int fd = dsk_dir_openfd (dir, filename,
+                           open_flags, 0666,
+                           error);
+  if (fd < 0)
+    {
+      dsk_set_error ("error creating %s/%s: %s",
+                     dsk_dir_get_str (dir),
+                     filename,
+                     strerror (errno));
+      return DSK_FALSE;
+    }
+  out->memory_mapped = memory_mapped;
+  out->fd = fd;
+  out->buf_length = buf_length;
+  out->buf_offset = 0;
+  out->buf_at = 0;
+  if (memory_mapped)
+    {
+      /* if the file is too short, ftruncate it */
+      if ((open_flags & DSK_DIR_OPENFD_TRUNCATE)
+       || fd_get_file_size (fd) < (uint64_t) buf_length)
+        {
+          ...
+        }
+      void *ptr = mmap (...);
+      if (ptr == MAP_FAILED) 
+        {
+          ...
+        }
+      dir->buf = ptr;
+    }
+  else
+    {
+      dir->buf = dsk_malloc (buf_length);
+    }
+  return DSK_TRUE;
+}
+
+
 struct _WriterIndexLevel
 {
-  FILE *index_out;
-  FILE *index_heap_out;
+  WriterFile index_out;
+  WriterFile index_heap_out;
 
   /* For a level-0 index, we need:
    *     - key-length of first key                         (max 4 bytes)
@@ -452,7 +511,9 @@ do_compress (TableFileWriter *w,
         {
           if (errno == EINTR)
             continue;
-          ...
+          dsk_set_error (error, "error writing compressed buffer to disk: %s",
+                         strerror (errno));
+          return DSK_FALSE;
         }
     }
   w->compressed_heap_offset += vli_len + outgoing_len;
@@ -525,26 +586,27 @@ table_file_writer__write  (DskTableFileWriter *writer,
   dsk_buffer_append (w->potential_new_level_keys, key_length, key_data);
   w->n_potential_new_level += 1;
 
-  /* if we have index_ratio/2 entries, create the new index level */
-  if (w->n_potential_new_level == w->index_ratio / 2)
+  /* if we have too many entries (defined here as min (index_ratio/2, 32)),
+     create the new index level */
+  if (w->n_potential_new_level == DSK_MIN (32, w->index_ratio / 2))
     {
       WriterIndexLevel *new_level;
       char suffix[64];
       snprintf (suffix, 64, "K%u", w->n_index_levels);
-      kh_fd = dsk_table_helper_openat (w->location,
-                                       w->base_filename, suffix,
-                                       O_CREAT|O_TRUNC, 0666,
-                                       error);
+      kh_fd = dsk_dir_openfd (w->dir,
+                              w->base_filename, suffix,
+                              DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE, 0666,
+                              error);
       if (kh_fd < 0)
         {
           dsk_add_error_prefix (error, "creating table's key file");
           return DSK_FALSE;
         }
       suffix[0] = 'I';
-      ki_fd = dsk_table_helper_openat (w->location,
-                                       w->base_filename, suffix,
-                                       O_CREAT|O_TRUNC, 0666,
-                                       error);
+      ki_fd = dsk_dir_openfd (w->dir,
+                              w->base_filename, suffix,
+                              DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE, 0666,
+                              error);
       if (ki_fd < 0)
         {
           dsk_add_error_prefix (error, "creating table's index file");
@@ -626,7 +688,23 @@ table_file_writer__close  (DskTableFileWriter *writer,
 
   /* close all index-levels (close index and heap files,
      and write the level-sizes arrays to disk) */
-  ...
+  for (li = 0; li < w->n_index_levels; li++)
+    {
+      uint8_t sizes_packed[N_LEVEL_SIZES*8];
+      unsigned s;
+      WriterIndexLevel *level = w->index_levels + li;
+      for (s = 0; s < N_LEVEL_SIZES; s++)
+        dsk_uint64le_pack (level->index_entry_size_to_count[s],
+                           sizes_packed + 8*s);
+      if (!writer_file_pwrite (&level->index_out, LEVEL_SIZES_FILE_OFFSET, sizes_packed, error))
+        return DSK_FALSE;
+    }
+  for (li = 0; li < w->n_index_levels; li++)
+    {
+      WriterIndexLevel *level = w->index_levels + li;
+      writer_file_close (&level->index_out);
+      writer_file_close (&level->index_heap_out);
+    }
 
   /* close the compressed-heap */
   ...
@@ -642,8 +720,21 @@ table_file_writer__destroy(DskTableFileWriter *writer)
     {
       DskError *error = NULL;
       if (!table_file_writer__close (writer, &error))
-        dsk_die ("error closing table-file-writer on destroy: %s",
-                 error->message);
+        {
+          dsk_die ("error closing table-file-writer on destroy: %s",
+                   error->message);
+
+          /* Don't forget to relinquish the actual resources (the file-descriptors).
+             (doesn't matter until we remove the dsk_die() immediately above) */
+          unsigned li;
+          for (li = 0; li < w->n_index_levels; li++)
+            {
+              WriterIndexLevel *level = w->index_levels + li;
+              if (level->index_out.fd >= 0)
+                writer_file_close_fd (&level->index_out);
+              if (level->index_heap_out.fd >= 0)
+                writer_file_close_fd (&level->index_heap_out);
+            }
     }
 
   /* clean up memory */
@@ -682,7 +773,8 @@ table_file_writer_new (DskDir                  *dir,
                                           error);
   if (w->compressed_heap_fd < 0)
     {
-      ...
+      dsk_free (w);
+      return NULL;
     }
   dsk_buffer_init (&w->compressed_heap_buffer);
   w->compressed_heap_offset = 0ULL;
@@ -719,8 +811,7 @@ file_interface__new_writer  (DskTableFileInterface   *iface,
 }
 static DskTableReader *
 file_interface__new_reader  (DskTableFileInterface   *iface,
-                             const char              *openat_dir,
-                             int                      openat_fd,
+                             DskDir                  *dir,
                              const char              *base_filename,
                              DskError               **error)
 {
@@ -728,8 +819,7 @@ file_interface__new_reader  (DskTableFileInterface   *iface,
 }
 static DskTableFileSeeker *
 file_interface__new_seeker  (DskTableFileInterface   *iface,
-                             const char              *openat_dir,
-                             int                      openat_fd,
+                             DskDir                  *dir,
                              const char              *base_filename,
                              DskError               **error)
 {
@@ -737,8 +827,7 @@ file_interface__new_seeker  (DskTableFileInterface   *iface,
 }
 static dsk_boolean
 file_interface__delete_file (DskTableFileInterface   *iface,
-                             const char              *openat_dir,
-                             int                      openat_fd,
+                             DskDir                  *dir,
                              const char              *base_filename,
                              DskError               **error)
 {
