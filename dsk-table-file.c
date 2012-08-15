@@ -783,8 +783,8 @@ table_file_writer__close  (DskTableFileWriter *writer,
                                error))
         return DSK_FALSE;
 
-      /* flush out any higher level indices */
-      ...
+      /* flush out any higher level indices?
+         not sure there's anything to do? */
     }
 
   /* write a sentinel element to the index level 0. */
@@ -800,7 +800,9 @@ table_file_writer__close  (DskTableFileWriter *writer,
       for (s = 0; s < N_LEVEL_SIZES; s++)
         dsk_uint64le_pack (level->index_entry_size_to_count[s],
                            sizes_packed + 8*s);
-      if (!writer_file_pwrite (&level->index_out, LEVEL_SIZES_FILE_OFFSET, sizes_packed, error))
+      if (!writer_file_pwrite (&level->index_out, LEVEL_SIZES_FILE_OFFSET,
+                               sizeof (sizes_packed), sizes_packed,
+                               error))
         return DSK_FALSE;
     }
   for (li = 0; li < w->n_index_levels; li++)
