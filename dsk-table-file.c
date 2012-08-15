@@ -428,22 +428,15 @@ append_to_incoming__raw               (TableFileWriter    *writer,
 
 static dsk_boolean
 write_index0_entry           (TableFileWriter *writer,
-                              unsigned         first_key_length,
                               uint64_t         first_key_offset,
-                              unsigned         compressed_length,
                               uint64_t         compressed_heap_offset,
                               DskError       **error)
 {
   /* pack index0 entry */
-  uint8_t packed_entry[B128_UINT32_MAX_SIZE + B128_UINT64_MAX_SIZE
-                     + B128_UINT32_MAX_SIZE + 8];
-  unsigned packed_entry_len = encode_uint32_b128 (packed_entry, first_key_length);
+  uint8_t packed_entry[B128_UINT64_MAX_SIZE * 2 + 8];
+  unsigned packed_entry_len = encode_uint64_b128 (packed_entry, first_key_offset);
   packed_entry_len += encode_uint64_b128 (packed_entry + packed_entry_len,
-                                          first_key_offset);
-  packed_entry_len += encode_uint32_b128 (packed_entry + packed_entry_len,
-                                          compressed_length);
-  packed_entry_len += encode_uint64_le (packed_entry + packed_entry_len,
-                                        compressed_heap_offset);
+                                          compressed_heap_offset);
 
   /* is it bigger than the current size? */
   WriterIndexLevel *level0 = w->index_levels + 0;
@@ -641,6 +634,21 @@ table_file_writer__write  (DskTableFileWriter *writer,
 {
   TableFileWriter *w = (TableFileWriter *) writer;
 
+  if (w->n_entries_in_incoming == 0)
+    {
+      /* append to .K0 */
+      ...
+
+      /* propagate to higher levels as needed */
+      for (level = 1; level < w->n_index_levels; level++)
+        {
+          ...
+        }
+
+      /* store if it might be needed by a higher level */
+      ...
+    }
+
   /* Handle prefix-compression to the "incoming" buffer. */
   w->append_to_incoming (w, key_length, key_data, value_length, value_data);
   w->n_entries_in_incoming += 1;
@@ -659,10 +667,7 @@ table_file_writer__write  (DskTableFileWriter *writer,
     return DSK_FALSE;
 
   /* write to index file, possible propagating up to higher indexes */
-  if (!write_index0_entry (w,
-                           w->index0_first_key.key_length, key_heap_offset,
-                           vli_len + outgoing_len, heap_offset,
-                           error))
+  if (!write_index0_entry (w, error))
     return DSK_FALSE;
   if (++w->compressed_level_counter < w->index_ratio)
     goto done_handling_index_levels;
@@ -770,25 +775,19 @@ table_file_writer__close  (DskTableFileWriter *writer,
 
   w->closed = DSK_TRUE;
 
-  if (w->incoming.size > 0)
+  if (w->n_entries_in_incoming > 0)
     {
       /* compress remaining data, write index entry/entries */
-      unsigned outgoing_len;
-      unsigned vli_len;        
-      if (!do_compress (w, &vli_len, &outgoing_len, error))
-        return DSK_FALSE;
-      if (!write_index0_entry (w,
-                               w->index0_first_key.key_length, key_heap_offset,
-                               vli_len + outgoing_len, heap_offset,
-                               error))
+      if (!do_compress (w, error))
         return DSK_FALSE;
 
-      /* flush out any higher level indices?
-         not sure there's anything to do? */
+      /* write a sentinel element to the index level 0. */
+      if (!write_index0_entry (w, error))
+        return DSK_FALSE;
+
+      /* write sentinels to higher levels */
+      ...
     }
-
-  /* write a sentinel element to the index level 0. */
-  ...
 
   /* close all index-levels (close index and heap files,
      and write the level-sizes arrays to disk) */

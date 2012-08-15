@@ -83,19 +83,18 @@ For level $0$ index files, this is the format of each index-entry:
 
 \begin{tabular}{llp{3in}}
 name & encoding & description \\
-{\tt key\_length} & b128, 32-bit max & length of the first key in this section \\
-{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K0} file. \\
-{\tt compressed\_data\_length} & b128, 32-bit max & length of compressed data in {\tt .HEAP} file \\
+{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K0} file of first key. \\
 {\tt compressed\_data\_offset} & b128, 64-bit max & offset of compressed data in {\tt .HEAP} file
 \end{tabular}
+
+(The lengths are computed from the difference)
 
 \vskip 2ex
 
 For other, nonzero level index files, this is the format of each index-entry:
 \begin{tabular}{llp{3in}}
 name & encoding & description \\
-{\tt key\_length} & b128, 32-bit max & length of the first key in this section \\
-{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K0} file. \\
+{\tt key\_offset} & b128, 64-bit max & offset in {\tt .K{\it \#}} file. \\
 \end{tabular}
 The index in the next level's file is determined by {\tt index\_ratio}.
 
