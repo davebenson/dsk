@@ -182,27 +182,137 @@ writer_file_new (DskDir *dir,
       if ((open_flags & DSK_DIR_OPENFD_TRUNCATE)
        || fd_get_file_size (fd) < (uint64_t) buf_length)
         {
-          ...
+          if (ftruncate (fd, buf_length) < 0)
+            {
+              dsk_set_error (error, "error resizing file: %s",
+                             strerror (errno));
+              return DSK_FALSE;
+            }
         }
-      void *ptr = mmap (...);
+      void *ptr = mmap (NULL,
+                        buf_length,
+                        PROT_READ|PROT_WRITE,
+                        MAP_SHARED,
+                        fd,
+                        0);
       if (ptr == MAP_FAILED) 
         {
-          ...
+          dsk_warning ("mmap failed: %s", strerror (errno));
+          out->memory_mapped = DSK_FALSE;
+          out->buf = dsk_malloc (buf_length);
         }
-      dir->buf = ptr;
+      else
+        out->buf = ptr;
     }
   else
     {
-      dir->buf = dsk_malloc (buf_length);
+      out->buf = dsk_malloc (buf_length);
     }
   return DSK_TRUE;
 }
 
+static dsk_boolean
+do_writen (int fd,
+           unsigned length,
+           const uint8_t *data,
+           DskError **error)
+{
+  /* flush to fd, if not mmapped */
+  unsigned n_written = 0;
+  while (n_written < writer->buf_length)
+    {
+      int nw = write (writer->fd,
+                      writer->buf + n_written,
+                      writer->buf_length - n_written);
+      if (nw < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          dsk_set_error (error, "error writing: %s", strerror (errno));
+          return DSK_FALSE;
+        }
+      dsk_assert (nw > 0);
+      n_written += nw;
+    }
+  return DSK_TRUE;
+}
+
+static dsk_boolean
+writer_file_write (WriterFile    *writer,
+                   unsigned       length,
+                   const uint8_t *data,
+                   DskError     **error)
+{
+  while (length > 0)
+    {
+      unsigned buf_write = DSK_MIN (length, out->buf_length - out->at);
+      memcpy (writer->buf + writer->at, data, buf_write);
+      length -= buf_write;
+      writer->at += writer->buf_write;
+      if (writer->at == writer->buf_length)
+        {
+          if (!writer->memory_mapped)
+            {
+              if (!do_writen (writer->fd, writer->buf_length, writer->buf, error))
+                return DSK_FALSE;
+            }
+
+          writer->at = 0;
+          writer->buf_offset += writer->buf_length;
+          if (!writer->memory_mapped)
+            writer->file_size = DSK_MAX (writer->file_size, writer->buf_offset);
+
+          if (length >= writer->buf_length)
+            {
+              /* call write() directly on multiples of buf_length */
+              unsigned w = length - length % writer->buf_length;
+              if (!do_writen (writer->fd, w, data, error))
+                return DSK_FALSE;
+
+              writer->buf_offset += w;
+              length -= w;
+              data += w;
+            }
+
+          if (writer->memory_mapped)
+            {
+              uint64_t min_size = writer->buf_offset + writer->buf_length;
+              if (munmap (writer->buf, writer->buf_length) < 0)
+                dsk_die ("munmap failed: %s", strerror (errno));
+              if (writer->file_size < min_size)
+                {
+                  if (ftruncate (writer->fd, min_size) < 0)
+                    {
+                      dsk_set_error (error, "ftruncate failed: %s",
+                                     strerror (errno));
+                      return DSK_FALSE;
+                    }
+                  writer->file_size = min_size;
+                }
+              void *ptr = mmap (NULL,
+                                writer->buf_length,
+                                PROT_READ|PROT_WRITE,
+                                MAP_SHARED,
+                                fd,
+                                writer->buf_offset);
+              if (ptr == MAP_FAILED)
+                {
+                  writer->buf = NULL;
+                  dsk_set_error (error, "mmapped failed: %s",
+                                 strerror (errno));
+                  return DSK_FALSE;
+                }
+              writer->buf = ptr;
+            }
+        }
+    }
+  return DSK_TRUE;
+}
 
 struct _WriterIndexLevel
 {
-  WriterFile index_out;
-  WriterFile index_heap_out;
+  WriterFile index_file;
+  WriterFile index_heap_file;
 
   /* For a level-0 index, we need:
    *     - key-length of first key                         (max 4 bytes)
@@ -356,11 +466,11 @@ write_index0_entry           (TableFileWriter *writer,
     }
 
   /* write packed (and padded) entry */
-  if (FWRITE (packed_entry, packed_entry_len, 1, level0->index_fp) != 1)
-    {
-      dsk_set_error (error, "error writing to level0 index");
-      return DSK_FALSE;
-    }
+  if (!writer_file_write (&level0->index_file,
+                          packed_entry_len,
+                          packed_entry,
+                          error))
+    return DSK_FALSE;
 
   return DSK_TRUE;
 }
@@ -398,9 +508,11 @@ write_indexnon0_entry        (TableFileWriter *writer,
     }
 
   /* write packed (and padded) entry */
-  if (FWRITE (packed_entry, packed_entry_len, 1, level->index_fp) != 1)
+  if (!writer_file_write (&level->index_file,
+                          packed_entry_len,
+                          packed_entry,
+                          error))
     {
-      dsk_set_error (error, "error writing to level0 index");
       return DSK_FALSE;
     }
 
@@ -436,12 +548,9 @@ table_file_writer__first_write  (DskTableFileWriter *writer,
   w->n_entries_in_incoming = 1;
 
   /* write key and key_length to level0 index */
-  if (key_length != 0
-   && FWRITE (key_data, key_length, 1, w->index_levels[0].index_heap_fp) != 1)
-    {
-      dsk_set_error (error, "error writing initial key to index level 0");
-      return DSK_FALSE;
-    }
+  if (!writer_file_write (&w->index_levels[0].index_heap_file,
+                          key_length, key_data, error))
+    return DSK_FALSE;
 
   /* write key/key_length to potential_new_level{_keys} */
   w->n_potential_new_level_keys = 1;
@@ -567,12 +676,10 @@ table_file_writer__write  (DskTableFileWriter *writer,
                                   error))
         return DSK_FALSE;
 
-      if (key_length != 0
-       && FWRITE (key_data, key_length, 1, level->key_heap_fp) != 1)
-        {
-          dsk_set_error (error, "error writing key to index level %u", ilevel);
-          return DSK_FALSE;
-        }
+      if (!writer_file_write (&level->key_heap_file,
+                              key_length, key_data,
+                              error))
+        return DSK_FALSE;
       level->key_heap_offset += key_length;
 
       if (++level->next_level_cycle == w->index_ratio)
@@ -615,9 +722,9 @@ table_file_writer__write  (DskTableFileWriter *writer,
       w->index_levels = dsk_realloc (w->index_levels,
                                      (w->n_index_levels+1) * sizeof (WriterIndexLevel));
       new_level = w->index_levels + w->n_index_levels++;
-      new_level->key_heap_fp = fdopen (kh_fd, "wb");
+      new_level->key_heap_file = fdopen (kh_fd, "wb");
       dsk_assert_runtime (new_level->key_heap_fp != NULL);
-      new_level->index_fp = fdopen (ki_fd, "wb");
+      new_level->index_file = fdopen (ki_fd, "wb");
       dsk_assert_runtime (new_level->index_fp != NULL);
 
       /* dump key-heap */
@@ -625,14 +732,11 @@ table_file_writer__write  (DskTableFileWriter *writer,
            frag != NULL;
            frag = frag->next)
         {
-          if (frag->buf_length != 0
-           && FWRITE (frag->buf + frag->buf_start,
-                      frag->buf_length,
-                      1, new_level->key_heap_fp) != 1)
-            {
-              dsk_set_error ("error writing initial key-data for new index level");
-              return DSK_FALSE;
-            }
+          if (!writer_file_write (&new_level->key_heap_file,
+                                  frag->buf_length,
+                                  frag->buf + frag->buf_start,
+                                  error))
+            return DSK_FALSE;
         }
       new_level->key_heap_offset = w->potential_new_level_keys.size;
 
