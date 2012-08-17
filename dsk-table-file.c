@@ -429,6 +429,7 @@ append_to_incoming__raw               (TableFileWriter    *writer,
 static dsk_boolean
 write_index0_entry           (TableFileWriter *writer,
                               uint64_t         first_key_offset,
+                              unsigned         uncompressed_data_length,
                               uint64_t         compressed_heap_offset,
                               DskError       **error)
 {
@@ -471,7 +472,6 @@ write_index0_entry           (TableFileWriter *writer,
 static dsk_boolean
 write_indexnon0_entry        (TableFileWriter *writer,
                               unsigned         index_level,
-                              unsigned         first_key_length,
                               uint64_t         first_key_offset,
                               DskError       **error)
 {
@@ -634,20 +634,20 @@ table_file_writer__write  (DskTableFileWriter *writer,
 {
   TableFileWriter *w = (TableFileWriter *) writer;
 
-  if (w->n_entries_in_incoming == 0)
-    {
-      /* append to .K0 */
-      ...
-
-      /* propagate to higher levels as needed */
-      for (level = 1; level < w->n_index_levels; level++)
-        {
-          ...
-        }
-
-      /* store if it might be needed by a higher level */
-      ...
-    }
+  /* Append key_Data to the initial buffers that are empty
+     (stopping at the first non-empty one) */
+  {
+    WriterIndexLevel *level = w->index_levels + 0;
+    WriterIndexLevel *end = w->index_levels + w->n_index_levels;
+    while (level < end && level->n_entries == 0)
+      {
+        /* append to .K# */
+        if (!writer_file_write (&level->key_heap_file, key_length, key_data, error))
+          return DSK_FALSE;
+        level->first_key_length = key_length;
+        level++;
+      }
+  }
 
   /* Handle prefix-compression to the "incoming" buffer. */
   w->append_to_incoming (w, key_length, key_data, value_length, value_data);
@@ -667,29 +667,33 @@ table_file_writer__write  (DskTableFileWriter *writer,
     return DSK_FALSE;
 
   /* write to index file, possible propagating up to higher indexes */
-  if (!write_index0_entry (w, error))
-    return DSK_FALSE;
-  if (++w->compressed_level_counter < w->index_ratio)
+  w->index_levels[0].n_entries++;
+  if (w->index_levels[0].n_entries < w->index0_ratio)
     goto done_handling_index_levels;
-  w->compressed_level_counter = 0;
+  if (!write_index0_entry (w,
+                           level->key_heap_offset - level->first_key_length,
+                           vli_len,
+                           writer_file_offset (&w->compressed_heap_file) - outgoing_len,
+                           error))
+    return DSK_FALSE;
   for (ilevel = 1; ilevel < w->n_index_levels; ilevel++)
     {
       WriterIndexLevel *level = w->index_levels + ilevel;
 
       if (!write_indexnon0_entry (w, level,
-                                  key_length, level->key_heap_offset,
+                                  writer_file_offset (&level->key_heap_file) - level->first_key_length,
                                   error))
         return DSK_FALSE;
 
-      if (!writer_file_write (&level->key_heap_file,
-                              key_length, key_data,
-                              error))
-        return DSK_FALSE;
-      level->key_heap_offset += key_length;
-
-      if (++level->next_level_cycle == w->index_ratio)
-        /* advance to the next level */
-        level->next_level_cycle = 0;
+      if (++level->n_entries == w->index_ratio)
+        {
+          /* advance to the next level */
+          level->n_entries = 0;
+          if (ilevel + 1 == w->n_index_levels)
+            {
+              ...
+            }
+        }
       else
         goto done_handling_index_levels;
     }
@@ -750,7 +754,7 @@ table_file_writer__write  (DskTableFileWriter *writer,
         {
           unsigned key_length = w->potential_new_level[i];
           if (!write_indexnon0_entry (w, new_level,
-                                      key_length, key_offset, error))
+                                      key_offset, error))
             return DSK_FALSE;
           key_offset += key_length;
         }
@@ -782,11 +786,20 @@ table_file_writer__close  (DskTableFileWriter *writer,
         return DSK_FALSE;
 
       /* write a sentinel element to the index level 0. */
-      if (!write_index0_entry (w, error))
+      if (!write_index0_entry (w,
+                               writer_file_offset (&w->index_levels[0].key_heap_offset),
+                               0,
+                               writer_file_offset (&w->compressed_heap_file);
+                               error))
         return DSK_FALSE;
 
       /* write sentinels to higher levels */
-      ...
+      unsigned i;
+      for (i = 1; i < w->n_index_levels; i++)
+        if (!write_indexnon0_entry (w,
+                                    writer_file_offset (&w->index_levels[i].key_heap_offset),
+                                    error))
+          return DSK_FALSE;
     }
 
   /* close all index-levels (close index and heap files,
@@ -807,12 +820,14 @@ table_file_writer__close  (DskTableFileWriter *writer,
   for (li = 0; li < w->n_index_levels; li++)
     {
       WriterIndexLevel *level = w->index_levels + li;
-      writer_file_close (&level->index_out);
-      writer_file_close (&level->index_heap_out);
+      if (!writer_file_close (&level->index_file, error)
+      ||  !writer_file_close (&level->key_heap_file, error))
+        return DSK_FALSE;
     }
 
   /* close the compressed-heap */
-  ...
+  if (!writer_file_close (&level->compressed_heap_file, error))
+    return DSK_FALSE;
 
   return DSK_TRUE;
 }
@@ -821,26 +836,33 @@ static void
 table_file_writer__destroy(DskTableFileWriter *writer)
 {
   TableFileWriter *w = (TableFileWriter *) writer;
-  if (!w->closed)
+  if (w->closed)
     {
+      /* This is only really necessary if close failed. */
+      unsigned li;
+      for (li = 0; li < w->n_index_levels; li++)
+        {
+          WriterIndexLevel *level = w->index_levels + li;
+          if (level->index_out.fd >= 0)
+            writer_file_destruct (&level->index_out);
+          if (level->index_heap_out.fd >= 0)
+            writer_file_destruct (&level->index_heap_out);
+        }
+      writer_file_destruct (&w->compressed_heap_file);
+    }
+  else
+    {
+      /* This is to enable the pattern where you destroy()
+         w/o closing --  That's fine as long as you are comfortable w/
+         deadly error-handling. */
       DskError *error = NULL;
       if (!table_file_writer__close (writer, &error))
         {
           dsk_die ("error closing table-file-writer on destroy: %s",
                    error->message);
-
-          /* Don't forget to relinquish the actual resources (the file-descriptors).
-             (doesn't matter until we remove the dsk_die() immediately above) */
-          unsigned li;
-          for (li = 0; li < w->n_index_levels; li++)
-            {
-              WriterIndexLevel *level = w->index_levels + li;
-              if (level->index_out.fd >= 0)
-                writer_file_close_fd (&level->index_out);
-              if (level->index_heap_out.fd >= 0)
-                writer_file_close_fd (&level->index_heap_out);
-            }
+        }
     }
+
 
   /* clean up memory */
   dsk_free (w->index_levels);
