@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include "../dsk.h"
 
-static DskTableLocation location;
+static DskDir *location;
 static dsk_boolean cmdline_verbose = DSK_FALSE;
 static dsk_boolean cmdline_slow = DSK_FALSE;
 static dsk_boolean cmdline_keep_testdir = DSK_FALSE;
@@ -20,7 +20,7 @@ test_simple_write_read (void)
   DskError *error = NULL;
   DskTableFileInterface *iface = &dsk_table_file_interface_trivial;
 
-  DskTableFileWriter *writer = iface->new_writer (iface, &location, "base", &error);
+  DskTableFileWriter *writer = iface->new_writer (iface, location, "base", &error);
   DskTableReader *reader;
   if (writer == NULL)
     dsk_die ("%s", error->message);
@@ -32,7 +32,7 @@ test_simple_write_read (void)
     dsk_die ("error closing writer: %s", error->message);
   writer->destroy (writer);
 
-  reader = iface->new_reader (iface, &location, "base", &error);
+  reader = iface->new_reader (iface, location, "base", &error);
   if (reader == NULL)
     dsk_die ("error creating reader: %s", error->message);
   dsk_assert (!reader->at_eof);
@@ -265,7 +265,7 @@ test_various_read_write_1 (const char *name,
   else
     fprintf (stderr, ".");
 
-  writer = iface->new_writer (iface, &location, "base", &error);
+  writer = iface->new_writer (iface, location, "base", &error);
   if (writer == NULL)
     dsk_die ("%s", error->message);
   for (big_i = small_i = 0; big_i < n_write; big_i++)
@@ -283,7 +283,7 @@ test_various_read_write_1 (const char *name,
     dsk_die ("error closing writer: %s", error->message);
   writer->destroy (writer);
 
-  reader = iface->new_reader (iface, &location, "base", &error);
+  reader = iface->new_reader (iface, location, "base", &error);
   if (reader == NULL)
     dsk_die ("error creating reader: %s", error->message);
   small_i = 0;
@@ -355,7 +355,7 @@ test_various_write_seek_1 (const char *name,
   else
     fprintf (stderr, ".");
 
-  writer = iface->new_writer (iface, &location, "base", &error);
+  writer = iface->new_writer (iface, location, "base", &error);
   if (writer == NULL)
     dsk_die ("%s", error->message);
   for (i = 0; i < n_entries; i++)
@@ -383,7 +383,7 @@ test_various_write_seek_1 (const char *name,
   step = *p_ptr % n_entries;
 
   /* create seeker */
-  seeker = iface->new_seeker (iface, &location, "base", &error);
+  seeker = iface->new_seeker (iface, location, "base", &error);
   if (seeker == NULL)
     dsk_die ("error creating seeker from newly finished writer: %s",
              error->message);
@@ -590,6 +590,7 @@ int main(int argc, char **argv)
 {
   unsigned i;
   char test_dir_buf[256];
+  DskError *error = NULL;
 
   dsk_cmdline_init ("test table internals (the 'file' abstraction)",
                     "Test Table Internals",
@@ -604,13 +605,9 @@ int main(int argc, char **argv)
 
   snprintf (test_dir_buf, sizeof (test_dir_buf),
             "test-table-file-%u-%u", (unsigned)time(NULL), (unsigned)getpid());
-  location.openat_dir = test_dir_buf;
-  if (mkdir (location.openat_dir, 0755) < 0)
-    dsk_die ("error making test directory (%s): %s",
-             location.openat_dir, strerror (errno));
-  location.openat_fd = open (location.openat_dir, O_RDONLY);
-  if (location.openat_fd < 0)
-    dsk_die ("error opening dir %s: %s", location.openat_dir, strerror (errno));
+  location = dsk_dir_new (NULL, test_dir_buf, DSK_DIR_NEW_MAYBE_CREATE, &error);
+  if (location == NULL)
+    dsk_die ("error making directory: %s", error->message);
 
   for (i = 0; i < DSK_N_ELEMENTS (tests); i++)
     {
@@ -623,13 +620,14 @@ int main(int argc, char **argv)
     {
       fprintf (stderr,
                "test-table-file: keep-testdir: preserving test directory %s\n",
-               location.openat_dir);
+               dsk_dir_get_str (location));
     }
   else
     {
       DskError *error = NULL;
-      if (!dsk_remove_dir_recursive (location.openat_dir, &error))
-        dsk_die ("error removing directory %s: %s", location.openat_dir, error->message);
+      if (!dsk_remove_dir_recursive (dsk_dir_get_str (location), &error))
+        dsk_die ("error removing directory %s: %s",
+                 dsk_dir_get_str (location), error->message);
     }
   dsk_cleanup ();
   return 0;

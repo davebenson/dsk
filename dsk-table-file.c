@@ -691,7 +691,31 @@ table_file_writer__write  (DskTableFileWriter *writer,
           level->n_entries = 0;
           if (ilevel + 1 == w->n_index_levels)
             {
-              ...
+              w->index_levels = DSK_RENEW (WriterIndexLevel,
+                                           w->index_levels,
+                                           w->n_index_levels + 1)
+              WriterIndexLevel *lev = w->index_levels + w->n_index_levels;
+              if (!writer_file_new (w->dir, ...filename,
+                                    DSK_DIR_OPENFD_TRUNCATE|DSK_DIR_OPENFD_MAY_CREATE,
+                                    mmapped, BUFFER_SIZE,
+                                    &lev->index_file, error))
+                {
+                  return DSK_FALSE;
+                }
+              if (!writer_file_new (w->dir, ...filename,
+                                    DSK_DIR_OPENFD_TRUNCATE|DSK_DIR_OPENFD_MAY_CREATE,
+                                    mmapped, BUFFER_SIZE,
+                                    &lev->index_heap_file, error))
+                {
+                  writer_file_destruct (&lev->index_file);
+                  return DSK_FALSE;
+                }
+              memset (&lev->index_entry_size_to_count, 0,
+                      sizeof (lev->index_entry_size_to_count));
+              lev->size_index = 0;
+              lev->max_size = IE_COUNT_INDEX_TO_MAX_SIZE__LEVELNON0 (0);
+
+              w->n_index_levels += 1;
             }
         }
       else

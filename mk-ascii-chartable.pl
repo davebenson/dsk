@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 
-my @tqble = ();
+my @table = ();
 for (my $i = 0; $i < 256; $i++) { push @table, 0 }
 
 # set spaces

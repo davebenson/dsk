@@ -62,8 +62,8 @@ dsk_hex_decoder_process (DskOctetFilter *filter,
 }
 static dsk_boolean
 dsk_hex_decoder_finish(DskOctetFilter *filter,
-                          DskBuffer      *out,
-                          DskError      **error)
+                       DskBuffer      *out,
+                       DskError      **error)
 {
   DskHexDecoder *dec = (DskHexDecoder *) filter;
   DSK_UNUSED (out);
