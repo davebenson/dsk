@@ -195,6 +195,7 @@ void *dsk_memdup (size_t, const void *);
 
 void  dsk_strstrip (char *str_inout);
 void  dsk_strchomp (char *str_inout);
+void *dsk_memrchr  (const void *mem, int c, size_t n);
 
 /* copy the string starting at 'str', and ending with the last-character
    at end_str-1 (so end_str would point to the NUL on a NUL-terminated string */

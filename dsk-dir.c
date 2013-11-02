@@ -236,6 +236,19 @@ int          dsk_dir_sys_rmdir               (DskDir       *dir,
 #endif
 }
 
+int          dsk_dir_sys_mkdir               (DskDir         *dir,
+                                              const char     *path,
+                                              unsigned        mode)
+{
+  if (dir == NULL)
+    return mkdir (path, mode);
+#if DSK_HAS_ATFILE_SUPPORT
+  return mkdirat (dir->openat_fd, path, mode);
+#else
+  return mkdir (prep_buf_with_path (dir, path), mode);
+#endif
+}
+
 const char *dsk_dir_get_str (DskDir *dir)
 {
   return dir ? dir->openat_dir : ".";
@@ -381,6 +394,90 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
         }
   }
   return DSK_TRUE;
+}
+
+static const char *
+filepath_to_directory_end (const char *path)
+{
+  const char *end = strrchr (path, '/');
+  if (end == NULL)
+    return NULL;
+  const char *init_end;
+  do {
+    init_end = end;
+    if (end >= path + 2 && *(end-1) == '.' && *(end-2) == '/')
+      {
+        end -= 2;
+      }
+    else if (end >= path + 3 && *(end-1) == '.' && *(end-2) == '.' && *(end-3) == '/')
+      {
+        const char *ne = dsk_memrchr(path, '/', end - path - 3);
+        if (ne == NULL)
+          return NULL;
+        end = ne;
+      }
+  } while (end != init_end);
+  if (end == path)
+    return NULL;
+  return end;
+}
+    
+
+int
+dsk_dir_openfd (DskDir            *dir,
+                const char        *path,
+                unsigned           mode,
+                DskDirOpenfdFlags  flags,
+                DskError         **error)
+{
+  unsigned sys_flags = 0;
+
+  if (flags & DSK_DIR_OPENFD_MUST_CREATE)
+    sys_flags |= O_EXCL | O_CREAT;
+  if (flags & DSK_DIR_OPENFD_MAY_CREATE)
+    sys_flags |= O_CREAT;
+
+  // XXX: no way to force non-readable
+  if (flags & DSK_DIR_OPENFD_WRITABLE)
+    sys_flags |= O_RDWR;
+  else
+    sys_flags |= O_RDONLY;
+
+  if (flags & DSK_DIR_OPENFD_TRUNCATE)
+    sys_flags |= O_TRUNC;
+  if (flags & DSK_DIR_OPENFD_APPEND)
+    sys_flags |= O_APPEND;
+
+  dsk_boolean tried_mkdir = DSK_FALSE;
+  int fd;
+do_try_open_fd:
+  fd = dsk_dir_sys_open(dir, path, mode, sys_flags);
+  if (fd < 0)
+    {
+      const char *end;
+      if (errno == ENOENT
+       && !tried_mkdir
+       && (flags & DSK_DIR_OPENFD_MAY_CREATE) != 0
+       && (flags & DSK_DIR_OPENFD_NO_MKDIR) == 0
+       && (end = filepath_to_directory_end (path)) != NULL)
+        {
+          char *dirpath = dsk_strdup_slice (path, end);
+          if (!dsk_dir_mkdir (dir, dirpath, 0, NULL, error))
+            {
+              dsk_free (dirpath);
+              return -1;
+            }
+          tried_mkdir = DSK_TRUE;
+          goto do_try_open_fd;
+        }
+      else
+        {
+           dsk_set_error (error, "error opening file %s: %s", path, strerror (errno));
+           return -1;
+        }
+    }
+  else
+    return fd;
 }
 
 #define MAX_RETRIES 128

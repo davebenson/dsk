@@ -220,3 +220,14 @@ void  dsk_strchomp (char *str_inout)
     end--;
   *end = 0;
 }
+
+void *dsk_memrchr  (const void *mem, int c, size_t n)
+{
+  /* TODO: use builtin on glibc 2.1.91 and above */
+  char *at = (char *) mem + n;
+  char cc = c;
+  while (n--)
+    if (*(--at) == cc)
+      return at;
+  return NULL;
+}

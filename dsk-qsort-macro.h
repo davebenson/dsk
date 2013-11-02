@@ -225,9 +225,9 @@ struct _DskQsortStackNode
 
 /* TODO: do we want DSK_INSERTION_SELECT for use here internally? */
 #define DSK_QSELECT_FULL(array, type, n_elements, n_select, compare, isort_threshold, stack_size, ss_assertion)    \
-  do{                                                              \
-    int dsk_rv;                                                             \
-    unsigned dsk_stack_size;                                                    \
+  do{                                                                        \
+    int dsk_rv;                                                              \
+    unsigned dsk_stack_size;                                                 \
     DskQsortStackNode dsk_stack[stack_size];                                 \
     type dsk_tmp_swap;                                                       \
     DskQsortStackNode dsk_node;                                              \
@@ -419,10 +419,10 @@ struct _DskQsortStackNode
 /* Do not allow equality, since that would make the next push a
    stack overflow, and we might not detect it correctly to stack corruption. */
 #define DSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                          \
-  g_assert(dsk_stack_size < stack_alloced)
+  dsk_assert(dsk_stack_size < stack_alloced)
 
 #define DSK_INSERTION_SORT(array, type, length, compare)                     \
-  do{                                                              \
+  do{                                                                        \
     unsigned dsk_ins_i, dsk_ins_j;                                           \
     type dsk_ins_tmp;                                                        \
     for (dsk_ins_i = 1; dsk_ins_i < length; dsk_ins_i++)                     \
@@ -445,7 +445,7 @@ struct _DskQsortStackNode
   }while(0)
 
 #define DSK_QSORT_SIMPLE_COMPARATOR(a,b,compare_rv)                          \
-  do{                                                              \
+  do{                                                                        \
     if ((a) < (b))                                                           \
       compare_rv = -1;                                                       \
     else if ((a) > (b))                                                      \

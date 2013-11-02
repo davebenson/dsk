@@ -844,7 +844,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
 
 DskDispatchTimer *
 dsk_dispatch_add_timer_millis (DskDispatch         *dispatch,
-                               unsigned             millis,
+                               uint64_t             millis,
                                DskTimerFunc func,
                                void                *func_data)
 {
@@ -893,7 +893,7 @@ void  dsk_dispatch_adjust_timer    (DskDispatchTimer *timer,
 }
 
 void  dsk_dispatch_adjust_timer_millis (DskDispatchTimer *timer,
-                                        unsigned          milliseconds)
+                                        uint64_t          milliseconds)
 {
   unsigned tsec = timer->dispatch->base.last_dispatch_secs;
   unsigned tusec = timer->dispatch->base.last_dispatch_usecs;
