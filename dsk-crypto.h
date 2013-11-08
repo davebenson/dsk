@@ -21,3 +21,5 @@ struct _DskCipherInfo
 DskOctetFilter *dsk_crypto_filter_new (DskCryptoOptions *options,
                                        DskError        **error);
 
+extern DskCipherInfo dsk_ciphers[];
+extern unsigned dsk_n_ciphers;

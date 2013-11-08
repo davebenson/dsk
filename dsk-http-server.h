@@ -132,7 +132,7 @@ struct _DskHttpServerResponseOptions
   const char *content_charset;
 
 };
-#define DSK_HTTP_SERVER_RESPONSE_OPTIONS_INIT                \
+#define DSK_HTTP_SERVER_RESPONSE_OPTIONS_INIT                   \
 {                                                               \
   NULL,                 /* source */                            \
   NULL,                 /* source_filename */                   \

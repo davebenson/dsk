@@ -94,6 +94,8 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
   rv->buf = dsk_malloc (rv->buf_alloced);
   memcpy (rv->buf, dir, rv->openat_dir_len);
   rv->buf[rv->openat_dir_len] = '/';
+  rv->alt_buf_alloced = 0;
+  rv->alt_buf = NULL;
 #endif
   rv->locked = do_lock;
   rv->erase_on_destroy = DSK_FALSE;
@@ -347,8 +349,6 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
       return DSK_FALSE;
     }
 
-  dsk_warning("dsk_dir mkdir: %s", buf);
-
   char *sbuf = buf;
   if (sbuf[0] == DSK_DIR_SEPARATOR)
     sbuf++;
@@ -481,8 +481,6 @@ dsk_dir_openfd (DskDir            *dir,
     sys_flags |= O_TRUNC;
   if (flags & DSK_DIR_OPENFD_APPEND)
     sys_flags |= O_APPEND;
-
-  dsk_warning("flags=%x sys_flags=%x mode=0%o", flags, sys_flags, mode);
 
   dsk_boolean tried_mkdir = DSK_FALSE;
   int fd;
