@@ -600,7 +600,11 @@ dsk_dir_set_contents (DskDir                 *dir,
 DIR *dsk_dir_sys_opendir (DskDir *dir, const char *path)
 {
 #if DSK_HAS_ATFILE_SUPPORT
-  int fd = dsk_dir_sys_open (dir, path, O_DIRECTORY, 0);
+  int flags = 0;
+# if __APPLE__ && __MACH__
+  flags = O_DIRECTORY;
+# endif
+  int fd = dsk_dir_sys_open (dir, path, flags, 0);
   if (fd < 0)
     return NULL;
   return fdopendir (fd);

@@ -40,6 +40,7 @@
 
 #if defined(__linux__)
 # include <endian.h>
+# define DSK_IS_LITTLE_ENDIAN    (BYTE_ORDER == LITTLE_ENDIAN)
 #elif defined(__APPLE__)
 # include <machine/endian.h>
 # define DSK_IS_LITTLE_ENDIAN    (BYTE_ORDER == LITTLE_ENDIAN)
@@ -49,7 +50,7 @@
 # error "endianness not known here"
 #endif
 
-#define DSK_IS_BIG_ENDIAN    (!DSK_IS_LITTLE_ENDIAN)
+#define DSK_IS_BIG_ENDIAN    (!(DSK_IS_LITTLE_ENDIAN))
 
 /* Miscellaneous features that linux has.
  *  TODO: other OSes. */
