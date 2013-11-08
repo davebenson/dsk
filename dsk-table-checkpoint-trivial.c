@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "dsk-table-helper.h"
 
 #define DEFAULT_MMAP_SIZE       (1<<14)
 #define MMAP_GRANULARITY        4096
@@ -182,7 +181,7 @@ static DskTableCheckpoint table_checkpoint_trivial__vfuncs =
 
 static DskTableCheckpoint *
 table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
-                                  DskTableLocation   *location,
+                                  DskDir             *dir,
                                   const char         *basename,
                                   unsigned            cp_data_len,
                                   const uint8_t      *cp_data,
@@ -214,8 +213,9 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
     }
 
   /* create fd */
-  fd = dsk_table_helper_openat (location, basename, "",
-                                O_RDWR|O_TRUNC|O_CREAT, 0666, error);
+  fd = dsk_dir_openfd (dir, basename,
+                       DSK_DIR_OPENFD_WRITABLE|DSK_DIR_OPENFD_TRUNCATE|DSK_DIR_OPENFD_MAY_CREATE,
+                       0666, error);
   if (fd < 0)
     return NULL;
 
@@ -258,7 +258,7 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
 
 static DskTableCheckpoint *
 table_checkpoint_trivial__open   (DskTableCheckpointInterface *iface,
-                                  DskTableLocation   *location,
+                                  DskDir             *dir,
                                   const char         *basename,
                                   unsigned           *cp_data_len_out,
                                   uint8_t           **cp_data_out,
@@ -276,8 +276,8 @@ table_checkpoint_trivial__open   (DskTableCheckpointInterface *iface,
   DSK_UNUSED (iface);
 
   /* open fd */
-  fd = dsk_table_helper_openat (location, basename, "",
-                                O_RDWR, 0, error);
+  fd = dsk_dir_openfd (dir, basename,
+                       DSK_DIR_OPENFD_WRITABLE, 0, error);
   if (fd < 0)
     return NULL;
 

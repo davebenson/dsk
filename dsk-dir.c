@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/file.h>
-#include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -37,6 +36,8 @@ struct _DskDir
   char *alt_buf;
 
   dsk_boolean locked;
+  dsk_boolean erase_on_destroy;
+  dsk_boolean did_create;
 };
 
 DskDir      *dsk_dir_new                     (DskDir       *parent,
@@ -45,6 +46,7 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
                                               DskError    **error)
 {
   int fd = dsk_dir_sys_open (parent, dir, O_RDONLY, 0);
+  dsk_boolean did_create = DSK_FALSE;
   if (fd < 0)
     {
       if (errno == ENOENT && (flags & DSK_DIR_NEW_MAYBE_CREATE) != 0)
@@ -63,9 +65,11 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
                          dir, strerror (errno));
           return NULL;
         }
+      did_create = DSK_TRUE;
     }
   dsk_fd_set_close_on_exec (fd);
-  if ((flags & DSK_DIR_NEW_SKIP_LOCKING) != 0)
+  dsk_boolean do_lock = (flags & DSK_DIR_NEW_SKIP_LOCKING) == 0;
+  if (do_lock)
     {
       if (flock (fd, LOCK_EX|((flags & DSK_DIR_NEW_BLOCK_LOCKING) ? 0 : LOCK_NB)) < 0)
         {
@@ -91,6 +95,9 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
   memcpy (rv->buf, dir, rv->openat_dir_len);
   rv->buf[rv->openat_dir_len] = '/';
 #endif
+  rv->locked = do_lock;
+  rv->erase_on_destroy = DSK_FALSE;
+  rv->did_create = did_create;
   return rv;
 }
 
@@ -102,6 +109,17 @@ dsk_dir_unref (DskDir *dir)
   dsk_assert (dir->ref_count > 0);
   if (--(dir->ref_count) != 0)
     return;
+  if (dir->erase_on_destroy)
+    {
+      struct stat stat_buf, stat_buf2;
+      if (stat (dir->openat_dir, &stat_buf) >= 0
+       && fstat (dir->openat_fd, &stat_buf2) >= 0
+       && stat_buf.st_dev == stat_buf2.st_dev
+       && stat_buf.st_ino == stat_buf2.st_ino)
+        {
+          (void) dsk_remove_dir_recursive (dir->openat_dir, NULL);
+        }
+    }
   close (dir->openat_fd);
   dsk_free (dir->alt_buf);
   dsk_free (dir->buf);
@@ -115,6 +133,12 @@ dsk_dir_ref (DskDir *dir)
   if (dir)
     dir->ref_count += 1;
   return dir;
+}
+
+void
+dsk_dir_set_erase_on_destroy (DskDir *dir)
+{
+  dir->erase_on_destroy = DSK_TRUE;
 }
 
 /* note: 'alloc' must be long enough to hold openat_dir_len+1 */
@@ -253,6 +277,10 @@ const char *dsk_dir_get_str (DskDir *dir)
 {
   return dir ? dir->openat_dir : ".";
 }
+dsk_boolean dsk_dir_did_create (DskDir *dir)
+{
+  return dir ? dir->did_create : DSK_FALSE;
+}
 
 #if 0
 //xxx
@@ -318,8 +346,12 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
       dsk_set_error (error, "bad path");
       return DSK_FALSE;
     }
-  if (buf[0] == DSK_DIR_SEPARATOR)
-    buf++;
+
+  dsk_warning("dsk_dir mkdir: %s", buf);
+
+  char *sbuf = buf;
+  if (sbuf[0] == DSK_DIR_SEPARATOR)
+    sbuf++;
 
   /* trim trailing slash */
   {
@@ -331,7 +363,7 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
   /* count slashes: result is 1 less than # of components */
   unsigned n_comp = 1;
   {
-    const char *at = buf;
+    const char *at = sbuf;
     while (*at)
       {
         at = strchr (at, DSK_DIR_SEPARATOR);
@@ -340,6 +372,8 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
             n_comp++;
             at++;
           }
+        else
+          break;
       }
   }
 
@@ -347,7 +381,7 @@ dsk_boolean dsk_dir_mkdir       (DskDir     *dir,
   char **slashes = alloca (sizeof (char*) * n_comp);
   {
     unsigned i = 0;
-    char *at = buf;
+    char *at = sbuf;
     while (at)
       {
         at = strchr (at, DSK_DIR_SEPARATOR);
@@ -426,8 +460,8 @@ filepath_to_directory_end (const char *path)
 int
 dsk_dir_openfd (DskDir            *dir,
                 const char        *path,
-                unsigned           mode,
                 DskDirOpenfdFlags  flags,
+                unsigned           mode,
                 DskError         **error)
 {
   unsigned sys_flags = 0;
@@ -448,10 +482,12 @@ dsk_dir_openfd (DskDir            *dir,
   if (flags & DSK_DIR_OPENFD_APPEND)
     sys_flags |= O_APPEND;
 
+  dsk_warning("flags=%x sys_flags=%x mode=0%o", flags, sys_flags, mode);
+
   dsk_boolean tried_mkdir = DSK_FALSE;
   int fd;
 do_try_open_fd:
-  fd = dsk_dir_sys_open(dir, path, mode, sys_flags);
+  fd = dsk_dir_sys_open(dir, path, sys_flags, mode);
   if (fd < 0)
     {
       const char *end;
@@ -485,8 +521,8 @@ do_try_open_fd:
 dsk_boolean
 dsk_dir_set_contents (DskDir                 *dir,
                       const char             *path,
-                      unsigned                mode,
                       DskDirSetContentsFlags  flags,
+                      unsigned                mode,
                       size_t                  data_length,
                       const uint8_t          *data,
                       DskError              **error)
@@ -506,7 +542,7 @@ dsk_dir_set_contents (DskDir                 *dir,
         {
           DskError *er = NULL;
           tmp_path = dsk_strdup_printf ("%s.%08x", path, dsk_random_uint32 ());
-          fd = dsk_dir_openfd (dir, tmp_path, mode, openfd_flags, &er);
+          fd = dsk_dir_openfd (dir, tmp_path, openfd_flags, mode, &er);
           if (fd < 0)
             {
               int e;
@@ -524,7 +560,7 @@ dsk_dir_set_contents (DskDir                 *dir,
   else
     {
       openfd_flags |= DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE;
-      fd = dsk_dir_openfd (dir, path, mode, openfd_flags, error);
+      fd = dsk_dir_openfd (dir, path, openfd_flags, mode, error);
       if (fd < 0)
         return DSK_FALSE;
     }
@@ -560,3 +596,111 @@ dsk_dir_set_contents (DskDir                 *dir,
     }
   return DSK_TRUE;
 }
+
+DIR *dsk_dir_sys_opendir (DskDir *dir, const char *path)
+{
+#if DSK_HAS_ATFILE_SUPPORT
+  int fd = dsk_dir_sys_open (dir, path, O_DIRECTORY, 0);
+  if (fd < 0)
+    return NULL;
+  return fdopendir (fd);
+#else
+  return opendir (prep_buf_with_path (dir, path));
+#endif
+}
+  
+
+// TODO: handle EINTR
+static dsk_boolean
+rmdir_recursive (DskDir *dir, const char *path, DskDirRmStats *stats, DskError**error)
+{
+  DIR *d = dsk_dir_sys_opendir (dir, path);
+  if (d == NULL)
+    {
+      dsk_set_error (error, "fdopendir failed: %s", strerror (errno));
+      if (error)
+        dsk_error_set_errno (*error, errno);
+      return DSK_FALSE;
+    }
+  const struct dirent *n;
+  while ((n=readdir(d)) != NULL)
+    {
+      // Skip . and ..
+      const char *name = n->d_name;
+      if (name[0] == '.')
+        {
+          if (name[1] == 0)
+            continue;
+          if (name[1] == '.' && name[2] == 0)
+            continue;
+        }
+
+      // TODO: could optimize
+      char *subpath = dsk_strdup_printf ("%s/%s", path, name);
+
+      if (dsk_dir_sys_unlink (dir, subpath) < 0)
+        {
+          if (errno == EISDIR)
+            {
+              if (!rmdir_recursive (dir, subpath, stats, error))
+                {
+                  dsk_free (subpath);
+                  return DSK_FALSE;
+                }
+            }
+          else
+            {
+              dsk_set_error (error, "unlink %s: %s", subpath, strerror (errno));
+              dsk_free (subpath);
+              return DSK_FALSE;
+            }
+        }
+      else
+        stats->n_files_deleted += 1;
+      dsk_free (subpath);
+    }
+  if (dsk_dir_sys_rmdir (dir, path) < 0)
+    {
+      dsk_set_error (error, "rmdir %s: %s", path, strerror (errno));
+      return DSK_FALSE;
+    }
+  stats->n_dirs_deleted += 1;
+  return DSK_TRUE;
+}
+
+dsk_boolean  dsk_dir_rm                      (DskDir       *dir,
+                                              const char   *path,
+                                              DskDirRmFlags flags,
+                                              DskDirRmStats*stats_out_optional,
+                                              DskError    **error)
+{
+  DskDirRmStats stats = {0,0};
+  dsk_boolean rv = DSK_TRUE;
+retry_unlink:
+  if (dsk_dir_sys_unlink (dir, path) < 0)
+    {
+      int e = errno;
+      if (e == EINTR)
+        goto retry_unlink;
+      if (e == EISDIR && (flags & DSK_DIR_RM_RECURSIVE) != 0)
+        {
+          rv = rmdir_recursive (dir, path, &stats, error);
+          goto do_return;
+        }
+      if (e == ENOENT && (flags & DSK_DIR_RM_IGNORE_MISSING) != 0)
+        {
+          goto do_return;
+        }
+      dsk_set_error (error, "error removing '%s': %s", path, strerror (errno));
+      if (error)
+        dsk_error_set_errno (*error, e);
+      rv = DSK_FALSE;
+      goto do_return;
+    }
+  stats.n_files_deleted += 1;
+do_return:
+  if (stats_out_optional)
+    *stats_out_optional = stats;
+  return rv;
+}
+  

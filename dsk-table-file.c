@@ -1,5 +1,4 @@
 #include "dsk.h"
-#include "dsk-table-helper.h"
 
 
 /* === Generic TableFileInterface code === */

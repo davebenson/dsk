@@ -1,3 +1,5 @@
+// XXX: i think these are all deprecated by the DskDir API.
+
 #define DSK_DIR_SEPARATOR  '/'
 #define DSK_DIR_SEPARATOR_S  "/"
 

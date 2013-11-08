@@ -66,8 +66,8 @@ dsk_boolean dsk_path_normalize_inplace (char *path_inout)
       for (i = 1; i < n_comps; i++)
         {
           *out++ = DSK_DIR_SEPARATOR;
-          memmove (out, comps[1].start, comps[1].len);
-          out += comps[1].len;
+          memmove (out, comps[i].start, comps[i].len);
+          out += comps[i].len;
         }
     }
   *out = 0;

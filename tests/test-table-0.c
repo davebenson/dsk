@@ -172,7 +172,7 @@ test_table_simple (unsigned         rand_test_size,
   unsigned *order;
   unsigned i;
   unsigned insert_iter;
-  char *dir;
+  DskDir *dir;
 
   DskTable *table;
   DskTableConfig config = DSK_TABLE_CONFIG_INIT;
@@ -247,8 +247,8 @@ test_table_simple (unsigned         rand_test_size,
   gettimeofday (&after_dump, NULL);
   fprintf(stderr, ".");
 
-  dir = dsk_strdup (dsk_table_peek_dir (table));
-  config.dir = dir;
+  dir = dsk_table_peek_dir (table);
+  config.dir = dsk_dir_ref(dir);
   dsk_table_destroy (table);
   table = dsk_table_new (&config, &error);
   if (table == NULL)
@@ -262,7 +262,7 @@ test_table_simple (unsigned         rand_test_size,
       KeyValue kv = kvs[i];
       unsigned kl = strlen (kv.key);
       unsigned vl = strlen (kv.value);
-#if 0
+#if 1
       dsk_warning ("dump: entry %u; expected %s,%s; got %.*s,%.*s",
                    i, kv.key, kv.value,
                    (int) reader->key_length, (char*) reader->key_data,
@@ -291,7 +291,7 @@ test_table_simple (unsigned         rand_test_size,
            compute_n_per_sec (&after_lookups, &after_dump, rand_test_size));
 
   dsk_table_destroy_erase (table);
-  dsk_free (dir);
+  dsk_dir_unref (dir);
 }
 static void
 test_table_simple_small_sorted (void)

@@ -13,7 +13,6 @@
 #include <math.h>
 #include <sys/file.h>
 #include <sys/time.h>    /* gettimeofday() for making tmp filename */
-#include "dsk-table-helper.h"
 
 /* AUDIT: n_entries versus entry_count (make sure we have it right all over) */
 
@@ -113,7 +112,7 @@ struct _DskTable
   DskTableMergeFunc merge;
   void *merge_data;
   dsk_boolean chronological_lookup_merges;
-  DskTableLocation location;
+  DskDir *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
 
@@ -511,21 +510,21 @@ start_merge_job (DskTable *table,
   merge->a = possible->a;
   set_table_file_basename (table, merge->a->id);
   merge->a_reader = file_iface->new_reader (file_iface,
-                                            &table->location,
+                                            table->dir,
                                             table->basename, error);
 
   /* setup info about input 'b' */
   merge->b = possible->b;
   set_table_file_basename (table, merge->b->id);
   merge->b_reader = file_iface->new_reader (file_iface,
-                                            &table->location,
+                                            table->dir,
                                             table->basename, error);
 
   /* setup info about output */
   merge->out_id = table->next_id++;
   set_table_file_basename (table, merge->out_id);
   merge->writer = file_iface->new_writer (file_iface,
-                                          &table->location,
+                                          table->dir,
                                           table->basename, error);
 
   merge->entries_written = 0;
@@ -639,6 +638,7 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
     rv.merge = dsk_table_std_merge;
   rv.chronological_lookup_merges = config->chronological_lookup_merges;
   rv.max_merge_jobs = 16;
+  rv.dir = dsk_dir_ref (config->dir);
   if (config->dir == NULL)
     {
       const char *tmp = dsk_get_tmp_dir ();
@@ -649,42 +649,18 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
       /* tmpdir will "table-", time in microseconds (10+6 digits);
          "-", process-id  ==> 34 chars or less  */
       unsigned alloc = tmp_len + 40;
-      char *dir = dsk_malloc (alloc);
-      rv.location.openat_dir = dir;
+      char *dirname = alloca (alloc);
       gettimeofday (&tv, NULL);
-      snprintf (dir, alloc,
+      snprintf (dirname, alloc,
                 "%s/table-%lu%06u-%u",
                 tmp, (unsigned long)(tv.tv_sec), (unsigned)(tv.tv_usec),
                 pid);
+      rv.dir = dsk_dir_new (NULL, dirname, DSK_DIR_NEW_MAYBE_CREATE, error);
+      if (rv.dir == NULL)
+        return NULL;
     }
   else
-    rv.location.openat_dir = dsk_strdup (config->dir);
-  rv.location.openat_fd = open (rv.location.openat_dir, O_RDONLY);
-  if (rv.location.openat_fd < 0)
-    {
-      if (errno == ENOENT)
-        {
-          /* try making directory */
-          if (!dsk_mkdir_recursive (rv.location.openat_dir, 0777, error))
-            return NULL;
-
-          rv.location.openat_fd = open (rv.location.openat_dir, O_RDONLY);
-          if (rv.location.openat_fd < 0)
-            goto opendir_failed;
-          is_new = DSK_TRUE;
-        }
-      else
-        goto opendir_failed;
-    }
-  dsk_fd_set_close_on_exec (rv.location.openat_fd);
-  if (flock (rv.location.openat_fd, LOCK_EX|LOCK_NB) < 0)
-    {
-      dsk_set_error (error, "error locking directory %s: %s",
-                     rv.location.openat_dir, strerror (errno));
-      close (rv.location.openat_fd);
-      dsk_free ((char*)rv.location.openat_dir);
-      return NULL;
-    }
+    rv.dir = dsk_dir_ref (config->dir);
   if (config->file_interface == NULL)
     rv.file_interface = &dsk_table_file_interface_trivial;
   else
@@ -697,11 +673,11 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
   rv.cp_n_entries = 0;
   rv.cp_first_entry_index = 0;
   rv.cp_flush_period = 1024;
-  if (is_new)
+  if (dsk_dir_did_create (rv.dir))
     {
       /* create initial empty checkpoint */
       rv.cp = (*rv.cp_interface->create) (rv.cp_interface,
-                                          &rv.location, "CP",
+                                          rv.dir, "CP",
                                           0, NULL, 
                                           NULL,    /* no prior checkpoint */
                                           error);
@@ -714,9 +690,7 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
       unsigned cp_data_len;
       uint8_t *cp_data;
       {
-        int alive_fd = dsk_table_helper_openat (&rv.location,
-                                                "ALIVE", "",
-                                                O_RDONLY, 0, NULL);
+        int alive_fd = dsk_dir_openfd (rv.dir, "ALIVE", 0, O_RDONLY, NULL);
         if (alive_fd >= 0)
           {
             dsk_warning ("table was unexpectedly shutdown");
@@ -726,7 +700,7 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
       }
 
       rv.cp = (*rv.cp_interface->open) (rv.cp_interface,
-                                        &rv.location,
+                                        rv.dir,
                                         "CP",
                                         &cp_data_len, &cp_data,
                                         handle_checkpoint_replay_element, &rv,
@@ -768,23 +742,16 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
     return table;
   }
 
-opendir_failed:
-  dsk_set_error (error, "error opening directory %s for locking: %s",
-                 rv.location.openat_dir, strerror (errno));
-  dsk_free ((char*) rv.location.openat_dir);
-  return NULL;
-
 cp_open_failed:
-  close (rv.location.openat_fd);
-  dsk_free ((char*) rv.location.openat_dir);
+  dsk_dir_unref (rv.dir);
   if (rv.small_tree != NULL)
     free_small_tree_recursive (rv.small_tree);
   return NULL;
 }
 
-const char *dsk_table_peek_dir     (DskTable       *table)
+DskDir     *dsk_table_peek_dir     (DskTable       *table)
 {
-  return table->location.openat_dir;
+  return table->dir;
 }
 
 /* Returns:
@@ -905,7 +872,7 @@ do_file_lookup (DskTable    *table,
       DskTableFileInterface *iface = table->file_interface;
       set_table_file_basename (table, file->id);
       file->seeker = iface->new_seeker (iface,
-                                        &table->location,
+                                        table->dir,
                                         table->basename,
                                         error);
       if (file->seeker == NULL)
@@ -1048,7 +1015,7 @@ delete_file (DskTable *table,
 {
   set_table_file_basename (table, id);
   return table->file_interface->delete_file (table->file_interface,
-                                             &table->location,
+                                             table->dir,
                                              table->basename,
                                              error);
 }
@@ -1283,7 +1250,7 @@ dsk_table_insert       (DskTable       *table,
       uint8_t *cp_data;
       set_table_file_basename (table, id);
       writer = table->file_interface->new_writer (table->file_interface,
-                                                  &table->location,
+                                                  table->dir,
                                                   table->basename, error);
       if (writer == NULL)
         return DSK_FALSE;
@@ -1320,7 +1287,7 @@ dsk_table_insert       (DskTable       *table,
       /* create new checkpoint */
       make_checkpoint_state (table, &cp_data_len, &cp_data);
       new_cp = table->cp_interface->create (table->cp_interface,
-                                            &table->location,
+                                            table->dir,
                                             "NEW_CP",
                                             cp_data_len, cp_data,
                                             table->cp,
@@ -1336,8 +1303,9 @@ dsk_table_insert       (DskTable       *table,
       table->cp = new_cp;
 
       /* move new checkpoint into place (atomic) */
-      if (!dsk_table_helper_renameat (&table->location, "NEW_CP", "CP", error))
+      if (!dsk_dir_sys_rename (table->dir, "NEW_CP", "CP"))
         {
+          dsk_set_error (error, "error renaming checkout (from NEW_CP to CP): %s", strerror (errno));
           return DSK_FALSE;
         }
 
@@ -1531,7 +1499,7 @@ dsk_table_new_reader (DskTable    *table,
         planner[n].est_entry_count = file->entry_count;
         set_table_file_basename (table, file->id);
         planner[n].reader = iface->new_reader (iface,
-                                               &table->location,
+                                               table->dir,
                                                table->basename, error);
         if (planner[n].reader == NULL)
           {
@@ -1658,25 +1626,16 @@ dsk_table_destroy      (DskTable       *table)
   destroy_file_list (table->defunct_files);
   if (table->possible_merge_tree)
     free_possible_merge_tree_recursive (table->possible_merge_tree);
-  if (table->location.openat_fd)
-    close (table->location.openat_fd);
+  dsk_dir_unref (table->dir);
   dsk_free (table->merge_buffers[0].data);
   dsk_free (table->merge_buffers[1].data);
-  dsk_free ((char*)table->location.openat_dir);
   dsk_free (table);
 }
 
 void
 dsk_table_destroy_erase(DskTable       *table)
 {
-  struct stat stat_buf, stat_buf2;
-  if (stat (table->location.openat_dir, &stat_buf) >= 0
-   && fstat (table->location.openat_fd, &stat_buf2) >= 0
-   && stat_buf.st_dev == stat_buf2.st_dev
-   && stat_buf.st_ino == stat_buf2.st_ino)
-    {
-      (void) dsk_remove_dir_recursive (table->location.openat_dir, NULL);
-    }
+  dsk_dir_set_erase_on_destroy (table->dir, DSK_TRUE);
   dsk_table_destroy (table);
 }
 

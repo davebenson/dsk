@@ -81,7 +81,7 @@ dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
     state_default:
       {
         const uint8_t *bs;
-        const const uint8_t *at = in_data;
+        const uint8_t *at = in_data;
         unsigned rem = in_length;
         if (cunquoter->remove_quotes)
           {

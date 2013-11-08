@@ -2,6 +2,8 @@
 /* openat() and friends implemented in a portable way.
    Systems without "atfile" support use normal system calls. */
 
+#include <dirent.h>
+
 typedef struct _DskDir DskDir;
 
 typedef enum
@@ -38,8 +40,11 @@ int          dsk_dir_sys_rmdir               (DskDir         *dir,
 int          dsk_dir_sys_mkdir               (DskDir         *dir,
                                               const char     *path,
                                               unsigned        mode);
+DIR         *dsk_dir_sys_opendir             (DskDir         *dir,
+                                              const char     *path);
 
 const char  *dsk_dir_get_str                 (DskDir         *dir);
+dsk_boolean  dsk_dir_did_create              (DskDir         *dir);
 
 typedef enum
 {
@@ -61,8 +66,8 @@ typedef enum
 
 int          dsk_dir_openfd (DskDir            *dir,
                              const char        *path,
-                             unsigned           mode,
                              DskDirOpenfdFlags  flags,
+                             unsigned           mode,
                              DskError         **error);
 
 typedef enum
@@ -72,8 +77,8 @@ typedef enum
 } DskDirSetContentsFlags;
 dsk_boolean  dsk_dir_set_contents (DskDir                 *dir,
                                    const char             *path,
-                                   unsigned                mode,
                                    DskDirSetContentsFlags  flags,
+                                   unsigned                mode,
                                    size_t                  data_length,
                                    const uint8_t          *data,
                                    DskError              **error);

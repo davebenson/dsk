@@ -49,7 +49,7 @@ struct _DskTableConfig
   DskTableMergeFunc merge;
   void *merge_data;
   dsk_boolean chronological_lookup_merges;
-  const char *dir;
+  DskDir *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
 
@@ -89,7 +89,7 @@ dsk_boolean dsk_table_insert       (DskTable       *table,
 void        dsk_table_destroy      (DskTable       *table);
 void        dsk_table_destroy_erase(DskTable       *table);
 
-const char *dsk_table_peek_dir     (DskTable       *table);
+DskDir     *dsk_table_peek_dir     (DskTable       *table);
 
 typedef struct _DskTableReader DskTableReader;
 struct _DskTableReader
@@ -116,11 +116,6 @@ DskTableReader  *dsk_table_dump_range    (DskTable       *table,
                                           void           *compare_data,
                                           DskDestroyNotify compare_data_destroy,
                                           DskError      **error);
-
-typedef struct {
-  const char *openat_dir;
-  int         openat_fd;
-} DskTableLocation;
 
 /* Iterating a DskTableReader.
    
