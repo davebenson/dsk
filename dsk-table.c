@@ -638,8 +638,19 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
     rv.merge = dsk_table_std_merge;
   rv.chronological_lookup_merges = config->chronological_lookup_merges;
   rv.max_merge_jobs = 16;
-  rv.dir = dsk_dir_ref (config->dir);
-  if (config->dir == NULL)
+  if (config->dir != NULL)
+    {
+      dsk_warning ("loading from %s", dsk_dir_get_str(config->dir));
+system(dsk_strdup_printf("ls -ltr %s", dsk_dir_get_str(config->dir)));
+      rv.dir = dsk_dir_ref (config->dir);
+    }
+  else if (config->dir_name != NULL)
+    {
+      rv.dir = dsk_dir_new (NULL, config->dir_name, DSK_DIR_NEW_MAYBE_CREATE, error);
+      if (rv.dir == NULL)
+        return NULL;
+    }
+  else
     {
       const char *tmp = dsk_get_tmp_dir ();
       unsigned tmp_len = strlen (tmp);
@@ -659,8 +670,7 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
       if (rv.dir == NULL)
         return NULL;
     }
-  else
-    rv.dir = dsk_dir_ref (config->dir);
+  is_new = dsk_dir_did_create (rv.dir);
   if (config->file_interface == NULL)
     rv.file_interface = &dsk_table_file_interface_trivial;
   else
@@ -698,7 +708,6 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
             alive_fd = -1;
           }
       }
-
       rv.cp = (*rv.cp_interface->open) (rv.cp_interface,
                                         rv.dir,
                                         "CP",
@@ -1303,7 +1312,7 @@ dsk_table_insert       (DskTable       *table,
       table->cp = new_cp;
 
       /* move new checkpoint into place (atomic) */
-      if (!dsk_dir_sys_rename (table->dir, "NEW_CP", "CP"))
+      if (dsk_dir_sys_rename (table->dir, "NEW_CP", "CP") < 0)
         {
           dsk_set_error (error, "error renaming checkout (from NEW_CP to CP): %s", strerror (errno));
           return DSK_FALSE;
@@ -1518,6 +1527,11 @@ dsk_table_new_reader (DskTable    *table,
       planner[n].reader = make_small_tree_reader (table);
       n++;
     }
+#if 0
+  dsk_warning("dsk_table_new_reader: n planner entries %u", n);
+  for (unsigned i = 0 ; i < n; i++)
+    dsk_warning("dsk_table_new_reader: planner[%u] = %llu", i, planner[i].est_entry_count);
+#endif
 
   /* Merge together readers with the least ratio a/b. */
   /* XXX: this could obviously be done way

@@ -43,6 +43,7 @@ WRITE_SIMPLE_CIPHER(rc2_ecb, 16),
 WRITE_SIMPLE_CIPHER(rc2_ofb, 16),
 WRITE_SIMPLE_CIPHER(rc4, -1),
 };
+unsigned dsk_n_ciphers = DSK_N_ELEMENTS(dsk_ciphers);
 
 DskOctetFilter *dsk_crypto_filter_new (DskCryptoOptions *options);
 
