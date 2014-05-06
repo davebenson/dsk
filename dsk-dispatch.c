@@ -91,6 +91,13 @@ struct _RealDispatch
   DskDispatchSignal *signal_tree;
   int signal_pipe_fds[2];
 
+#if DSK_HAS_EPOLL
+  int epoll_fd;
+  unsigned max_epoll_events;
+  struct epoll_event *epoll_events;
+  DskFileDescriptorNotify *epoll_dsk_events;
+#endif
+
   DskDispatchChild *child_tree;
   DskDispatchSignal *child_sig_handler;
   DskDispatchIdle *idle_child_handler;
@@ -254,6 +261,14 @@ DskDispatch *dsk_dispatch_new (void)
   gettimeofday (&tv, NULL);
   rv->base.last_dispatch_secs = tv.tv_sec;
   rv->base.last_dispatch_usecs = tv.tv_usec;
+
+#if DSK_HAS_EPOLL
+  /* maybe this should default to the NRFILE or something. */
+  rv->epoll_fd = epoll_create (1024);
+  rv->max_epoll_events = 64;
+  rv->epoll_events = DSK_NEW (struct epoll_event, d->max_epoll_events);
+  rv->epoll_dsk_events = DSK_NEW (DskFileDescriptorNotify, d->max_epoll_events);
+#endif
 
   return &rv->base;
 }
@@ -696,6 +711,20 @@ dsk_dispatch_clear_changes (DskDispatch *dispatch)
   dispatch->n_changes = 0;
 }
 
+#if DSK_HAS_EPOLL
+static inline unsigned
+events_to_epoll_events (unsigned ev)
+{
+  return ((ev & DSK_EVENT_READABLE) ? (EPOLLIN|EPOLLHUP) : 0)
+       | ((ev & DSK_EVENT_WRITABLE) ? (EPOLLOUT) : 0);
+}
+static inline unsigned
+epoll_events_to_events (unsigned ev)
+{
+  return ((ev & (EPOLLIN|EPOLLHUP)) ? DSK_EVENT_READABLE : 0)
+       | ((ev & EPOLLOUT) ? DSK_EVENT_WRITABLE : 0);
+}
+#else
 static inline unsigned
 events_to_pollfd_events (unsigned ev)
 {
@@ -710,6 +739,7 @@ pollfd_events_to_events (unsigned ev)
        |  ((ev & POLLOUT) ? DSK_EVENT_WRITABLE : 0)
        ;
 }
+#endif
 
 void
 dsk_dispatch_run (DskDispatch *dispatch)
@@ -720,16 +750,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
   unsigned i;
   int timeout;
   DskFileDescriptorNotify *events;
-  if (dispatch->n_notifies_desired < 128)
-    fds = alloca (sizeof (struct pollfd) * dispatch->n_notifies_desired);
-  else
-    to_free = fds = DSK_NEW_ARRAY (struct pollfd, dispatch->n_notifies_desired);
-  for (i = 0; i < dispatch->n_notifies_desired; i++)
-    {
-      fds[i].fd = dispatch->notifies_desired[i].fd;
-      fds[i].events = events_to_pollfd_events (dispatch->notifies_desired[i].events);
-      fds[i].revents = 0;
-    }
+  RealDispatch *d = (RealDispatch *) dispatch;
 
   /* compute timeout */
   if (dispatch->has_idle)
@@ -762,6 +783,56 @@ dsk_dispatch_run (DskDispatch *dispatch)
         }
     }
 
+#if DSK_HAS_EPOLL
+  int epoll_fd = d->epoll_fd;
+  for (i = 0; i < dispatch->n_changes; i++)
+    {
+      DskFileDescriptorNotifyChange *c = &dispatch->changes[i];
+      int op = c->old_events == 0 ? EPOLL_CTL_ADD
+             : c->events == 0 ? EPOLL_CTL_DEL
+             : EPOLL_CTL_MOD;
+      struct epoll_event e;
+      e.events = events_to_epoll_events (c->events);
+      e.data.fd = c->fd;
+      if (epoll_ctl (epoll_fd, op, c->fd, &e) < 0)
+        {
+          dsk_warning ("epoll_ctl %d op=0x%x events=0x%x failed: %s", c->fd, op, e.events, strerror (errno));
+        }
+    }
+  
+  int epoll_n_events = epoll_wait (epoll_fd, d->epoll_events, d->max_epoll_events, timeout);
+  if (epoll_n_events < 0)
+    {
+      dsk_warning ("epoll_wait: %s", strerror (errno));
+      epoll_n_events = 0;
+    }
+  else
+    {
+      if (epoll_n_events == d->max_epoll_events)
+        {
+          d->max_epoll_events *= 2;
+          d->epoll_events = DSK_RENEW (struct epoll_event, d->epoll_events, d->max_epoll_events);
+          d->epoll_dsk_events = DSK_RENEW (DskFileDescriptorNotify, d->epoll_events, d->max_epoll_events);
+        }
+    }
+  n_events = epoll_n_events;
+  events = d->epoll_dsk_events;
+  for (i = 0; i < n_events; i++)
+    {
+      events[i].fd = d->epoll_events[i].data.fd;
+      events[i].events = epoll_events_to_events (d->epoll_events[i].events);
+    }
+#else  /* use poll(2) */
+  if (dispatch->n_notifies_desired < 128)
+    fds = alloca (sizeof (struct pollfd) * dispatch->n_notifies_desired);
+  else
+    to_free = fds = DSK_NEW_ARRAY (struct pollfd, dispatch->n_notifies_desired);
+  for (i = 0; i < dispatch->n_notifies_desired; i++)
+    {
+      fds[i].fd = dispatch->notifies_desired[i].fd;
+      fds[i].events = events_to_pollfd_events (dispatch->notifies_desired[i].events);
+      fds[i].revents = 0;
+    }
   if (poll (fds, dispatch->n_notifies_desired, timeout) < 0)
     {
       if (errno == EINTR)
@@ -791,6 +862,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
         if (events[n_events].events != 0)
           n_events++;
       }
+#endif
   dsk_dispatch_clear_changes (dispatch);
   dsk_dispatch_dispatch (dispatch, n_events, events);
   if (to_free)

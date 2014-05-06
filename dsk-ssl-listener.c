@@ -94,6 +94,7 @@ dsk_ssl_listener_new (DskSslListenerOptions *options,
     return NULL;
   rv = dsk_object_new (&dsk_ssl_listener_class);
   rv->underlying = underlying;
+  rv->ssl_context = dsk_object_ref (options->ssl_context);
   return DSK_OCTET_LISTENER (rv);
 }
 
@@ -130,7 +131,7 @@ static DskIOResult dsk_ssl_listener_accept (DskOctetListener        *listener,
 
   DskSslStreamOptions options = DSK_SSL_STREAM_OPTIONS_INIT;
   options.is_client = DSK_FALSE;
-  options.context = dsk_object_ref (slis->context);
+  options.context = dsk_object_ref (slis->ssl_context);
   options.sink = underlying_sink;
   options.source = underlying_source;
   DskSslStream *ssl_stream;

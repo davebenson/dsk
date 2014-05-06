@@ -4,16 +4,14 @@ typedef struct _DskLogger DskLogger;
 typedef struct _DskLoggerOptions DskLoggerOptions;
 struct _DskLoggerOptions
 {
-  int openat_fd;
-  const char *openat_dir;
+  DskDir *dir;
   const char *format;
   unsigned period;
   int tz_offset;
   unsigned max_buffer;
 };
 #define DSK_LOGGER_OPTIONS_INIT \
-{ -1,                           \
-  NULL,                         \
+{ NULL,                         \
   "%Y%m%d-%H.log",              \
   3600,                         \
   0,                            \

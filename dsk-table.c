@@ -644,9 +644,9 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
 system(dsk_strdup_printf("ls -ltr %s", dsk_dir_get_str(config->dir)));
       rv.dir = dsk_dir_ref (config->dir);
     }
-  else if (config->dir_name != NULL)
+  else if (config->dir != NULL)
     {
-      rv.dir = dsk_dir_new (NULL, config->dir_name, DSK_DIR_NEW_MAYBE_CREATE, error);
+      rv.dir = dsk_dir_ref (config->dir);
       if (rv.dir == NULL)
         return NULL;
     }

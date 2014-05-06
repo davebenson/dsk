@@ -6,7 +6,7 @@ struct _DskSslListener
   DskOctetListener base_instance;
   DskOctetListener *underlying;
   DskHookTrap *underlying_trap;
-  DskSslContext *context;
+  DskSslContext *ssl_context;
 };
 
 typedef struct _DskSslListenerOptions DskSslListenerOptions;

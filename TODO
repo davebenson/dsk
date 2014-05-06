@@ -188,6 +188,7 @@ _ Websocket support:
     - connection made, but no packets sent
   x server-stream support
   _ server support
+_ DskDir test code
 
 _ make XML parser:
   _ obey xml:whitespace="preserve" (in SUPPRESS_WHITESPACE mode)

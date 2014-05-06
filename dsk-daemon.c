@@ -152,7 +152,7 @@ void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix)
 			   "SECONDS", 0, &dsk_daemon_alert_interval);
 }
 
-void dsk_daemon_handle (void)
+void dsk_daemon_maybe_fork (void)
 {
   int fork_pipe_fds[2] = {-1,-1};
   if (dsk_daemon_do_fork)

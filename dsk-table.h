@@ -49,7 +49,6 @@ struct _DskTableConfig
   DskTableMergeFunc merge;
   void *merge_data;
   dsk_boolean chronological_lookup_merges;
-  const char *dir_name;
   DskDir *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
@@ -65,7 +64,7 @@ struct _DskTableConfig
   NULL, NULL,           /* standard comparator */                      \
   NULL, NULL,           /* standard replacement merge */               \
   DSK_FALSE,            /* anti-chronological lookups */               \
-  NULL, NULL,           /* directory or directory name */              \
+  NULL,                 /* directory (DskDir) */                       \
   NULL,                 /* default to trivial table-file */            \
   NULL,                 /* default to trivial checkpoint interface */  \
   0                     /* by default, disable quantile estimation */  \

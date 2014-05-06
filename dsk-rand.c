@@ -200,6 +200,7 @@ dsk_rand_int_range (DskRand* rand, int32_t begin, int32_t end)
 double 
 dsk_rand_double (DskRand* rand)
 {    
+#if !DSK_IEEE754
   /* We set all 52 bits after the point for this, not only the first
      32. Thats why we need two calls to dsk_rand_int */
   double retval = dsk_rand_uint32 (rand) * DSK_RAND_DOUBLE_TRANSFORM;
@@ -207,10 +208,17 @@ dsk_rand_double (DskRand* rand)
 
   /* The following might happen due to very bad rounding luck, but
    * actually this should be more than rare, we just try again then */
-  if (retval >= 1.0) 
+  if (DSK_UNLIKELY (retval >= 1.0))
     return dsk_rand_double (rand);
 
   return retval;
+#else
+  union { uint64_t i; double v; } u;
+  u.i = 0x1ff0000000000000ULL
+      | ((uint64_t)(dsk_rand_uint32 (rand) & 0xfffff) << 32)
+      | dsk_rand_uint32 (rand);
+  return u.v - 1.0;
+#endif
 }
 
 double 

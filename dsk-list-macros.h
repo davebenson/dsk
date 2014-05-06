@@ -63,7 +63,7 @@
  * and GET_LIST_ARGS that return the relevant N-tuples.
  */
 
-#define DSK_LOG2_MAX_LIST_SIZE          (DSK_SIZEOF_POINTER*8)
+#define DSK_LOG2_MAX_LIST_SIZE          (DSK_SIZEOF_POINTER*8 - DSK_LOG2_SIZEOF_POINTER)
 
 /* --- Stacks --- */
 #define DSK_STACK_PUSH(stack, node) DSK_STACK_PUSH_(stack, node)

@@ -246,8 +246,8 @@ test_table_simple (unsigned         rand_test_size,
   gettimeofday (&after_dump, NULL);
   fprintf(stderr, ".");
 
-  char *dir_name = dsk_strdup (dsk_dir_get_str (dsk_table_peek_dir (table)));
-  config.dir_name = dir_name;
+  config.dir = dsk_table_peek_dir (table);
+  dsk_warning ("dir=%s", dsk_dir_get_str(config.dir));
   dsk_table_destroy (table);
   table = dsk_table_new (&config, &error);
   if (table == NULL)
@@ -290,7 +290,6 @@ test_table_simple (unsigned         rand_test_size,
            compute_n_per_sec (&after_lookups, &after_dump, rand_test_size));
 
   dsk_table_destroy_erase (table);
-  dsk_free (dir_name);
 }
 static void
 test_table_simple_small_sorted (void)

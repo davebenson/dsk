@@ -9,6 +9,13 @@ struct _DskCryptoOptions
   const uint8_t *key_data;
   dsk_boolean encrypt;
 };
+#define DSK_CRYPTO_OPTIONS_INIT \
+  { NULL,             /* algo */               \
+    -1,               /* algo_index */         \
+    0,                /* key_length */         \
+    NULL,             /* key_data */           \
+    DSK_TRUE          /* encrypt by default */ \
+  }
 
 struct _DskCipherInfo
 {

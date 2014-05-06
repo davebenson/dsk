@@ -19,8 +19,8 @@ void     dsk_rand_init_seed_array(DskRand* rand,
 /* Generating random numbers.
       dsk_rand_uint32        [0,UINT32_MAX]
       dsk_rand_int_range     [start, end)  NOTE: half-open
-      dsk_rand_double        [0,1]
-      dsk_rand_double_range  [start, end]
+      dsk_rand_double        [0,1)
+      dsk_rand_double_range  [start, end)
  */
 uint32_t dsk_rand_uint32         (DskRand* rand);
 int32_t  dsk_rand_int_range      (DskRand* rand,

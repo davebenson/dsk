@@ -13,6 +13,14 @@
 # error "need sizeof(void*) at preprocessor time"
 #endif
 
+#if (DSK_SIZEOF_POINTER == 4)
+# define DSK_LOG2_SIZEOF_POINTER 2
+#elif (DSK_SIZEOF_POINTER == 8)
+# define DSK_LOG2_SIZEOF_POINTER 3
+#else
+# error "unhandled DSK_SIZEOF_POINTER"
+#endif
+
 #ifdef __SIZEOF_SIZE_T__
 # define DSK_SIZEOF_SIZE_T      __SIZEOF_SIZE_T__
 #else
@@ -80,3 +88,10 @@
 # warn "add check that unlink() returns EISDIR"
 #endif
 
+#if defined(__linux__)
+# define DSK_HAS_EPOLL                   DSK_TRUE
+#else
+# define DSK_HAS_EPOLL                   DSK_FALSE
+#endif
+
+#define DSK_IEEE754                      DSK_TRUE

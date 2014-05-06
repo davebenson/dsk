@@ -49,6 +49,7 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
   dsk_boolean did_create = DSK_FALSE;
   if (fd < 0)
     {
+      // TODO: dsk_fd_creation_failed()
       if (errno == ENOENT && (flags & DSK_DIR_NEW_MAYBE_CREATE) != 0)
         {
           if (! dsk_dir_mkdir (parent, dir, 0, NULL, error))
@@ -489,7 +490,10 @@ do_try_open_fd:
   if (fd < 0)
     {
       const char *end;
-      if (errno == ENOENT
+      int e = errno;
+      if (dsk_fd_creation_failed(e))
+        goto do_try_open_fd;
+      if (e == ENOENT
        && !tried_mkdir
        && (flags & DSK_DIR_OPENFD_MAY_CREATE) != 0
        && (flags & DSK_DIR_OPENFD_NO_MKDIR) == 0
@@ -602,9 +606,15 @@ DIR *dsk_dir_sys_opendir (DskDir *dir, const char *path)
 # if __APPLE__ && __MACH__
   flags = O_DIRECTORY;
 # endif
-  int fd = dsk_dir_sys_open (dir, path, flags, 0);
+  int fd;
+retry_sys_open:
+  fd = dsk_dir_sys_open (dir, path, flags, 0);
   if (fd < 0)
-    return NULL;
+    {
+      if (dsk_fd_creation_failed ())
+        goto retry_sys_open;
+      return NULL;
+    }
   return fdopendir (fd);
 #else
   return opendir (prep_buf_with_path (dir, path));

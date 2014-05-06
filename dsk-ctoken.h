@@ -33,11 +33,6 @@ struct _DskCToken
   char *str;                            /* created on demand */
 };
 
-typedef enum
-{
-  DSK_CTOKEN_SCAN_FLAGS_DEFAULT = 0
-} DskCTokenScanFlags;
-
 typedef struct _DskCTokenScannerConfig DskCTokenScannerConfig;
 struct _DskCTokenScannerConfig
 {

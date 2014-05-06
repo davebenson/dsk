@@ -325,7 +325,7 @@ retry_sys_socket:
       /* set error */
       dsk_octet_stream_set_last_error (&stream->base_instance,
                                        "error invoking socket(2) system-call: %s",
-                                       strerror (errno));
+                                       strerror (e));
 
       goto handle_error;
     }
