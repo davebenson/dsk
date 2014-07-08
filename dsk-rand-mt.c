@@ -9,6 +9,21 @@
 #include <unistd.h>
 
 
+/* Period parameters */  
+#define N DSK_MERSENNE_TWISTER_N
+#define M 397
+#define MATRIX_A 0x9908b0df   /* constant vector a */
+#define UPPER_MASK 0x80000000 /* most significant w-r bits */
+#define LOWER_MASK 0x7fffffff /* least significant r bits */
+
+/* Tempering parameters */   
+#define TEMPERING_MASK_B 0x9d2c5680
+#define TEMPERING_MASK_C 0xefc60000
+#define TEMPERING_SHIFT_U(y)  (y >> 11)
+#define TEMPERING_SHIFT_S(y)  (y << 7)
+#define TEMPERING_SHIFT_T(y)  (y << 15)
+#define TEMPERING_SHIFT_L(y)  (y >> 18)
+
 void
 dsk_rand_init (DskRand *rand)
 {
@@ -118,20 +133,41 @@ dsk_rand_init_seed_array (DskRand* rand,
   rand->mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
 }
 
-uint64_t
-dsk_rand_uint64 (DskRand* rand)
+uint32_t
+dsk_rand_uint32 (DskRand* rand)
 {
-  uint64_t s0 = rand->s[rand->p];
-  rand->p += 1;
-  rand->p &= 15;
-  uint64_t s1 = rand->s[rand->p];
-  s1 ^= s1 << 31; // a
-  s1 ^= s1 >> 11; // b
-  s0 ^= s0 >> 30; // c
-  uint64_t prv = s0 ^ s1;
-  rand->p[rand->p] = prv;
-  return prv * 1181783497276652981LL; 
+  uint32_t y;
+  static const uint32_t mag01[2]={0x0, MATRIX_A};
+  /* mag01[x] = x * MATRIX_A  for x=0,1 */
+
+  if (rand->mt_index >= N) { /* generate N words at one time */
+    int kk;
+    
+    for (kk=0;kk<N-M;kk++) {
+      y = (rand->mt[kk]&UPPER_MASK)|(rand->mt[kk+1]&LOWER_MASK);
+      rand->mt[kk] = rand->mt[kk+M] ^ (y >> 1) ^ mag01[y & 0x1];
+    }
+    for (;kk<N-1;kk++) {
+      y = (rand->mt[kk]&UPPER_MASK)|(rand->mt[kk+1]&LOWER_MASK);
+      rand->mt[kk] = rand->mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1];
+    }
+    y = (rand->mt[N-1]&UPPER_MASK)|(rand->mt[0]&LOWER_MASK);
+    rand->mt[N-1] = rand->mt[M-1] ^ (y >> 1) ^ mag01[y & 0x1];
+    
+    rand->mt_index = 0;
+  }
+  
+  y = rand->mt[rand->mt_index++];
+  y ^= TEMPERING_SHIFT_U(y);
+  y ^= TEMPERING_SHIFT_S(y) & TEMPERING_MASK_B;
+  y ^= TEMPERING_SHIFT_T(y) & TEMPERING_MASK_C;
+  y ^= TEMPERING_SHIFT_L(y);
+  
+  return y; 
 }
+
+/* transform [0..2^32] -> [0..1] */
+#define DSK_RAND_DOUBLE_TRANSFORM 2.3283064365386962890625e-10
 
 int32_t 
 dsk_rand_int_range (DskRand* rand, int32_t begin, int32_t end)
@@ -161,9 +197,6 @@ dsk_rand_int_range (DskRand* rand, int32_t begin, int32_t end)
 }
 
 /* XXX: shouldn't we use the -1 hack. */
-/* transform [0..2^32] -> [0..1] */
-#define DSK_RAND_DOUBLE_TRANSFORM 2.3283064365386962890625e-10
-
 double 
 dsk_rand_double (DskRand* rand)
 {    
@@ -181,9 +214,9 @@ dsk_rand_double (DskRand* rand)
   return retval;
 #else
   union { uint64_t i; double v; } u;
-  uint64_t r52 = dsk_rand_uint64 (rand) & 0xfffffffffffffULL;
-  // TODO: if r52==0, then we should maybe repeat and use an exponent 52 less.
-  u.i = 0x1ff0000000000000ULL | r52
+  u.i = 0x1ff0000000000000ULL
+      | ((uint64_t)(dsk_rand_uint32 (rand) & 0xfffff) << 32)
+      | dsk_rand_uint32 (rand);
   return u.v - 1.0;
 #endif
 }

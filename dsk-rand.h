@@ -1,10 +1,21 @@
 
-#define DSK_MERSENNE_TWISTER_N 624
 typedef struct _DskRand DskRand;
+#if 0
+#define DSK_MERSENNE_TWISTER_N 624
 struct _DskRand
 {
   uint32_t mt[DSK_MERSENNE_TWISTER_N]; /* the array for the state vector  */
   unsigned mt_index; 
+};
+#endif
+
+#if 1
+// xorshift1024*
+// http://xorshift.di.unimi.it/xorshift1024star.c
+struct _DskRand
+{
+  uint64_t s[16];
+  unsigned p;
 };
 
 /* these functions may be used instead of init -- which seeds
@@ -23,6 +34,7 @@ void     dsk_rand_init_seed_array(DskRand* rand,
       dsk_rand_double_range  [start, end)
  */
 uint32_t dsk_rand_uint32         (DskRand* rand);
+uint64_t dsk_rand_uint64         (DskRand* rand);
 int32_t  dsk_rand_int_range      (DskRand* rand,
                                   int32_t begin,
                                   int32_t end);
