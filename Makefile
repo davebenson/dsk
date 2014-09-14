@@ -34,7 +34,7 @@ EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
 	   programs/dsk-ifconfig programs/dsk-make-json-binding \
-	   programs/dsk-grep
+	   programs/dsk-grep programs/svg-to-cocoa
 all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all

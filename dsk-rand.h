@@ -17,6 +17,7 @@ struct _DskRand
   uint64_t s[16];
   unsigned p;
 };
+#endif
 
 /* these functions may be used instead of init -- which seeds
    'rand' from /dev/urandom. */

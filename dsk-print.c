@@ -383,6 +383,14 @@ dsk_print (DskPrint *context,
     }
 }
 
+dsk_boolean dsk_print_append_data           (DskPrint *print,
+                                      unsigned   length,
+                                      const uint8_t *data,
+                                     DskError **error)
+{
+  return print->append (length, data, print->append_data, error);
+}
+
 static dsk_boolean append_to_buffer (unsigned   length,
                                      const uint8_t *data,
                                      void      *append_data,

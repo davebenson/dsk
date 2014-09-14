@@ -65,14 +65,15 @@ dsk_rand_init_seed (DskRand* rand, uint32_t seed)
 {
   /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
   /* In the previous version (see above), MSBs of the    */
-  /* seed affect only MSBs of the array mt[].            */
+  /* seed affect only MSBs of the array s[].            */
       
-  rand->mt[0]= seed;
-  for (rand->mt_index=1; rand->mt_index<N; rand->mt_index++)
-    rand->mt[rand->mt_index] = 1812433253UL * 
-      (rand->mt[rand->mt_index-1] ^ (rand->mt[rand->mt_index-1] >> 30)) + rand->mt_index; 
+  rand->s[0] = seed;
+  for (unsigned i = 1; i < 16; i++) {
+    rand->s[i] = 1812433253ULL * (rand->s[i-1] ^ (rand->s[i-1] >> 30)) + i;
+  }
 }
 
+// XXX: these are not 64-bit seeders!!!!!!!
 void
 dsk_rand_init_seed_array (DskRand* rand,
                           unsigned seed_length,
@@ -85,17 +86,18 @@ dsk_rand_init_seed_array (DskRand* rand,
   dsk_rand_init_seed (rand, 19650218UL);
 
   i=1; j=0;
+  unsigned N = 16;
   k = (N>seed_length ? N : seed_length);
   for (; k; k--)
     {
-      rand->mt[i] = (rand->mt[i] ^
-		     ((rand->mt[i-1] ^ (rand->mt[i-1] >> 30)) * 1664525UL))
+      rand->s[i] = (rand->s[i] ^
+		     ((rand->s[i-1] ^ (rand->s[i-1] >> 30)) * 1664525UL))
 	      + seed[j] + j; /* non linear */
-      rand->mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+      rand->s[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
       i++; j++;
       if (i>=N)
         {
-	  rand->mt[0] = rand->mt[N-1];
+	  rand->s[0] = rand->s[N-1];
 	  i=1;
 	}
       if (j>=seed_length)
@@ -103,19 +105,19 @@ dsk_rand_init_seed_array (DskRand* rand,
     }
   for (k=N-1; k; k--)
     {
-      rand->mt[i] = (rand->mt[i] ^
-		     ((rand->mt[i-1] ^ (rand->mt[i-1] >> 30)) * 1566083941UL))
+      rand->s[i] = (rand->s[i] ^
+		     ((rand->s[i-1] ^ (rand->s[i-1] >> 30)) * 1566083941UL))
 	      - i; /* non linear */
-      rand->mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+      rand->s[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
       i++;
       if (i>=N)
         {
-	  rand->mt[0] = rand->mt[N-1];
+	  rand->s[0] = rand->s[N-1];
 	  i=1;
 	}
     }
 
-  rand->mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
+  rand->s[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
 }
 
 uint64_t
@@ -129,7 +131,7 @@ dsk_rand_uint64 (DskRand* rand)
   s1 ^= s1 >> 11; // b
   s0 ^= s0 >> 30; // c
   uint64_t prv = s0 ^ s1;
-  rand->p[rand->p] = prv;
+  rand->s[rand->p] = prv;
   return prv * 1181783497276652981LL; 
 }
 
@@ -183,7 +185,7 @@ dsk_rand_double (DskRand* rand)
   union { uint64_t i; double v; } u;
   uint64_t r52 = dsk_rand_uint64 (rand) & 0xfffffffffffffULL;
   // TODO: if r52==0, then we should maybe repeat and use an exponent 52 less.
-  u.i = 0x1ff0000000000000ULL | r52
+  u.i = 0x1ff0000000000000ULL | r52;
   return u.v - 1.0;
 #endif
 }

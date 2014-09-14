@@ -145,42 +145,42 @@
   DSK_RBTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
 
 #if 1
-#undef G_STMT_START
-#define G_STMT_START do
-#undef G_STMT_END
-#define G_STMT_END while(0)
+#undef DSK_STMT_START
+#define DSK_STMT_START do
+#undef DSK_STMT_END
+#define DSK_STMT_END while(0)
 #endif
 
 #define DSK_RBTREE_INSERT_(top,type,is_red,set_is_red,parent,left,right,comparator, node,collision_node) \
-G_STMT_START{                                                                 \
-  type _gsk_last = NULL;                                                      \
-  type _gsk_at = (top);                                                       \
-  int _gsk_last_was_left = 0;                                        \
+DSK_STMT_START{                                                                 \
+  type _dsk_last = NULL;                                                      \
+  type _dsk_at = (top);                                                       \
+  int _dsk_last_was_left = 0;                                        \
   collision_node = NULL;                                                      \
-  while (_gsk_at != NULL)                                                     \
+  while (_dsk_at != NULL)                                                     \
     {                                                                         \
-      int _gsk_compare_rv;                                                    \
-      _gsk_last = _gsk_at;                                                    \
-      comparator(_gsk_at, (node), _gsk_compare_rv);                           \
-      if (_gsk_compare_rv > 0)                                                \
+      int _dsk_compare_rv;                                                    \
+      _dsk_last = _dsk_at;                                                    \
+      comparator(_dsk_at, (node), _dsk_compare_rv);                           \
+      if (_dsk_compare_rv > 0)                                                \
         {                                                                     \
-          _gsk_last_was_left = 1;                                          \
-          _gsk_at = _gsk_at->left;                                            \
+          _dsk_last_was_left = 1;                                          \
+          _dsk_at = _dsk_at->left;                                            \
         }                                                                     \
-      else if (_gsk_compare_rv < 0)                                           \
+      else if (_dsk_compare_rv < 0)                                           \
         {                                                                     \
-          _gsk_last_was_left = 0;                                         \
-          _gsk_at = _gsk_at->right;                                           \
+          _dsk_last_was_left = 0;                                         \
+          _dsk_at = _dsk_at->right;                                           \
         }                                                                     \
       else                                                                    \
         break;                                                                \
    }                                                                          \
-  if (_gsk_at != NULL)                                                        \
+  if (_dsk_at != NULL)                                                        \
     {                                                                         \
       /* collision */                                                         \
-      collision_node = _gsk_at;                                               \
+      collision_node = _dsk_at;                                               \
     }                                                                         \
-  else if (_gsk_last == NULL)                                                 \
+  else if (_dsk_last == NULL)                                                 \
     {                                                                         \
       /* only node in tree */                                                 \
       top = (node);                                                           \
@@ -189,74 +189,74 @@ G_STMT_START{                                                                 \
     }                                                                         \
   else                                                                        \
     {                                                                         \
-      (node)->parent = _gsk_last;                                             \
+      (node)->parent = _dsk_last;                                             \
       (node)->left = (node)->right = NULL;                                    \
-      if (_gsk_last_was_left)                                                 \
-        _gsk_last->left = (node);                                             \
+      if (_dsk_last_was_left)                                                 \
+        _dsk_last->left = (node);                                             \
       else                                                                    \
-        _gsk_last->right = (node);                                            \
+        _dsk_last->right = (node);                                            \
                                                                               \
       /* fixup */                                                             \
-      _gsk_at = (node);                                                       \
-      set_is_red (_gsk_at, 1);                                                \
-      while (top != _gsk_at && is_red(_gsk_at->parent))                       \
+      _dsk_at = (node);                                                       \
+      set_is_red (_dsk_at, 1);                                                \
+      while (top != _dsk_at && is_red(_dsk_at->parent))                       \
         {                                                                     \
-          if (_gsk_at->parent == _gsk_at->parent->parent->left)               \
+          if (_dsk_at->parent == _dsk_at->parent->parent->left)               \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->right;                   \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->right;                   \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->right)                      \
+                  if (_dsk_at == _dsk_at->parent->right)                      \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
-                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
+                      _dsk_at = _dsk_at->parent;                              \
+                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _dsk_at);\
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
                   DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
-                                           _gsk_at->parent->parent);          \
+                                           _dsk_at->parent->parent);          \
                 }                                                             \
             }                                                                 \
           else                                                                \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->left;                    \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->left;                    \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->left)                       \
+                  if (_dsk_at == _dsk_at->parent->left)                       \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
+                      _dsk_at = _dsk_at->parent;                              \
                       DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
-                                               _gsk_at);                      \
+                                               _dsk_at);                      \
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
                   DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
-                                          _gsk_at->parent->parent);           \
+                                          _dsk_at->parent->parent);           \
                 }                                                             \
             }                                                                 \
         }                                                                     \
       set_is_red((top), 0);                                                   \
     }                                                                         \
-}G_STMT_END
+}DSK_STMT_END
 
 #define DSK_RBTREE_INSERT_AT_(top,type,is_red,set_is_red,parent,left,right,comparator, parent_node,is_right,node) \
-G_STMT_START{                                                                 \
+DSK_STMT_START{                                                                 \
     {                                                                         \
-      type _gsk_at;                                                           \
+      type _dsk_at;                                                           \
       (node)->parent = (parent_node);                                         \
       (node)->left = (node)->right = NULL;                                    \
       if (is_right)                                                           \
@@ -265,65 +265,65 @@ G_STMT_START{                                                                 \
         (parent_node)->left = (node);                                         \
                                                                               \
       /* fixup */                                                             \
-      _gsk_at = (node);                                                       \
-      set_is_red (_gsk_at, 1);                                                \
-      while (top != _gsk_at && is_red(_gsk_at->parent))                       \
+      _dsk_at = (node);                                                       \
+      set_is_red (_dsk_at, 1);                                                \
+      while (top != _dsk_at && is_red(_dsk_at->parent))                       \
         {                                                                     \
-          if (_gsk_at->parent == _gsk_at->parent->parent->left)               \
+          if (_dsk_at->parent == _dsk_at->parent->parent->left)               \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->right;                   \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->right;                   \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->right)                      \
+                  if (_dsk_at == _dsk_at->parent->right)                      \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
-                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _gsk_at);\
+                      _dsk_at = _dsk_at->parent;                              \
+                      DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right, _dsk_at);\
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
                   DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
-                                           _gsk_at->parent->parent);          \
+                                           _dsk_at->parent->parent);          \
                 }                                                             \
             }                                                                 \
           else                                                                \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->left;                    \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->left;                    \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->left)                       \
+                  if (_dsk_at == _dsk_at->parent->left)                       \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
+                      _dsk_at = _dsk_at->parent;                              \
                       DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
-                                               _gsk_at);                      \
+                                               _dsk_at);                      \
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
                   DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
-                                          _gsk_at->parent->parent);           \
+                                          _dsk_at->parent->parent);           \
                 }                                                             \
             }                                                                 \
         }                                                                     \
       set_is_red((top), 0);                                                   \
     }                                                                         \
-}G_STMT_END
+}DSK_STMT_END
 #define DSK_RBTREE_REPLACE_NODE_(top,type,is_red,set_is_red,parent,left,right,comparator, old_node,replacement_node) \
-G_STMT_START{                                                                 \
-    int _gsk_old_is_red = is_red (old_node);                                  \
-    set_is_red (replacement_node, _gsk_old_is_red);                           \
+DSK_STMT_START{                                                                 \
+    int _dsk_old_is_red = is_red (old_node);                                  \
+    set_is_red (replacement_node, _dsk_old_is_red);                           \
     if (old_node->parent)                                                     \
       {                                                                       \
         if (old_node->parent->left == old_node)                               \
@@ -340,189 +340,189 @@ G_STMT_START{                                                                 \
       replacement_node->left->parent = replacement_node;                      \
     if (replacement_node->right)                                              \
       replacement_node->right->parent = replacement_node;                     \
-}G_STMT_END
+}DSK_STMT_END
 
 #define DSK_RBTREE_REMOVE_(top,type,is_red,set_is_red,parent,left,right,comparator, node) \
 /* Algorithms:273. */                                                         \
-G_STMT_START{                                                                 \
-  type _gsk_rb_del_z = (node);                                                \
-  type _gsk_rb_del_x;                                                         \
-  type _gsk_rb_del_y;                                                         \
-  type _gsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
-  int _gsk_rb_del_fixup;                                                 \
-  if (_gsk_rb_del_z->left == NULL || _gsk_rb_del_z->right == NULL)            \
-    _gsk_rb_del_y = _gsk_rb_del_z;                                            \
+DSK_STMT_START{                                                                 \
+  type _dsk_rb_del_z = (node);                                                \
+  type _dsk_rb_del_x;                                                         \
+  type _dsk_rb_del_y;                                                         \
+  type _dsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
+  int _dsk_rb_del_fixup;                                                 \
+  if (_dsk_rb_del_z->left == NULL || _dsk_rb_del_z->right == NULL)            \
+    _dsk_rb_del_y = _dsk_rb_del_z;                                            \
   else                                                                        \
     {                                                                         \
       DSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
-                        _gsk_rb_del_z, _gsk_rb_del_y);                        \
+                        _dsk_rb_del_z, _dsk_rb_del_y);                        \
     }                                                                         \
-  _gsk_rb_del_x = _gsk_rb_del_y->left ? _gsk_rb_del_y->left                   \
-                                            : _gsk_rb_del_y->right;           \
-  if (_gsk_rb_del_x)                                                          \
-    _gsk_rb_del_x->parent = _gsk_rb_del_y->parent;                            \
+  _dsk_rb_del_x = _dsk_rb_del_y->left ? _dsk_rb_del_y->left                   \
+                                            : _dsk_rb_del_y->right;           \
+  if (_dsk_rb_del_x)                                                          \
+    _dsk_rb_del_x->parent = _dsk_rb_del_y->parent;                            \
   else                                                                        \
-    _gsk_rb_del_nullpar = _gsk_rb_del_y->parent;                              \
-  if (!_gsk_rb_del_y->parent)                                                 \
-    top = _gsk_rb_del_x;                                                      \
+    _dsk_rb_del_nullpar = _dsk_rb_del_y->parent;                              \
+  if (!_dsk_rb_del_y->parent)                                                 \
+    top = _dsk_rb_del_x;                                                      \
   else                                                                        \
     {                                                                         \
-      if (_gsk_rb_del_y == _gsk_rb_del_y->parent->left)                       \
-	_gsk_rb_del_y->parent->left = _gsk_rb_del_x;                          \
+      if (_dsk_rb_del_y == _dsk_rb_del_y->parent->left)                       \
+	_dsk_rb_del_y->parent->left = _dsk_rb_del_x;                          \
       else                                                                    \
-	_gsk_rb_del_y->parent->right = _gsk_rb_del_x;                         \
+	_dsk_rb_del_y->parent->right = _dsk_rb_del_x;                         \
     }                                                                         \
-  _gsk_rb_del_fixup = !is_red(_gsk_rb_del_y);                                 \
-  if (_gsk_rb_del_y != _gsk_rb_del_z)                                         \
+  _dsk_rb_del_fixup = !is_red(_dsk_rb_del_y);                                 \
+  if (_dsk_rb_del_y != _dsk_rb_del_z)                                         \
     {                                                                         \
-      set_is_red(_gsk_rb_del_y, is_red(_gsk_rb_del_z));                       \
-      _gsk_rb_del_y->left = _gsk_rb_del_z->left;                              \
-      _gsk_rb_del_y->right = _gsk_rb_del_z->right;                            \
-      _gsk_rb_del_y->parent = _gsk_rb_del_z->parent;                          \
-      if (_gsk_rb_del_y->parent)                                              \
+      set_is_red(_dsk_rb_del_y, is_red(_dsk_rb_del_z));                       \
+      _dsk_rb_del_y->left = _dsk_rb_del_z->left;                              \
+      _dsk_rb_del_y->right = _dsk_rb_del_z->right;                            \
+      _dsk_rb_del_y->parent = _dsk_rb_del_z->parent;                          \
+      if (_dsk_rb_del_y->parent)                                              \
 	{                                                                     \
-	  if (_gsk_rb_del_y->parent->left == _gsk_rb_del_z)                   \
-	    _gsk_rb_del_y->parent->left = _gsk_rb_del_y;                      \
+	  if (_dsk_rb_del_y->parent->left == _dsk_rb_del_z)                   \
+	    _dsk_rb_del_y->parent->left = _dsk_rb_del_y;                      \
 	  else                                                                \
-	    _gsk_rb_del_y->parent->right = _gsk_rb_del_y;                     \
+	    _dsk_rb_del_y->parent->right = _dsk_rb_del_y;                     \
 	}                                                                     \
       else                                                                    \
-	top = _gsk_rb_del_y;                                                  \
+	top = _dsk_rb_del_y;                                                  \
                                                                               \
-      if (_gsk_rb_del_y->left)                                                \
-	_gsk_rb_del_y->left->parent = _gsk_rb_del_y;                          \
-      if (_gsk_rb_del_y->right)                                               \
-	_gsk_rb_del_y->right->parent = _gsk_rb_del_y;                         \
-      if (_gsk_rb_del_nullpar == _gsk_rb_del_z)                               \
-	_gsk_rb_del_nullpar = _gsk_rb_del_y;                                  \
+      if (_dsk_rb_del_y->left)                                                \
+	_dsk_rb_del_y->left->parent = _dsk_rb_del_y;                          \
+      if (_dsk_rb_del_y->right)                                               \
+	_dsk_rb_del_y->right->parent = _dsk_rb_del_y;                         \
+      if (_dsk_rb_del_nullpar == _dsk_rb_del_z)                               \
+	_dsk_rb_del_nullpar = _dsk_rb_del_y;                                  \
     }                                                                         \
-  if (_gsk_rb_del_fixup)                                                      \
+  if (_dsk_rb_del_fixup)                                                      \
     {                                                                         \
       /* delete fixup (Algorithms, p 274) */                                  \
-      while (_gsk_rb_del_x != top                                             \
-         && !(_gsk_rb_del_x != NULL && is_red (_gsk_rb_del_x)))               \
+      while (_dsk_rb_del_x != top                                             \
+         && !(_dsk_rb_del_x != NULL && is_red (_dsk_rb_del_x)))               \
         {                                                                     \
-          type _gsk_rb_del_xparent = _gsk_rb_del_x ? _gsk_rb_del_x->parent    \
-                                                   : _gsk_rb_del_nullpar;     \
-          if (_gsk_rb_del_x == _gsk_rb_del_xparent->left)                     \
+          type _dsk_rb_del_xparent = _dsk_rb_del_x ? _dsk_rb_del_x->parent    \
+                                                   : _dsk_rb_del_nullpar;     \
+          if (_dsk_rb_del_x == _dsk_rb_del_xparent->left)                     \
             {                                                                 \
-              type _gsk_rb_del_w = _gsk_rb_del_xparent->right;                \
-              if (_gsk_rb_del_w != NULL && is_red (_gsk_rb_del_w))            \
+              type _dsk_rb_del_w = _dsk_rb_del_xparent->right;                \
+              if (_dsk_rb_del_w != NULL && is_red (_dsk_rb_del_w))            \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 0);                              \
-                  set_is_red (_gsk_rb_del_xparent, 1);                        \
+                  set_is_red (_dsk_rb_del_w, 0);                              \
+                  set_is_red (_dsk_rb_del_xparent, 1);                        \
                   DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
-                                          _gsk_rb_del_xparent);               \
-                  _gsk_rb_del_w = _gsk_rb_del_xparent->right;                 \
+                                          _dsk_rb_del_xparent);               \
+                  _dsk_rb_del_w = _dsk_rb_del_xparent->right;                 \
                 }                                                             \
-              if (!(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left))      \
-               && !(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right)))   \
+              if (!(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left))      \
+               && !(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right)))   \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 1);                              \
-                  _gsk_rb_del_x = _gsk_rb_del_xparent;                        \
+                  set_is_red (_dsk_rb_del_w, 1);                              \
+                  _dsk_rb_del_x = _dsk_rb_del_xparent;                        \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (!(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right)))\
+                  if (!(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right)))\
                     {                                                         \
-                      if (_gsk_rb_del_w->left)                                \
-                        set_is_red (_gsk_rb_del_w->left, 0);                  \
-                      set_is_red (_gsk_rb_del_w, 1);                          \
+                      if (_dsk_rb_del_w->left)                                \
+                        set_is_red (_dsk_rb_del_w->left, 0);                  \
+                      set_is_red (_dsk_rb_del_w, 1);                          \
                       DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,    \
-                                               _gsk_rb_del_w);                \
-                      _gsk_rb_del_w = _gsk_rb_del_xparent->right;             \
+                                               _dsk_rb_del_w);                \
+                      _dsk_rb_del_w = _dsk_rb_del_xparent->right;             \
                     }                                                         \
-                  set_is_red (_gsk_rb_del_w, is_red (_gsk_rb_del_xparent));   \
-                  set_is_red (_gsk_rb_del_xparent, 0);                        \
-                  set_is_red (_gsk_rb_del_w->right, 0);                       \
+                  set_is_red (_dsk_rb_del_w, is_red (_dsk_rb_del_xparent));   \
+                  set_is_red (_dsk_rb_del_xparent, 0);                        \
+                  set_is_red (_dsk_rb_del_w->right, 0);                       \
                   DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,         \
-                                          _gsk_rb_del_xparent);               \
-                  _gsk_rb_del_x = top;                                        \
+                                          _dsk_rb_del_xparent);               \
+                  _dsk_rb_del_x = top;                                        \
                 }                                                             \
             }                                                                 \
           else                                                                \
             {                                                                 \
-              type _gsk_rb_del_w = _gsk_rb_del_xparent->left;                 \
-              if (_gsk_rb_del_w && is_red (_gsk_rb_del_w))                    \
+              type _dsk_rb_del_w = _dsk_rb_del_xparent->left;                 \
+              if (_dsk_rb_del_w && is_red (_dsk_rb_del_w))                    \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 0);                              \
-                  set_is_red (_gsk_rb_del_xparent, 1);                        \
+                  set_is_red (_dsk_rb_del_w, 0);                              \
+                  set_is_red (_dsk_rb_del_xparent, 1);                        \
                   DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
-                                           _gsk_rb_del_xparent);              \
-                  _gsk_rb_del_w = _gsk_rb_del_xparent->left;                  \
+                                           _dsk_rb_del_xparent);              \
+                  _dsk_rb_del_w = _dsk_rb_del_xparent->left;                  \
                 }                                                             \
-              if (!(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right))    \
-               && !(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left)))     \
+              if (!(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right))    \
+               && !(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left)))     \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 1);                              \
-                  _gsk_rb_del_x = _gsk_rb_del_xparent;                        \
+                  set_is_red (_dsk_rb_del_w, 1);                              \
+                  _dsk_rb_del_x = _dsk_rb_del_xparent;                        \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (!(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left))) \
+                  if (!(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left))) \
                     {                                                         \
-                      set_is_red (_gsk_rb_del_w->right, 0);                   \
-                      set_is_red (_gsk_rb_del_w, 1);                          \
+                      set_is_red (_dsk_rb_del_w->right, 0);                   \
+                      set_is_red (_dsk_rb_del_w, 1);                          \
                       DSK_RBTREE_ROTATE_LEFT (top,type,parent,left,right,     \
-                                              _gsk_rb_del_w);                 \
-                      _gsk_rb_del_w = _gsk_rb_del_xparent->left;              \
+                                              _dsk_rb_del_w);                 \
+                      _dsk_rb_del_w = _dsk_rb_del_xparent->left;              \
                     }                                                         \
-                  set_is_red (_gsk_rb_del_w, is_red (_gsk_rb_del_xparent));   \
-                  set_is_red (_gsk_rb_del_xparent, 0);                        \
-                  if (_gsk_rb_del_w->left)                                    \
-                    set_is_red (_gsk_rb_del_w->left, 0);                      \
+                  set_is_red (_dsk_rb_del_w, is_red (_dsk_rb_del_xparent));   \
+                  set_is_red (_dsk_rb_del_xparent, 0);                        \
+                  if (_dsk_rb_del_w->left)                                    \
+                    set_is_red (_dsk_rb_del_w->left, 0);                      \
                   DSK_RBTREE_ROTATE_RIGHT (top,type,parent,left,right,        \
-                                           _gsk_rb_del_xparent);              \
-                  _gsk_rb_del_x = top;                                        \
+                                           _dsk_rb_del_xparent);              \
+                  _dsk_rb_del_x = top;                                        \
                 }                                                             \
             }                                                                 \
         }                                                                     \
-      if (_gsk_rb_del_x != NULL)                                              \
-        set_is_red(_gsk_rb_del_x, 0);                                         \
+      if (_dsk_rb_del_x != NULL)                                              \
+        set_is_red(_dsk_rb_del_x, 0);                                         \
     }                                                                         \
-  _gsk_rb_del_z->left = NULL;                                                 \
-  _gsk_rb_del_z->right = NULL;                                                \
-  _gsk_rb_del_z->parent = NULL;                                               \
-}G_STMT_END
+  _dsk_rb_del_z->left = NULL;                                                 \
+  _dsk_rb_del_z->right = NULL;                                                \
+  _dsk_rb_del_z->parent = NULL;                                               \
+}DSK_STMT_END
 
 #define DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
-G_STMT_START{                                                                 \
-  type _gsk_lookup_at = (top);                                                \
-  while (_gsk_lookup_at)                                                      \
+DSK_STMT_START{                                                                 \
+  type _dsk_lookup_at = (top);                                                \
+  while (_dsk_lookup_at)                                                      \
     {                                                                         \
-      int _gsk_compare_rv;                                                    \
-      key_comparator((key),_gsk_lookup_at,_gsk_compare_rv);                     \
-      if (_gsk_compare_rv < 0)                                                \
-        _gsk_lookup_at = _gsk_lookup_at->left;                                \
-      else if (_gsk_compare_rv > 0)                                           \
-        _gsk_lookup_at = _gsk_lookup_at->right;                               \
+      int _dsk_compare_rv;                                                    \
+      key_comparator((key),_dsk_lookup_at,_dsk_compare_rv);                     \
+      if (_dsk_compare_rv < 0)                                                \
+        _dsk_lookup_at = _dsk_lookup_at->left;                                \
+      else if (_dsk_compare_rv > 0)                                           \
+        _dsk_lookup_at = _dsk_lookup_at->right;                               \
       else                                                                    \
         break;                                                                \
     }                                                                         \
-  out = _gsk_lookup_at;                                                       \
-}G_STMT_END
+  out = _dsk_lookup_at;                                                       \
+}DSK_STMT_END
  /* see comments for 'SUPREMUM'; it is the same with the sense of the comparators
   * and left,right reversed. */
 #define DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
-G_STMT_START{                                                                 \
-  type _gsk_lookup_at = (top);                                                \
-  type _gsk_lookup_rv = NULL;                                                 \
-  while (_gsk_lookup_at)                                                      \
+DSK_STMT_START{                                                                 \
+  type _dsk_lookup_at = (top);                                                \
+  type _dsk_lookup_rv = NULL;                                                 \
+  while (_dsk_lookup_at)                                                      \
     {                                                                         \
-      int _gsk_compare_rv;                                                    \
-      key_comparator((key),_gsk_lookup_at,_gsk_compare_rv);                     \
-      if (_gsk_compare_rv >= 0)                                               \
+      int _dsk_compare_rv;                                                    \
+      key_comparator((key),_dsk_lookup_at,_dsk_compare_rv);                     \
+      if (_dsk_compare_rv >= 0)                                               \
         {                                                                     \
-          _gsk_lookup_rv = _gsk_lookup_at;                                    \
-          _gsk_lookup_at = _gsk_lookup_at->right;                             \
+          _dsk_lookup_rv = _dsk_lookup_at;                                    \
+          _dsk_lookup_at = _dsk_lookup_at->right;                             \
         }                                                                     \
       else                                                                    \
-        _gsk_lookup_at = _gsk_lookup_at->left;                                \
+        _dsk_lookup_at = _dsk_lookup_at->left;                                \
     }                                                                         \
-  out = _gsk_lookup_rv;                                                       \
-}G_STMT_END
+  out = _dsk_lookup_rv;                                                       \
+}DSK_STMT_END
 /* see introductory comments for a less mathematical
  * definition.  but what 'supremum' computes is:
  * sup(tree, key) = min S(tree,key) or NULL if S(tree, key)
@@ -559,23 +559,23 @@ G_STMT_START{                                                                 \
  */
 #define DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
-G_STMT_START{                                                                 \
-  type _gsk_lookup_at = (top);                                                \
-  type _gsk_lookup_rv = NULL;                                                 \
-  while (_gsk_lookup_at)                                                      \
+DSK_STMT_START{                                                                 \
+  type _dsk_lookup_at = (top);                                                \
+  type _dsk_lookup_rv = NULL;                                                 \
+  while (_dsk_lookup_at)                                                      \
     {                                                                         \
-      int _gsk_compare_rv;                                                    \
-      key_comparator((key),_gsk_lookup_at,_gsk_compare_rv);                     \
-      if (_gsk_compare_rv <= 0)                                               \
+      int _dsk_compare_rv;                                                    \
+      key_comparator((key),_dsk_lookup_at,_dsk_compare_rv);                     \
+      if (_dsk_compare_rv <= 0)                                               \
         {                                                                     \
-          _gsk_lookup_rv = _gsk_lookup_at;                                    \
-          _gsk_lookup_at = _gsk_lookup_at->left;                              \
+          _dsk_lookup_rv = _dsk_lookup_at;                                    \
+          _dsk_lookup_at = _dsk_lookup_at->left;                              \
         }                                                                     \
       else                                                                    \
-        _gsk_lookup_at = _gsk_lookup_at->right;                               \
+        _dsk_lookup_at = _dsk_lookup_at->right;                               \
     }                                                                         \
-  out = _gsk_lookup_rv;                                                       \
-}G_STMT_END
+  out = _dsk_lookup_rv;                                                       \
+}DSK_STMT_END
 #define DSK_RBTREE_LOOKUP_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
   DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 #define DSK_RBTREE_SUPREMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
@@ -588,137 +588,137 @@ G_STMT_START{                                                                 \
 #define DSK_RBTREE_ROTATE_RIGHT(top,type,parent,left,right, node)             \
   DSK_RBTREE_ROTATE_LEFT(top,type,parent,right,left, node)
 #define DSK_RBTREE_ROTATE_LEFT(top,type,parent,left,right, node)              \
-G_STMT_START{                                                                 \
-  type _gsk_rot_x = (node);                                                   \
-  type _gsk_rot_y = _gsk_rot_x->right;                                        \
+DSK_STMT_START{                                                                 \
+  type _dsk_rot_x = (node);                                                   \
+  type _dsk_rot_y = _dsk_rot_x->right;                                        \
                                                                               \
-  _gsk_rot_x->right = _gsk_rot_y->left;                                       \
-  if (_gsk_rot_y->left)                                                       \
-    _gsk_rot_y->left->parent = _gsk_rot_x;                                    \
-  _gsk_rot_y->parent = _gsk_rot_x->parent;                                    \
-  if (_gsk_rot_x->parent == NULL)                                             \
-    top = _gsk_rot_y;                                                         \
-  else if (_gsk_rot_x == _gsk_rot_x->parent->left)                            \
-    _gsk_rot_x->parent->left = _gsk_rot_y;                                    \
+  _dsk_rot_x->right = _dsk_rot_y->left;                                       \
+  if (_dsk_rot_y->left)                                                       \
+    _dsk_rot_y->left->parent = _dsk_rot_x;                                    \
+  _dsk_rot_y->parent = _dsk_rot_x->parent;                                    \
+  if (_dsk_rot_x->parent == NULL)                                             \
+    top = _dsk_rot_y;                                                         \
+  else if (_dsk_rot_x == _dsk_rot_x->parent->left)                            \
+    _dsk_rot_x->parent->left = _dsk_rot_y;                                    \
   else                                                                        \
-    _gsk_rot_x->parent->right = _gsk_rot_y;                                   \
-  _gsk_rot_y->left = _gsk_rot_x;                                              \
-  _gsk_rot_x->parent = _gsk_rot_y;                                            \
-}G_STMT_END
+    _dsk_rot_x->parent->right = _dsk_rot_y;                                   \
+  _dsk_rot_y->left = _dsk_rot_x;                                              \
+  _dsk_rot_x->parent = _dsk_rot_y;                                            \
+}DSK_STMT_END
 
 /* iteration */
 #define DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
-G_STMT_START{                                                                 \
-  type _gsk_next_at = (in);                                                   \
-  /*g_assert (_gsk_next_at != NULL);*/                                        \
-  if (_gsk_next_at->right != NULL)                                            \
+DSK_STMT_START{                                                                 \
+  type _dsk_next_at = (in);                                                   \
+  /*g_assert (_dsk_next_at != NULL);*/                                        \
+  if (_dsk_next_at->right != NULL)                                            \
     {                                                                         \
-      _gsk_next_at = _gsk_next_at->right;                                     \
-      while (_gsk_next_at->left != NULL)                                      \
-        _gsk_next_at = _gsk_next_at->left;                                    \
-      out = _gsk_next_at;                                                     \
+      _dsk_next_at = _dsk_next_at->right;                                     \
+      while (_dsk_next_at->left != NULL)                                      \
+        _dsk_next_at = _dsk_next_at->left;                                    \
+      out = _dsk_next_at;                                                     \
     }                                                                         \
   else                                                                        \
     {                                                                         \
-      type _gsk_next_parent = (in)->parent;                                   \
-      while (_gsk_next_parent != NULL                                         \
-          && _gsk_next_at == _gsk_next_parent->right)                         \
+      type _dsk_next_parent = (in)->parent;                                   \
+      while (_dsk_next_parent != NULL                                         \
+          && _dsk_next_at == _dsk_next_parent->right)                         \
         {                                                                     \
-          _gsk_next_at = _gsk_next_parent;                                    \
-          _gsk_next_parent = _gsk_next_parent->parent;                        \
+          _dsk_next_at = _dsk_next_parent;                                    \
+          _dsk_next_parent = _dsk_next_parent->parent;                        \
         }                                                                     \
-      out = _gsk_next_parent;                                                 \
+      out = _dsk_next_parent;                                                 \
     }                                                                         \
-}G_STMT_END
+}DSK_STMT_END
 
 /* prev is just next with left/right child reversed. */
 #define DSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
   DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,right,left,comparator, in, out)
 
 #define DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
-G_STMT_START{                                                                 \
-  type _gsk_first_at = (top);                                                 \
-  if (_gsk_first_at != NULL)                                                  \
-    while (_gsk_first_at->left != NULL)                                       \
-      _gsk_first_at = _gsk_first_at->left;                                    \
-  out = _gsk_first_at;                                                        \
-}G_STMT_END
+DSK_STMT_START{                                                                 \
+  type _dsk_first_at = (top);                                                 \
+  if (_dsk_first_at != NULL)                                                  \
+    while (_dsk_first_at->left != NULL)                                       \
+      _dsk_first_at = _dsk_first_at->left;                                    \
+  out = _dsk_first_at;                                                        \
+}DSK_STMT_END
 #define DSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)  \
   DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,right,left,comparator, out)
 
  /* --- RBC-Tree --- */
-#define GSK_RBCTREE_INSERT(tree, node, collision_node)                         \
-  GSK_RBCTREE_INSERT_(tree, node, collision_node)
-#define GSK_RBCTREE_REMOVE(tree, node)                                         \
-  GSK_RBCTREE_REMOVE_(tree, node)
-#define GSK_RBCTREE_LOOKUP(tree, key, out)                                     \
-  GSK_RBCTREE_LOOKUP_(tree, key, out)
-#define GSK_RBCTREE_LOOKUP_COMPARATOR(tree, key, key_comparator, out)          \
-  GSK_RBCTREE_LOOKUP_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBCTREE_INSERT(tree, node, collision_node)                         \
+  DSK_RBCTREE_INSERT_(tree, node, collision_node)
+#define DSK_RBCTREE_REMOVE(tree, node)                                         \
+  DSK_RBCTREE_REMOVE_(tree, node)
+#define DSK_RBCTREE_LOOKUP(tree, key, out)                                     \
+  DSK_RBCTREE_LOOKUP_(tree, key, out)
+#define DSK_RBCTREE_LOOKUP_COMPARATOR(tree, key, key_comparator, out)          \
+  DSK_RBCTREE_LOOKUP_COMPARATOR_(tree, key, key_comparator, out)
 
-#define GSK_RBCTREE_FIRST(tree, out)                                           \
-  GSK_RBCTREE_FIRST_(tree, out)
-#define GSK_RBCTREE_LAST(tree, out)                                            \
-  GSK_RBCTREE_LAST_(tree, out)
-#define GSK_RBCTREE_NEXT(tree, in, out)                                        \
-  GSK_RBCTREE_NEXT_(tree, in, out)
-#define GSK_RBCTREE_PREV(tree, in, out)                                        \
-  GSK_RBCTREE_PREV_(tree, in, out)
+#define DSK_RBCTREE_FIRST(tree, out)                                           \
+  DSK_RBCTREE_FIRST_(tree, out)
+#define DSK_RBCTREE_LAST(tree, out)                                            \
+  DSK_RBCTREE_LAST_(tree, out)
+#define DSK_RBCTREE_NEXT(tree, in, out)                                        \
+  DSK_RBCTREE_NEXT_(tree, in, out)
+#define DSK_RBCTREE_PREV(tree, in, out)                                        \
+  DSK_RBCTREE_PREV_(tree, in, out)
 
-#define GSK_RBCTREE_SUPREMUM(tree, key, out)                                   \
-  GSK_RBCTREE_SUPREMUM_(tree, key, out)
-#define GSK_RBCTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
-  GSK_RBCTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
-#define GSK_RBCTREE_INFIMUM(tree, key, out)                                    \
-  GSK_RBCTREE_INFIMUM_(tree, key, out)
-#define GSK_RBCTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
-  GSK_RBCTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBCTREE_SUPREMUM(tree, key, out)                                   \
+  DSK_RBCTREE_SUPREMUM_(tree, key, out)
+#define DSK_RBCTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
+  DSK_RBCTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBCTREE_INFIMUM(tree, key, out)                                    \
+  DSK_RBCTREE_INFIMUM_(tree, key, out)
+#define DSK_RBCTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
+  DSK_RBCTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
 
-#define GSK_RBCTREE_GET_BY_INDEX(tree, index, out)                             \
-  GSK_RBCTREE_GET_BY_INDEX_(tree, index, out)
-#define GSK_RBCTREE_GET_BY_INDEX_UNCHECKED(tree, index, out)                   \
-  GSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(tree, index, out)
-#define GSK_RBCTREE_GET_NODE_INDEX(tree, node, index_out)                      \
-  GSK_RBCTREE_GET_NODE_INDEX_(tree, node, index_out)
+#define DSK_RBCTREE_GET_BY_INDEX(tree, index, out)                             \
+  DSK_RBCTREE_GET_BY_INDEX_(tree, index, out)
+#define DSK_RBCTREE_GET_BY_INDEX_UNCHECKED(tree, index, out)                   \
+  DSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(tree, index, out)
+#define DSK_RBCTREE_GET_NODE_INDEX(tree, node, index_out)                      \
+  DSK_RBCTREE_GET_NODE_INDEX_(tree, node, index_out)
 
 #if 1
-#undef G_STMT_START
-#define G_STMT_START do
-#undef G_STMT_END
-#define G_STMT_END while(0)
+#undef DSK_STMT_START
+#define DSK_STMT_START do
+#undef DSK_STMT_END
+#define DSK_STMT_END while(0)
 #endif
 
 
-#define GSK_RBCTREE_INSERT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node,collision_node) \
-G_STMT_START{                                                                 \
-  type _gsk_last = NULL;                                                      \
-  type _gsk_at = (top);                                                       \
-  int _gsk_last_was_left = 0;                                        \
+#define DSK_RBCTREE_INSERT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node,collision_node) \
+DSK_STMT_START{                                                                 \
+  type _dsk_last = NULL;                                                      \
+  type _dsk_at = (top);                                                       \
+  int _dsk_last_was_left = 0;                                        \
   collision_node = NULL;                                                      \
-  while (_gsk_at != NULL)                                                     \
+  while (_dsk_at != NULL)                                                     \
     {                                                                         \
-      int _gsk_compare_rv;                                                    \
-      _gsk_last = _gsk_at;                                                    \
-      comparator(_gsk_at, (node), _gsk_compare_rv);                           \
-      if (_gsk_compare_rv > 0)                                                \
+      int _dsk_compare_rv;                                                    \
+      _dsk_last = _dsk_at;                                                    \
+      comparator(_dsk_at, (node), _dsk_compare_rv);                           \
+      if (_dsk_compare_rv > 0)                                                \
         {                                                                     \
-          _gsk_last_was_left = 1;                                          \
-          _gsk_at = _gsk_at->left;                                            \
+          _dsk_last_was_left = 1;                                          \
+          _dsk_at = _dsk_at->left;                                            \
         }                                                                     \
-      else if (_gsk_compare_rv < 0)                                           \
+      else if (_dsk_compare_rv < 0)                                           \
         {                                                                     \
-          _gsk_last_was_left = 0;                                         \
-          _gsk_at = _gsk_at->right;                                           \
+          _dsk_last_was_left = 0;                                         \
+          _dsk_at = _dsk_at->right;                                           \
         }                                                                     \
       else                                                                    \
         break;                                                                \
    }                                                                          \
-  if (_gsk_at != NULL)                                                        \
+  if (_dsk_at != NULL)                                                        \
     {                                                                         \
       /* collision */                                                         \
-      collision_node = _gsk_at;                                               \
+      collision_node = _dsk_at;                                               \
     }                                                                         \
-  else if (_gsk_last == NULL)                                                 \
+  else if (_dsk_last == NULL)                                                 \
     {                                                                         \
       /* only node in tree */                                                 \
       top = (node);                                                           \
@@ -728,315 +728,315 @@ G_STMT_START{                                                                 \
     }                                                                         \
   else                                                                        \
     {                                                                         \
-      (node)->parent = _gsk_last;                                             \
+      (node)->parent = _dsk_last;                                             \
       (node)->left = (node)->right = NULL;                                    \
-      if (_gsk_last_was_left)                                                 \
-        _gsk_last->left = (node);                                             \
+      if (_dsk_last_was_left)                                                 \
+        _dsk_last->left = (node);                                             \
       else                                                                    \
-        _gsk_last->right = (node);                                            \
+        _dsk_last->right = (node);                                            \
                                                                               \
       /* fixup counts */                                                      \
       set_count ((node), 1);                                                  \
-      for (_gsk_at = _gsk_last; _gsk_at; _gsk_at = _gsk_at->parent)           \
+      for (_dsk_at = _dsk_last; _dsk_at; _dsk_at = _dsk_at->parent)           \
         {                                                                     \
-          guint _gsk_new_count = get_count(_gsk_at) + 1;                      \
-          set_count(_gsk_at, _gsk_new_count);                                 \
+          unsigned _dsk_new_count = get_count(_dsk_at) + 1;                   \
+          set_count(_dsk_at, _dsk_new_count);                                 \
         }                                                                     \
                                                                               \
       /* fixup */                                                             \
-      _gsk_at = (node);                                                       \
-      set_is_red (_gsk_at, 1);                                                \
-      while (_gsk_at->parent != NULL && is_red(_gsk_at->parent))              \
+      _dsk_at = (node);                                                       \
+      set_is_red (_dsk_at, 1);                                                \
+      while (_dsk_at->parent != NULL && is_red(_dsk_at->parent))              \
         {                                                                     \
-          if (_gsk_at->parent == _gsk_at->parent->parent->left)               \
+          if (_dsk_at->parent == _dsk_at->parent->parent->left)               \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->right;                   \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->right;                   \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->right)                      \
+                  if (_dsk_at == _dsk_at->parent->right)                      \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, _gsk_at);\
+                      _dsk_at = _dsk_at->parent;                              \
+                      DSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, _dsk_at);\
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count,\
-                                         _gsk_at->parent->parent);            \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
+                  DSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count,\
+                                         _dsk_at->parent->parent);            \
                 }                                                             \
             }                                                                 \
           else                                                                \
             {                                                                 \
-              type _gsk_y = _gsk_at->parent->parent->left;                    \
-              if (_gsk_y != NULL && is_red (_gsk_y))                          \
+              type _dsk_y = _dsk_at->parent->parent->left;                    \
+              if (_dsk_y != NULL && is_red (_dsk_y))                          \
                 {                                                             \
-                  set_is_red (_gsk_at->parent, 0);                            \
-                  set_is_red (_gsk_y, 0);                                     \
-                  set_is_red (_gsk_at->parent->parent, 1);                    \
-                  _gsk_at = _gsk_at->parent->parent;                          \
+                  set_is_red (_dsk_at->parent, 0);                            \
+                  set_is_red (_dsk_y, 0);                                     \
+                  set_is_red (_dsk_at->parent->parent, 1);                    \
+                  _dsk_at = _dsk_at->parent->parent;                          \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (_gsk_at == _gsk_at->parent->left)                       \
+                  if (_dsk_at == _dsk_at->parent->left)                       \
                     {                                                         \
-                      _gsk_at = _gsk_at->parent;                              \
-                      GSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count,\
-                                             _gsk_at);                        \
+                      _dsk_at = _dsk_at->parent;                              \
+                      DSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count,\
+                                             _dsk_at);                        \
                     }                                                         \
-                  set_is_red(_gsk_at->parent, 0);                             \
-                  set_is_red(_gsk_at->parent->parent, 1);                     \
-                  GSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count,\
-                                          _gsk_at->parent->parent);           \
+                  set_is_red(_dsk_at->parent, 0);                             \
+                  set_is_red(_dsk_at->parent->parent, 1);                     \
+                  DSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count,\
+                                          _dsk_at->parent->parent);           \
                 }                                                             \
             }                                                                 \
         }                                                                     \
       set_is_red((top), 0);                                                   \
     }                                                                         \
-}G_STMT_END
+}DSK_STMT_END
 
-#define GSK_RBCTREE_REMOVE_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node) \
+#define DSK_RBCTREE_REMOVE_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node) \
 /* Algorithms:273. */                                                         \
-G_STMT_START{                                                                 \
-  type _gsk_rb_del_z = (node);                                                \
-  type _gsk_rb_del_x;                                                         \
-  type _gsk_rb_del_y;                                                         \
-  type _gsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
-  int _gsk_rb_del_fixup;                                                 \
-  if (_gsk_rb_del_z->left == NULL || _gsk_rb_del_z->right == NULL)            \
-    _gsk_rb_del_y = _gsk_rb_del_z;                                            \
+DSK_STMT_START{                                                                 \
+  type _dsk_rb_del_z = (node);                                                \
+  type _dsk_rb_del_x;                                                         \
+  type _dsk_rb_del_y;                                                         \
+  type _dsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
+  int _dsk_rb_del_fixup;                                                 \
+  if (_dsk_rb_del_z->left == NULL || _dsk_rb_del_z->right == NULL)            \
+    _dsk_rb_del_y = _dsk_rb_del_z;                                            \
   else                                                                        \
     {                                                                         \
       DSK_RBTREE_NEXT_ (top,type,is_red,set_is_red,parent,left,right,comparator,\
-                        _gsk_rb_del_z, _gsk_rb_del_y);                        \
+                        _dsk_rb_del_z, _dsk_rb_del_y);                        \
     }                                                                         \
-  _gsk_rb_del_x = _gsk_rb_del_y->left ? _gsk_rb_del_y->left                   \
-                                            : _gsk_rb_del_y->right;           \
-  if (_gsk_rb_del_x)                                                          \
-    _gsk_rb_del_x->parent = _gsk_rb_del_y->parent;                            \
+  _dsk_rb_del_x = _dsk_rb_del_y->left ? _dsk_rb_del_y->left                   \
+                                            : _dsk_rb_del_y->right;           \
+  if (_dsk_rb_del_x)                                                          \
+    _dsk_rb_del_x->parent = _dsk_rb_del_y->parent;                            \
   else                                                                        \
-    _gsk_rb_del_nullpar = _gsk_rb_del_y->parent;                              \
-  if (!_gsk_rb_del_y->parent)                                                 \
-    top = _gsk_rb_del_x;                                                      \
+    _dsk_rb_del_nullpar = _dsk_rb_del_y->parent;                              \
+  if (!_dsk_rb_del_y->parent)                                                 \
+    top = _dsk_rb_del_x;                                                      \
   else                                                                        \
     {                                                                         \
-      if (_gsk_rb_del_y == _gsk_rb_del_y->parent->left)                       \
-	_gsk_rb_del_y->parent->left = _gsk_rb_del_x;                          \
+      if (_dsk_rb_del_y == _dsk_rb_del_y->parent->left)                       \
+	_dsk_rb_del_y->parent->left = _dsk_rb_del_x;                          \
       else                                                                    \
-	_gsk_rb_del_y->parent->right = _gsk_rb_del_x;                         \
-      _GSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, _gsk_rb_del_y->parent);\
+	_dsk_rb_del_y->parent->right = _dsk_rb_del_x;                         \
+      _DSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, _dsk_rb_del_y->parent);\
     }                                                                         \
-  _gsk_rb_del_fixup = !is_red(_gsk_rb_del_y);                                 \
-  if (_gsk_rb_del_y != _gsk_rb_del_z)                                         \
+  _dsk_rb_del_fixup = !is_red(_dsk_rb_del_y);                                 \
+  if (_dsk_rb_del_y != _dsk_rb_del_z)                                         \
     {                                                                         \
-      set_is_red(_gsk_rb_del_y, is_red(_gsk_rb_del_z));                       \
-      _gsk_rb_del_y->left = _gsk_rb_del_z->left;                              \
-      _gsk_rb_del_y->right = _gsk_rb_del_z->right;                            \
-      _gsk_rb_del_y->parent = _gsk_rb_del_z->parent;                          \
-      if (_gsk_rb_del_y->parent)                                              \
+      set_is_red(_dsk_rb_del_y, is_red(_dsk_rb_del_z));                       \
+      _dsk_rb_del_y->left = _dsk_rb_del_z->left;                              \
+      _dsk_rb_del_y->right = _dsk_rb_del_z->right;                            \
+      _dsk_rb_del_y->parent = _dsk_rb_del_z->parent;                          \
+      if (_dsk_rb_del_y->parent)                                              \
 	{                                                                     \
-	  if (_gsk_rb_del_y->parent->left == _gsk_rb_del_z)                   \
-	    _gsk_rb_del_y->parent->left = _gsk_rb_del_y;                      \
+	  if (_dsk_rb_del_y->parent->left == _dsk_rb_del_z)                   \
+	    _dsk_rb_del_y->parent->left = _dsk_rb_del_y;                      \
 	  else                                                                \
-	    _gsk_rb_del_y->parent->right = _gsk_rb_del_y;                     \
+	    _dsk_rb_del_y->parent->right = _dsk_rb_del_y;                     \
 	}                                                                     \
       else                                                                    \
         {                                                                     \
-          top = _gsk_rb_del_y;                                                \
+          top = _dsk_rb_del_y;                                                \
         }                                                                     \
       /* TODO: look at pictures to see if "_AND_UP" is necessary */           \
-      _GSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, _gsk_rb_del_y);\
+      _DSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, _dsk_rb_del_y);\
                                                                               \
-      if (_gsk_rb_del_y->left)                                                \
-	_gsk_rb_del_y->left->parent = _gsk_rb_del_y;                          \
-      if (_gsk_rb_del_y->right)                                               \
-	_gsk_rb_del_y->right->parent = _gsk_rb_del_y;                         \
-      if (_gsk_rb_del_nullpar == _gsk_rb_del_z)                               \
-	_gsk_rb_del_nullpar = _gsk_rb_del_y;                                  \
+      if (_dsk_rb_del_y->left)                                                \
+	_dsk_rb_del_y->left->parent = _dsk_rb_del_y;                          \
+      if (_dsk_rb_del_y->right)                                               \
+	_dsk_rb_del_y->right->parent = _dsk_rb_del_y;                         \
+      if (_dsk_rb_del_nullpar == _dsk_rb_del_z)                               \
+	_dsk_rb_del_nullpar = _dsk_rb_del_y;                                  \
     }                                                                         \
-  if (_gsk_rb_del_fixup)                                                      \
+  if (_dsk_rb_del_fixup)                                                      \
     {                                                                         \
       /* delete fixup (Algorithms, p 274) */                                  \
-      while (_gsk_rb_del_x != top                                             \
-         && !(_gsk_rb_del_x != NULL && is_red (_gsk_rb_del_x)))               \
+      while (_dsk_rb_del_x != top                                             \
+         && !(_dsk_rb_del_x != NULL && is_red (_dsk_rb_del_x)))               \
         {                                                                     \
-          type _gsk_rb_del_xparent = _gsk_rb_del_x ? _gsk_rb_del_x->parent    \
-                                                   : _gsk_rb_del_nullpar;     \
-          if (_gsk_rb_del_x == _gsk_rb_del_xparent->left)                     \
+          type _dsk_rb_del_xparent = _dsk_rb_del_x ? _dsk_rb_del_x->parent    \
+                                                   : _dsk_rb_del_nullpar;     \
+          if (_dsk_rb_del_x == _dsk_rb_del_xparent->left)                     \
             {                                                                 \
-              type _gsk_rb_del_w = _gsk_rb_del_xparent->right;                \
-              if (_gsk_rb_del_w != NULL && is_red (_gsk_rb_del_w))            \
+              type _dsk_rb_del_w = _dsk_rb_del_xparent->right;                \
+              if (_dsk_rb_del_w != NULL && is_red (_dsk_rb_del_w))            \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 0);                              \
-                  set_is_red (_gsk_rb_del_xparent, 1);                        \
-                  GSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
-                                          _gsk_rb_del_xparent);               \
-                  _gsk_rb_del_w = _gsk_rb_del_xparent->right;                 \
+                  set_is_red (_dsk_rb_del_w, 0);                              \
+                  set_is_red (_dsk_rb_del_xparent, 1);                        \
+                  DSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
+                                          _dsk_rb_del_xparent);               \
+                  _dsk_rb_del_w = _dsk_rb_del_xparent->right;                 \
                 }                                                             \
-              if (!(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left))      \
-               && !(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right)))   \
+              if (!(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left))      \
+               && !(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right)))   \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 1);                              \
-                  _gsk_rb_del_x = _gsk_rb_del_xparent;                        \
+                  set_is_red (_dsk_rb_del_w, 1);                              \
+                  _dsk_rb_del_x = _dsk_rb_del_xparent;                        \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (!(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right)))\
+                  if (!(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right)))\
                     {                                                         \
-                      if (_gsk_rb_del_w->left)                                \
-                        set_is_red (_gsk_rb_del_w->left, 0);                  \
-                      set_is_red (_gsk_rb_del_w, 1);                          \
-                      GSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
-                                               _gsk_rb_del_w);                \
-                      _gsk_rb_del_w = _gsk_rb_del_xparent->right;             \
+                      if (_dsk_rb_del_w->left)                                \
+                        set_is_red (_dsk_rb_del_w->left, 0);                  \
+                      set_is_red (_dsk_rb_del_w, 1);                          \
+                      DSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
+                                               _dsk_rb_del_w);                \
+                      _dsk_rb_del_w = _dsk_rb_del_xparent->right;             \
                     }                                                         \
-                  set_is_red (_gsk_rb_del_w, is_red (_gsk_rb_del_xparent));   \
-                  set_is_red (_gsk_rb_del_xparent, 0);                        \
-                  set_is_red (_gsk_rb_del_w->right, 0);                       \
-                  GSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
-                                          _gsk_rb_del_xparent);               \
-                  _gsk_rb_del_x = top;                                        \
+                  set_is_red (_dsk_rb_del_w, is_red (_dsk_rb_del_xparent));   \
+                  set_is_red (_dsk_rb_del_xparent, 0);                        \
+                  set_is_red (_dsk_rb_del_w->right, 0);                       \
+                  DSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
+                                          _dsk_rb_del_xparent);               \
+                  _dsk_rb_del_x = top;                                        \
                 }                                                             \
             }                                                                 \
           else                                                                \
             {                                                                 \
-              type _gsk_rb_del_w = _gsk_rb_del_xparent->left;                 \
-              if (_gsk_rb_del_w && is_red (_gsk_rb_del_w))                    \
+              type _dsk_rb_del_w = _dsk_rb_del_xparent->left;                 \
+              if (_dsk_rb_del_w && is_red (_dsk_rb_del_w))                    \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 0);                              \
-                  set_is_red (_gsk_rb_del_xparent, 1);                        \
-                  GSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
-                                           _gsk_rb_del_xparent);              \
-                  _gsk_rb_del_w = _gsk_rb_del_xparent->left;                  \
+                  set_is_red (_dsk_rb_del_w, 0);                              \
+                  set_is_red (_dsk_rb_del_xparent, 1);                        \
+                  DSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
+                                           _dsk_rb_del_xparent);              \
+                  _dsk_rb_del_w = _dsk_rb_del_xparent->left;                  \
                 }                                                             \
-              if (!(_gsk_rb_del_w->right && is_red (_gsk_rb_del_w->right))    \
-               && !(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left)))     \
+              if (!(_dsk_rb_del_w->right && is_red (_dsk_rb_del_w->right))    \
+               && !(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left)))     \
                 {                                                             \
-                  set_is_red (_gsk_rb_del_w, 1);                              \
-                  _gsk_rb_del_x = _gsk_rb_del_xparent;                        \
+                  set_is_red (_dsk_rb_del_w, 1);                              \
+                  _dsk_rb_del_x = _dsk_rb_del_xparent;                        \
                 }                                                             \
               else                                                            \
                 {                                                             \
-                  if (!(_gsk_rb_del_w->left && is_red (_gsk_rb_del_w->left))) \
+                  if (!(_dsk_rb_del_w->left && is_red (_dsk_rb_del_w->left))) \
                     {                                                         \
-                      set_is_red (_gsk_rb_del_w->right, 0);                   \
-                      set_is_red (_gsk_rb_del_w, 1);                          \
-                      GSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
-                                              _gsk_rb_del_w);                 \
-                      _gsk_rb_del_w = _gsk_rb_del_xparent->left;              \
+                      set_is_red (_dsk_rb_del_w->right, 0);                   \
+                      set_is_red (_dsk_rb_del_w, 1);                          \
+                      DSK_RBCTREE_ROTATE_LEFT (top,type,parent,left,right,get_count,set_count, \
+                                              _dsk_rb_del_w);                 \
+                      _dsk_rb_del_w = _dsk_rb_del_xparent->left;              \
                     }                                                         \
-                  set_is_red (_gsk_rb_del_w, is_red (_gsk_rb_del_xparent));   \
-                  set_is_red (_gsk_rb_del_xparent, 0);                        \
-                  if (_gsk_rb_del_w->left)                                    \
-                    set_is_red (_gsk_rb_del_w->left, 0);                      \
-                  GSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
-                                           _gsk_rb_del_xparent);              \
-                  _gsk_rb_del_x = top;                                        \
+                  set_is_red (_dsk_rb_del_w, is_red (_dsk_rb_del_xparent));   \
+                  set_is_red (_dsk_rb_del_xparent, 0);                        \
+                  if (_dsk_rb_del_w->left)                                    \
+                    set_is_red (_dsk_rb_del_w->left, 0);                      \
+                  DSK_RBCTREE_ROTATE_RIGHT (top,type,parent,left,right,get_count,set_count, \
+                                           _dsk_rb_del_xparent);              \
+                  _dsk_rb_del_x = top;                                        \
                 }                                                             \
             }                                                                 \
         }                                                                     \
-      if (_gsk_rb_del_x != NULL)                                              \
-        set_is_red(_gsk_rb_del_x, 0);                                         \
+      if (_dsk_rb_del_x != NULL)                                              \
+        set_is_red(_dsk_rb_del_x, 0);                                         \
     }                                                                         \
-  _gsk_rb_del_z->left = NULL;                                                 \
-  _gsk_rb_del_z->right = NULL;                                                \
-  _gsk_rb_del_z->parent = NULL;                                               \
-}G_STMT_END
+  _dsk_rb_del_z->left = NULL;                                                 \
+  _dsk_rb_del_z->right = NULL;                                                \
+  _dsk_rb_del_z->parent = NULL;                                               \
+}DSK_STMT_END
 
-#define GSK_RBCTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
+#define DSK_RBCTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
  DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_count,parent,left,right,comparator, key,key_comparator,out)
-#define GSK_RBCTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
+#define DSK_RBCTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
  DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
-#define GSK_RBCTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
+#define DSK_RBCTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
  DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
-#define GSK_RBCTREE_LOOKUP_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
+#define DSK_RBCTREE_LOOKUP_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
   DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define GSK_RBCTREE_SUPREMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
+#define DSK_RBCTREE_SUPREMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
   DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define GSK_RBCTREE_INFIMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
+#define DSK_RBCTREE_INFIMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
   DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define GSK_RBCTREE_NEXT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, in, out)  \
+#define DSK_RBCTREE_NEXT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, in, out)  \
    DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
-#define GSK_RBCTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
+#define DSK_RBCTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
    DSK_RBTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
-#define GSK_RBCTREE_FIRST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
+#define DSK_RBCTREE_FIRST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
   DSK_RBTREE_FIRST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
-#define GSK_RBCTREE_LAST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
+#define DSK_RBCTREE_LAST_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, out)  \
   DSK_RBTREE_LAST_(top,type,is_red,set_is_red,parent,left,right,comparator, out)
 
-#define GSK_RBCTREE_GET_BY_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out) \
-  G_STMT_START{                                                                \
+#define DSK_RBCTREE_GET_BY_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out) \
+  DSK_STMT_START{                                                                \
     if (top == NULL || (index) >= get_count(top))                              \
       out = NULL;                                                              \
     else                                                                       \
-      GSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out);\
-  }G_STMT_END
-#define GSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out) \
-   G_STMT_START{                                                               \
-     type _gsk_at = (top);                                                     \
-     guint _gsk_index = (index);                                               \
+      DSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out);\
+  }DSK_STMT_END
+#define DSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, index,out) \
+   DSK_STMT_START{                                                               \
+     type _dsk_at = (top);                                                     \
+     size_t _dsk_index = (index);                                              \
      for (;;)                                                                  \
        {                                                                       \
-         guint _gsk_left_size = _gsk_at->left ? get_count(_gsk_at->left) : 0;  \
-         if (_gsk_index < _gsk_left_size)                                      \
-           _gsk_at = _gsk_at->left;                                            \
-         else if (_gsk_index == _gsk_left_size)                                \
+         size_t _dsk_left_size = _dsk_at->left ? get_count(_dsk_at->left) : 0; \
+         if (_dsk_index < _dsk_left_size)                                      \
+           _dsk_at = _dsk_at->left;                                            \
+         else if (_dsk_index == _dsk_left_size)                                \
            break;                                                              \
          else                                                                  \
            {                                                                   \
-             _gsk_index -= (_gsk_left_size + 1);                               \
-             _gsk_at = _gsk_at->right;                                         \
+             _dsk_index -= (_dsk_left_size + 1);                               \
+             _dsk_at = _dsk_at->right;                                         \
            }                                                                   \
        }                                                                       \
-     out = _gsk_at;                                                            \
-   }G_STMT_END
+     out = _dsk_at;                                                            \
+   }DSK_STMT_END
 
-#define GSK_RBCTREE_GET_NODE_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node,index_out) \
-   G_STMT_START{                                                               \
-     type _gsk_at = (node);                                                    \
-     guint _gsk_rv = _gsk_at->left ? get_count (_gsk_at->left) : 0;            \
-     while (_gsk_at->parent != NULL)                                           \
+#define DSK_RBCTREE_GET_NODE_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node,index_out) \
+   DSK_STMT_START{                                                               \
+     type _dsk_at = (node);                                                    \
+     size_t _dsk_rv = _dsk_at->left ? get_count (_dsk_at->left) : 0;           \
+     while (_dsk_at->parent != NULL)                                           \
        {                                                                       \
-         if (_gsk_at->parent->left == _gsk_at)                                 \
+         if (_dsk_at->parent->left == _dsk_at)                                 \
            ;                                                                   \
          else                                                                  \
            {                                                                   \
-             if (_gsk_at->parent->left)                                        \
-               _gsk_rv += get_count((_gsk_at->parent->left));                  \
-             _gsk_rv += 1;                                                     \
+             if (_dsk_at->parent->left)                                        \
+               _dsk_rv += get_count((_dsk_at->parent->left));                  \
+             _dsk_rv += 1;                                                     \
            }                                                                   \
-         _gsk_at = _gsk_at->parent;                                            \
+         _dsk_at = _dsk_at->parent;                                            \
        }                                                                       \
-     index_out = _gsk_rv;                                                      \
-   }G_STMT_END
+     index_out = _dsk_rv;                                                      \
+   }DSK_STMT_END
 
-#define GSK_RBCTREE_ROTATE_RIGHT(top,type,parent,left,right,get_count,set_count, node) \
-  GSK_RBCTREE_ROTATE_LEFT(top,type,parent,right,left,get_count,set_count, node)
-#define GSK_RBCTREE_ROTATE_LEFT(top,type,parent,left,right,get_count,set_count, node)  \
-G_STMT_START{                                                                 \
-  type _gsk_rot_x = (node);                                                   \
-  type _gsk_rot_y = _gsk_rot_x->right;                                        \
+#define DSK_RBCTREE_ROTATE_RIGHT(top,type,parent,left,right,get_count,set_count, node) \
+  DSK_RBCTREE_ROTATE_LEFT(top,type,parent,right,left,get_count,set_count, node)
+#define DSK_RBCTREE_ROTATE_LEFT(top,type,parent,left,right,get_count,set_count, node)  \
+DSK_STMT_START{                                                                 \
+  type _dsk_rot_x = (node);                                                   \
+  type _dsk_rot_y = _dsk_rot_x->right;                                        \
                                                                               \
-  _gsk_rot_x->right = _gsk_rot_y->left;                                       \
-  if (_gsk_rot_y->left)                                                       \
-    _gsk_rot_y->left->parent = _gsk_rot_x;                                    \
-  _gsk_rot_y->parent = _gsk_rot_x->parent;                                    \
-  if (_gsk_rot_x->parent == NULL)                                             \
-    top = _gsk_rot_y;                                                         \
-  else if (_gsk_rot_x == _gsk_rot_x->parent->left)                            \
-    _gsk_rot_x->parent->left = _gsk_rot_y;                                    \
+  _dsk_rot_x->right = _dsk_rot_y->left;                                       \
+  if (_dsk_rot_y->left)                                                       \
+    _dsk_rot_y->left->parent = _dsk_rot_x;                                    \
+  _dsk_rot_y->parent = _dsk_rot_x->parent;                                    \
+  if (_dsk_rot_x->parent == NULL)                                             \
+    top = _dsk_rot_y;                                                         \
+  else if (_dsk_rot_x == _dsk_rot_x->parent->left)                            \
+    _dsk_rot_x->parent->left = _dsk_rot_y;                                    \
   else                                                                        \
-    _gsk_rot_x->parent->right = _gsk_rot_y;                                   \
-  _gsk_rot_y->left = _gsk_rot_x;                                              \
-  _gsk_rot_x->parent = _gsk_rot_y;                                            \
+    _dsk_rot_x->parent->right = _dsk_rot_y;                                   \
+  _dsk_rot_y->left = _dsk_rot_x;                                              \
+  _dsk_rot_x->parent = _dsk_rot_y;                                            \
                                                                               \
   /* fixup counts. */                                                         \
   /* to re-derive this here's what rotate_left(x) does pictorially: */        \
@@ -1051,39 +1051,39 @@ G_STMT_START{                                                                 \
   /*           n2 = n0 - n1 - 1;                                    */        \
   /*           set_count(x, n2)                                     */        \
   /*           set_count(y, n0)                                     */        \
-  /*     c is _gsk_rot_y->right at this point                       */        \
+  /*     c is _dsk_rot_y->right at this point                       */        \
   /*                                                                */        \
   /* equivalently:                                                  */        \
   /*      y->count = x->count;                                      */        \
   /*      x->count -= c->count + 1                                  */        \
   {                                                                           \
-    guint _gsk_rot_n0 = get_count(_gsk_rot_x);                                \
-    guint _gsk_rot_n1 = _gsk_rot_y->right ? get_count(_gsk_rot_y->right) : 0; \
-    guint _gsk_rot_n2 = _gsk_rot_n0 - _gsk_rot_n1 - 1;                        \
-    set_count (_gsk_rot_x, _gsk_rot_n2);                                      \
-    set_count (_gsk_rot_y, _gsk_rot_n0);                                      \
+    size_t _dsk_rot_n0 = get_count(_dsk_rot_x);                               \
+    size_t _dsk_rot_n1 = _dsk_rot_y->right ? get_count(_dsk_rot_y->right) : 0;\
+    size_t _dsk_rot_n2 = _dsk_rot_n0 - _dsk_rot_n1 - 1;                       \
+    set_count (_dsk_rot_x, _dsk_rot_n2);                                      \
+    set_count (_dsk_rot_y, _dsk_rot_n0);                                      \
   }                                                                           \
-}G_STMT_END
+}DSK_STMT_END
 
  /* utility: recompute node's count, based on count of its children */
-#define _GSK_RBCTREE_FIX_COUNT(type,parent,left,right,get_count,set_count, node)          \
-G_STMT_START{                                                                 \
-  guint _gsk_fixcount_count = 1;                                              \
+#define _DSK_RBCTREE_FIX_COUNT(type,parent,left,right,get_count,set_count, node)          \
+DSK_STMT_START{                                                                 \
+  size_t _dsk_fixcount_count = 1;                                             \
   if ((node)->left != NULL)                                                   \
-    _gsk_fixcount_count += get_count((node)->left);                           \
+    _dsk_fixcount_count += get_count((node)->left);                           \
   if ((node)->right != NULL)                                                  \
-    _gsk_fixcount_count += get_count((node)->right);                          \
-  set_count((node), _gsk_fixcount_count);                                     \
-}G_STMT_END
+    _dsk_fixcount_count += get_count((node)->right);                          \
+  set_count((node), _dsk_fixcount_count);                                     \
+}DSK_STMT_END
 
  /* utility: recompute node's count, based on count of its children */
-#define _GSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, node)   \
-G_STMT_START{                                                                 \
+#define _DSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, node)   \
+DSK_STMT_START{                                                                 \
   type _tmp_fix_count_up;                                                     \
   for (_tmp_fix_count_up = (node);                                            \
        _tmp_fix_count_up != NULL;                                             \
        _tmp_fix_count_up = _tmp_fix_count_up->parent)                         \
-    _GSK_RBCTREE_FIX_COUNT (type,parent,left,right,get_count,set_count, _tmp_fix_count_up);\
-}G_STMT_END
+    _DSK_RBCTREE_FIX_COUNT (type,parent,left,right,get_count,set_count, _tmp_fix_count_up);\
+}DSK_STMT_END
 
 #endif

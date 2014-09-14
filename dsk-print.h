@@ -93,3 +93,9 @@ void dsk_print_set_filtered_buffer   (DskPrint    *context,
 			              const DskBuffer *buffer,
                                       DskOctetFilter *filter);
 
+
+/* generally discouraged, but still useful */
+dsk_boolean dsk_print_append_data    (DskPrint *print,
+                                      unsigned   length,
+                                      const uint8_t *data,
+			              DskError **error);

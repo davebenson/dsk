@@ -18,40 +18,48 @@ typedef enum
 } DskJsonValueType;
 const char *dsk_json_value_type_name (DskJsonValueType type);
 
-typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
-struct _DskJsonValueBoolean
+typedef struct _DskJsonValueBase DskJsonValueBase;
+struct _DskJsonValueBase
 {
   DskJsonValueType type;
   dsk_boolean value;
 };
+
+typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
+struct _DskJsonValueBoolean
+{
+  DskJsonValueBase base;
+  dsk_boolean value;
+};
 struct _DskJsonValueObject
 {
-  DskJsonValueType type;
+  DskJsonValueBase base;
   unsigned n_members;
   DskJsonMember *members;
   DskJsonMember **members_sorted_by_name; /* private */
 };
 struct _DskJsonValueArray
 {
-  DskJsonValueType type;
+  DskJsonValueBase base;
   unsigned n_values;
   DskJsonValue **values;
 };
 struct _DskJsonValueString
 {
-  DskJsonValueType type;
+  DskJsonValueBase base;
   unsigned length;            /* in bytes (!) */
   char *str;
 };
 struct _DskJsonValueNumber
 {
-  DskJsonValueType type;
+  DskJsonValueBase base;
   double value;
 };
 
 union _DskJsonValue
 {
   DskJsonValueType type;
+  DskJsonValueBase base;
   DskJsonValueBoolean v_boolean;
   DskJsonValueObject v_object;
   DskJsonValueArray v_array;

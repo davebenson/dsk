@@ -64,8 +64,9 @@ dsk_hex_encoder_process (DskOctetFilter *filter,
     }
   return DSK_TRUE;
 }
+
 static dsk_boolean
-dsk_hex_encoder_finish(DskOctetFilter *filter,
+dsk_hex_encoder_finish   (DskOctetFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
 {
@@ -79,8 +80,8 @@ dsk_hex_encoder_finish(DskOctetFilter *filter,
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskHexEncoder, dsk_hex_encoder);
 
 
-DskOctetFilter *dsk_hex_encoder_new             (dsk_boolean break_lines,
-                                                 dsk_boolean include_spaces)
+DskOctetFilter *dsk_hex_encoder_new (dsk_boolean break_lines,
+                                     dsk_boolean include_spaces)
 {
   DskHexEncoder *rv = dsk_object_new (&dsk_hex_encoder_class);
   rv->newlines = break_lines ? 1 : 0;

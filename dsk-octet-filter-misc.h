@@ -61,7 +61,7 @@ DskOctetFilter *dsk_whitespace_trimmer_new         (void);
 
 
 /* The "_take" suffix implies the reference-count is passed on all the filters,
- * since it's needed, and all there caller can't use them anyway.
+ * since it's needed, and their caller can't use them anyway.
  * However, the slab of memory at 'filters' is not taken over (the pointers
  * are copied)
  */

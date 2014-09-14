@@ -241,7 +241,7 @@ DSK_INLINE_FUNC void     dsk_uint64le_pack  (uint64_t       value,
                                              uint8_t       *rep)
 {
 #if DSK_SIZEOF_SIZE_T == 4
-  dsk_uint32le_pack (value >> 32, rep + 0);
+  dsk_uint32le_pack (value >> 32, rep + 4);
   dsk_uint32le_pack (value >> 0, rep);
 #else
   rep[0] = value>>0;

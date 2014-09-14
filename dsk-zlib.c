@@ -142,6 +142,7 @@ dsk_zlib_compressor_finish (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 
+#define dsk_zlib_compressor_init NULL
 static void
 dsk_zlib_compressor_finalize (DskZlibCompressor *compressor)
 {
@@ -149,16 +150,7 @@ dsk_zlib_compressor_finalize (DskZlibCompressor *compressor)
     deflateEnd (&compressor->zlib);
 }
   
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskZlibCompressor);
-static DskZlibCompressorClass dsk_zlib_compressor_class =
-{ {
-  DSK_OBJECT_CLASS_DEFINE(DskZlibCompressor,
-                          &dsk_octet_filter_class,
-			  NULL,
-			  dsk_zlib_compressor_finalize),
-  dsk_zlib_compressor_process,
-  dsk_zlib_compressor_finish
-} };
+DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibCompressor, dsk_zlib_compressor);
 
 DskOctetFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
                                            unsigned    level)
@@ -334,6 +326,7 @@ dsk_zlib_decompressor_finish (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 
+#define dsk_zlib_decompressor_init NULL
 static void
 dsk_zlib_decompressor_finalize (DskZlibDecompressor *compressor)
 {
@@ -341,16 +334,7 @@ dsk_zlib_decompressor_finalize (DskZlibDecompressor *compressor)
     inflateEnd (&compressor->zlib);
 }
   
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskZlibDecompressor);
-static DskZlibDecompressorClass dsk_zlib_decompressor_class =
-{ {
-  DSK_OBJECT_CLASS_DEFINE(DskZlibDecompressor,
-                          &dsk_octet_filter_class,
-			  NULL,
-			  dsk_zlib_decompressor_finalize),
-  dsk_zlib_decompressor_process,
-  dsk_zlib_decompressor_finish
-} };
+DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibDecompressor, dsk_zlib_decompressor);
 
 DskOctetFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
 {
