@@ -20,10 +20,13 @@ DSK_INLINE_FUNC uint64_t dsk_uint64le_parse (const uint8_t *rep);
 DSK_INLINE_FUNC int64_t  dsk_int64le_parse  (const uint8_t *rep);
 
 /* big-endian packing */
-/*TODO:24-bit packing*/
 DSK_INLINE_FUNC void     dsk_uint16be_pack  (uint16_t       value,
                                              uint8_t       *rep);
 DSK_INLINE_FUNC void     dsk_int16be_pack   (int16_t        value,
+                                             uint8_t       *rep);
+DSK_INLINE_FUNC void     dsk_uint24be_pack  (uint32_t       value,
+                                             uint8_t       *rep);
+DSK_INLINE_FUNC void     dsk_int24be_pack   (int32_t        value,
                                              uint8_t       *rep);
 DSK_INLINE_FUNC void     dsk_uint32be_pack  (uint32_t       value,
                                              uint8_t       *rep);
@@ -35,7 +38,6 @@ DSK_INLINE_FUNC void     dsk_int64be_pack   (int64_t        value,
                                              uint8_t       *rep);
 
 /* little-endian packing */
-/*TODO:24-bit packing*/
 DSK_INLINE_FUNC void     dsk_uint16le_pack  (uint16_t       value,
                                              uint8_t       *rep);
 DSK_INLINE_FUNC void     dsk_int16le_pack   (int16_t        value,
@@ -176,6 +178,18 @@ DSK_INLINE_FUNC void     dsk_int16be_pack   (int16_t        value,
 {
   dsk_uint16be_pack (value, rep);
 }
+DSK_INLINE_FUNC void     dsk_uint24be_pack  (uint32_t       value,
+                                             uint8_t       *rep)
+{
+  rep[0] = value>>16;
+  rep[1] = value>>8;
+  rep[2] = value>>0;
+}
+DSK_INLINE_FUNC void     dsk_int24be_pack   (int32_t        value,
+                                             uint8_t       *rep)
+{
+  dsk_uint24be_pack (value, rep);
+}
 DSK_INLINE_FUNC void     dsk_uint32be_pack  (uint32_t       value,
                                              uint8_t       *rep)
 {
@@ -223,6 +237,18 @@ DSK_INLINE_FUNC void     dsk_int16le_pack   (int16_t        value,
                                              uint8_t       *rep)
 {
   dsk_uint16le_pack (value, rep);
+}
+DSK_INLINE_FUNC void     dsk_uint24le_pack  (uint32_t       value,
+                                             uint8_t       *rep)
+{
+  rep[0] = value>>0;
+  rep[1] = value>>8;
+  rep[2] = value>>16;
+}
+DSK_INLINE_FUNC void     dsk_int24le_pack   (int32_t        value,
+                                             uint8_t       *rep)
+{
+  dsk_uint24le_pack (value, rep);
 }
 DSK_INLINE_FUNC void     dsk_uint32le_pack  (uint32_t       value,
                                              uint8_t       *rep)
