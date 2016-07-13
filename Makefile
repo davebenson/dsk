@@ -51,14 +51,17 @@ build-examples: example-build-dependencies $(EXAMPLE_PROGRAMS)
 EXTRA_PROGRAMS = programs/make-validation-test-data
 extra: $(EXTRA_PROGRAMS)
 
+DEP_CFLAGS := `pkg-config --cflags openssl`
+DEP_LIBS := `pkg-config --libs openssl`
+
 full: all extra
 
 # For minimum size:
 #CC_FLAGS =  -W -Wall -g -Os -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1
 
 # For standard initial size:
-CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS)
-LINK_FLAGS = -g -lz -lbz2 $(EXTRA_LDFLAGS)
+CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
+LINK_FLAGS = -g -lz -lbz2 $(EXTRA_LDFLAGS) $(DEP_LIBS)
 
 tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
@@ -153,6 +156,9 @@ dsk-pattern-char-classes.inc: mk-pattern-char-classes.pl
 	./$^ > $@
 
 mk-codepage: mk-codepage.c
+	gcc $(CC_FLAGS) -o $@ $^ 
+
+mk-unicode-tables: mk-unicode-tables.c
 	gcc $(CC_FLAGS) -o $@ $^ 
 
 codepages: mk-codepage Makefile

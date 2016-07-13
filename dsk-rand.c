@@ -135,34 +135,39 @@ dsk_rand_uint64 (DskRand* rand)
   return prv * 1181783497276652981LL; 
 }
 
-int32_t 
-dsk_rand_int_range (DskRand* rand, int32_t begin, int32_t end)
+// probably optimizable :)
+uint32_t dsk_rand_uint32         (DskRand* rand)
+{
+  return (uint32_t) dsk_rand_uint64 (rand);
+}
+
+int64_t 
+dsk_rand_int_range (DskRand* rand, int64_t begin, int64_t end)
 {
   uint32_t dist = end - begin;
-  uint32_t random;
+  uint64_t random;
 
   /* maxvalue is set to the predecessor of the greatest
-   * multiple of dist less or equal 2^32. */
-  uint32_t maxvalue;
-  if (dist <= 0x80000000u) /* 2^31 */
+   * multiple of dist less or equal 2^64. */
+  uint64_t maxvalue;
+  if (dist <= 0x8000000000000000llu) /* 2^63 */
     {
-      /* maxvalue = 2^32 - 1 - (2^32 % dist) */
-      uint32_t leftover = (0x80000000u % dist) * 2;
+      /* maxvalue = 2^64 - 1 - (2^64 % dist) */
+      uint32_t leftover = (0x8000000000000000llu % dist) * 2;
       if (leftover >= dist) leftover -= dist;
-      maxvalue = 0xffffffffu - leftover;
+      maxvalue = 0xffffffffffffffffllu - leftover;
     }
   else
     maxvalue = dist - 1;
   
   do
-    random = dsk_rand_uint32 (rand);
+    random = dsk_rand_uint64 (rand);
   while (random > maxvalue);
   
   random %= dist;
   return begin + random;
 }
 
-/* XXX: shouldn't we use the -1 hack. */
 /* transform [0..2^32] -> [0..1] */
 #define DSK_RAND_DOUBLE_TRANSFORM 2.3283064365386962890625e-10
 

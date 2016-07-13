@@ -1,13 +1,26 @@
 // ftp://ftp.unicode.org/Public/3.0-Update/UnicodeData-3.0.0.html
 #include <stdio.h>
+#include <string.h>
+#include "dsk.h"
 #include "dsk-priority-queue-macros.h"
 
+typedef enum
+{
+  SIMPLE_HUFFMAN_TREE_LEAF,
+  SIMPLE_HUFFMAN_TREE_NODE
+} SimpleHuffmanTreeNodeType;
+
+typedef struct _SimpleHuffmanTreeNode SimpleHuffmanTreeNode;
 struct _SimpleHuffmanTreeNode
 {
   SimpleHuffmanTreeNodeType type;
   union {
-    SimpleHuffmanTreeNodeType *children[2];
-    unsigned leaf;
+    struct {
+      SimpleHuffmanTreeNode *children[2];
+    } node;
+    struct {
+      unsigned index;
+    } leaf;
   } info;
 
   unsigned freq;
@@ -18,8 +31,6 @@ struct _SimpleHuffmanTreeNode
 
 #define PQ_COMPARE(a,b, rv) \
   rv = a < b ? -1 : a > b ? 1 : 0
-#define GET_PQ() \
-  SimpleHuffmanTreeNode *, n_huffman_nodes, huffman_node_tree, PQ_COMPARE
 
 #define ALLOC_NODE()   DSK_NEW (SimpleHuffmanTreeNode)
 
@@ -27,32 +38,33 @@ unsigned n_huffman_nodes = 0;
 unsigned huffman_nodes_alloced = 0;
 SimpleHuffmanTreeNode **huffman_node_tree;
 
-static void
-make_tree (size_t n_values, unsigned *value_freqs);
+static SimpleHuffmanTreeNode *
+make_tree (size_t n_values, unsigned *value_freqs)
 {
   size_t tree_size = n_values * 2 - 1;
   SimpleHuffmanTreeNode *tree = DSK_NEW_ARRAY (SimpleHuffmanTreeNode, tree_size);
   SimpleHuffmanTreeNode *previous_alloc = tree + tree_size;
   SimpleHuffmanTreeNode **pq = DSK_NEW_ARRAY (SimpleHuffmanTreeNode *, n_values);
+#define GET_PQ() \
+  SimpleHuffmanTreeNode *, pq_size, huffman_node_tree, PQ_COMPARE
   size_t pq_size = 0;
+  unsigned i;
   for (i = 0; i < n_values; i++)
     {
       SimpleHuffmanTreeNode *leaf = --previous_alloc;
       leaf->type = SIMPLE_HUFFMAN_TREE_LEAF;
-      leaf->info.leaf = i;
+      leaf->info.leaf.index = i;
       leaf->freq = value_freqs[i];
-      add_node (pq_size, pq, leaf);
+      DSK_PRIORITY_QUEUE_ADD (GET_PQ (), leaf);
       ++pq_size;
     }
   while (pq_size > 1)
     {
       SimpleHuffmanTreeNode *a = pq[0];
       DSK_PRIORITY_QUEUE_REMOVE_MIN (GET_PQ());
-      --pq_size;
 
       SimpleHuffmanTreeNode *b = pq[0];
       DSK_PRIORITY_QUEUE_REMOVE_MIN (GET_PQ());
-      --pq_size;
 
       SimpleHuffmanTreeNode *out = --previous_alloc;
       out->type = SIMPLE_HUFFMAN_TREE_NODE;
@@ -102,11 +114,15 @@ int main(int argc, char **argv)
   char linebuf[1024];
   struct LinePiece pieces[15];
 
+  (void) argc;
+  (void) argv;
+
   while (fgets (linebuf, sizeof (linebuf), stdin) != NULL)
     {
       char *newline = strchr (linebuf, '\n');
       *newline = ':';
       char *at = linebuf;
+      unsigned n_pieces = 0;
       while (n_pieces < 15)
         {
           pieces[n_pieces].str = at;

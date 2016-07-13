@@ -81,6 +81,7 @@ struct _DskJsonParser
   unsigned char bs_sequence_len;
   unsigned fixed_n_chars;   /* for TRUE, FALSE, NULL */
   unsigned line_no;
+  uint16_t utf16_surrogate;     /* must be 0 outside of IN_DQ and IN_DQ_BS */
   const char *static_syntax_error;
 
   /* --- parsing --- */
@@ -177,6 +178,8 @@ handle_subvalue          (DskJsonParser *parser,
   else
     {
       /* add to queue */
+ DskBuffer b = DSK_BUFFER_INIT;dsk_json_value_to_buffer (take, -1, &b);
+ dsk_warning("adding value to queue: %s\n",dsk_buffer_empty_to_string (&b));
       ValueQueue *q = DSK_NEW (ValueQueue);
       q->value = take;
       q->next = NULL;
@@ -282,9 +285,11 @@ handle_expected_subvalue (DskJsonParser *parser,
       }
 
     case JSON_TOKEN_TRUE:
+      printf("got JSON_TOKEN_TRUE\n");
       handle_subvalue (parser, dsk_json_value_new_boolean (DSK_TRUE));
       break;
     case JSON_TOKEN_FALSE:
+      printf("got JSON_TOKEN_FALSE\n");
       handle_subvalue (parser, dsk_json_value_new_boolean (DSK_FALSE));
       break;
     case JSON_TOKEN_NULL:
@@ -411,6 +416,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
           switch (*bytes)
             {
             case 't': case 'T':
+              printf("got t for true\n");
               parser->lex_state = JSON_LEX_STATE_TRUE;
               parser->fixed_n_chars = 1;
               bytes++;
@@ -520,6 +526,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
         case JSON_LEX_STATE_IN_DQ:
           if (*bytes == '"')
             {
+              // TODO ASSERT utf16_surrogate == 0
               if (!handle_token (parser, JSON_TOKEN_STRING, error))
                 return DSK_FALSE;
               bytes++;
@@ -535,6 +542,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
             }
           else
             {
+              // TODO ASSERT utf16_surrogate == 0
               unsigned i;
               if (*bytes == '\n')
                 parser->line_no++;
@@ -555,6 +563,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                 {
 #define WRITE_BS_CHAR_CASE(bschar, cchar) \
                 case bschar: \
+                  /* TODO ASSERT utf16_surrogate == 0 */ \
                   append_char_to_string_buffer (parser, cchar); \
                   bytes++; \
                   n_bytes--; \
@@ -598,10 +607,55 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                   unsigned value;
                   parser->bs_sequence[5] = 0;
                   value = strtoul (parser->bs_sequence + 1, NULL, 16);
-                  append_to_string_buffer (parser,
-                                           dsk_utf8_encode_unichar (utf8buf, value),
-                                           (const uint8_t *) utf8buf);
+                  if (DSK_UTF16_LO_SURROGATE_START <= value
+                   && value <= DSK_UTF16_LO_SURROGATE_END)
+                    {
+                      if (parser->utf16_surrogate != 0)
+                        {
+                          dsk_set_error (error,
+                                       "expected second half of UTF16 surrogate \\u%04u was followed by \\%04u, line %u",
+                                       parser->line_no, parser->utf16_surrogate, value);
+                          return DSK_FALSE;
+                        }
+                      append_to_string_buffer (parser,
+                                               dsk_utf8_encode_unichar (utf8buf, value),
+                                               (const uint8_t *) utf8buf);
+                    }
+                  else if (DSK_UTF16_HI_SURROGATE_START <= value
+                        && value <= DSK_UTF16_HI_SURROGATE_END)
+                    {
+                      if (parser->utf16_surrogate != 0)
+                        {
+                          dsk_set_error (error,
+                                       "got two first-half surrogate pairs (UTF16 surrogate \\u%04u was followed by \\%04u), line %u",
+                                       parser->utf16_surrogate, value, parser->line_no);
+                          return DSK_FALSE;
+                        }
+                      parser->utf16_surrogate = value;
+                    }
+                  else
+                    {
+                      if (parser->utf16_surrogate == 0)
+                        {
+                          dsk_set_error (error,
+                                       "second half of UTF16 surrogate \\u%04u was not preceded by utf16, line %u", 
+                                       parser->utf16_surrogate, parser->line_no);
+                          return DSK_FALSE;
+                        }
+                      uint32_t code = dsk_utf16_surrogate_pair_to_codepoint (parser->utf16_surrogate, value);
+                      append_to_string_buffer (parser,
+                                               dsk_utf8_encode_unichar (utf8buf, code),
+                                               (const uint8_t *) utf8buf);
+                      parser->utf16_surrogate = 0;
+                    }
                   parser->lex_state = JSON_LEX_STATE_IN_DQ;
+                }
+              else
+                {
+                  dsk_set_error (error,
+                               "internal error: expected 4 hex digits (line %u)",
+                               parser->line_no);
+                  return DSK_FALSE;
                 }
             }
           break;

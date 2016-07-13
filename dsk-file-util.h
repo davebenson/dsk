@@ -3,15 +3,15 @@
 #define DSK_DIR_SEPARATOR  '/'
 #define DSK_DIR_SEPARATOR_S  "/"
 
-uint8_t    *dsk_file_get_contents (const char *filename,
-                                   size_t     *size_out,
-			           DskError  **error);
-dsk_boolean dsk_file_set_contents (const char *filename,
-                                   size_t      size,
-                                   uint8_t    *contents,
-			           DskError  **error);
+uint8_t    *dsk_file_get_contents (const char    *filename,
+                                   size_t        *size_out,
+			           DskError     **error);
+dsk_boolean dsk_file_set_contents (const char    *filename,
+                                   size_t         size,
+                                   const uint8_t *contents,
+			           DskError     **error);
 
-dsk_boolean dsk_file_test_exists  (const char *filename);
+dsk_boolean dsk_file_test_exists  (const char    *filename);
 
 dsk_boolean dsk_mkdir_recursive (const char *dir,
                                  unsigned    permissions,

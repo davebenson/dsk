@@ -1,12 +1,33 @@
 #include <string.h>
 #include "dsk.h"
 
-unsigned dsk_strv_length  (char **strs)
+size_t
+dsk_strv_length  (char **strs)
 {
   unsigned i;
   for (i = 0; strs[i]; i++)
     ;
   return i;
+}
+void
+dsk_strv_lengths (char **strs,
+                  size_t *n_strings_out,            /* optional */
+                  size_t *total_string_bytes_out)   /* optional */
+{
+  if (total_string_bytes_out == NULL)
+    {
+      if (n_strings_out != NULL)
+        *n_strings_out = dsk_strv_length (strs);
+    }
+  else
+    {
+      size_t n, total;
+      for (n = total = 0; *strs != NULL; strs++, n++)
+        total += strlen (*strs);
+      if (n_strings_out != NULL)
+        *n_strings_out = n;
+      *total_string_bytes_out = total;
+    }
 }
 
 char **dsk_strv_concat  (char **a_strs, char **b_strs)
@@ -99,6 +120,25 @@ char    **dsk_strsplit     (const char *str,
       rv = dsk_realloc (rv, sizeof (char *) * (n + 2));
     }
   rv[n++] = dsk_strdup (str);
+  rv[n] = NULL;
+  return rv;
+}
+
+char **
+dsk_strv_copy_compact (char **strv)
+{
+  size_t i, n, total;
+  char **rv, *rv_chars;
+  dsk_strv_lengths (strv, &n, &total);
+  rv = dsk_malloc ((n + 1) * sizeof (char *) + total + n);
+  rv_chars = (char *) (rv + n + 1);
+  for (i = 0; i < n; i++)
+    {
+      size_t len = strlen (strv[i]);
+      rv[i] = rv_chars;
+      memcpy (rv_chars, strv[i], len + 1);
+      rv_chars += len + 1;
+    }
   rv[n] = NULL;
   return rv;
 }

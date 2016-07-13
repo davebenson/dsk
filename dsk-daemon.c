@@ -125,31 +125,36 @@ void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix)
 {
   unsigned skip = with_dsk_prefix ? 0 : strlen ("dsk-");
 
-  dsk_cmdline_add_boolean ("dsk-fork" + skip,
+#define MAYBE_SKIP_DSK_PREFIX(static_string, skip) \
+  &(static_string[skip])
+
+  dsk_cmdline_add_boolean (MAYBE_SKIP_DSK_PREFIX("dsk-fork", skip),
                            "fork and run in the background",
 			   NULL, 0, &dsk_daemon_do_fork);
 
-  dsk_cmdline_add_boolean ("dsk-watchdog" + skip,
+  dsk_cmdline_add_boolean (MAYBE_SKIP_DSK_PREFIX("dsk-watchdog", skip),
                            "restart if the program dies",
 			   NULL, 0, &dsk_daemon_watchdog);
 
-  dsk_cmdline_add_string  ("dsk-pid-filename" + skip,
+  dsk_cmdline_add_string  (MAYBE_SKIP_DSK_PREFIX("dsk-pid-filename", skip),
                            "file to write PID to, lock",
 			   "FILENAME", 0, &dsk_daemon_pid_filename);
 
-  dsk_cmdline_add_func    ("dsk-log-template" + skip,
+  dsk_cmdline_add_func    (MAYBE_SKIP_DSK_PREFIX("dsk-log-template", skip),
                            "redirect stdout and stderr to the given file",
 			   "STRFTIME_FILENAME", 0, handle_dsk_log_template, NULL);
-  dsk_cmdline_add_func    ("dsk-log-timezone" + skip,
+  dsk_cmdline_add_func    (MAYBE_SKIP_DSK_PREFIX("dsk-log-timezone", skip),
                            "use timezone for filenames and logs",
 			   "TZSPEC", 0, handle_dsk_log_timezone, NULL);
 
-  dsk_cmdline_add_string  ("dsk-alert-script" + skip,
+  dsk_cmdline_add_string  (MAYBE_SKIP_DSK_PREFIX("dsk-alert-script", skip),
                            "for the watchdog to run if the subprocess terminates",
 			   "SCRIPT", 0, &dsk_daemon_alert_script);
-  dsk_cmdline_add_uint    ("dsk-alert-interval" + skip,
+  dsk_cmdline_add_uint    (MAYBE_SKIP_DSK_PREFIX("dsk-alert-interval", skip),
                            "minimum time between invocation of alert script",
 			   "SECONDS", 0, &dsk_daemon_alert_interval);
+
+#undef MAYBE_SKIP_DSK_PREFIX
 }
 
 void dsk_daemon_maybe_fork (void)

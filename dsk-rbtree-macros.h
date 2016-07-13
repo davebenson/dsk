@@ -83,7 +83,7 @@
  *         Return the n-th element in the tree.
  *   GET_BY_INDEX_UNCHECKED(tree, n, out)
  *         Return the n-th element in the tree;
- *         n MUST be less than or equal to the number of
+ *         n MUST be less than the number of
  *         nodes in the tree.
  *   GET_NODE_INDEX(tree, node, n_out)
  *        Sets n_out to the index of node in the tree.

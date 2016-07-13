@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+// TODO: UTF-16 decoding
+
 
 /* amount to add to indent */
 #define INDENT 2

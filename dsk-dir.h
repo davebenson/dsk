@@ -137,5 +137,5 @@ typedef struct
 int          dsk_dir_mkdir                   (DskDir       *dir,
                                               const char   *src,
                                               DskDirMkdirFlags flags,
-                                              DskDirMkdirStats *stats,
+                                              DskDirMkdirStats *stats_out_optional,
                                               DskError    **error);

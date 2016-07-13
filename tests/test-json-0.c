@@ -1,5 +1,7 @@
 #include "../dsk.h"
 #include <string.h>
+#include <stdio.h>
+
 static dsk_boolean cmdline_verbose = DSK_FALSE;
 
 DskJsonValue *parse_value (const char *str)
@@ -19,6 +21,27 @@ DskJsonValue *parse_value (const char *str)
     dsk_die ("got two values?");
   dsk_json_parser_destroy (parser);
   return v;
+}
+void parse_fail (const char *str)
+{
+  DskJsonParser *parser = dsk_json_parser_new ();
+  DskError *error = NULL;
+  DskJsonValue *v;
+  if (cmdline_verbose)
+    dsk_warning ("parsing '%s'", str);
+  if (!dsk_json_parser_feed (parser, strlen (str), (const uint8_t *) str, &error))
+    {
+      dsk_json_parser_destroy (parser);
+      return;
+    }
+  if (!dsk_json_parser_finish (parser, &error))
+    {
+      dsk_json_parser_destroy (parser);
+      return;
+    }
+  v = dsk_json_parser_pop (parser);
+  dsk_assert (v == NULL);
+  dsk_json_parser_destroy (parser);
 }
 
 char *print_value (DskJsonValue *value)
@@ -169,6 +192,23 @@ int main(int argc, char **argv)
   dsk_assert (strcmp (str, "\"\\u0001\"") == 0);
   dsk_free (str);
   dsk_json_value_free (v);
+
+  // Test surrogate pair.
+  //  unicode points:     1         x10dc01     2
+  //  utf8, hex           01        f4 8d b0 81  02
+  v = parse_value ("\"\\u0001\"\\udbff\\udc01\\u0002\"");
+  dsk_assert (v->type == DSK_JSON_VALUE_STRING);
+  dsk_assert (v->v_string.length == 6);
+  dsk_assert (strcmp (v->v_string.str, "\x01\xf4\x8d\xb0\x81\x02") == 0);
+  str = print_value (v);
+  //dsk_assert (strcmp (str, "\"\\u0001\"") == 0);
+  printf("utf16 surrogate re-encoded is %s\n", str);
+  dsk_free (str);
+  dsk_json_value_free (v);
+
+  // Isolated surrogate pair parts do not parse.
+  parse_fail ("\\udbff");
+  parse_fail ("\\udc01");
 
   dsk_cleanup ();
   

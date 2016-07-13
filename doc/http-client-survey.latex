@@ -177,6 +177,7 @@ Based on analysis of version 7.21.2 downloaded from
 \subsection{java - JDK {\tt HttpUrllient}}
 \subsection{java - Jakarta {\tt HttpClient}}
 The Apache Foundation has an HTTP client library in Jakarta.\footnote{{\tt http://hc.apache.org/httpclient-3.x/features.html}}
+\subsection{node.js}
 \subsection{c\#}
 \subsection{gnet}
 \subsection{qt}

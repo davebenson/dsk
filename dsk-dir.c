@@ -1,4 +1,5 @@
 /* TODO: deprecate dsk-file-utils since these have equiv functionality if dir==NULL. */   
+/// 'cept tmpdir()
 
 #include <alloca.h>
 #include <sys/stat.h>
@@ -25,6 +26,10 @@ struct _DskDir
   char *openat_dir;
   unsigned openat_dir_len;
 
+  unsigned locked : 1;
+  unsigned erase_on_destroy : 1;
+  unsigned did_create : 1;
+
   unsigned ref_count;
 
   unsigned buf_alloced;
@@ -34,10 +39,6 @@ struct _DskDir
      two filename slots. */
   unsigned alt_buf_alloced;
   char *alt_buf;
-
-  dsk_boolean locked;
-  dsk_boolean erase_on_destroy;
-  dsk_boolean did_create;
 };
 
 DskDir      *dsk_dir_new                     (DskDir       *parent,

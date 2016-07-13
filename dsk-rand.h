@@ -36,9 +36,9 @@ void     dsk_rand_init_seed_array(DskRand* rand,
  */
 uint32_t dsk_rand_uint32         (DskRand* rand);
 uint64_t dsk_rand_uint64         (DskRand* rand);
-int32_t  dsk_rand_int_range      (DskRand* rand,
-                                  int32_t begin,
-                                  int32_t end);
+int64_t  dsk_rand_int_range      (DskRand* rand,
+                                  int64_t begin,
+                                  int64_t end);
 double   dsk_rand_double         (DskRand* rand);
 double   dsk_rand_double_range   (DskRand* rand,
                                   double begin,

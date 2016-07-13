@@ -77,18 +77,18 @@
 #define DSK_STACK_GET_BOTTOM(stack, rv_node) DSK_STACK_GET_BOTTOM_(stack, rv_node)
 
 #define DSK_STACK_PUSH_(type, top, next, node) 				\
-  do{								\
+  do{								        \
     type _dsk_tmp = (node);                                             \
     _dsk_tmp->next = (top);						\
     (top) = _dsk_tmp;							\
   }while(0)
 #define DSK_STACK_POP_(type, top, next, rv_node) 	                \
-  do{								\
+  do{								        \
     rv_node = (top);							\
     (top) = (top)->next;						\
   }while(0)
 #define DSK_STACK_INSERT_AFTER_(type, top, next, above_node, new_node)  \
-  do{								\
+  do{								        \
     type _dsk_tmp = (new_node);                                         \
     type _dsk_above = (above_node);                                     \
     _dsk_tmp->next = _dsk_above->next;				        \
@@ -97,7 +97,7 @@
 #define DSK_STACK_IS_EMPTY_(type, top, next)				\
   ((top) == NULL)
 #define DSK_STACK_REVERSE_(type, top, next)				\
-  do{								\
+  do{								        \
     type _dsk___prev = NULL;                                            \
     type _dsk___at = (top);						\
     while (_dsk___at != NULL)						\
@@ -109,7 +109,7 @@
       }									\
     (top) = _dsk___prev;						\
   }while(0)
-#define DSK_STACK_FOREACH_(type, top, next, iter_var, code)              \
+#define DSK_STACK_FOREACH_(type, top, next, iter_var, code)             \
   for (iter_var = top; iter_var != NULL; )                              \
     {                                                                   \
       type _dsk__next = iter_var->next;                                 \
@@ -214,8 +214,8 @@
         }                                                               \
   }while(0)
 
-#define DSK_STACK_GET_BOTTOM_(type, top, next, rv_node)                  \
-  do{                                                         \
+#define DSK_STACK_GET_BOTTOM_(type, top, next, rv_node)                 \
+  do{                                                                   \
     rv_node = top;                                                      \
     if (rv_node != NULL)                                                \
       while (rv_node->next)                                             \
@@ -231,7 +231,7 @@
 #define DSK_QUEUE_SORT(queue, comparator) DSK_QUEUE_SORT_(queue, comparator) 
 
 #define DSK_QUEUE_ENQUEUE_(type, head, tail, next, node)                \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_tmp = (node);                                             \
     if (tail)                                                           \
       tail->next = _dsk_tmp;                                            \
@@ -241,7 +241,7 @@
     node->next = NULL;                                                  \
   }while(0)
 #define DSK_QUEUE_DEQUEUE_(type, head, tail, next, rv_node)             \
-  do{                                                         \
+  do{                                                                   \
     rv_node = head;                                                     \
     if (head)                                                           \
       {                                                                 \
@@ -251,7 +251,7 @@
       }                                                                 \
   }while(0)
 #define DSK_QUEUE_PREPEND_(type, head, tail, next, node)                \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_tmp = (node);                                             \
     _dsk_tmp->next = head;                                              \
     head = _dsk_tmp;                                                    \
@@ -263,14 +263,14 @@
   ((head) == NULL)
 
 #define DSK_QUEUE_REVERSE_(type, head, tail, next)                      \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_queue_new_tail = head;                                    \
     DSK_STACK_REVERSE_(type, head, next);                               \
     tail = _dsk_queue_new_tail;                                         \
   }while(0)
 
 #define DSK_QUEUE_SORT_(type, head, tail, next, comparator)             \
-  do{                                                         \
+  do{                                                                   \
     DSK_STACK_SORT_(type, head, next, comparator);                      \
     DSK_STACK_GET_BOTTOM_(type, head, next, tail);                      \
   }while(0)
@@ -288,7 +288,7 @@
 #define DSK_LIST_SORT(list, comparator) DSK_LIST_SORT_(list, comparator)
 
 #define DSK_LIST_PREPEND_(type, first, last, prev, next, node)          \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_tmp = (node);                                             \
     if (first)                                                          \
       first->prev = (_dsk_tmp);                                         \
@@ -301,7 +301,7 @@
 #define DSK_LIST_APPEND_(type, first, last, prev, next, node)           \
   DSK_LIST_PREPEND_(type, last, first, next, prev, node)
 #define DSK_LIST_REMOVE_FIRST_(type, first, last, prev, next)           \
-  do{                                                         \
+  do{                                                                   \
     first = first->next;                                                \
     if (first == NULL)                                                  \
       last = NULL;                                                      \
@@ -311,7 +311,7 @@
 #define DSK_LIST_REMOVE_LAST_(type, first, last, prev, next)            \
   DSK_LIST_REMOVE_FIRST_(type, last, first, next, prev)
 #define DSK_LIST_REMOVE_(type, first, last, prev, next, node)           \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_tmp = (node);                                             \
     if (_dsk_tmp->prev)                                                 \
       _dsk_tmp->prev->next = _dsk_tmp->next;                            \
@@ -324,7 +324,7 @@
   }while(0)
 
 #define DSK_LIST_INSERT_AFTER_(type, first, last, prev, next, at, node) \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_at = (at);                                                \
     type _dsk_node = (node);                                            \
     _dsk_node->prev = _dsk_at;                                          \
@@ -340,7 +340,7 @@
 #define DSK_LIST_IS_EMPTY_(type, first, last, prev, next)               \
   ((first) == NULL)
 #define DSK_LIST_REVERSE_(type, first, last, prev, next)                \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_at = first;                                               \
     first = last;                                                       \
     last = _dsk_at;                                                     \
@@ -353,7 +353,7 @@
       }                                                                 \
   }while(0)
 #define DSK_LIST_SORT_(type, first, last, prev, next, comparator)       \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_prev = NULL;                                              \
     type _dsk_at;                                                       \
     DSK_STACK_SORT_(type, first, next, comparator);                     \
@@ -366,27 +366,27 @@
   }while(0)
 
 /* --- rings --- */
-#define DSK_RING_PREPEND(ring, node)                                      \
+#define DSK_RING_PREPEND(ring, node)                                    \
         DSK_RING_PREPEND_(ring, node)
-#define DSK_RING_APPEND(ring, node)                                       \
+#define DSK_RING_APPEND(ring, node)                                     \
         DSK_RING_APPEND_(ring, node)
-#define DSK_RING_REMOVE_FIRST(ring)                                       \
+#define DSK_RING_REMOVE_FIRST(ring)                                     \
         DSK_RING_REMOVE_FIRST_(ring, node)
-#define DSK_RING_REMOVE_LAST(ring)                                        \
+#define DSK_RING_REMOVE_LAST(ring)                                      \
         DSK_RING_REMOVE_LAST_(ring, node)
-#define DSK_RING_REMOVE(ring, node)                                       \
+#define DSK_RING_REMOVE(ring, node)                                     \
         DSK_RING_REMOVE_(ring, node)
-#define DSK_RING_INSERT_AFTER(ring, position_node, new_node)              \
+#define DSK_RING_INSERT_AFTER(ring, position_node, new_node)            \
         DSK_RING_INSERT_AFTER_(ring, node)
-#define DSK_RING_INSERT_BEFORE(ring, position_node, new_node)             \
+#define DSK_RING_INSERT_BEFORE(ring, position_node, new_node)           \
         DSK_RING_INSERT_BEFORE_(ring, node)
-#define DSK_RING_IS_EMPTY(ring)                                           \
+#define DSK_RING_IS_EMPTY(ring)                                         \
         DSK_RING_IS_EMPTY_(ring)
-#define DSK_RING_REVERSE(ring)                                            \
+#define DSK_RING_REVERSE(ring)                                          \
         DSK_RING_REVERSE_(ring, node)
-#define DSK_RING_FOREACH(ring, variable, code)                            \
+#define DSK_RING_FOREACH(ring, variable, code)                          \
         DSK_RING_FOREACH_(ring, variable, code)
-#define DSK_RING_SORT(ring, comparator)                                   \
+#define DSK_RING_SORT(ring, comparator)                                 \
         DSK_RING_SORT_(ring, variable, code)
 #define DSK_RING_PREPEND_(type, first, prev, next, node)                \
   do{                                                                   \
@@ -483,10 +483,10 @@
 
 /* --- Internals --- */
 #define _DSK_MERGE_NONEMPTY_LISTS(a,b,out,type,next,comparator)         \
-  do{                                                         \
+  do{                                                                   \
     type _dsk_out_at;                                                   \
     int _dsk_comparator_rv;                                             \
-    /* merge 'a' and 'b' into 'out' -- in order to make the sort stable,*/  \
+    /* merge 'a' and 'b' into 'out' -- in order to make the sort stable,*/\
     /* always put elements if 'a' first in the event of a tie (i.e. */  \
     /* when comparator_rv==0)                                       */  \
     comparator (a, b, _dsk_comparator_rv);                              \
