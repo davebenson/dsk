@@ -17,20 +17,19 @@ const char *dsk_json_value_type_name (DskJsonValueType type)
   return NULL;
 }
 
+DskJsonValueBase dsk_json_value__null = {
+  DSK_JSON_VALUE_NULL,
+  0,
+  DSK_JSON_VALUE_ALLOCATION_TYPE_STATIC
+};
 
 DskJsonValue *dsk_json_value_new_null   (void)
 {
-  DskJsonValue *rv = DSK_NEW (DskJsonValue);
-  rv->type = DSK_JSON_VALUE_NULL;
-  return rv;
+  return (DskJsonValue *) &dsk_json_value__null;
 }
 DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value)
 {
-dsk_warning("dsk_json_value_new_boolean: %d", value);
-  DskJsonValue *rv = DSK_NEW (DskJsonValue);
-  rv->type = DSK_JSON_VALUE_BOOLEAN;
-  rv->v_boolean.value = value;
-  return rv;
+  return (DskJsonValue *) (value ? &dsk_json_value__true : &dsk_json_value__false);
 }
 /* takes ownership of subvalues, but not of the members array */
 DskJsonValue *dsk_json_value_new_object (unsigned       n_members,

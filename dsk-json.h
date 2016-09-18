@@ -18,11 +18,19 @@ typedef enum
 } DskJsonValueType;
 const char *dsk_json_value_type_name (DskJsonValueType type);
 
+typedef enum {
+  DSK_JSON_VALUE_ALLOCATION_TYPE_DEFAULT,
+  DSK_JSON_VALUE_ALLOCATION_TYPE_STATIC,
+  DSK_JSON_VALUE_ALLOCATION_TYPE_PACKED,
+  DSK_JSON_VALUE_ALLOCATION_TYPE_SUBVALUE_OF_PACKED,
+} DskJsonValueAllocationType;
+
 typedef struct _DskJsonValueBase DskJsonValueBase;
 struct _DskJsonValueBase
 {
   DskJsonValueType type;
-  dsk_boolean value;
+  unsigned ref_count;
+  DskJsonValueAllocationType allocation_type;
 };
 
 typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
@@ -102,9 +110,11 @@ DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
                                          const char    *str);
 DskJsonValue *dsk_json_value_new_number (double         value);
-DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value);
-
-void          dsk_json_value_free       (DskJsonValue  *value);
+DskJsonValue *dsk_json_value_ref        (DskJsonValue  *value);
+void          dsk_json_value_unref      (DskJsonValue  *value);
+DskJsonValue *dsk_json_value_copy       (const DskJsonValue  *value,
+                                         dsk_boolean    pack,
+                                         dsk_boolean    force_copy_if_needed);
 
 DskJsonValue *dsk_json_object_get_value (DskJsonValue  *object,
                                          const char    *name);
