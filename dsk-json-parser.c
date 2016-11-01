@@ -285,11 +285,9 @@ handle_expected_subvalue (DskJsonParser *parser,
       }
 
     case JSON_TOKEN_TRUE:
-      printf("got JSON_TOKEN_TRUE\n");
       handle_subvalue (parser, dsk_json_value_new_boolean (DSK_TRUE));
       break;
     case JSON_TOKEN_FALSE:
-      printf("got JSON_TOKEN_FALSE\n");
       handle_subvalue (parser, dsk_json_value_new_boolean (DSK_FALSE));
       break;
     case JSON_TOKEN_NULL:
