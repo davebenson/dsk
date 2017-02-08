@@ -16,7 +16,7 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
     if (*at == '&')
       n_ampersand++;
   /* TODO: need max_cgi_vars for security????? */
-  *cgi_variables_out = DSK_NEW_ARRAY (DskCgiVariable, n_ampersand + 1);
+  *cgi_variables_out = DSK_NEW_ARRAY (n_ampersand + 1, DskCgiVariable);
   for (at = query_string; *at; )
     {
       const char *start;
@@ -148,7 +148,7 @@ dsk_boolean dsk_cgi_parse_post_data (const char *content_type,
           dsk_object_unref (decoder);
           return DSK_FALSE;
         }
-      *cgi_var_out = DSK_NEW_ARRAY (DskCgiVariable, *n_cgi_var_out);
+      *cgi_var_out = DSK_NEW_ARRAY (*n_cgi_var_out, DskCgiVariable);
       dsk_mime_multipart_decoder_dequeue_all (decoder, *cgi_var_out);
       dsk_object_unref (decoder);
       return DSK_TRUE;

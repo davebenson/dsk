@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L		/* for S_ISSOCK */
 #include <errno.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -20,6 +21,10 @@
 #include "dsk-main.h"
 #include "dsk-octet-fd.h"
 #include "dsk-octet-listener-socket.h"
+
+#if !defined(AF_LOCAL) && defined(AF_UNIX)
+#  define AF_LOCAL AF_UNIX
+#endif
 
 static DskIOResult
 dsk_octet_listener_socket_accept (DskOctetListener        *listener,

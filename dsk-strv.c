@@ -1,5 +1,6 @@
 #include <string.h>
 #include "dsk.h"
+#include "dsk-tmp-array-macros.h"
 
 size_t
 dsk_strv_length  (char **strs)
@@ -85,42 +86,19 @@ void   dsk_strv_free    (char **strs)
 char    **dsk_strsplit     (const char *str,
                             const char *sep)
 {
-  char *init[128];
-  char **rv = init;
-  unsigned alloced = DSK_N_ELEMENTS (init);
-  unsigned n = 0;
+  DSK_TMP_ARRAY_DECLARE(char *, arr, 128);
   unsigned sep_len = strlen (sep);
   char *next_sep = strstr (str, sep);
   while (next_sep)
     {
-      if (n == alloced)
-        {
-          if (rv == init)
-            {
-              rv = DSK_NEW_ARRAY (char*, alloced * 2);
-              memcpy (rv, init, sizeof (char*) * alloced);
-            }
-          else
-            {
-              rv = DSK_RENEW (char *, rv, alloced * 2);
-            }
-          alloced += alloced;
-        }
-      rv[n++] = dsk_strdup_slice (str, next_sep);
+      char *str = dsk_strdup_slice (str, next_sep);
+      DSK_TMP_ARRAY_APPEND (arr, str);
       str = next_sep + sep_len;
       next_sep = strstr (str + sep_len, sep);
     }
-  if (rv == init)
-    {
-      rv = dsk_malloc (sizeof (char *) * (n + 2));
-      memcpy (rv, init, sizeof (char *) * n);
-    }
-  else if (n + 1 >= alloced)
-    {
-      rv = dsk_realloc (rv, sizeof (char *) * (n + 2));
-    }
-  rv[n++] = dsk_strdup (str);
-  rv[n] = NULL;
+  DSK_TMP_ARRAY_APPEND (arr, NULL);
+  char **rv;
+  DSK_TMP_ARRAY_CLEAR_TO_ALLOCATION (arr, rv);
   return rv;
 }
 

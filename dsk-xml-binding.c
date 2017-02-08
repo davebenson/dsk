@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <alloca.h>
 #include "dsk.h"
 #include "dsk-xml-binding-internals.h"
 #include "dsk-rbtree-macros.h"
@@ -756,7 +757,7 @@ struct_members_to_xml        (DskXmlBindingType *type,
         break;
       }
   *n_nodes_out = n_children;
-  *nodes_out = DSK_NEW_ARRAY (DskXml *, n_children);
+  *nodes_out = DSK_NEW_ARRAY (n_children, DskXml *);
   children = *nodes_out;
   n_children = 0;
   for (i = 0; i < s->n_members; i++)
@@ -1100,7 +1101,7 @@ dsk_xml_binding_type_struct_new (DskXmlBindingNamespace *ns,
   rv->base_type.sizeof_instance = offset;
   rv->base_type.alignof_instance = max_align;
 
-  rv->members_sorted_by_name = DSK_NEW_ARRAY (unsigned, n_members);
+  rv->members_sorted_by_name = DSK_NEW_ARRAY (n_members, unsigned);
   for (i = 0; i < n_members; i++)
     rv->members_sorted_by_name[i] = i;
 #define COMPARE_MEMBERS_BY_NAME(a,b, rv) rv = strcmp (members[a].name, members[b].name)
@@ -1340,7 +1341,7 @@ dsk_xml_binding_type_union_new (DskXmlBindingNamespace *ns,
   rv->base_type.sizeof_instance = DSK_ALIGN (rv->variant_offset + sizeof_variant, alignof_variant);
   rv->base_type.alignof_instance = (DSK_ALIGNOF_INT > alignof_variant) ? DSK_ALIGNOF_INT : alignof_variant;
 
-  rv->cases_sorted_by_name = DSK_NEW_ARRAY (unsigned, n_cases);
+  rv->cases_sorted_by_name = DSK_NEW_ARRAY (n_cases, unsigned);
   for (i = 0; i < n_cases; i++)
     rv->cases_sorted_by_name[i] = i;
 #define COMPARE_CASES_BY_NAME(a,b, rv) rv = strcmp (cases[a].name, cases[b].name)

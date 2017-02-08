@@ -197,7 +197,7 @@ static dsk_boolean
 has_response_body (DskHttpRequest *request,
                    DskHttpResponse *response)
 {
-  return (request->verb != DSK_HTTP_VERB_HEAD)
+  return (request->method != DSK_HTTP_METHOD_HEAD)
      && (response->content_length >= 0
          || response->transfer_encoding_chunked
         );
@@ -1026,7 +1026,7 @@ dsk_http_client_stream_new     (DskOctetSink        *sink,
 }
 
 static dsk_boolean
-request_body_is_acceptable (DskHttpVerb verb)
+request_body_is_acceptable (DskHttpMethod method)
 {
   /*
      RFC 2616 Section 4.3 states: 
@@ -1036,10 +1036,10 @@ request_body_is_acceptable (DskHttpVerb verb)
      However RFC 2616 5.1.1 does not give any obvious
      restrictions.  So we just assume no-message-body is acceptable. */
 #if 0
-  return verb != DSK_HTTP_VERB_HEAD
-      && verb != DSK_HTTP_VERB_GET;
+  return method != DSK_HTTP_METHOD_HEAD
+      && method != DSK_HTTP_METHOD_GET;
 #else
-  DSK_UNUSED (verb);
+  DSK_UNUSED (method);
   return DSK_TRUE;
 #endif
 }
@@ -1128,7 +1128,7 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   uint32_t key3_array[2];
   if (old_misc == NULL)
     old_misc = (DskHttpHeaderMisc*) ropts->unparsed_headers;
-  misc = DSK_NEW_ARRAY (DskHttpHeaderMisc, old_n + 4);
+  misc = DSK_NEW_ARRAY (old_n + 4, DskHttpHeaderMisc);
   memcpy (misc, old_misc, old_n * sizeof (DskHttpHeaderMisc));
   misc[old_n].key = "Upgrade";
   misc[old_n].value = "Websocket";
@@ -1286,7 +1286,7 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
           dsk_object_unref (request);
           return NULL;
         }
-      if (request->verb != DSK_HTTP_VERB_GET)
+      if (request->method != DSK_HTTP_METHOD_GET)
         {
           dsk_set_error (error, "Websocket request must use GET");
           dsk_object_unref (request);
@@ -1328,12 +1328,12 @@ dsk_http_client_stream_request (DskHttpClientStream      *stream,
   else
     post_data = NULL;
 
-  if (post_data != NULL && !request_body_is_acceptable (request->verb))
+  if (post_data != NULL && !request_body_is_acceptable (request->method))
     {
       dsk_object_unref  (post_data);
       dsk_object_unref  (request);
-      dsk_set_error (error, "verb %s does not allow request message-bodies",
-                     dsk_http_verb_name (request->verb));
+      dsk_set_error (error, "method %s does not allow request message-bodies",
+                     dsk_http_verb_name (request->method));
       return NULL;
     }
 

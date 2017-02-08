@@ -138,7 +138,7 @@ struct _DskHttpClientRequestOptions
   dsk_boolean always_pipeline;
   dsk_boolean never_pipeline;
 
-  /* These are ignored unless VERB=POST.
+  /* These are ignored unless METHOD=POST.
      They are also ignored if post_cgi_vars==NULL (note that
      n_post_cgi_vars==0 && post_cgi_vars == NULL => no mime-multipart;
      n_post_cgi_vars==0 && post_cgi_vars != NULL => mime-multipart w/ 0 parts)

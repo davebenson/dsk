@@ -277,3 +277,62 @@ dsk_boolean  dsk_url_scan  (const char     *url_string,
 #undef CHECK
   return DSK_TRUE;
 }
+
+static char *strcut (const char *start, const char *end)
+{
+  if (start == NULL)
+    return NULL;
+  char *rv = dsk_malloc (end + 1 - start);
+  memcpy(rv, start, end-start);
+  rv[end - start] = 0;
+  return rv;
+}
+
+// TODO: optimize to use a single allocation for all the strings
+DskUrl *dsk_url_new           (const char *str, 
+                               DskError  **error)
+{
+  DskUrlScanned scanned;
+  if (!dsk_url_scan (str, &scanned, error))
+    return NULL;
+  DskUrl *url = dsk_object_new (&dsk_url_class);
+  url->scheme_str = strcut (scanned.scheme_start, scanned.scheme_end);
+  url->scheme = scanned.scheme;
+  url->username = strcut (scanned.username_start, scanned.username_end);
+  url->password = strcut (scanned.password_start, scanned.password_end);
+  url->host = strcut (scanned.host_start, scanned.host_end);
+  url->port = scanned.port;
+  url->path = strcut (scanned.path_start, scanned.path_end);
+  url->query = strcut (scanned.query_start, scanned.query_end);
+  url->fragment = strcut (scanned.fragment_start, scanned.fragment_end);
+  return url;
+};
+
+#define dsk_url_init NULL
+static void
+dsk_url_finalize (DskUrl *url)
+{
+  dsk_free (url->scheme_str);
+  dsk_free (url->username);
+  dsk_free (url->password);
+  dsk_free (url->host);
+  dsk_free (url->path);
+  dsk_free (url->query);
+  dsk_free (url->fragment);
+}
+
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskUrl);
+DskUrlClass dsk_url_class = { DSK_OBJECT_CLASS_DEFINE (DskUrl, &dsk_object_class, NULL, dsk_url_finalize) };
+
+DskUrl *dsk_url_new_from_base (DskUrl *base,
+                               const char *path,
+                               DskError  **error);
+DskUrl *dsk_url_new_from_parts(const char *scheme,
+                               const char *username,
+                               const char *password,
+                               const char *host,
+                               int         port,
+                               const char *path,
+                               const char *query,
+                               const char *fragment);
+

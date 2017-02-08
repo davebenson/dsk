@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <alloca.h>
 #include "dsk.h"
 
 #define DEFAULT_INIT_N_MISC_HEADERS             8       /* must be power-of-two */
@@ -590,37 +591,37 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
        && (pi.slab[2] == 'a' || pi.slab[2] == 'A')
        && (pi.slab[3] == 'd' || pi.slab[3] == 'D'))
         {
-          options.verb = DSK_HTTP_VERB_HEAD;
+          options.method = DSK_HTTP_METHOD_HEAD;
           at = pi.slab + 4;
           break;
         }
-      goto handle_unknown_verb;
+      goto handle_unknown_method;
     case 'g': case 'G':
       if ((pi.slab[1] == 'e' || pi.slab[1] == 'E')
        && (pi.slab[2] == 't' || pi.slab[2] == 'T'))
         {
-          options.verb = DSK_HTTP_VERB_GET;
+          options.method = DSK_HTTP_METHOD_GET;
           at = pi.slab + 3;
           break;
         }
-      goto handle_unknown_verb;
+      goto handle_unknown_method;
     case 'p': case 'P':
       if ((pi.slab[1] == 'o' || pi.slab[1] == 'O')
        && (pi.slab[2] == 's' || pi.slab[2] == 'S')
        && (pi.slab[3] == 't' || pi.slab[3] == 'T'))
         {
-          options.verb = DSK_HTTP_VERB_POST;
+          options.method = DSK_HTTP_METHOD_POST;
           at = pi.slab + 4;
           break;
         }
       if ((pi.slab[1] == 'u' || pi.slab[1] == 'U')
        && (pi.slab[2] == 't' || pi.slab[2] == 'T'))
         {
-          options.verb = DSK_HTTP_VERB_PUT;
+          options.method = DSK_HTTP_METHOD_PUT;
           at = pi.slab + 3;
           break;
         }
-      goto handle_unknown_verb;
+      goto handle_unknown_method;
     case 'c': case 'C':
       if ((pi.slab[1] == 'o' || pi.slab[1] == 'O')
        && (pi.slab[2] == 'n' || pi.slab[2] == 'N')
@@ -629,11 +630,11 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
        && (pi.slab[5] == 'c' || pi.slab[5] == 'C')
        && (pi.slab[6] == 't' || pi.slab[6] == 'T'))
         {
-          options.verb = DSK_HTTP_VERB_CONNECT;
+          options.method = DSK_HTTP_METHOD_CONNECT;
           at = pi.slab + 7;
           break;
         }
-      goto handle_unknown_verb;
+      goto handle_unknown_method;
     case 'd': case 'D':
       if ((pi.slab[1] == 'e' || pi.slab[1] == 'E')
        && (pi.slab[2] == 'l' || pi.slab[2] == 'L')
@@ -641,11 +642,11 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
        && (pi.slab[4] == 't' || pi.slab[4] == 'T')
        && (pi.slab[5] == 'e' || pi.slab[5] == 'E'))
         {
-          options.verb = DSK_HTTP_VERB_DELETE;
+          options.method = DSK_HTTP_METHOD_DELETE;
           at = pi.slab + 6;
           break;
         }
-      goto handle_unknown_verb;
+      goto handle_unknown_method;
     case 'o': case 'O':
       if ((pi.slab[1] == 'p' || pi.slab[1] == 'P')
        && (pi.slab[2] == 't' || pi.slab[2] == 'T')
@@ -654,24 +655,24 @@ dsk_http_request_parse_buffer  (DskBuffer *buffer,
        && (pi.slab[5] == 'n' || pi.slab[5] == 'N')
        && (pi.slab[6] == 's' || pi.slab[6] == 'S'))
         {
-          options.verb = DSK_HTTP_VERB_OPTIONS;
+          options.method = DSK_HTTP_METHOD_OPTIONS;
           at = pi.slab + 7;
           break;
         }
-      goto handle_unknown_verb;
-    default: handle_unknown_verb:
+      goto handle_unknown_method;
+    default: handle_unknown_method:
       {
         at = pi.slab;
         while (dsk_ascii_isalnum (*at))
           at++;
         *at = 0;
-        dsk_set_error (error, "unknown verb '%s' in HTTP request", pi.slab);
+        dsk_set_error (error, "unknown method '%s' in HTTP request", pi.slab);
         parse_info_clear (&pi);
         return DSK_FALSE;
       }
     }
 
-  /* skip space after verb */
+  /* skip space after method */
   while (*at == ' ' || *at == '\t')
     at++;
   options.full_path = at;

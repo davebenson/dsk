@@ -194,7 +194,7 @@ restart:
         case DSK_WEBSOCKET_MODE_RETURN_ERROR:
           websocket->to_discard = length + 9;
           maybe_discard_data (websocket);
-          dsk_set_error (error, "packet too long (%llu bytes)", length);
+          dsk_set_error (error, "packet too long (%"PRIu64" bytes)", length);
           return DSK_IO_RESULT_ERROR;
         }
     }

@@ -1,11 +1,16 @@
 /* TODO: deprecate dsk-file-utils since these have equiv functionality if dir==NULL. */   
 /// 'cept tmpdir()
 
+#define _POSIX_C_SOURCE  200809L
+#define _DARWIN_C_SOURCE
+
+#define _ATFILE_SOURCE
 #include <alloca.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <sys/fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -612,7 +617,7 @@ retry_sys_open:
   fd = dsk_dir_sys_open (dir, path, flags, 0);
   if (fd < 0)
     {
-      if (dsk_fd_creation_failed ())
+      if (dsk_fd_creation_failed (errno))
         goto retry_sys_open;
       return NULL;
     }

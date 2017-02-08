@@ -767,7 +767,7 @@ dsk_date_strftime (const DskDate *date,
       if (*format != '%')
         {
           *out++ = *format++;
-          break;
+          continue;
         }
       switch (format[1])
         {
@@ -986,4 +986,145 @@ dsk_date_strftime (const DskDate *date,
     return DSK_FALSE;
   *out = 0;
   return DSK_TRUE;
+}
+
+#define MAX_DAY_OF_WEEK_NAME_LENGTH 15
+#define MAX_MONTH_NAME_LENGTH 15
+
+int
+dsk_strftime_max_length (const char    *format)
+{
+  unsigned rv = 0;
+  while (*format != '\0')
+    {
+      if (*format != '%')
+        {
+	  rv++;
+	  format++;
+          continue;
+        }
+      switch (format[1])
+        {
+        case 'A':
+          rv += MAX_DAY_OF_WEEK_NAME_LENGTH;
+          format += 2;
+          break;
+        case 'a':
+          rv += 3;
+          format += 2;
+          break;
+        case 'B':
+          rv += MAX_MONTH_NAME_LENGTH;
+          format += 2;
+          break;
+        case 'b':
+        case 'h':
+          rv += 3;
+          format += 2;
+          break;
+        case 'C':
+          rv += 2;
+          format += 2;
+          break;
+        case 'd':
+          rv += 2;
+          format += 2;
+          break;
+        case 'e':
+          rv += 2;
+          format += 2;
+          break;
+        case 'F':
+          /* %Y-%m-%d */
+          rv += 10;
+          format += 2;
+          break;
+        //case 'G':
+        //case 'g':   ///////// "is replaced by a year as a decimal number with century.  This year is the one that contains the greater part of the week (Monday as the first day of the week).
+
+        case 'H':
+          rv += 2;
+          format += 2;
+          break;
+        case 'I':
+          rv += 2;
+	  format += 2;
+          break;
+        case 'j':
+          rv += 3;
+	  format += 2;
+          break;
+        case 'k':
+          rv += 2;
+          format += 2;
+          break;
+        case 'l':
+          rv += 2;
+	  format += 2;
+          break;
+        case 'M':
+          rv += 2;
+          format += 2;
+          break;
+        case 'm':
+        case 'p':
+          rv += 2;
+          format += 2;
+          break;
+        case 'n':
+          rv += 1;
+          format += 2;
+          break;
+
+        case 'O':
+        case 'E':
+          /* NOTE: alternate formats (roman numerals???) not supported,
+             fun as it would be. */
+          return DSK_FALSE;
+
+        case 'R':
+        case 'r':
+          rv += 5;
+          format += 2;
+          break;
+        case 'S':
+          rv += 2;
+          format += 2;
+          break;
+        case 's':
+          rv += 13;
+	  format += 2;
+	  break;
+        case 'T':
+          rv += 8;
+          format += 2;
+          break;
+        case 't':
+          rv += 1;
+          format += 2;
+          break;
+        case 'Y':
+          rv += 4;
+          format += 2;
+          break;
+        case 'y':
+          rv += 2;
+          format += 2;
+          break;
+        /* TO HANDLE: c,D,U,u,V,v,W,w,X,x,Z */
+        case '%':
+          rv += 1;
+          format += 2;
+          break;
+        case 0:
+          /* unfollowed '%' */
+          format++;
+          break;
+        default:
+          /* ignore unknown format codes */
+          format += 2;
+          break;
+        }
+    }
+  return rv;
 }

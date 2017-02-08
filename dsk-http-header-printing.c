@@ -94,7 +94,7 @@ append_unparsed_headers (DskBuffer *buffer,
 void             dsk_http_request_print_buffer  (DskHttpRequest *request,
                                                  DskBuffer *buffer)
 {
-  dsk_buffer_append_string (buffer, dsk_http_verb_name (request->verb));
+  dsk_buffer_append_string (buffer, dsk_http_verb_name (request->method));
   dsk_buffer_append_byte (buffer, ' ');
   dsk_buffer_append_string (buffer, request->path);
   append_space_http_version (buffer,

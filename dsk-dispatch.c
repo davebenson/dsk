@@ -9,6 +9,7 @@
 /* TODO:
  *  use DskMemPoolFixed instead of recycling lists
  */
+#define _POSIX_C_SOURCE  1
 #include <assert.h>
 #include <alloca.h>
 #include <sys/time.h>
@@ -228,14 +229,14 @@ DskDispatch *dsk_dispatch_new (void)
   struct timeval tv;
   rv->base.n_changes = 0;
   rv->notifies_desired_alloced = 8;
-  rv->base.notifies_desired = DSK_NEW_ARRAY (DskFileDescriptorNotify, rv->notifies_desired_alloced);
+  rv->base.notifies_desired = DSK_NEW_ARRAY (rv->notifies_desired_alloced, DskFileDescriptorNotify);
   rv->base.n_notifies_desired = 0;
-  rv->callbacks = DSK_NEW_ARRAY (Callback, rv->notifies_desired_alloced);
+  rv->callbacks = DSK_NEW_ARRAY (rv->notifies_desired_alloced, Callback);
   rv->changes_alloced = 8;
-  rv->base.changes = DSK_NEW_ARRAY (DskFileDescriptorNotifyChange, rv->changes_alloced);
+  rv->base.changes = DSK_NEW_ARRAY (rv->changes_alloced, DskFileDescriptorNotifyChange);
 #if HAVE_SMALL_FDS
   rv->fd_map_size = 16;
-  rv->fd_map = DSK_NEW_ARRAY (FDMap, rv->fd_map_size);
+  rv->fd_map = DSK_NEW_ARRAY (rv->fd_map_size, FDMap);
   memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
 #else
   rv->fd_map_tree = NULL;
@@ -351,7 +352,7 @@ enlarge_fd_map (RealDispatch *d,
   FDMap *new_map;
   while (fd >= new_size)
     new_size *= 2;
-  new_map = DSK_NEW_ARRAY (FDMap, new_size);
+  new_map = DSK_NEW_ARRAY (new_size, FDMap);
   memcpy (new_map, d->fd_map, d->fd_map_size * sizeof (FDMap));
   memset (new_map + d->fd_map_size,
           255,
@@ -377,8 +378,8 @@ allocate_notifies_desired_index (RealDispatch *d)
   if (rv == d->notifies_desired_alloced)
     {
       unsigned new_size = d->notifies_desired_alloced * 2;
-      DskFileDescriptorNotify *n = DSK_NEW_ARRAY (DskFileDescriptorNotify, new_size);
-      Callback *c = DSK_NEW_ARRAY (Callback, new_size);
+      DskFileDescriptorNotify *n = DSK_NEW_ARRAY (new_size, DskFileDescriptorNotify);
+      Callback *c = DSK_NEW_ARRAY (new_size, Callback);
       memcpy (n, d->base.notifies_desired, d->notifies_desired_alloced * sizeof (DskFileDescriptorNotify));
       dsk_free (d->base.notifies_desired);
       memcpy (c, d->callbacks, d->notifies_desired_alloced * sizeof (Callback));
@@ -399,7 +400,7 @@ allocate_change_index (RealDispatch *d)
   if (rv == d->changes_alloced)
     {
       unsigned new_size = d->changes_alloced * 2;
-      DskFileDescriptorNotifyChange *n = DSK_NEW_ARRAY (DskFileDescriptorNotifyChange, new_size);
+      DskFileDescriptorNotifyChange *n = DSK_NEW_ARRAY (new_size, DskFileDescriptorNotifyChange);
       memcpy (n, d->base.changes, d->changes_alloced * sizeof (DskFileDescriptorNotifyChange));
       dsk_free (d->base.changes);
       d->base.changes = n;
@@ -826,7 +827,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
   if (dispatch->n_notifies_desired < 128)
     fds = alloca (sizeof (struct pollfd) * dispatch->n_notifies_desired);
   else
-    to_free = fds = DSK_NEW_ARRAY (struct pollfd, dispatch->n_notifies_desired);
+    to_free = fds = DSK_NEW_ARRAY (dispatch->n_notifies_desired, struct pollfd);
   for (i = 0; i < dispatch->n_notifies_desired; i++)
     {
       fds[i].fd = dispatch->notifies_desired[i].fd;
@@ -849,7 +850,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
   if (n_events < 128)
     events = alloca (sizeof (DskFileDescriptorNotify) * n_events);
   else
-    to_free2 = events = DSK_NEW_ARRAY (DskFileDescriptorNotify, n_events);
+    to_free2 = events = DSK_NEW_ARRAY (n_events, DskFileDescriptorNotify);
   n_events = 0;
   for (i = 0; i < dispatch->n_notifies_desired; i++)
     if (fds[i].revents)
@@ -1069,12 +1070,13 @@ retry_write:
         {
           /* should be give a warning or something?
              i have no idea what error we might get */
-          const char message1[] = "unexpected error doing signal notification (";
-          const char message2[] = ")\n";
-          const char *se = strerror (errno);
-          write (STDERR_FILENO, message1, sizeof (message1)-1);
-          write (STDERR_FILENO, se, strlen (se));
-          write (STDERR_FILENO, message2, sizeof (message2)-1);
+          char msg[256];
+          snprintf(msg, sizeof(msg), "unexpected error doing signal notification (%s)\n", strerror (errno));
+          unsigned msg_len = strlen (msg);
+          if (write (STDERR_FILENO, msg, msg_len) != msg_len)
+            { 
+              // not clear what we can do at this point.
+            }
         }
     }
 }

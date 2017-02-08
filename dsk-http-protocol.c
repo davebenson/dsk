@@ -79,26 +79,26 @@ dsk_http_status_get_message(DskHttpStatus status)
   return "Unknown HTTP Status Code being proxied";
 }
 
-const char *dsk_http_verb_name (DskHttpVerb verb)
+const char *dsk_http_verb_name (DskHttpMethod method)
 {
-  switch (verb)
+  switch (method)
     {
-    case DSK_HTTP_VERB_GET: return "GET";
-    case DSK_HTTP_VERB_POST: return "POST";
-    case DSK_HTTP_VERB_PUT: return "PUT";
-    case DSK_HTTP_VERB_HEAD: return "HEAD";
-    case DSK_HTTP_VERB_OPTIONS: return "OPTIONS";
-    case DSK_HTTP_VERB_DELETE: return "DELETE";
-    case DSK_HTTP_VERB_TRACE: return "TRACE";
-    case DSK_HTTP_VERB_CONNECT: return "CONNECT";
-    default: return "*BAD_VERB*";
+    case DSK_HTTP_METHOD_GET: return "GET";
+    case DSK_HTTP_METHOD_POST: return "POST";
+    case DSK_HTTP_METHOD_PUT: return "PUT";
+    case DSK_HTTP_METHOD_HEAD: return "HEAD";
+    case DSK_HTTP_METHOD_OPTIONS: return "OPTIONS";
+    case DSK_HTTP_METHOD_DELETE: return "DELETE";
+    case DSK_HTTP_METHOD_TRACE: return "TRACE";
+    case DSK_HTTP_METHOD_CONNECT: return "CONNECT";
+    default: return "*BAD_METHOD*";
     }
 }
-dsk_boolean dsk_http_has_response_body (DskHttpVerb request_verb,
+dsk_boolean dsk_http_has_response_body (DskHttpMethod request_method,
                                         DskHttpStatus response_status_code)
 {
   /* See RFC 2616, 4.3 */
-  return request_verb != DSK_HTTP_VERB_HEAD
+  return request_method != DSK_HTTP_METHOD_HEAD
       && response_status_code >= 200
       && response_status_code != 204
       && response_status_code != 304;
@@ -258,9 +258,9 @@ phase2_handle_unparsed_headers (unsigned n_unparsed, char **unparsed,
 }
 
 static dsk_boolean
-has_request_body (DskHttpVerb verb)
+has_request_body (DskHttpMethod method)
 {
-  return (verb == DSK_HTTP_VERB_POST || verb == DSK_HTTP_VERB_PUT);
+  return (method == DSK_HTTP_METHOD_POST || method == DSK_HTTP_METHOD_PUT);
 }
 
 
@@ -318,7 +318,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
   char *aligned_at;
   char *str_slab;
 
-  request->verb = options->verb;
+  request->method = options->method;
 
   /* ---- Pass 1:  compute memory needed ---- */
   /* We try to store as much information as we can
@@ -368,7 +368,7 @@ dsk_http_request_new (DskHttpRequestOptions *options,
     }
   else if (options->content_length >= 0 
         || options->transfer_encoding_chunked
-        || has_request_body (options->verb))
+        || has_request_body (options->method))
     {
       if (options->content_length >= 0)
         request->content_length = options->content_length;
@@ -562,10 +562,10 @@ void
 dsk_http_request_init_options (DskHttpRequest *header,
                                DskHttpRequestOptions *out)
 {
-  out->verb = header->verb;
+  out->method = header->method;
   /* TODO: simple assignment */
 #define ASSIGN(field) out->field = header->field
-  ASSIGN (verb);
+  ASSIGN (method);
   ASSIGN (http_major_version);
   ASSIGN (http_minor_version);
   out->full_path = header->path;

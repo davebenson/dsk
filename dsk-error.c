@@ -64,11 +64,24 @@ void dsk_set_error (DskError **error,
   if (error == NULL)
     return;
 
-  dsk_assert (*error == NULL);
+  DskError *new_error;
 
   va_start (args, format);
-  *error = dsk_error_new_valist (format, args);
+  new_error = dsk_error_new_valist (format, args);
   va_end (args);
+
+  if (*error != NULL)
+    {
+      dsk_warning ("attempting to override error in dsk_set_error.  old error:\n"
+                   "   %s\n"
+                   "New error:\n"
+                   "   %s\n",
+                   (*error)->message,
+                   new_error->message);
+      dsk_error_unref (new_error);
+    }
+  else
+    *error = new_error;
 }
 
 DskError *dsk_error_ref        (DskError   *error)

@@ -11,8 +11,8 @@
   next
 
 /* warn if a content-body is provided for HEAD;
-   or if not provided for any other verb. */
-#define DEBUG_ODD_VERB_USE              1
+   or if not provided for any other method. */
+#define DEBUG_ODD_METHOD_USE              1
 
 /* print message on error */
 #define DEBUG_PRINT_ERRORS              1
@@ -290,8 +290,8 @@ restart_processing:
                 xfer->read_state = DSK_HTTP_SERVER_STREAM_READ_WEBSOCKET;
                 goto restart_processing;
               }
-            has_content = request->verb == DSK_HTTP_VERB_PUT
-                       || request->verb == DSK_HTTP_VERB_POST;
+            has_content = request->method == DSK_HTTP_METHOD_PUT
+                       || request->method == DSK_HTTP_METHOD_POST;
 
             if (has_content)
               {
@@ -332,7 +332,7 @@ restart_processing:
                 else
                   {
                     server_set_error (ss, "need Content-Length or Transfer-Encoding chunked for %s data",
-                                      dsk_http_verb_name (request->verb));
+                                      dsk_http_verb_name (request->method));
                     goto return_false;
                   }
               }
@@ -903,7 +903,7 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
     }
   else
     goto invalid_arguments;
-  if (dsk_http_has_response_body (transfer->request->verb, header->status_code))
+  if (dsk_http_has_response_body (transfer->request->method, header->status_code))
     {
       DskOctetSource *source;
       if (options->content_stream != NULL)
@@ -928,8 +928,8 @@ dsk_http_server_stream_respond (DskHttpServerStreamTransfer *transfer,
     {
       /* what to do: ignore or drain or error? */
       dsk_octet_source_shutdown (options->content_stream);
-#if DEBUG_ODD_VERB_USE
-      if (transfer->request->verb == DSK_HTTP_VERB_HEAD)
+#if DEBUG_ODD_METHOD_USE
+      if (transfer->request->method == DSK_HTTP_METHOD_HEAD)
         dsk_warning ("content-stream provided for HEAD request");
       else
         dsk_warning ("content-stream provided for %u response", header->status_code);

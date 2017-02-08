@@ -258,7 +258,8 @@ void dsk_codegen_function_render (DskCodegenFunction *function,
     }
   else
     {
-      for (unsigned i = 0; i < function->n_args; i++)
+      unsigned i;
+      for (i = 0; i < function->n_args; i++)
         { 
           if (i > 0)
             {

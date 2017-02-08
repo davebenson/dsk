@@ -1477,7 +1477,7 @@ DskPattern *dsk_pattern_compile (unsigned n_entries,
                         n_entries, init_states,
                         entries);
 
-  nfa_state_pad = DSK_NEW_ARRAY (struct NFA_State *, nfa_state_pad_size);
+  nfa_state_pad = DSK_NEW_ARRAY (nfa_state_pad_size, struct NFA_State *);
 
   while (skeletal_list != NULL)
     {

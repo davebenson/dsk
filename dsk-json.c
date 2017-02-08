@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <alloca.h>
 #include "dsk.h"
 #include "dsk-qsort-macro.h"
 

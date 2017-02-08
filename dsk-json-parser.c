@@ -414,7 +414,6 @@ dsk_json_parser_feed     (DskJsonParser *parser,
           switch (*bytes)
             {
             case 't': case 'T':
-              printf("got t for true\n");
               parser->lex_state = JSON_LEX_STATE_TRUE;
               parser->fixed_n_chars = 1;
               bytes++;

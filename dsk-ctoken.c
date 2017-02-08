@@ -310,7 +310,7 @@ DskCToken *dsk_ctoken_scan_str (const char             *str,
                                 DskCTokenScannerConfig *config,
                                 DskError              **error)
 {
-  DskCToken *rv = DSK_NEW (ToplevelToken);
+  DskCToken *rv = dsk_malloc0 (sizeof(ToplevelToken));
   const char *at = str;
   unsigned line = 1;
   unsigned stack_size;

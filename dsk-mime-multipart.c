@@ -372,7 +372,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
     {
       if (decoder->pieces_alloced == DSK_MIME_MULTIPART_DECODER_N_INIT_PIECES)
         {
-          decoder->pieces = DSK_NEW_ARRAY (DskCgiVariable, decoder->pieces_alloced * 2);
+          decoder->pieces = DSK_NEW_ARRAY (decoder->pieces_alloced * 2, DskCgiVariable);
           memcpy (decoder->pieces, decoder->pieces_init,
                   DSK_MIME_MULTIPART_DECODER_N_INIT_PIECES * sizeof (DskCgiVariable));
         }

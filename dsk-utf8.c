@@ -288,7 +288,7 @@ dsk_utf8_split_on_whitespace(const char *str)
         {
           if (rv == pad)
             {
-              rv = DSK_NEW_ARRAY (char*, alloced * 2);
+              rv = DSK_NEW_ARRAY (alloced * 2, char*);
               memcpy (rv, pad, sizeof (pad));
             }
           else
@@ -301,7 +301,7 @@ dsk_utf8_split_on_whitespace(const char *str)
     }
   if (rv == pad)
     {
-      char **rrv = DSK_NEW_ARRAY (char *, n + 1);
+      char **rrv = DSK_NEW_ARRAY (n + 1, char *);
       memcpy (rrv, rv, sizeof (char*) * n);
       rrv[n] = NULL;
       return rrv;

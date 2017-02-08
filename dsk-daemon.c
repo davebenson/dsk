@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -11,12 +13,12 @@
 
 static const char *dsk_daemon_log_template = NULL;
 static unsigned    dsk_daemon_log_interval = 3600;
-static char       *dsk_daemon_pid_filename = NULL;
+static const char *dsk_daemon_pid_filename = NULL;
 static dsk_boolean dsk_daemon_watchdog     = DSK_FALSE;
 static dsk_boolean dsk_daemon_do_fork      = DSK_FALSE;
 static int         dsk_daemon_tzoffset     = 0;
 
-static char       *dsk_daemon_alert_script = 0;
+static const char *dsk_daemon_alert_script = 0;
 static unsigned    dsk_daemon_alert_interval = 3600;
 static unsigned    dsk_daemon_n_alerts_suppressed = 0;
 
@@ -266,7 +268,8 @@ retry_flock:
         }
       if (must_truncate)
         {
-          ftruncate (pid_file_fd, 0);
+          if (ftruncate (pid_file_fd, 0) < 0)
+            dsk_warning ("could not truncate PID file: %s", strerror (errno));
         }
       char buf[32];
       snprintf (buf, sizeof (buf), "%u\n", (unsigned)getpid ());

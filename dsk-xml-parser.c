@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <search.h>             /* for the seldom-used lfind() */
+#include <alloca.h>
 #include "dsk.h"
 #include "dsk-rbtree-macros.h"
 
@@ -276,7 +277,7 @@ validate_and_split_xpath (const char *xmlpath,
       rv = DSK_NEW0 (char *);
       return rv;
     }
-  rv = DSK_NEW_ARRAY (char *, n_slashes + 2);
+  rv = DSK_NEW_ARRAY (n_slashes + 2, char *);
   i = 0;
   for (at = xmlpath; at != NULL; )
     {
@@ -333,7 +334,7 @@ copy_parse_state (ParseState *src)
   ParseState *ps = DSK_NEW0 (ParseState);
   unsigned i;
   ps->n_transitions = src->n_transitions;
-  ps->transitions = DSK_NEW_ARRAY (ParseStateTransition, src->n_transitions);
+  ps->transitions = DSK_NEW_ARRAY (src->n_transitions, ParseStateTransition);
   for (i = 0; i < ps->n_transitions; i++)
     {
       ps->transitions[i].str = dsk_strdup (src->transitions[i].str);
@@ -2253,7 +2254,7 @@ dsk_xml_parser_new (DskXmlParserConfig *config,
   parser->stack[0].defined_list = NULL;
   parser->stack[0].n_children = 0;
   parser->stack_children_alloced = 8;
-  parser->stack_children = DSK_NEW_ARRAY (DskXml *, parser->stack_children_alloced);
+  parser->stack_children = DSK_NEW_ARRAY (parser->stack_children_alloced, DskXml *);
   parser->n_stack_children = 0;
   parser->config = config;
   parser->default_ns = NULL;

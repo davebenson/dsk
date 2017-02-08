@@ -153,6 +153,20 @@ DskBufferFragment *dsk_buffer_find_fragment (DskBuffer   *buffer,
 /* Free all unused buffer fragments. */
 void     _dsk_buffer_cleanup_recycling_bin ();
 
+typedef enum {
+  DSK_BUFFER_DUMP_DRAIN = (1<<0),
+  DSK_BUFFER_DUMP_NO_DRAIN = (1<<1),
+  DSK_BUFFER_DUMP_FATAL_ERRORS = (1<<2),
+  DSK_BUFFER_DUMP_LEAVE_PARTIAL = (1<<3),
+  DSK_BUFFER_DUMP_NO_CREATE_DIRS = (1<<4),
+  DSK_BUFFER_DUMP_EXECUTABLE = (1<<5),
+} DskBufferDumpFlags;
+
+dsk_boolean dsk_buffer_dump (DskBuffer          *buffer,
+                             const char         *filename,
+                             DskBufferDumpFlags  flags,
+                             DskError          **error);
+                          
 
 /* misc */
 int dsk_buffer_index_of(DskBuffer *buffer, char char_to_find);

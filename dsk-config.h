@@ -46,14 +46,16 @@
    and sizeof(struct { char a,b,c,d,e }) == 5. */
 #define DSK_ALIGNOF_STRUCTURE  1
 
-#if defined(__linux__)
+#if defined(i386) || defined(__i386__)
+# define DSK_IS_LITTLE_ENDIAN    1
+#elif defined(__x86_64__)
+# define DSK_IS_LITTLE_ENDIAN    1
+#elif defined(__linux__)
 # include <endian.h>
 # define DSK_IS_LITTLE_ENDIAN    (BYTE_ORDER == LITTLE_ENDIAN)
 #elif defined(__APPLE__)
 # include <machine/endian.h>
 # define DSK_IS_LITTLE_ENDIAN    (BYTE_ORDER == LITTLE_ENDIAN)
-#elif defined(i386) || defined(__i386__)
-# define DSK_IS_LITTLE_ENDIAN    1
 #else
 # error "endianness not known here"
 #endif

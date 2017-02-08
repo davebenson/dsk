@@ -364,21 +364,21 @@ static inline void md5_init(ctxt)
 	ctxt->md5_stb = MD5_B0;
 	ctxt->md5_stc = MD5_C0;
 	ctxt->md5_std = MD5_D0;
-	bzero(ctxt->md5_buf, sizeof(ctxt->md5_buf));
+	memset(ctxt->md5_buf, 0, sizeof(ctxt->md5_buf));
 }
 
 static inline void md5_loop(ctxt, input, length)
 	md5_ctxt *ctxt;
 	const uint8_t *input;
-	u_int length; /* number of bytes */
+	unsigned length; /* number of bytes */
 {
-	u_int gap, i;
+	unsigned gap, i;
 
 	ctxt->md5_n += length * 8; /* byte to bit */
 	gap = MD5_BUFLEN - ctxt->md5_i;
 
 	if (length >= gap) {
-		bcopy((void *)input, (void *)(ctxt->md5_buf + ctxt->md5_i),
+		memcpy((void *)(ctxt->md5_buf + ctxt->md5_i), (void *)input,
 			gap);
 		md5_calc(ctxt->md5_buf, ctxt);
 
@@ -387,10 +387,9 @@ static inline void md5_loop(ctxt, input, length)
 		}
 		
 		ctxt->md5_i = length - i;
-		bcopy((void *)(input + i), (void *)ctxt->md5_buf, ctxt->md5_i);
+		memcpy((void *)ctxt->md5_buf, (void *)(input + i), ctxt->md5_i);
 	} else {
-		bcopy((void *)input, (void *)(ctxt->md5_buf + ctxt->md5_i),
-			length);
+		memcpy((void *)(ctxt->md5_buf + ctxt->md5_i),(void *)input, length);
 		ctxt->md5_i += length;
 	}
 }
@@ -398,27 +397,28 @@ static inline void md5_loop(ctxt, input, length)
 static void md5_pad(ctxt)
 	md5_ctxt *ctxt;
 {
-	u_int gap;
+        unsigned gap;
 
 	/* Don't count up padding. Keep md5_n. */	
 	gap = MD5_BUFLEN - ctxt->md5_i;
 	if (gap > 8) {
-		bcopy((void *)md5_paddat,
-		      (void *)(ctxt->md5_buf + ctxt->md5_i),
-		      gap - sizeof(ctxt->md5_n));
+		memcpy((ctxt->md5_buf + ctxt->md5_i),
+                       md5_paddat,
+		       gap - sizeof(ctxt->md5_n));
 	} else {
 		/* including gap == 8 */
-		bcopy((void *)md5_paddat, (void *)(ctxt->md5_buf + ctxt->md5_i),
-			gap);
+		memcpy((ctxt->md5_buf + ctxt->md5_i),
+                       md5_paddat, 
+		       gap);
 		md5_calc(ctxt->md5_buf, ctxt);
-		bcopy((void *)(md5_paddat + gap),
-		      (void *)ctxt->md5_buf,
-		      MD5_BUFLEN - sizeof(ctxt->md5_n));
+		memcpy(ctxt->md5_buf,
+                       md5_paddat + gap,
+		       MD5_BUFLEN - sizeof(ctxt->md5_n));
 	}
 
 	/* 8 byte word */	
 #if DSK_IS_LITTLE_ENDIAN
-	bcopy(&ctxt->md5_n8[0], &ctxt->md5_buf[56], 8);
+	memcpy(&ctxt->md5_buf[56], &ctxt->md5_n8[0], 8);
 #elif DSK_IS_BIG_ENDIAN
 	ctxt->md5_buf[56] = ctxt->md5_n8[7];
 	ctxt->md5_buf[57] = ctxt->md5_n8[6];
@@ -441,7 +441,7 @@ static void md5_result(digest, ctxt)
 {
 	/* 4 byte words */
 #if DSK_IS_LITTLE_ENDIAN
-	bcopy(&ctxt->md5_st8[0], digest, 16);
+	memcpy(digest, &ctxt->md5_st8[0], 16);
 #endif
 #if DSK_IS_BIG_ENDIAN
 	digest[ 0] = ctxt->md5_st8[ 3]; digest[ 1] = ctxt->md5_st8[ 2];
@@ -769,7 +769,7 @@ sha1_step(ctxt)
 
 #if DSK_IS_LITTLE_ENDIAN
 	struct sha1_ctxt tctxt;
-	bcopy(&ctxt->m.b8[0], &tctxt.m.b8[0], 64);
+	memcpy(&tctxt.m.b8[0], &ctxt->m.b8[0], 64);
 	ctxt->m.b8[0] = tctxt.m.b8[3]; ctxt->m.b8[1] = tctxt.m.b8[2];
 	ctxt->m.b8[2] = tctxt.m.b8[1]; ctxt->m.b8[3] = tctxt.m.b8[0];
 	ctxt->m.b8[4] = tctxt.m.b8[7]; ctxt->m.b8[5] = tctxt.m.b8[6];
@@ -839,7 +839,7 @@ sha1_step(ctxt)
 	H(3) = H(3) + d;
 	H(4) = H(4) + e;
 
-	bzero(&ctxt->m.b8[0], 64);
+	memset(&ctxt->m.b8[0], 0, 64);
 }
 
 /*------------------------------------------------------------*/
@@ -848,7 +848,7 @@ static void
 sha1_init(ctxt)
 	struct sha1_ctxt *ctxt;
 {
-	bzero(ctxt, sizeof(struct sha1_ctxt));
+	memset(ctxt, 0, sizeof(struct sha1_ctxt));
 	H(0) = 0x67452301;
 	H(1) = 0xefcdab89;
 	H(2) = 0x98badcfe;
@@ -868,14 +868,14 @@ sha1_pad(ctxt)
 	padstart = COUNT % 64;
 	padlen = 64 - padstart;
 	if (padlen < 8) {
-		bzero(&ctxt->m.b8[padstart], padlen);
+		memset(&ctxt->m.b8[padstart], 0, padlen);
 		COUNT += padlen;
 		COUNT %= 64;
 		sha1_step(ctxt);
 		padstart = COUNT % 64;	/* should be 0 */
 		padlen = 64 - padstart;	/* should be 64 */
 	}
-	bzero(&ctxt->m.b8[padstart], padlen - 8);
+	memset(&ctxt->m.b8[padstart], 0, padlen - 8);
 	COUNT += (padlen - 8);
 	COUNT %= 64;
 #if DSK_IS_BIG_ENDIAN
@@ -909,7 +909,7 @@ sha1_loop(ctxt, input, length)
 		gaplen = 64 - gapstart;
 
 		copysiz = (gaplen < length - off) ? gaplen : length - off;
-		bcopy(&input[off], &ctxt->m.b8[gapstart], copysiz);
+		memcpy(&ctxt->m.b8[gapstart], &input[off], copysiz);
 		COUNT += copysiz;
 		COUNT %= 64;
 		ctxt->c.b64[0] += copysiz * 8;

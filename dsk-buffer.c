@@ -1685,3 +1685,84 @@ char *dsk_buffer_empty_to_string (DskBuffer *buffer)
   dsk_buffer_read (buffer, buffer->size, rv);
   return rv;
 }
+
+dsk_boolean dsk_buffer_dump (DskBuffer          *buffer,
+                             const char         *filename,
+                             DskBufferDumpFlags  flags,
+                             DskError          **error)
+{
+  // exactly one of DSK_BUFFER_DUMP_NO_DRAIN or DSK_BUFFER_DUMP_DRAIN
+  // must be given.
+  DskBufferDumpFlags drain_flags = (flags & (DSK_BUFFER_DUMP_DRAIN|DSK_BUFFER_DUMP_NO_DRAIN));
+  dsk_assert (drain_flags == DSK_BUFFER_DUMP_NO_DRAIN
+           || drain_flags == DSK_BUFFER_DUMP_DRAIN);
+
+  DskError *fatal_error_buf = NULL;
+  if (flags & DSK_BUFFER_DUMP_FATAL_ERRORS)
+    error = &fatal_error_buf;
+  DskDirOpenfdFlags open_flags = DSK_DIR_OPENFD_MAY_CREATE
+                               | DSK_DIR_OPENFD_WRITABLE
+                               | DSK_DIR_OPENFD_TRUNCATE
+                               | ((flags & DSK_BUFFER_DUMP_NO_CREATE_DIRS) ? DSK_DIR_OPENFD_NO_MKDIR : 0)
+                               ;
+  unsigned mode = (flags & DSK_BUFFER_DUMP_EXECUTABLE) ? 0777 : 0666;
+  int fd = dsk_dir_openfd (NULL, filename, open_flags, mode, error);
+  if (fd < 0)
+    goto error;
+  unsigned n_frags = 0;
+  for (DskBufferFragment *frag = buffer->first_frag; frag; frag = frag->next)
+    n_frags++;
+  struct iovec *iov = alloca (sizeof (struct iovec) * n_frags);
+  unsigned iov_index = 0;
+  for (DskBufferFragment *frag = buffer->first_frag; frag; frag = frag->next)
+    {
+      iov[iov_index].iov_base = frag->buf + frag->buf_start;
+      iov[iov_index].iov_len = frag->buf_length;
+      iov_index++;
+    }
+  ssize_t writev_rv;
+  size_t rem = buffer->size;
+retry_writev:
+  writev_rv = writev (fd, iov, n_frags);
+  if (writev_rv < 0)
+    {
+      if (errno == EINTR)
+        goto retry_writev;
+      dsk_set_error (error, "error writing to '%s': %s",
+                     filename, strerror (errno));
+      unlink (filename);
+      goto error;
+    }
+  size_t written = writev_rv;
+  if (written < rem)
+    {
+      while (written > 0)
+        {
+          if (iov->iov_len <= (size_t) writev_rv)
+            {
+              written -= iov->iov_len;
+              iov++;
+              n_frags--;
+            }
+          else
+            {
+              iov->iov_len -= writev_rv;
+              iov->iov_base += writev_rv;
+              written = 0;
+            }
+        }
+      rem -= writev_rv;
+      goto retry_writev;
+    }
+  else
+    dsk_assert ((size_t) writev_rv == buffer->size);
+  close (fd);
+  if (flags & DSK_BUFFER_DUMP_DRAIN)
+    dsk_buffer_discard (buffer, buffer->size);
+  return DSK_TRUE;
+
+error:
+  if (flags & DSK_BUFFER_DUMP_FATAL_ERRORS)
+    dsk_error ("error writing to %s: %s", filename, fatal_error_buf->message);
+  return DSK_FALSE;
+}

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <alloca.h>
 #include "dsk.h"
 
 DskXml *dsk_xml_ref   (DskXml *xml)
@@ -309,4 +310,76 @@ dsk_xml_find_solo_child (DskXml *xml,
     }
   dsk_set_error (error, "multiple children under <%s>", xml->str);
   return NULL;
+}
+
+void dsk_xml_escape_string_to_buffer (const char *str, DskBuffer *buffer)
+{
+  while (*str)
+    {
+      const char *at = str;
+      while (*at && *at != '<' && *at != '>' && *at != '&' && *at != '"')
+        at++;
+      if (at > str)
+        {
+          dsk_buffer_append (buffer, at - str, str);
+          str = at;
+        }
+      switch (*str) 
+        {
+        case '"':
+          dsk_buffer_append (buffer, 6, "&quot;");
+          str++;
+          break;
+        case '<':
+          dsk_buffer_append (buffer, 4, "&lt;");
+          str++;
+          break;
+        case '>':
+          dsk_buffer_append (buffer, 4, "&gt;");
+          str++;
+          break;
+        case '&':
+          dsk_buffer_append (buffer, 5, "&amp;");
+          str++;
+          break;
+        }
+    }
+}
+
+void dsk_xml_write_to_buffer (const DskXml *xml, DskBuffer *buffer)
+{
+  unsigned i;
+  switch (xml->type)
+    {
+    case DSK_XML_ELEMENT:
+      dsk_buffer_append_byte (buffer, '<');
+      dsk_xml_escape_string_to_buffer (xml->str, buffer);
+      for (i = 0; xml->attrs[i] != NULL; i += 2)
+        {
+          dsk_buffer_append_byte (buffer, ' ');
+          dsk_xml_escape_string_to_buffer (xml->attrs[i+0], buffer);
+          dsk_buffer_append_byte (buffer, '=');
+          dsk_buffer_append_byte (buffer, '"');
+          dsk_xml_escape_string_to_buffer (xml->attrs[i+1], buffer);
+          dsk_buffer_append_byte (buffer, '"');
+        }
+      dsk_buffer_append_byte (buffer, '>');
+      for (i = 0; i < xml->n_children; i++) 
+        dsk_xml_write_to_buffer (xml->children[i], buffer);
+      dsk_buffer_append_byte (buffer, '<');
+      dsk_buffer_append_byte (buffer, '/');
+      dsk_xml_escape_string_to_buffer (xml->str, buffer);
+      dsk_buffer_append_byte (buffer, '>');
+      break;
+
+    case DSK_XML_TEXT:
+      dsk_xml_escape_string_to_buffer (xml->str, buffer);
+      break;
+      
+    case DSK_XML_COMMENT:
+      dsk_buffer_append (buffer, 5, "<!-- ");
+      dsk_xml_escape_string_to_buffer (xml->str, buffer);
+      dsk_buffer_append (buffer, 3, "-->");
+      break;
+    }
 }

@@ -305,7 +305,7 @@ handle_message (DskDnsMessage *message)
       else
         {
           /* positive result (an actual address) */
-          DskIpAddress *addrs = DSK_NEW_ARRAY (DskIpAddress, n_matches);
+          DskIpAddress *addrs = DSK_NEW_ARRAY (n_matches, DskIpAddress);
           unsigned ai = 0;
           entry->type = DSK_DNS_CACHE_ENTRY_ADDR;
           entry->info.addr.n = n_matches;
@@ -1128,6 +1128,7 @@ struct _SearchpathStatus
   unsigned is_ipv6 : 1;
   DskDnsCacheEntryFunc callback;
   void *callback_data;
+  DskDnsLookupFlags lookup_flags;
 };
 static void
 handle_searchpath_entry_lookup (DskDnsCacheEntry *entry,
@@ -1173,7 +1174,7 @@ next_search_path:
                 strcpy (status->end_of_name,
                         resolv_conf_search_paths[status->searchpath_index]);
               lookup_without_searchpath (status->name, status->is_ipv6,
-                                         config_flags,
+                                         status->lookup_flags,
                                          handle_searchpath_entry_lookup,
                                          status);
               status->in_progress = DSK_FALSE;
@@ -1341,6 +1342,7 @@ dsk_dns_lookup_cache_entry (const char       *name,
       status->callback = callback;
       status->callback_data = callback_data;
       status->is_ipv6 = is_ipv6;
+      status->lookup_flags = flags;
 
       while (status->searchpath_index <= n_resolv_conf_search_paths)
         {

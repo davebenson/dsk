@@ -58,23 +58,23 @@ typedef enum
 const char *dsk_http_status_get_message (DskHttpStatus status_code);
 
 /*
- * The Verb is the first text transmitted
+ * The Method is the first text transmitted
  * (from the user-agent to the server).
  */
 typedef enum
 {
-  DSK_HTTP_VERB_GET,
-  DSK_HTTP_VERB_POST,
-  DSK_HTTP_VERB_PUT,
-  DSK_HTTP_VERB_HEAD,
-  DSK_HTTP_VERB_OPTIONS,
-  DSK_HTTP_VERB_DELETE,
-  DSK_HTTP_VERB_TRACE,
-  DSK_HTTP_VERB_CONNECT
-} DskHttpVerb;
-const char *dsk_http_verb_name (DskHttpVerb verb);
+  DSK_HTTP_METHOD_GET,
+  DSK_HTTP_METHOD_POST,
+  DSK_HTTP_METHOD_PUT,
+  DSK_HTTP_METHOD_HEAD,
+  DSK_HTTP_METHOD_OPTIONS,
+  DSK_HTTP_METHOD_DELETE,
+  DSK_HTTP_METHOD_TRACE,
+  DSK_HTTP_METHOD_CONNECT
+} DskHttpMethod;
+const char *dsk_http_verb_name (DskHttpMethod method);
 
-dsk_boolean dsk_http_has_response_body (DskHttpVerb request_verb,
+dsk_boolean dsk_http_has_response_body (DskHttpMethod request_method,
                                         DskHttpStatus response_status_code);
 
 /* A single `Cookie' or `Set-Cookie' header.
@@ -116,7 +116,7 @@ struct _DskHttpRequest
 
   //DskHttpConnection             connection_type;
   //DskHttpContentEncoding        content_encoding_type;
-  DskHttpVerb verb;       /* the command: GET, PUT, POST, HEAD, etc */
+  DskHttpMethod method;       /* the command: GET, PUT, POST, HEAD, etc */
   /* Note that HTTP/1.1 servers must accept the entire
    * URL being included in `path'! (maybe including http:// ... */
   char *path;
@@ -235,7 +235,7 @@ typedef struct _DskHttpRequestOptions DskHttpRequestOptions;
 typedef struct _DskHttpResponseOptions DskHttpResponseOptions;
 struct _DskHttpRequestOptions
 {
-  DskHttpVerb verb;
+  DskHttpMethod method;
 
   unsigned http_major_version;
   unsigned http_minor_version;
@@ -295,7 +295,7 @@ void            dsk_http_request_init_options (DskHttpRequest *request,
 
 #define DSK_HTTP_REQUEST_OPTIONS_INIT                           \
 {                                                               \
-  DSK_HTTP_VERB_GET,            /* status_code */               \
+  DSK_HTTP_METHOD_GET,            /* status_code */               \
   1,                            /* http_major_version */        \
   1,                            /* http_minor_version */        \
   NULL,                         /* full_path */                 \

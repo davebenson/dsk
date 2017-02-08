@@ -42,7 +42,7 @@
 /* Input from memory, and output to memory. */
 #include "dsk-memory.h"
 
-/* DskIpAddress: n IPv4 or IPv6 address. */
+/* DskIpAddress: IPv4 or IPv6 address. */
 #include "dsk-ip-address.h"
 
 /* DskEthernetAddress: a MAC address. */
@@ -50,6 +50,9 @@
 
 /* Simple DNS Client. */
 #include "dsk-dns-client.h"
+
+/* Our limited threading support */
+#include "dsk-thread-pool.h"
 
 #include "dsk-octet-listener.h"
 
@@ -94,6 +97,7 @@
 #include "dsk-xml.h"
 #include "dsk-xml-parser.h"
 #include "dsk-xml-binding.h"
+#include "dsk-xmlrpc.h"
 
 #include "dsk-json.h"
 

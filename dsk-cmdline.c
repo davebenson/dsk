@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <alloca.h>
 #include <stdio.h>
 #include "dsk-rbtree-macros.h"
 #include "dsk-common.h"
@@ -329,7 +330,7 @@ void dsk_cmdline_add_string  (const char     *option_name,
                               const char     *description,
 			      const char     *arg_description,
                               DskCmdlineFlags flags,
-                              char          **value_out)
+                              const char    **value_out)
 {
   DskCmdlineArg *arg = add_option (option_name);
   dsk_assert (description != NULL);
@@ -409,7 +410,7 @@ void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
                                        unsigned        n_excl,
                                        char          **excl)
 {
-  DskCmdlineArg **args = DSK_NEW_ARRAY (DskCmdlineArg*, n_excl);
+  DskCmdlineArg **args = DSK_NEW_ARRAY (n_excl, DskCmdlineArg*);
   ExclNode *node = DSK_NEW (ExclNode);
   unsigned i;
   node->args = args;

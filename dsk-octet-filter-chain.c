@@ -108,7 +108,7 @@ dsk_octet_filter_chain_new_take    (unsigned         n_filters,
     {
       DskOctetFilterChain *chain = dsk_object_new (&dsk_octet_filter_chain_class);
       chain->n_filters = n_filters;
-      chain->filters = DSK_NEW_ARRAY (DskOctetFilter *, n_filters);
+      chain->filters = DSK_NEW_ARRAY (n_filters, DskOctetFilter *);
       memcpy (chain->filters, filters, sizeof (DskOctetFilter*) * n_filters);
       return DSK_OCTET_FILTER (chain);
     }

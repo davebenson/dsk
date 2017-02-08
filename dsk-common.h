@@ -17,16 +17,24 @@ typedef int dsk_boolean;
 #define DSK_MIN(a,b)            (((a) < (b)) ? (a) : (b))
 #define DSK_MAX(a,b)            (((a) > (b)) ? (a) : (b))
 
+#define DSK_MIN3(a,b,c)         (((a) < (b)) ? DSK_MIN(a,c) : DSK_MIN(b,c))
+#define DSK_MAX3(a,b,c)         (((a) > (b)) ? DSK_MAX(a,c) : DSK_MAX(b,c))
+
 /* branch-hinting macros */
 #define DSK_LIKELY(condition)     (condition)
 #define DSK_UNLIKELY(condition)   (condition)
 #define DSK_UNUSED(var)           ((void)(var))
 
+/* a few numbers */
+#define DSK_THOUSAND        1000
+#define DSK_MILLION         1000000
+#define DSK_BILLION         1000000000
+
 /* typed-memory allocation macros */
 #define DSK_NEW(type)             ((type*) dsk_malloc (sizeof(type)))
 #define DSK_NEW0(type)            ((type*) dsk_malloc0 (sizeof(type)))
-#define DSK_NEW_ARRAY(type, n)    ((type*) dsk_malloc (sizeof(type) * (n)))
-#define DSK_NEW0_ARRAY(type, n)   ((type*) dsk_malloc0 (sizeof(type) * (n)))
+#define DSK_NEW_ARRAY(n, type)    ((type*) dsk_malloc (sizeof(type) * (n)))
+#define DSK_NEW0_ARRAY(n, type)   ((type*) dsk_malloc0 (sizeof(type) * (n)))
 #define DSK_RENEW(type, array, n) ((type*) dsk_realloc ((array), sizeof(type) * (n)))
 
 #ifndef DSK_DEBUG
@@ -191,6 +199,7 @@ void  dsk_free (void *);
 void *dsk_realloc (void *, size_t);
 char *dsk_strdup (const char *str);
 char *dsk_strndup (size_t len, const char *str);
+char *dsk_strcut (const char *start, const char *end);
 void *dsk_memdup (size_t, const void *);
 
 void  dsk_strstrip (char *str_inout);

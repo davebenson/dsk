@@ -70,7 +70,7 @@ tokenize (const char *filename,
           DskError **error)
 {
   unsigned n = 0;
-  Token *rv = DSK_NEW_ARRAY (Token, TOKENIZE_INIT_TOKEN_COUNT);
+  Token *rv = DSK_NEW_ARRAY (TOKENIZE_INIT_TOKEN_COUNT, Token);
   unsigned line_no = 1;
   const char *at = str;
 #define ADD_TOKEN(type_, start_, len_) \
@@ -419,7 +419,7 @@ parse_member_list (ParseContext *context,
 
   /* parse each member */
   n_members = 0;
-  members = DSK_NEW_ARRAY (DskXmlBindingStructMember, max_members);
+  members = DSK_NEW_ARRAY (max_members, DskXmlBindingStructMember);
   while (at < context->n_tokens
       && context->tokens[at].type != TOKEN_RBRACE)
     {
@@ -540,7 +540,7 @@ parse_case_list (ParseContext           *context,
     }
   cases_tokens = matching_rbrace - (lbrace_index+1);
   max_cases = cases_tokens / 2;
-  cases = DSK_NEW_ARRAY (DskXmlBindingUnionCase, max_cases);
+  cases = DSK_NEW_ARRAY (max_cases, DskXmlBindingUnionCase);
 
   while (at < context->n_tokens
       && context->tokens[at].type != TOKEN_RBRACE)

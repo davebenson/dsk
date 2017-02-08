@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>                      /* TMP: debugging */
+#include <alloca.h>
 #include "dsk-rbtree-macros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"

@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <alloca.h>
 #include <stdlib.h>
 
 /* These headers are exclusively to call open(2)/fstat(2):
@@ -41,10 +42,10 @@ struct _MatchTesterStandard
   MatchTypeAndPattern types[1];
 };
 
-struct _MatchTesterVerb
+struct _MatchTesterMethod
 {
   MatchTester base;
-  DskHttpVerb verb;
+  DskHttpMethod method;
 };
 
 /* an uncompiled list of match information */
@@ -234,8 +235,8 @@ match_tester_standard_test (MatchTester *tester,
           if (!request->bind_info->is_local)
             test_str = request->bind_info->bind_local_path;
           break;
-        case DSK_HTTP_SERVER_MATCH_VERB:
-          test_str = dsk_http_verb_name (request->request_header->verb);
+        case DSK_HTTP_SERVER_MATCH_METHOD:
+          test_str = dsk_http_verb_name (request->request_header->method);
           break;
         }
       if (test_str == NULL)
@@ -247,12 +248,12 @@ match_tester_standard_test (MatchTester *tester,
 }
 
 void
-dsk_http_server_add_match_verb            (DskHttpServer        *server,
-                                           DskHttpVerb           verb)
+dsk_http_server_add_match_method            (DskHttpServer        *server,
+                                           DskHttpMethod           method)
 {
   dsk_http_server_add_match (server,
-                             DSK_HTTP_SERVER_MATCH_VERB,
-                             dsk_http_verb_name (verb));
+                             DSK_HTTP_SERVER_MATCH_METHOD,
+                             dsk_http_verb_name (method));
 }
 
 static void
@@ -970,8 +971,8 @@ compute_cgi_variables (RealServerRequest *rreq)
   dsk_assert (request->n_cgi_variables == 0);
 
   add_get_cgi_variables (rreq);
-  if (request->request_header->verb == DSK_HTTP_VERB_POST
-   || request->request_header->verb == DSK_HTTP_VERB_PUT)
+  if (request->request_header->method == DSK_HTTP_METHOD_POST
+   || request->request_header->method == DSK_HTTP_METHOD_PUT)
     {
       dsk_assert (request->has_raw_post_data);
       add_post_cgi_variables (rreq);
@@ -982,10 +983,10 @@ compute_cgi_variables (RealServerRequest *rreq)
 static dsk_boolean
 begin_computing_cgi_variables (RealServerRequest *rreq)
 {
-  DskHttpVerb verb = rreq->request.request_header->verb;
+  DskHttpMethod method = rreq->request.request_header->method;
 
   /* Not a POST or PUT request, therefore we don't expect CGI variables */
-  if (verb != DSK_HTTP_VERB_PUT && verb != DSK_HTTP_VERB_POST)
+  if (method != DSK_HTTP_METHOD_PUT && method != DSK_HTTP_METHOD_POST)
     compute_cgi_variables (rreq);
   else if (rreq->request.has_raw_post_data)
     compute_cgi_variables (rreq);
@@ -1282,14 +1283,10 @@ bind_info_destroyed (DskHttpServerBindInfo *bind_info)
 }
 
 static DskHttpServerBindInfo *
-do_bind (DskHttpServer *server,
-         const DskOctetListenerSocketOptions *options,
-         DskError **error)
+do_bind_listener (DskHttpServer *server,
+                  DskOctetListener *listener)
 {
-  DskOctetListener *listener = dsk_octet_listener_socket_new (options, error);
   DskHttpServerBindInfo *bind_info;
-  if (listener == NULL)
-    return NULL;
   bind_info = DSK_NEW (DskHttpServerBindInfo);
   bind_info->listener = listener;
   bind_info->server = server;
@@ -1305,6 +1302,17 @@ do_bind (DskHttpServer *server,
                  (DskHookDestroy) bind_info_destroyed);
 
   return bind_info;
+}
+
+static DskHttpServerBindInfo *
+do_bind (DskHttpServer *server,
+         const DskOctetListenerSocketOptions *options,
+         DskError **error)
+{
+  DskOctetListener *listener = dsk_octet_listener_socket_new (options, error);
+  if (listener == NULL)
+    return NULL;
+  return do_bind_listener (server, listener);
 }
 
 dsk_boolean dsk_http_server_bind_tcp           (DskHttpServer        *server,
@@ -1341,6 +1349,16 @@ dsk_boolean dsk_http_server_bind_local         (DskHttpServer        *server,
   bind_info->is_local = DSK_TRUE;
   bind_info->bind_local_path = dsk_strdup (path);
   return DSK_TRUE;
+}
+
+void        dsk_http_server_bind               (DskHttpServer        *server,
+                                                DskOctetListener     *listener)
+{
+  DskHttpServerBindInfo *bind_info;
+  bind_info = do_bind_listener (server, listener);
+  bind_info->is_local = 0;
+  bind_info->bind_local_path = NULL;
+  bind_info->bind_port = 0;
 }
 
 

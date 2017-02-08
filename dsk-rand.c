@@ -63,12 +63,13 @@ dsk_rand_init (DskRand *rand)
 void
 dsk_rand_init_seed (DskRand* rand, uint32_t seed)
 {
+  unsigned i;
   /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
   /* In the previous version (see above), MSBs of the    */
   /* seed affect only MSBs of the array s[].            */
       
   rand->s[0] = seed;
-  for (unsigned i = 1; i < 16; i++) {
+  for (i = 1; i < 16; i++) {
     rand->s[i] = 1812433253ULL * (rand->s[i-1] ^ (rand->s[i-1] >> 30)) + i;
   }
 }
@@ -144,7 +145,7 @@ uint32_t dsk_rand_uint32         (DskRand* rand)
 int64_t 
 dsk_rand_int_range (DskRand* rand, int64_t begin, int64_t end)
 {
-  uint32_t dist = end - begin;
+  uint64_t dist = end - begin;
   uint64_t random;
 
   /* maxvalue is set to the predecessor of the greatest
@@ -177,8 +178,10 @@ dsk_rand_double (DskRand* rand)
 #if !DSK_IEEE754
   /* We set all 52 bits after the point for this, not only the first
      32. Thats why we need two calls to dsk_rand_int */
-  double retval = dsk_rand_uint32 (rand) * DSK_RAND_DOUBLE_TRANSFORM;
-  retval = (retval + dsk_rand_uint32 (rand)) * DSK_RAND_DOUBLE_TRANSFORM;
+  union { uint32_t r[2]; uint64_t rand; } u;
+  u.rand = dsk_rand_uint64 (rand);
+  double retval = u.r[0] * DSK_RAND_DOUBLE_TRANSFORM;
+  retval = (retval + u.r[1]) * DSK_RAND_DOUBLE_TRANSFORM;
 
   /* The following might happen due to very bad rounding luck, but
    * actually this should be more than rare, we just try again then */
