@@ -9,6 +9,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-endian \
 		tests/test-url-0 \
 		tests/test-buffer \
+                tests/test-hook-0 \
 	        tests/test-http-client-stream-0 \
 		tests/test-http-server-stream-0 \
 		tests/test-http-server-0 \

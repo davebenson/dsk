@@ -65,8 +65,11 @@ DSK_INLINE_FUNC void         dsk_hook_trap_free    (DskHookTrap   *trap);
 
 /* ????? for use by the underlying polling mechanism
  * (for hooks not using idle-notify) */
-/* TODO: dsk_hook_init_zeroed() for use in object constructors? */
 DSK_INLINE_FUNC void         dsk_hook_init         (DskHook       *hook,
+                                                    void          *object);
+/* same as above, but assumes "hook" as been zeroed out.
+   for use in object constructors, which can assume the memory is zeroed. */
+DSK_INLINE_FUNC void         dsk_hook_init_zeroed  (DskHook       *hook,
                                                     void          *object);
 DSK_INLINE_FUNC void         dsk_hook_set_funcs    (DskHook       *hook,
                                                     DskHookFuncs  *static_funcs);
@@ -112,6 +115,14 @@ DSK_INLINE_FUNC void         dsk_hook_init         (DskHook       *hook,
   hook->funcs = &dsk_hook_funcs_default;
   hook->magic = DSK_HOOK_MAGIC;
 }
+DSK_INLINE_FUNC void         dsk_hook_init_zeroed  (DskHook       *hook,
+                                                    void          *object)
+{
+  hook->object = object;
+  hook->funcs = &dsk_hook_funcs_default;
+  hook->magic = DSK_HOOK_MAGIC;
+}
+
 
 DSK_INLINE_FUNC DskHookTrap *
 dsk_hook_trap         (DskHook       *hook,
