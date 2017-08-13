@@ -3,7 +3,7 @@
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
 		dsk-base64-char-table.inc dsk-base64-value-table.inc \
-		dsk-pattern-char-classes.inc
+		dsk-pattern-char-classes.inc dsk-html-entities.h \
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
 		tests/test-endian \
@@ -154,6 +154,8 @@ dsk-base64-char-table.inc: mk-base64-to-char-table.pl
 dsk-base64-value-table.inc: mk-base64-to-value-table.pl
 	./$^ > $@
 dsk-pattern-char-classes.inc: mk-pattern-char-classes.pl
+	./$^ > $@
+dsk-html-entities.h: mk-html-entities.pl html-entities.tsv
 	./$^ > $@
 
 mk-codepage: mk-codepage.c
