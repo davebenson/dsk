@@ -2,9 +2,11 @@
 #include <string.h>
 #include <stdio.h>
 
+typedef struct TestHook_Object0Class TestHook_Object0Class;
 struct TestHook_Object0Class {
   DskObjectClass base_class;
 };
+typedef struct TestHook_Object0 TestHook_Object0;
 struct TestHook_Object0 {
   DskObject base_instance;
   DskHook simple_hook;
@@ -12,7 +14,7 @@ struct TestHook_Object0 {
 };
 
 static void
-test_hook_object0_class (TestHook_Object0 *o)
+test_hook_object0_init (TestHook_Object0 *o)
 {
   dsk_hook_init_zeroed(&o->simple_hook, o);
 }
@@ -25,7 +27,7 @@ test_hook_object0_finalize (TestHook_Object0 *o)
 
 
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(TestHook_Object0);
-TestHook_Object0 test_hook_object0_class = {
+TestHook_Object0Class test_hook_object0_class = {
   DSK_OBJECT_CLASS_DEFINE(TestHook_Object0, &dsk_object_class,
                           test_hook_object0_init,
                           test_hook_object0_finalize)
@@ -41,8 +43,9 @@ struct HandlerData {
 };
 #define HANDLER_DATA_INIT {0,DSK_FALSE}
 
-static dsk_boolean handle_notify (void *hd)
+static dsk_boolean handle_notify (void *obj, void *hd)
 {
+  dsk_assert (dsk_object_is_a (obj, &test_hook_object0_class));
   HandlerData *data = hd;
   data->notify_count += 1;
   return DSK_TRUE;
@@ -63,10 +66,9 @@ static void test_hook_simple (void)
   dsk_assert (o->notify_count == 0);
   dsk_hook_notify (&o->simple_hook);
   dsk_assert (o->notify_count == 1);
-  dsk_assert (!o->destroyed);
   dsk_object_unref (o);
   dsk_assert (o->notify_count == 1);
-  dsk_assert (o->destroyed);
+  dsk_assert (handler_data.destroyed);
 }
 
 

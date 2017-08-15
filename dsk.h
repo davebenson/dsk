@@ -113,6 +113,7 @@
 #include "dsk-utf8.h"
 #include "dsk-utf16.h"
 #include "dsk-strv.h"
+#include "dsk-html-entities.h"
 
 #include "dsk-cmdline.h"
 

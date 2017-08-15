@@ -1,9 +1,11 @@
 # just so :make works in vi
 
+# NOTES: add $BREW/opt/openssl/lib/pkgconfig to PKG_CONFIG_PATH
+
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
 		dsk-base64-char-table.inc dsk-base64-value-table.inc \
-		dsk-pattern-char-classes.inc dsk-html-entities.h \
+		dsk-pattern-char-classes.inc dsk-html-entities.h
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
 		tests/test-endian \
@@ -35,7 +37,8 @@ EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
 	   programs/dsk-ifconfig programs/dsk-make-json-binding \
-	   programs/dsk-grep programs/svg-to-cocoa
+	   programs/dsk-grep programs/svg-to-cocoa \
+	   programs/dsk-dump-html-entities
 all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all
