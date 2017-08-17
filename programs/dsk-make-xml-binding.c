@@ -868,10 +868,10 @@ render_file (DskXmlBindingNamespace *ns,
 
 int main(int argc, char **argv)
 {
-  char *output_basename;
+  const char *output_basename = NULL;
   DskXmlBindingNamespace *ns;
   DskError *error = NULL;
-  char *output_ns;
+  const char *output_ns = NULL;
 
   dsk_cmdline_init ("Make XML C-Bindings", description, NULL, 0);
   dsk_cmdline_add_string ("output-basename",

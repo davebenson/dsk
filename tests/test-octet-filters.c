@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   dsk_cmdline_add_boolean ("verbose", "extra logging", NULL, 0,
                            &cmdline_verbose);
   dsk_cmdline_add_string ("filename", "filename", "FILENAME", 0,
-                           (char**) &cmdline_filename);
+                           &cmdline_filename);
   dsk_cmdline_process_args (&argc, &argv);
 
   fp = fopen (cmdline_filename, "r");

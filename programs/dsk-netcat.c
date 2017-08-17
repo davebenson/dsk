@@ -5,9 +5,9 @@
 
 /* configuration */
 static unsigned port = 0;
-static char *hostname = NULL;
+static const char *hostname = NULL;
 static dsk_boolean do_listen = DSK_FALSE;
-static char *local_path = NULL;
+static const char *local_path = NULL;
 
 int main(int argc, char **argv)
 {

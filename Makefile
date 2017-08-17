@@ -208,7 +208,7 @@ clean:
 	rm -f $(BUILT_SOURCES)
 	rm -f $(PROGRAMS)
 
-check: $(TEST_PROGRAMS)
+check: all $(TEST_PROGRAMS)
 	@nfail=0; ntest=0; \
 	for p in $(TEST_PROGRAMS) ; do \
 	  echo "--- $$p ---" ; \

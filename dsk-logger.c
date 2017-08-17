@@ -15,6 +15,7 @@ struct _DskLogger
   DskBuffer buffer;
   unsigned max_buffer;
   DskDir *dir;
+  dsk_boolean autonewline;
 
   unsigned next_rotate_time;
 };
@@ -54,6 +55,7 @@ DskLogger *dsk_logger_new         (DskLoggerOptions *options,
   logger->max_buffer = options->max_buffer;
   logger->period = options->period;
   logger->max_length = dsk_strftime_max_length (options->format) + 1;
+  logger->autonewline = options->autonewline;
  
   dsk_buffer_init (&logger->buffer);
   logger->fd = -1;
@@ -106,6 +108,10 @@ dsk_logger_peek_buffer (DskLogger        *logger)
 void
 dsk_logger_done_buffer (DskLogger        *logger)
 {
+  if (logger->autonewline
+   && logger->buffer.size > 0
+   && dsk_buffer_last_byte (&logger->buffer) != '\n')
+    dsk_buffer_append_byte (&logger->buffer, '\n');
   if (logger->buffer.size > logger->max_buffer)
     flush_buffer (logger);
 }

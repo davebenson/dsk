@@ -19,6 +19,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/poll.h>
+#include <stdio.h>
+
 #define USE_POLL              1
 
 /* windows annoyances:  use select, use a full-fledges map for fds */
@@ -751,7 +753,6 @@ dsk_dispatch_run (DskDispatch *dispatch)
   unsigned i;
   int timeout;
   DskFileDescriptorNotify *events;
-  RealDispatch *d = (RealDispatch *) dispatch;
 
   /* compute timeout */
   if (dispatch->has_idle)
@@ -785,6 +786,7 @@ dsk_dispatch_run (DskDispatch *dispatch)
     }
 
 #if DSK_HAS_EPOLL
+  RealDispatch *d = (RealDispatch *) dispatch;
   int epoll_fd = d->epoll_fd;
   for (i = 0; i < dispatch->n_changes; i++)
     {

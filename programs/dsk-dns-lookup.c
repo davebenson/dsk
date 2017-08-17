@@ -5,7 +5,7 @@
 /* configuration */
 static dsk_boolean use_ipv6 = DSK_FALSE;
 static dsk_boolean no_links = DSK_FALSE;
-static char *nameserver = NULL;
+static const char *nameserver = NULL;
 static dsk_boolean verbose = DSK_FALSE;
 static unsigned max_concurrent = 1;
 static dsk_boolean fatal_errors = DSK_FALSE;

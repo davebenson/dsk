@@ -34,7 +34,7 @@ test_parse_request_0 (void)
 
   r = parse_request_from_string ("GET /f HTTP/1.0\r\n"
                                  "Host: example.com\r\n");
-  dsk_assert (r->verb == DSK_HTTP_VERB_GET);
+  dsk_assert (r->method == DSK_HTTP_METHOD_GET);
   dsk_assert (strcmp (r->path, "/f") == 0);
   dsk_assert (strcmp (r->host, "example.com") == 0);
   dsk_assert (strcmp (dsk_http_request_get (r, "host"), "example.com") == 0);

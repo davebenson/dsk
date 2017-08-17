@@ -10,7 +10,8 @@ typedef enum
 {
   DSK_DIR_NEW_SKIP_LOCKING = (1<<0),
   DSK_DIR_NEW_BLOCK_LOCKING = (1<<1),
-  DSK_DIR_NEW_MAYBE_CREATE = (1<<2)
+  DSK_DIR_NEW_MAYBE_CREATE = (1<<2),
+  DSK_DIR_ERASE_ON_DESTROY = (1<<3),
 } DskDirNewFlags;
 
 DskDir      *dsk_dir_new                     (DskDir         *parent,
@@ -139,3 +140,7 @@ int          dsk_dir_mkdir                   (DskDir       *dir,
                                               DskDirMkdirFlags flags,
                                               DskDirMkdirStats *stats_out_optional,
                                               DskError    **error);
+
+
+
+void dsk_dir_set_erase_on_destroy (DskDir *dir, dsk_boolean do_erase);

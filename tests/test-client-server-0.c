@@ -4,7 +4,7 @@
 
 /* --- implement a simple echo server --- */
 static dsk_boolean cmdline_is_tcp = DSK_FALSE;
-static char *cmdline_local_path = (char *) "./test-client-server-0.socket";
+static const char *cmdline_local_path = "./test-client-server-0.socket";
 static unsigned cmdline_tcp_port = 10101;
 static dsk_boolean cmdline_debug_server = DSK_FALSE;
 

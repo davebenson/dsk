@@ -47,7 +47,9 @@ static dsk_boolean handle_notify (void *obj, void *hd)
 {
   dsk_assert (dsk_object_is_a (obj, &test_hook_object0_class));
   HandlerData *data = hd;
+  TestHook_Object0 *o = obj;
   data->notify_count += 1;
+  o->notify_count += 1;
   return DSK_TRUE;
 }
 static void handle_destroy (void *hd)
@@ -64,10 +66,12 @@ static void test_hook_simple (void)
   o = dsk_object_new (&test_hook_object0_class);
   dsk_hook_trap (&o->simple_hook, handle_notify, &handler_data, handle_destroy);
   dsk_assert (o->notify_count == 0);
+  dsk_assert (handler_data.notify_count == 0);
   dsk_hook_notify (&o->simple_hook);
   dsk_assert (o->notify_count == 1);
+  dsk_assert (handler_data.notify_count == 1);
   dsk_object_unref (o);
-  dsk_assert (o->notify_count == 1);
+  dsk_assert (handler_data.notify_count == 1);
   dsk_assert (handler_data.destroyed);
 }
 

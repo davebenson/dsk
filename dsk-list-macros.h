@@ -268,6 +268,8 @@
     DSK_STACK_REVERSE_(type, head, next);                               \
     tail = _dsk_queue_new_tail;                                         \
   }while(0)
+#define DSK_QUEUE_FOREACH_(type, head, tail, next, variable, code)      \
+  DSK_STACK_FOREACH_(type, head, next, variable, code)
 
 #define DSK_QUEUE_SORT_(type, head, tail, next, comparator)             \
   do{                                                                   \
@@ -285,6 +287,8 @@
 #define DSK_LIST_INSERT_BEFORE(list, at, node) DSK_LIST_INSERT_BEFORE_(list, at, node)
 #define DSK_LIST_IS_EMPTY(list) DSK_LIST_IS_EMPTY_(list)
 #define DSK_LIST_REVERSE(list) DSK_LIST_REVERSE_(list)
+#define DSK_LIST_FOREACH(list, variable, code) DSK_LIST_FOREACH_(list, variable, code)
+#define DSK_LIST_REVERSE_FOREACH(list, variable, code) DSK_LIST_REVERSE_FOREACH_(list, variable, code)
 #define DSK_LIST_SORT(list, comparator) DSK_LIST_SORT_(list, comparator)
 
 #define DSK_LIST_PREPEND_(type, first, last, prev, next, node)          \
@@ -363,6 +367,30 @@
         _dsk_prev = _dsk_at;                                            \
       }                                                                 \
     last = _dsk_prev;                                                   \
+  }while(0)
+#define DSK_LIST_FOREACH_(type, first, last, prev, next, variable, code)\
+  do{                                                                   \
+    if (first)                                                          \
+      {                                                                 \
+        variable = first;                                               \
+        while (variable != NULL)                                        \
+          {                                                             \
+            code;                                                       \
+            variable = variable->next;                                  \
+          }                                                             \
+      }                                                                 \
+  }while(0)
+#define DSK_LIST_REVERSE_FOREACH_(type, first, last, prev, next, variable, code)\
+  do{                                                                   \
+    if (last)                                                           \
+      {                                                                 \
+        variable = last;                                                \
+        while (variable != NULL)                                        \
+          {                                                             \
+            code;                                                       \
+            variable = variable->prev;                                  \
+          }                                                             \
+      }                                                                 \
   }while(0)
 
 /* --- rings --- */

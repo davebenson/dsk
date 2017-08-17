@@ -105,7 +105,7 @@ DskDir      *dsk_dir_new                     (DskDir       *parent,
   rv->alt_buf = NULL;
 #endif
   rv->locked = do_lock;
-  rv->erase_on_destroy = DSK_FALSE;
+  rv->erase_on_destroy = (flags & DSK_DIR_ERASE_ON_DESTROY) == DSK_DIR_ERASE_ON_DESTROY;
   rv->did_create = did_create;
   return rv;
 }
@@ -145,9 +145,9 @@ dsk_dir_ref (DskDir *dir)
 }
 
 void
-dsk_dir_set_erase_on_destroy (DskDir *dir)
+dsk_dir_set_erase_on_destroy (DskDir *dir, dsk_boolean do_erase)
 {
-  dir->erase_on_destroy = DSK_TRUE;
+  dir->erase_on_destroy = do_erase ? 1 : 0;
 }
 
 /* note: 'alloc' must be long enough to hold openat_dir_len+1 */

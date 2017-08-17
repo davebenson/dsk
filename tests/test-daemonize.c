@@ -6,7 +6,7 @@
 /* dummy server configuration */
 unsigned cmdline_max = 10;
 unsigned cmdline_sleep_ms = 1;
-char *cmdline_hello = "hello";
+const char *cmdline_hello = "hello";
 
 
 /* dummy server state */

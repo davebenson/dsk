@@ -760,7 +760,7 @@ test_simple_post (void)
         switch (header_i)
           {
           case 0:
-            dsk_assert (xfer->request->verb == DSK_HTTP_VERB_POST);
+            dsk_assert (xfer->request->method == DSK_HTTP_METHOD_POST);
             dsk_assert (xfer->request->connection_close);
             dsk_assert (xfer->request->http_major_version == 1);
             dsk_assert (xfer->request->http_minor_version == 1);
@@ -768,7 +768,7 @@ test_simple_post (void)
             dsk_assert (xfer->request->content_length == 7);
             break;
           case 1:
-            dsk_assert (xfer->request->verb == DSK_HTTP_VERB_POST);
+            dsk_assert (xfer->request->method == DSK_HTTP_METHOD_POST);
             dsk_assert (xfer->request->http_major_version == 1);
             dsk_assert (xfer->request->http_minor_version == 0);
             dsk_assert (!xfer->request->transfer_encoding_chunked);
@@ -923,7 +923,7 @@ test_simple_websocket (void)
         switch (header_i)
           {
           case 0:
-            dsk_assert (xfer->request->verb == DSK_HTTP_VERB_GET);
+            dsk_assert (xfer->request->method == DSK_HTTP_METHOD_GET);
             dsk_assert (xfer->request->content_length == -1LL);
             break;
           }

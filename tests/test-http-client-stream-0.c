@@ -382,7 +382,7 @@ test_simple_post (void)
   stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                        DSK_OCTET_SOURCE (request_data.source),
                                        &options);
-  req_options.verb = DSK_HTTP_VERB_POST;
+  req_options.method = DSK_HTTP_METHOD_POST;
   req_options.host = "localhost";
   req_options.full_path = "/hello.txt";
   req_options.content_length = strlen (post_data_str);
@@ -511,7 +511,7 @@ test_transfer_encoding_chunked_post (void)
       stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                            DSK_OCTET_SOURCE (request_data.source),
                                            &options);
-      req_options.verb = DSK_HTTP_VERB_POST;
+      req_options.method = DSK_HTTP_METHOD_POST;
       req_options.host = "localhost";
       req_options.full_path = "/hello.txt";
       post_data = dsk_memory_source_new ();
@@ -699,7 +699,7 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
                 DskHttpRequestOptions req_options = DSK_HTTP_REQUEST_OPTIONS_INIT;
                 DskHttpClientStreamRequestOptions cr_options = DSK_HTTP_CLIENT_STREAM_REQUEST_OPTIONS_INIT;
                 DskHttpClientStreamTransfer *xfer;
-                req_options.verb = DSK_HTTP_VERB_GET;
+                req_options.method = DSK_HTTP_METHOD_GET;
                 req_options.host = "localhost";
                 req_options.full_path = "/hello.txt";
                 cr_options.request_options = &req_options;
@@ -717,7 +717,7 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
                 DskHttpClientStreamTransfer *xfer;
                 const char *pd_str = "this is post data\n";
                 DskMemorySource *post_data;
-                req_options.verb = DSK_HTTP_VERB_POST;
+                req_options.method = DSK_HTTP_METHOD_POST;
                 req_options.host = "localhost";
                 req_options.full_path = "/hello.txt";
                 req_options.content_length = strlen (pd_str);
@@ -741,7 +741,7 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
                 DskHttpClientStreamTransfer *xfer;
                 const char *pd_str = "this is post data\n";
                 DskMemorySource *post_data;
-                req_options.verb = DSK_HTTP_VERB_POST;
+                req_options.method = DSK_HTTP_METHOD_POST;
                 req_options.host = "localhost";
                 req_options.full_path = "/hello.txt";
                 cr_options.request_options = &req_options;
@@ -1134,7 +1134,7 @@ test_pre_gzipped_post_data_0 (void)
                                        &options);
   req_options.host = "localhost";
   req_options.full_path = "/hello.txt";
-  req_options.verb = DSK_HTTP_VERB_POST;
+  req_options.method = DSK_HTTP_METHOD_POST;
   cr_options.request_options = &req_options;
   cr_options.funcs = &request_funcs_0;
   cr_options.user_data = &request_data;
@@ -1231,7 +1231,7 @@ test_pre_gzipped_post_data_1 (void)
                                        &options);
   req_options.host = "localhost";
   req_options.full_path = "/hello.txt";
-  req_options.verb = DSK_HTTP_VERB_POST;
+  req_options.method = DSK_HTTP_METHOD_POST;
   cr_options.request_options = &req_options;
   cr_options.funcs = &request_funcs_0;
   cr_options.user_data = &request_data;
@@ -1712,7 +1712,7 @@ test_head_simple (dsk_boolean byte_by_byte)
                                            &options);
       req_options.host = "localhost";
       req_options.full_path = "/hello.txt";
-      req_options.verb = DSK_HTTP_VERB_HEAD;
+      req_options.method = DSK_HTTP_METHOD_HEAD;
       cr_options.request_options = &req_options;
       cr_options.funcs = &request_funcs_0;
       cr_options.user_data = &request_data;
@@ -1812,7 +1812,7 @@ test_head_transfer_encoding_chunked (void)
       stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                            DSK_OCTET_SOURCE (request_data.source),
                                            &options);
-      req_options.verb = DSK_HTTP_VERB_HEAD;
+      req_options.method = DSK_HTTP_METHOD_HEAD;
       req_options.host = "localhost";
       req_options.full_path = "/hello.txt";
       cr_options.request_options = &req_options;

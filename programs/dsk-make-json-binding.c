@@ -14,8 +14,8 @@
 typedef struct _JsonMember JsonMember;
 typedef struct _JsonType JsonType;
 
-char *cmdline_output = NULL;
-char *cmdline_input = NULL;
+const char *cmdline_output = NULL;
+const char *cmdline_input = NULL;
 
 /* if all the following, the default is blank.  */
 char *namespace_func_prefix;       // eg "foo__"
