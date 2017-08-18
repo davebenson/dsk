@@ -178,7 +178,6 @@ handle_subvalue          (DskJsonParser *parser,
   else
     {
       /* add to queue */
- {DskBuffer b = DSK_BUFFER_INIT;dsk_json_value_to_buffer (take, -1, &b); dsk_warning("adding value to queue: %s\n",dsk_buffer_empty_to_string (&b));}
       ValueQueue *q = DSK_NEW (ValueQueue);
       q->value = take;
       q->next = NULL;
@@ -613,7 +612,6 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                                        parser->line_no);
                           return DSK_FALSE;
                         }
-                      printf("surrogate 0x%04x 0x%04x\n", parser->utf16_surrogate, value);
                       uint32_t code = dsk_utf16_surrogate_pair_to_codepoint (parser->utf16_surrogate, value);
                       append_to_string_buffer (parser,
                                                dsk_utf8_encode_unichar (utf8buf, code),

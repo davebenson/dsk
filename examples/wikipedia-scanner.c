@@ -16,7 +16,7 @@ process_page (Wikiformats__Page *page)
 int main(int argc, char **argv)
 {
   DskOctetFilter *decompressor = NULL;
-  char *input_filename = NULL;
+  const char *input_filename = NULL;
   FILE *fp;
   const char *extension;
   DskXmlParserConfig *config;

@@ -194,23 +194,13 @@ int main(int argc, char **argv)
   dsk_json_value_free (v);
 
   // Test surrogate pair.
-  //  unicode points:     1         x10dc01     2
-  //  utf8, hex           01        f4 8d b0 81  02
+  //  unicode points:     1         x10dc01       2
+  //  utf8, hex           01        f4 8f b0 81   02
   v = parse_value ("\"\\u0001\\udbff\\udc01\\u0002\"");
   dsk_assert (v->type == DSK_JSON_VALUE_STRING);
-  printf("string length=%u\n", v->v_string.length);
   dsk_assert (v->v_string.length == 6);
-  printf("%02x %02x %02x %02x %02x %02x\n",
-(uint8_t) v->v_string.str[0],
-(uint8_t) v->v_string.str[1],
-(uint8_t) v->v_string.str[2],
-(uint8_t) v->v_string.str[3],
-(uint8_t) v->v_string.str[4],
-(uint8_t) v->v_string.str[5]);
-  dsk_assert (strcmp (v->v_string.str, "\x01\xf4\x8d\xb0\x81\x02") == 0);
+  dsk_assert (strcmp (v->v_string.str, "\x01\xf4\x8f\xb0\x81\x02") == 0);
   str = print_value (v);
-  //dsk_assert (strcmp (str, "\"\\u0001\"") == 0);
-  printf("utf16 surrogate re-encoded is %s\n", str);
   dsk_free (str);
   dsk_json_value_free (v);
 

@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE  2
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include "dsk-rbtree-macros.h"
 #include "dsk.h"
 
