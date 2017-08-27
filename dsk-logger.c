@@ -126,3 +126,24 @@ dsk_logger_destroy     (DskLogger        *logger)
   dsk_dir_unref (logger->dir);
   dsk_free (logger);
 }
+
+static void
+dsk_logger_vprintf      (DskLogger        *logger,
+                         const char       *format,
+                         va_list           args)
+{
+  DskBuffer *buffer = dsk_logger_peek_buffer (logger);
+  dsk_buffer_vprintf (buffer, format, args);
+  dsk_logger_done_buffer (logger);
+}
+
+void
+dsk_logger_printf      (DskLogger        *logger,
+                        const char       *format,
+                        ...)
+{
+  va_list args;
+  va_start (format, args);
+  dsk_logger_vprintf (logger, format, args);
+  va_end (args);
+}

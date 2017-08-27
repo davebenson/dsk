@@ -1,31 +1,54 @@
 
+typedef struct _DskRandClass DskRandClass;
 typedef struct _DskRand DskRand;
-#if 0
-#define DSK_MERSENNE_TWISTER_N 624
+struct _DskRandClass
+{
+  DskObjectClass base_class;
+  void (*seed) (DskRand *rand, size_t N, const uint32_t *seed);
+};
 struct _DskRand
 {
+  DskObject base;
+  void (*generate32)(DskRand *rand, size_t N, uint32_t *out);
+};
+
+#define DSK_MERSENNE_TWISTER_N 624
+typedef struct DskRandMersenneTwisterClass DskRandMersenneTwisterClass;
+typedef struct DskRandMersenneTwister DskRandMersenneTwister;
+struct DskRandMersenneTwisterClass
+{
+  DskRandClass base_class;
+};
+struct DskRandMersenneTwister
+{
+  DskRand base_instance;
   uint32_t mt[DSK_MERSENNE_TWISTER_N]; /* the array for the state vector  */
   unsigned mt_index; 
 };
-#endif
+DskRand *dsk_rand_new_mersenne_twister (void);
 
-#if 1
+
 // xorshift1024*
 // http://xorshift.di.unimi.it/xorshift1024star.c
-struct _DskRand
+struct _DskRandXorshift1024Class
 {
+  DskRandClass base_instance;
+};
+struct _DskRandXorshift1024
+{
+  DskRand base_instance;
   uint64_t s[16];
   unsigned p;
 };
-#endif
+
+DskRand *dsk_rand_new_xorshift1024 (void);
 
 /* these functions may be used instead of init -- which seeds
    'rand' from /dev/urandom. */
-void     dsk_rand_init           (DskRand *rand);
-void     dsk_rand_init_seed      (DskRand* rand,
+void     dsk_rand_seed           (DskRand* rand,
                                   uint32_t seed);
-void     dsk_rand_init_seed_array(DskRand* rand,
-                                  unsigned seed_length,
+void     dsk_rand_seed_array     (DskRand* rand,
+                                  size_t seed_length,
                                   const uint32_t *seed);
 
 /* Generating random numbers.
@@ -37,12 +60,16 @@ void     dsk_rand_init_seed_array(DskRand* rand,
 uint32_t dsk_rand_uint32         (DskRand* rand);
 uint64_t dsk_rand_uint64         (DskRand* rand);
 int64_t  dsk_rand_int_range      (DskRand* rand,
-                                  int64_t begin,
-                                  int64_t end);
+                                  int64_t  begin,
+                                  int64_t  end);
 double   dsk_rand_double         (DskRand* rand);
 double   dsk_rand_double_range   (DskRand* rand,
-                                  double begin,
-                                  double end);
+                                  double   begin,
+                                  double   end);
+
+
+void     dsk_rand_gaussian_pair  (DskRand  *rand,
+                                  double   *values);
 
 uint32_t dsk_random_uint32       (void);
 int32_t  dsk_random_int_range    (int32_t begin,
@@ -50,3 +77,13 @@ int32_t  dsk_random_int_range    (int32_t begin,
 double   dsk_random_double       (void);
 double   dsk_random_double_range (double begin,
                                   double end);
+
+extern DskRandClass dsk_rand_class;
+#define DSK_RAND_SUBCLASS_DEFINE(class_static, ClassName, class_name)         \
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(ClassName);                                \
+class_static ClassName##Class class_name ## _class = { {                      \
+  DSK_OBJECT_CLASS_DEFINE(ClassName, &dsk_rand_class,                         \
+                          class_name ## _init,                                \
+                          class_name ## _finalize),                           \
+  class_name ## _seed                                                         \
+} }

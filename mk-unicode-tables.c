@@ -126,8 +126,8 @@ int main(int argc, char **argv)
       while (n_pieces < 15)
         {
           pieces[n_pieces].str = at;
-          char *colon = strchr (at, ':');
-          pieces[n_pieces].len = colon - at;
+          char *delim = strchr (at, ';');
+          pieces[n_pieces].len = delim - at;
           n_pieces++;
 
           at = colon + 1;

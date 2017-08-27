@@ -55,11 +55,11 @@ void     dsk_mem_pool_fixed_init (DskMemPoolFixed  *pool,
 
 /* (for technical discussion about inlining these functions
    see inlining-notes.txt) */
-void * dsk_mem_pool_fixed_alloc     (DskMemPoolFixed  *pool);
-void * dsk_mem_pool_fixed_alloc0    (DskMemPoolFixed  *pool);
+void   * dsk_mem_pool_fixed_alloc     (DskMemPoolFixed  *pool);
+void   * dsk_mem_pool_fixed_alloc0    (DskMemPoolFixed  *pool);
 void     dsk_mem_pool_fixed_free      (DskMemPoolFixed  *pool,
-                                       void *          from_pool);
-void     dsk_mem_pool_fixed_clear  (DskMemPoolFixed  *pool);
+                                       void             *from_pool);
+void     dsk_mem_pool_fixed_clear     (DskMemPoolFixed  *pool);
 
 
 

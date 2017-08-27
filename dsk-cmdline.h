@@ -2,7 +2,8 @@
 typedef enum
 {
   DSK_CMDLINE_PERMIT_UNKNOWN_OPTIONS = (1<<0),
-  DSK_CMDLINE_PERMIT_ARGUMENTS = (1<<1)
+  DSK_CMDLINE_PERMIT_ARGUMENTS = (1<<1),
+  DSK_CMDLINE_DO_NOT_MODIFY_ARGV = (1<<2),
 } DskCmdlineInitFlags;
 
 typedef enum

@@ -88,7 +88,7 @@ dsk_rand_init_seed_array (DskRand* rand,
 
   i=1; j=0;
   unsigned N = 16;
-  k = (N>seed_length ? N : seed_length);
+  k = (N > seed_length ? N : seed_length);
   for (; k; k--)
     {
       rand->s[i] = (rand->s[i] ^

@@ -129,6 +129,9 @@ void dsk_cmdline_init        (const char     *short_desc,
     configuring->permit_extra_arguments = DSK_TRUE;
   if (flags & DSK_CMDLINE_PERMIT_UNKNOWN_OPTIONS)
     configuring->permit_unknown_options = DSK_TRUE;
+
+  /* By default, modify argc/argv */
+  swallow_arguments = (flags & DSK_CMDLINE_DO_NOT_MODIFY_ARGV) == 0;
 }
 
 static DskCmdlineArg *
@@ -351,12 +354,13 @@ cmdline_handle_callback (DskCmdlineArg *arg,
   return arg->callback (arg->option_name, str, arg->value_ptr, error);
 }
 
-void dsk_cmdline_add_func    (const char     *option_name,
-                              const char     *description,
-			      const char     *arg_description,
-                              DskCmdlineFlags flags,
-                              DskCmdlineCallback callback,
-                              void              *callback_data)
+void
+dsk_cmdline_add_func    (const char        *option_name,
+                         const char        *description,
+                         const char        *arg_description,
+                         DskCmdlineFlags    flags,
+                         DskCmdlineCallback callback,
+                         void              *callback_data)
 {
   DskCmdlineArg *arg = add_option (option_name);
   dsk_assert (description != NULL);
