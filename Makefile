@@ -74,7 +74,7 @@ programs/%: programs/%.c libdsk.a
 examples/%: examples/%.c libdsk.a
 	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
 libdsk.a: dsk-inlines.o \
-	  dsk-rand.o \
+	  dsk-rand.o dsk-rand-mt.o dsk-rand-xorshift1024.o \
           dsk-dns-protocol.o dsk-error.o dsk-object.o dsk-common.o dsk-udp-socket.o dsk-dispatch.o dsk-hook.o \
 	  dsk-cmdline.o dsk-ip-address.o dsk-ethernet-address.o dsk-dns-client.o \
 	  dsk-network-interface-list.o \

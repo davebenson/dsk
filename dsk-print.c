@@ -1,4 +1,7 @@
-#define _POSIX_C_SOURCE  2
+#ifndef __APPLE__
+#  define _POSIX_C_SOURCE  2
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include "dsk-rbtree-macros.h"

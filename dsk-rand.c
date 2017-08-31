@@ -57,48 +57,51 @@ dsk_rand_init (DskRand *rand)
       seed[3] = getppid ();
     }
 
-  return dsk_rand_init_seed_array (rand, 4, seed);
+  return dsk_rand_seed_array (rand, 4, seed);
 }
 
-void
-dsk_rand_init_seed (DskRand* rand, uint32_t seed)
+static void
+seed32 (uint32_t seed,
+             unsigned state_length,
+             uint32_t       *state_out)
 {
   unsigned i;
   /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
   /* In the previous version (see above), MSBs of the    */
   /* seed affect only MSBs of the array s[].            */
       
-  rand->s[0] = seed;
-  for (i = 1; i < 16; i++) {
-    rand->s[i] = 1812433253ULL * (rand->s[i-1] ^ (rand->s[i-1] >> 30)) + i;
-  }
+  state_out[0] = seed;
+  for (i = 1; i < state_length; i++)
+    state_out[i] = 1812433253ULL * (state_out[i-1] ^ (state_out[i-1] >> 30)) + i;
 }
 
 // XXX: these are not 64-bit seeders!!!!!!!
 void
-dsk_rand_init_seed_array (DskRand* rand,
-                          unsigned seed_length,
-                          const uint32_t *seed)
+dsk_rand_protected_seed_array (unsigned seed_length,
+                               const uint32_t *seed,
+                               unsigned state_length,
+                               uint32_t       *state_out)
+
 {
   unsigned i, j, k;
 
   dsk_return_if_fail (seed_length >= 1, "bad seed_length");
 
-  dsk_rand_init_seed (rand, 19650218UL);
+  seed32 (19650218UL, state_length, state_out);
 
   i=1; j=0;
-  unsigned N = 16;
+  unsigned N = state_length;
   k = (N > seed_length ? N : seed_length);
   for (; k; k--)
     {
-      rand->s[i] = (rand->s[i] ^
-		     ((rand->s[i-1] ^ (rand->s[i-1] >> 30)) * 1664525UL))
+      state_out[i] = (state_out[i] ^
+		     ((state_out[i-1] ^ (state_out[i-1] >> 30)) * 1664525UL))
 	      + seed[j] + j; /* non linear */
-      rand->s[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+      state_out[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
       i++; j++;
       if (i>=N)
         {
-	  rand->s[0] = rand->s[N-1];
+	  state_out[0] = state_out[N-1];
 	  i=1;
 	}
       if (j>=seed_length)
@@ -106,40 +109,26 @@ dsk_rand_init_seed_array (DskRand* rand,
     }
   for (k=N-1; k; k--)
     {
-      rand->s[i] = (rand->s[i] ^
-		     ((rand->s[i-1] ^ (rand->s[i-1] >> 30)) * 1566083941UL))
+      state_out[i] = (state_out[i] ^
+		     ((state_out[i-1] ^ (state_out[i-1] >> 30)) * 1566083941UL))
 	      - i; /* non linear */
-      rand->s[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+      state_out[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
       i++;
       if (i>=N)
         {
-	  rand->s[0] = rand->s[N-1];
+	  state_out[0] = state_out[N-1];
 	  i=1;
 	}
     }
 
-  rand->s[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
+  state_out[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
 }
 
-uint64_t
-dsk_rand_uint64 (DskRand* rand)
+uint64_t dsk_rand_uint64         (DskRand* rand)
 {
-  uint64_t s0 = rand->s[rand->p];
-  rand->p += 1;
-  rand->p &= 15;
-  uint64_t s1 = rand->s[rand->p];
-  s1 ^= s1 << 31; // a
-  s1 ^= s1 >> 11; // b
-  s0 ^= s0 >> 30; // c
-  uint64_t prv = s0 ^ s1;
-  rand->s[rand->p] = prv;
-  return prv * 1181783497276652981LL; 
-}
-
-// probably optimizable :)
-uint32_t dsk_rand_uint32         (DskRand* rand)
-{
-  return (uint32_t) dsk_rand_uint64 (rand);
+  uint32_t rv[2];
+  rand->generate32 (rand, 2, rv);
+  return (((uint64_t)rv[0] << 32)) | ((uint64_t)rv[1]);
 }
 
 int64_t 

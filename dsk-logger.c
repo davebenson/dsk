@@ -143,7 +143,7 @@ dsk_logger_printf      (DskLogger        *logger,
                         ...)
 {
   va_list args;
-  va_start (format, args);
+  va_start (args, format);
   dsk_logger_vprintf (logger, format, args);
   va_end (args);
 }

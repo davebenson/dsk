@@ -26,11 +26,10 @@
 
 static void
 dsk_rand_mersenne_twister_generate32 (DskRand* rand,
-                                      unsigned count,
+                                      size_t count,
                                       uint32_t *out)
 {
   DskRandMersenneTwister *mt = (DskRandMersenneTwister *) rand;
-  uint32_t y;
   static const uint32_t mag01[2]={0x0, MATRIX_A};
   /* mag01[x] = x * MATRIX_A  for x=0,1 */
   uint32_t *mt_arr = mt->mt;
@@ -51,32 +50,39 @@ dsk_rand_mersenne_twister_generate32 (DskRand* rand,
         
           for (kk = 0; kk < N-M; kk++)
             {
+              uint32_t y;
               y = (mt_arr[kk]&UPPER_MASK)|(mt_arr[kk+1]&LOWER_MASK);
               mt_arr[kk] = mt_arr[kk+M] ^ (y >> 1) ^ mag01[y & 0x1];
             }
           for (; kk < N-1; kk++)
             {
+              uint32_t y;
               y = (mt_arr[kk]&UPPER_MASK)|(mt_arr[kk+1]&LOWER_MASK);
               mt_arr[kk] = mt_arr[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1];
             }
-          y = (mt_arr[N-1]&UPPER_MASK)|(mt_arr[0]&LOWER_MASK);
-          mt_arr[N-1] = mt_arr[M-1] ^ (y >> 1) ^ mag01[y & 0x1];
+
+          /* the last index is special */
+          {
+            uint32_t y = (mt_arr[N-1]&UPPER_MASK)|(mt_arr[0]&LOWER_MASK);
+            mt_arr[N-1] = mt_arr[M-1] ^ (y >> 1) ^ mag01[y & 0x1];
+          }
 
           mt->mt_index = 0;
         }
     }
-  
-  return y; 
 }
 
 static void
 dsk_rand_mersenne_twister_seed (DskRand *rand,
-                                size_t N,
-                                const uint32_t *seed);
+                                size_t count,
+                                const uint32_t *seed)
 {
-  mt->generate32 = dsk_rand_mersenne_twister_generate32;
-  ...
+  DskRandMersenneTwister *mt = (DskRandMersenneTwister *) rand;
+  rand->generate32 = dsk_rand_mersenne_twister_generate32;
+  mt->mt_index = 0;
+  dsk_rand_protected_seed_array (count, seed, DSK_MERSENNE_TWISTER_N, mt->mt);
 }
 
 #define dsk_rand_mersenne_twister_init NULL
+#define dsk_rand_mersenne_twister_finalize NULL
 DSK_RAND_SUBCLASS_DEFINE(, DskRandMersenneTwister, dsk_rand_mersenne_twister);

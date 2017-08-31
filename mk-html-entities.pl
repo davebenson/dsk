@@ -137,3 +137,5 @@ for my $tag (@tags) {
 }
 close FMT;
 print "/* done FOREACH implementation */\n";
+
+print "\n/* vim: set fileencoding=utf-8 */\n";

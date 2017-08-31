@@ -9,7 +9,13 @@
 /* TODO:
  *  use DskMemPoolFixed instead of recycling lists
  */
-#define _POSIX_C_SOURCE  1
+
+/* This causes snprintf() to be undefined on Mac OS/X,
+ * so don't define POSIX_C_SOURCE on OS/X */
+#ifndef __APPLE__
+#  define _POSIX_C_SOURCE  1
+#endif
+
 #include <assert.h>
 #include <alloca.h>
 #include <sys/time.h>

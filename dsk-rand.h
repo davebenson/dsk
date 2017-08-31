@@ -30,6 +30,8 @@ DskRand *dsk_rand_new_mersenne_twister (void);
 
 // xorshift1024*
 // http://xorshift.di.unimi.it/xorshift1024star.c
+typedef struct _DskRandXorshift1024Class DskRandXorshift1024Class;
+typedef struct _DskRandXorshift1024 DskRandXorshift1024;
 struct _DskRandXorshift1024Class
 {
   DskRandClass base_instance;
@@ -39,6 +41,8 @@ struct _DskRandXorshift1024
   DskRand base_instance;
   uint64_t s[16];
   unsigned p;
+  dsk_boolean has_extra;
+  uint32_t extra;
 };
 
 DskRand *dsk_rand_new_xorshift1024 (void);
@@ -87,3 +91,9 @@ class_static ClassName##Class class_name ## _class = { {                      \
                           class_name ## _finalize),                           \
   class_name ## _seed                                                         \
 } }
+
+void
+dsk_rand_protected_seed_array (unsigned seed_length,
+                               const uint32_t *seed,
+                               unsigned state_length,
+                               uint32_t       *state_out);
