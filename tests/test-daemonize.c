@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include "../dsk.h"
 
 /* dummy server configuration */
 unsigned cmdline_max = 10;
 unsigned cmdline_sleep_ms = 1;
 const char *cmdline_hello = "hello";
+unsigned cmdline_terminate_signal = 0;
 
 
 /* dummy server state */
@@ -19,7 +21,11 @@ handle_timeout (void *data)
 {
   DSK_UNUSED (data);
   if (cmdline_max == iter++)
-    dsk_main_quit ();
+    {
+      if (cmdline_terminate_signal != 0)
+        raise (cmdline_terminate_signal);
+      dsk_main_quit ();
+    }
   else
     {
       printf ("%s\n", cmdline_hello);
@@ -28,6 +34,39 @@ handle_timeout (void *data)
     }
 }
 
+
+static dsk_boolean
+handle_kill_signal  (const char *arg_name,
+                     const char *arg_value,
+                     void       *callback_data,
+                     DskError  **error)
+{
+  // is number?
+  char *end;
+  long v = strtol (arg_value, &end, 0);
+  if (arg_value != end)
+    {
+      if (*end != '\0')
+        {
+          *error = dsk_error_new ("bad number for signal: '%s'", arg_value);
+          return DSK_FALSE;
+        }
+      * (int *) callback_data = (int) v;
+      return DSK_TRUE;
+    }
+
+  // match (case-insensitively) against sys_signame[] elements.
+  for (size_t i = 0; i < NSIG; i++)
+    {
+      if (dsk_ascii_strcasecmp (sys_signame[i], arg_value) == 0)
+        {
+          * (int *) callback_data = i;
+          return DSK_TRUE;
+        }
+    }
+  *error = dsk_error_new ("unknown signal '%s'", arg_value);
+  return DSK_FALSE;
+}
 
 /* --- main --- */
 int main(int argc, char **argv)
@@ -44,6 +83,9 @@ int main(int argc, char **argv)
                         &cmdline_sleep_ms);
   dsk_cmdline_add_string ("hello", "what to print", "MESSAGE",
                         0, &cmdline_hello);
+  dsk_cmdline_add_func ("kill-signal", "signal to raise prior instead of exiting", "SIGNAL",
+                        0, handle_kill_signal, &cmdline_terminate_signal);
+                        
   dsk_daemon_add_cmdline_args (DSK_TRUE);
   dsk_cmdline_process_args (&argc, &argv);
 
