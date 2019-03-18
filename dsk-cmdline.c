@@ -239,6 +239,84 @@ void dsk_cmdline_add_uint    (const char     *option_name,
   arg->func = cmdline_handle_uint;
 }
 
+static dsk_boolean
+cmdline_handle_int64 (DskCmdlineArg *arg,
+                      const char    *str,
+                      DskError     **error)
+{
+  char *end;
+  // TODO: use strtoq if necessary.
+  long v = strtoll (str, &end, 0);
+  if (str == end)
+    {
+      dsk_set_error (error, "error parsing integer");
+      return DSK_FALSE;
+    }
+  if (*end != '\0')
+    {
+      dsk_set_error (error, "garbage at end of integer");
+      return DSK_FALSE;
+    }
+  * (int *) arg->value_ptr = v;
+  return DSK_TRUE;
+}
+
+void dsk_cmdline_add_int64   (const char     *option_name,
+                              const char     *description,
+			      const char     *arg_description,
+                              DskCmdlineFlags flags,
+                              int            *value_out)
+{
+  DskCmdlineArg *arg = add_option (option_name);
+  dsk_assert (description != NULL);
+  dsk_assert (arg_description != NULL);
+  dsk_assert ((flags & DSK_CMDLINE_OPTIONAL) == 0);
+  arg->description = description;
+  arg->arg_description = arg_description;
+  arg->flags = flags | DSK_CMDLINE_TAKES_ARGUMENT;
+  arg->value_ptr = value_out;
+  arg->func = cmdline_handle_int64;
+}
+
+static dsk_boolean
+cmdline_handle_uint64 (DskCmdlineArg *arg,
+                       const char    *str,
+                       DskError     **error)
+{
+  char *end;
+  // TODO: use strtouq if necessary.
+  long v = strtoull (str, &end, 0);
+  if (str == end)
+    {
+      dsk_set_error (error, "error parsing unsigned integer");
+      return DSK_FALSE;
+    }
+  if (*end != '\0')
+    {
+      dsk_set_error (error, "garbage at end of unsigned integer");
+      return DSK_FALSE;
+    }
+  * (int *) arg->value_ptr = v;
+  return DSK_TRUE;
+}
+
+void dsk_cmdline_add_uint64  (const char     *option_name,
+                              const char     *description,
+			      const char     *arg_description,
+                              DskCmdlineFlags flags,
+                              unsigned       *value_out)
+{
+  DskCmdlineArg *arg = add_option (option_name);
+  dsk_assert (description != NULL);
+  dsk_assert (arg_description != NULL);
+  dsk_assert ((flags & DSK_CMDLINE_OPTIONAL) == 0);
+  arg->description = description;
+  arg->arg_description = arg_description;
+  arg->flags = flags | DSK_CMDLINE_TAKES_ARGUMENT;
+  arg->value_ptr = value_out;
+  arg->func = cmdline_handle_uint64;
+}
+
 
 static dsk_boolean
 cmdline_handle_double (DskCmdlineArg *arg,

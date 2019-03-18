@@ -43,6 +43,16 @@ void dsk_cmdline_add_uint    (const char     *static_option_name,
 			      const char     *static_arg_description,
                               DskCmdlineFlags flags,
                               unsigned       *value_out);
+void dsk_cmdline_add_int64   (const char     *static_option_name,
+                              const char     *static_description,
+			      const char     *static_arg_description,
+                              DskCmdlineFlags flags,
+                              int            *value_out);
+void dsk_cmdline_add_uint64  (const char     *static_option_name,
+                              const char     *static_description,
+			      const char     *static_arg_description,
+                              DskCmdlineFlags flags,
+                              unsigned       *value_out);
 void dsk_cmdline_add_double  (const char     *static_option_name,
                               const char     *static_description,
 			      const char     *static_arg_description,
