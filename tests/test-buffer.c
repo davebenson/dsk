@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../dsk.h"
 
+static DskRand *rng;
 void random_slice(DskBuffer* buf)
 {
   DskBuffer tmpbuf;
@@ -71,11 +72,11 @@ try_initial_remove (DskBuffer *buffer, const char *str)
 
 static char *generate_str (unsigned min_length, unsigned max_length)
 {
-  unsigned len = dsk_random_int_range (min_length, max_length);
+  unsigned len = dsk_rand_int_range (rng, min_length, max_length);
   char *rv = dsk_malloc (len + 1);
   unsigned i;
   for (i = 0; i < len; i++)
-    rv[i] = dsk_random_int_range (0, 26)["abcdefghijklmnopqrstuvwxyz"];
+    rv[i] = dsk_rand_int_range (rng, 0, 26)["abcdefghijklmnopqrstuvwxyz"];
   rv[i] = 0;
   return rv;
 }
@@ -89,6 +90,7 @@ int main(int argc, char** argv)
 
   dsk_cmdline_init ("test dsk-buffer code", "test DskBuffer", NULL, 0);
   dsk_cmdline_process_args (&argc, &argv);
+  rng = dsk_rand_new_xorshift1024 ();
 
   dsk_buffer_init (&gskbuffer);
   dsk_assert (gskbuffer.size == 0);

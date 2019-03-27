@@ -1,4 +1,6 @@
 
+#define DSK_RAND_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskRand, object, &dsk_rand_class)
+
 typedef struct _DskRandClass DskRandClass;
 typedef struct _DskRand DskRand;
 struct _DskRandClass
@@ -47,10 +49,10 @@ struct _DskRandXorshift1024
 
 DskRand *dsk_rand_new_xorshift1024 (void);
 
-/* these functions may be used instead of init -- which seeds
-   'rand' from /dev/urandom. */
-void     dsk_rand_seed           (DskRand* rand,
-                                  uint32_t seed);
+/* seed from /dev/urandom etc */
+void     dsk_rand_seed           (DskRand* rand);
+
+/* constant seed */
 void     dsk_rand_seed_array     (DskRand* rand,
                                   size_t seed_length,
                                   const uint32_t *seed);
@@ -71,16 +73,19 @@ double   dsk_rand_double_range   (DskRand* rand,
                                   double   begin,
                                   double   end);
 
+DskRand *dsk_rand_get_global     (void);
 
 void     dsk_rand_gaussian_pair  (DskRand  *rand,
                                   double   *values);
 
+#if 0
 uint32_t dsk_random_uint32       (void);
 int32_t  dsk_random_int_range    (int32_t begin,
                                   int32_t end);
 double   dsk_random_double       (void);
 double   dsk_random_double_range (double begin,
                                   double end);
+#endif
 
 extern DskRandClass dsk_rand_class;
 #define DSK_RAND_SUBCLASS_DEFINE(class_static, ClassName, class_name)         \

@@ -381,17 +381,7 @@
       }                                                                 \
   }while(0)
 #define DSK_LIST_REVERSE_FOREACH_(type, first, last, prev, next, variable, code)\
-  do{                                                                   \
-    if (last)                                                           \
-      {                                                                 \
-        variable = last;                                                \
-        while (variable != NULL)                                        \
-          {                                                             \
-            code;                                                       \
-            variable = variable->prev;                                  \
-          }                                                             \
-      }                                                                 \
-  }while(0)
+  DSK_LIST_FOREACH_(type, last, first, next, prev, variable, code)
 
 /* --- rings --- */
 #define DSK_RING_PREPEND(ring, node)                                    \

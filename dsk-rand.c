@@ -8,9 +8,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+void     dsk_rand_seed_array     (DskRand* rand,
+                                  size_t seed_length,
+                                  const uint32_t *seed)
+{
+  DSK_RAND_GET_CLASS (rand)->seed (rand, seed_length, seed);
+}
 
 void
-dsk_rand_init (DskRand *rand)
+dsk_rand_seed (DskRand *rand)
 {
   uint32_t seed[4];
   struct timeval now;
@@ -124,11 +130,20 @@ dsk_rand_protected_seed_array (unsigned seed_length,
   state_out[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */ 
 }
 
-uint64_t dsk_rand_uint64         (DskRand* rand)
+uint64_t
+dsk_rand_uint64 (DskRand* rand)
 {
   uint32_t rv[2];
   rand->generate32 (rand, 2, rv);
   return (((uint64_t)rv[0] << 32)) | ((uint64_t)rv[1]);
+}
+
+uint32_t
+dsk_rand_uint32 (DskRand* rand)
+{
+  uint32_t rv[1];
+  rand->generate32 (rand, 1, rv);
+  return rv[0];
 }
 
 int64_t 
@@ -194,40 +209,20 @@ dsk_rand_double_range (DskRand* rand, double begin, double end)
 }
 
 
-
-/* NOTE: in future, may return a thread-local rand */
-static inline DskRand *
-get_global_rand ()
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskRand);
+DskRandClass dsk_rand_class =
 {
-  static DskRand global;
-  static dsk_boolean global_initialized = DSK_FALSE;
-  if (!global_initialized)
+  DSK_OBJECT_CLASS_DEFINE (DskRand, &dsk_object_class, NULL, NULL),
+  NULL,                 /* no default seed impl */
+};
+
+DskRand *dsk_rand_get_global     (void)
+{
+  static DskRand *rv = NULL;
+  if (rv == NULL)
     {
-      global_initialized = DSK_TRUE;
-      dsk_rand_init (&global);
+      rv = dsk_rand_new_xorshift1024 ();
     }
-  return &global;
-}
-
-uint32_t dsk_random_uint32       (void)
-{
-  return dsk_rand_uint32 (get_global_rand ());
-}
-
-int32_t  dsk_random_int_range    (int32_t begin,
-                                  int32_t end)
-{
-  return dsk_rand_int_range (get_global_rand (), begin, end);
-}
-
-double   dsk_random_double       (void)
-{
-  return dsk_rand_double (get_global_rand ());
-}
-
-double   dsk_random_double_range (double begin,
-                                  double end)
-{
-  return dsk_rand_double_range (get_global_rand (), begin, end);
+  return rv;
 }
 

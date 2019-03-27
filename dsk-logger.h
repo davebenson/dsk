@@ -36,7 +36,7 @@ void       dsk_logger_printf      (DskLogger        *logger,
 /* this can be a misleading function:
  * it's better to use peek_buffer/done_buffer and dsk_buffer_vprintf().
  * the problem is that you shouldn't call dsk_logger_printf()
- * multiply times to concatenate messages. */
+ * multiple times to concatenate messages. */
 void       dsk_logger_vprintf     (DskLogger        *logger,
                                    const char       *format,
                                    va_list           args);

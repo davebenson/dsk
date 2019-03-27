@@ -22,7 +22,6 @@ typedef struct _DskJsonValueBase DskJsonValueBase;
 struct _DskJsonValueBase
 {
   DskJsonValueType type;
-  dsk_boolean value;
 };
 
 typedef struct _DskJsonValueBoolean DskJsonValueBoolean;

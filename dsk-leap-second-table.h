@@ -1,28 +1,28 @@
 //
 // So far, there have only been "leap seconds" meaning the addition of 
 // extra seconds (the original specification had a plan for handling years
-// that were too short, but it's never come up.
+// that were too short, but it's never come up).
 //
-// Research (and common sense) indicates that these things 
-// are slowing down, so i suspect we'll need more leap seconds.
+// It is agreed that they will be added right after midnight
+// on the last day of June or December (hence they are either 06-30-YYYY 23:59:60 or 12-31-YYYY 23:59:60).
 //
 // Nonetheless, there was a gap (and Bush II briefly considered ditching
-// the leap-second entirely.
+// the leap-second entirely).
 //
-typedef struct DskLeapSecondTableEntry DskLeapSecondTableEntry;
-
-struct DskLeapSecondTableEntry
+struct DskLeapSecondTable
 {
-  unsigned posix_unixtime;
-  unsigned real_unixtime;
+  unsigned n_leap_second_days;
+  unsigned *leap_second_days;           // as posix unixtime / 86400
 };
 
-extern const int dsk_n_leap_second_table_entries;
-extern const struct DskLeapSecondTableEntry dsk_leap_second_table_entries[];
+extern const DskLeapSecondTable *dsk_leap_second_current_table;
 
 
-unsigned dsk_leap_seconds_convert_unixtime_real_to_posix 
-                                         (unsigned real_unixtime, 
-                                          unsigned *orig_seconds_out);
-unsigned dsk_leap_seconds_convert_unixtime_posix_to_real 
-                                         (unsigned posix_unixtime);
+uint64_t dsk_leap_second_table_convert_unixtime_real_to_posix 
+                                         (const DskLeapSecondTable *table,
+                                          uint64_t real_unixtime, 
+                                          uint64_t *orig_seconds_out);
+bool     dsk_leap_second_table_is_real_leap_second (uint64_t real_unixtime);
+uint64_t dsk_leap_second_table_convert_unixtime_posix_to_real 
+                                         (const DskLeapSecondTable *table,
+                                          uint64_t posix_unixtime);

@@ -25,9 +25,9 @@ struct _DskHookTrap
   DskHookDestroy callback_data_destroy;
   DskHook *owner;
   DskHookTrap *next;
-  unsigned is_notifying : 1;
-  unsigned destroy_in_notify : 1;
   unsigned short block_count;
+  unsigned short is_notifying : 1;
+  unsigned short destroy_in_notify : 1;
 };
   
 struct _DskHook
@@ -63,8 +63,6 @@ DSK_INLINE_FUNC void         dsk_hook_trap_unblock (DskHookTrap   *trap);
 /* Like dsk_hook_trap_destroy(), but does not call 'destroy' callback. */
 DSK_INLINE_FUNC void         dsk_hook_trap_free    (DskHookTrap   *trap);
 
-/* ????? for use by the underlying polling mechanism
- * (for hooks not using idle-notify) */
 DSK_INLINE_FUNC void         dsk_hook_init         (DskHook       *hook,
                                                     void          *object);
 /* same as above, but assumes "hook" as been zeroed out.
@@ -96,6 +94,7 @@ DSK_INLINE_FUNC void
 _dsk_hook_incr_trap_count         (DskHook       *hook)
 {
   _dsk_inline_assert (hook->magic == DSK_HOOK_MAGIC);
+  _dsk_inline_assert (hook->trap_count < 0xffff);
   if (++(hook->trap_count) == 1)
     _dsk_hook_trap_count_nonzero (hook);
 } 

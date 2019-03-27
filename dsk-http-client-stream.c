@@ -1049,7 +1049,7 @@ request_body_is_acceptable (DskHttpMethod method)
 static inline unsigned
 pick_threeway (unsigned a, unsigned b, unsigned c)
 {
-  unsigned r = dsk_random_int_range (0, a+b+c);
+  unsigned r = dsk_rand_int_range (dsk_rand_get_global (), 0, a+b+c);
   if (r < a) return 0;
   if (r < a + b) return 1;
   return 2;
@@ -1057,17 +1057,17 @@ pick_threeway (unsigned a, unsigned b, unsigned c)
 static void
 generate_websocket_key (char *out, uint32_t *key_out)
 {
-  unsigned n_spaces = dsk_random_int_range (1, 13);
-  unsigned number = dsk_random_uint32 ();
+  unsigned n_spaces = dsk_rand_int_range (dsk_rand_get_global (), 1, 13);
+  unsigned number = dsk_rand_uint32 (dsk_rand_get_global ());
   char rchars[12];
-  unsigned rchars_rem = dsk_random_int_range (1, 13);
+  unsigned rchars_rem = dsk_rand_int_range (dsk_rand_get_global (), 1, 13);
   char number_chars[11];
   unsigned number_rem;
   unsigned i;
   char *rchars_at, *num_at;
   number -= number % n_spaces;
   for (i = 0; i < rchars_rem; i++)
-    rchars[i] = "!\"#$%&'()*+,-./:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"[dsk_random_int_range (0, 84)];
+    rchars[i] = "!\"#$%&'()*+,-./:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"[dsk_rand_int_range (dsk_rand_get_global(), 0, 84)];
   snprintf (number_chars, sizeof (number_chars), "%u", number);
   number_rem = strlen (number_chars);
 
@@ -1148,8 +1148,8 @@ make_websocket_request (DskHttpRequestOptions *ropts,
   n = old_n + 3;
 
   /* generate key3 */
-  key3_array[0] = dsk_random_uint32 ();
-  key3_array[1] = dsk_random_uint32 ();
+  key3_array[0] = dsk_rand_uint32 (dsk_rand_get_global ());
+  key3_array[1] = dsk_rand_uint32 (dsk_rand_get_global ());
   memcpy (key3_out, key3_array, 8);
 
   /* compute challenge response */

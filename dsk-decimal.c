@@ -22,6 +22,17 @@ dsk_boolean dsk_int64_parse_decimal  (const char  *str,
 #define E8   100000000
 #define E9   1000000000
 
+#define E10  10000000000ULL
+#define E11  100000000000ULL
+#define E12  1000000000000ULL
+#define E13  10000000000000ULL
+#define E14  100000000000000ULL
+#define E15  1000000000000000ULL
+#define E16  10000000000000000ULL
+#define E17  100000000000000000ULL
+#define E18  1000000000000000000ULL
+#define E19  10000000000000000000ULL
+
 void        dsk_uint32_print_decimal (uint32_t     in,
                                       char        *out)
 {
@@ -157,19 +168,19 @@ digit1:
   *at = 0;
 }
 
-void        dsk_int32_print_decimal  (int32_t      in,
+unsigned    dsk_int32_print_decimal  (int32_t      in,
                                       char        *out)
 {
   if (in < 0)
     {
       *out = '-';
-      dsk_uint32_print_decimal (-in, out + 1);
+      return 1 + dsk_uint32_print_decimal (-in, out + 1);
     }
   else
-    dsk_uint32_print_decimal (in, out);
+    return dsk_uint32_print_decimal (in, out);
 }
 
-void        dsk_uint64_print_decimal (uint64_t     in,
+unsigned    dsk_uint64_print_decimal (uint64_t     in,
                                       char        *out)
 {
   if ((in >> 32) == 0)
@@ -177,8 +188,57 @@ void        dsk_uint64_print_decimal (uint64_t     in,
   else
     {
       /* how many digits is it? */
+      if (in < E15)
+        {
+          if (in < E12)
+            {
+              if (in < E10)
+                goto digit9;
+              else if (in < E11)
+                goto digit10;
+              else
+                goto digit11;
+            }
+          else if (in < E14)
+            {
+              ...
+            }
+          else
+            goto digit14;
+        }
+      else if (in < E18)
+        {
+          ...
+        }
+      else
+        {
+        ...
+        }
+    }
+              
+                  
+#define E10  10000000000ULL
+#define E11  100000000000ULL
+#define E12  1000000000000ULL
+#define E13  10000000000000ULL
+#define E14  100000000000000ULL
+#define E15  1000000000000000ULL
+#define E16  10000000000000000ULL
+#define E17  100000000000000000ULL
+#define E18  1000000000000000000ULL
+#define E19  10000000000000000000ULL
       ...
     }
+}
 
 void        dsk_int64_print_decimal  (int64_t      in,
-                                      char        *out);
+                                      char        *out)
+{
+  if (in < 0)
+    {
+      *out = '-';
+      dsk_uint64_print_decimal (-in, out + 1);
+    }
+  else
+    dsk_uint64_print_decimal (in, out);
+}

@@ -51,28 +51,29 @@
  *         Set 'out' to the previous node in the tree before cur.
  *   NEXT(tree, cur, out)
  *         Set 'out' to the next node in the tree after cur.
- *   INFIMUM_COMPARATOR(tree, key, key_comparator, out)
+ *   LOOKUP_OR_PREV_COMPARATOR(tree, key, key_comparator, out)
  *         Find the last node in the tree which is before or equal to 'key'.
- *   SUPREMUM_COMPARATOR(tree, key, key_comparator, out)
+ *   LOOKUP_OR_NEXT_COMPARATOR(tree, key, key_comparator, out)
  *         Find the first node in the tree which is after or equal to 'key'.
- *   INFIMUM(tree, key, out)
+ *   LOOKUP_OR_PREV(tree, key, out)
  *         Find the last node in the tree which is before or equal to 'key'.
- *   SUPREMUM(tree, key, out)
+ *   LOOKUP_OR_NEXT(tree, key, out)
+ *         Find the first node in the tree which is after or equal to 'key'.
+ *   LOOKUP_PREV_COMPARATOR(tree, key, key_comparator, out)
+ *         Find the last node in the tree which is before or equal to 'key'.
+ *   LOOKUP_NEXT_COMPARATOR(tree, key, key_comparator, out)
+ *         Find the first node in the tree which is after or equal to 'key'.
+ *   LOOKUP_PREV(tree, key, out)
+ *         Find the last node in the tree which is before or equal to 'key'.
+ *   LOOKUP_NEXT(tree, key, out)
  *         Find the first node in the tree which is after or equal to 'key'.
  *   REPLACE_NODE(tree, old, replacement)
  *         Replace 'old' with 'replacement'; ensuring that the replacement
  *         is equal to key (or at least PREV(old) < replacement < NEXT(old).)
  *
- * XXX: how about rename INFIMUM, SUPREMUM as LOOKUP_LE, LOOKUP_GE * respectively?
- * That is, LOOKUP_LE returns the largest elt less-than-or-equal-to the key
- * and LOOKUP_GE returns the smallest elt greater-than-or-equal-to the key.
- * You can think of it as a lookup that allows "slip" in the direction indicated.
- * LOOKUP_LT and LOOKUP_GT would be natural methods too-- for lookups
- * that don't permit equality.
- *
  * XXX (cont): or better, rename LOOKUP_COMPARATOR to FIND and rename
- * INFIMUM_COMPARATOR, SUPREMUM_COMPARATOR to FIND_PREV_EQ, FIND_NEXT_EL resp.
- * Ditch INFIMUM, SUPREMUM (since it's trivial to pass the comparator in
+ * LOOKUP_OR_PREV_COMPARATOR, LOOKUP_OR_NEXT_COMPARATOR to FIND_PREV_EQ, FIND_NEXT_EL resp.
+ * Ditch LOOKUP_OR_PREV, LOOKUP_OR_NEXT (since it's trivial to pass the comparator in
  * in the worst case).
  *
  *
@@ -135,14 +136,14 @@
 #define DSK_RBTREE_PREV(tree, in, out)                                        \
   DSK_RBTREE_PREV_(tree, in, out)
 
-#define DSK_RBTREE_SUPREMUM(tree, key, out)                                   \
-  DSK_RBTREE_SUPREMUM_(tree, key, out)
-#define DSK_RBTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
-  DSK_RBTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
-#define DSK_RBTREE_INFIMUM(tree, key, out)                                    \
-  DSK_RBTREE_INFIMUM_(tree, key, out)
-#define DSK_RBTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
-  DSK_RBTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBTREE_LOOKUP_OR_NEXT(tree, key, out)                                   \
+  DSK_RBTREE_LOOKUP_OR_NEXT_(tree, key, out)
+#define DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR(tree, key, key_comparator, out)        \
+  DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBTREE_LOOKUP_OR_PREV(tree, key, out)                                    \
+  DSK_RBTREE_LOOKUP_OR_PREV_(tree, key, out)
+#define DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR(tree, key, key_comparator, out)         \
+  DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR_(tree, key, key_comparator, out)
 
 #if 1
 #undef DSK_STMT_START
@@ -321,25 +322,25 @@ DSK_STMT_START{                                                                 
     }                                                                         \
 }DSK_STMT_END
 #define DSK_RBTREE_REPLACE_NODE_(top,type,is_red,set_is_red,parent,left,right,comparator, old_node,replacement_node) \
-DSK_STMT_START{                                                                 \
+DSK_STMT_START{                                                               \
     int _dsk_old_is_red = is_red (old_node);                                  \
     set_is_red (replacement_node, _dsk_old_is_red);                           \
-    if (old_node->parent)                                                     \
+    if ((old_node)->parent)                                                   \
       {                                                                       \
-        if (old_node->parent->left == old_node)                               \
-          old_node->parent->left = replacement_node;                          \
+        if ((old_node)->parent->left == (old_node))                           \
+          (old_node)->parent->left = replacement_node;                        \
         else                                                                  \
-          old_node->parent->right = replacement_node;                         \
+          (old_node)->parent->right = replacement_node;                       \
       }                                                                       \
     else                                                                      \
       top = replacement_node;                                                 \
-    replacement_node->left = old_node->left;                                  \
-    replacement_node->right = old_node->right;                                \
-    replacement_node->parent = old_node->parent;                              \
-    if (replacement_node->left)                                               \
-      replacement_node->left->parent = replacement_node;                      \
-    if (replacement_node->right)                                              \
-      replacement_node->right->parent = replacement_node;                     \
+    (replacement_node)->left = (old_node)->left;                              \
+    (replacement_node)->right = (old_node)->right;                            \
+    (replacement_node)->parent = (old_node)->parent;                          \
+    if ((replacement_node)->left)                                             \
+      (replacement_node)->left->parent = replacement_node;                    \
+    if ((replacement_node)->right)                                            \
+      (replacement_node)->right->parent = replacement_node;                   \
 }DSK_STMT_END
 
 #define DSK_RBTREE_REMOVE_(top,type,is_red,set_is_red,parent,left,right,comparator, node) \
@@ -502,9 +503,9 @@ DSK_STMT_START{                                                                 
     }                                                                         \
   out = _dsk_lookup_at;                                                       \
 }DSK_STMT_END
- /* see comments for 'SUPREMUM'; it is the same with the sense of the comparators
+ /* see comments for 'LOOKUP_OR_NEXT'; it is the same with the sense of the comparators
   * and left,right reversed. */
-#define DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
+#define DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
 DSK_STMT_START{                                                                 \
   type _dsk_lookup_at = (top);                                                \
@@ -557,7 +558,7 @@ DSK_STMT_START{                                                                 
  * a tree descent, keeping track of the best candidate you've found.
  * TODO: there's got to be a better way to describe it.
  */
-#define DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
+#define DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
 DSK_STMT_START{                                                                 \
   type _dsk_lookup_at = (top);                                                \
@@ -578,10 +579,10 @@ DSK_STMT_START{                                                                 
 }DSK_STMT_END
 #define DSK_RBTREE_LOOKUP_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
   DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define DSK_RBTREE_SUPREMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
-  DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define DSK_RBTREE_INFIMUM_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
-  DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBTREE_LOOKUP_OR_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBTREE_LOOKUP_OR_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 
 /* these macros don't need the is_red/set_is_red macros, nor the comparator,
    so omit them, to keep the lines a bit shorter. */
@@ -665,14 +666,14 @@ DSK_STMT_START{                                                                 
 #define DSK_RBCTREE_PREV(tree, in, out)                                        \
   DSK_RBCTREE_PREV_(tree, in, out)
 
-#define DSK_RBCTREE_SUPREMUM(tree, key, out)                                   \
-  DSK_RBCTREE_SUPREMUM_(tree, key, out)
-#define DSK_RBCTREE_SUPREMUM_COMPARATOR(tree, key, key_comparator, out)        \
-  DSK_RBCTREE_SUPREMUM_COMPARATOR_(tree, key, key_comparator, out)
-#define DSK_RBCTREE_INFIMUM(tree, key, out)                                    \
-  DSK_RBCTREE_INFIMUM_(tree, key, out)
-#define DSK_RBCTREE_INFIMUM_COMPARATOR(tree, key, key_comparator, out)         \
-  DSK_RBCTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBCTREE_LOOKUP_OR_NEXT(tree, key, out)                                   \
+  DSK_RBCTREE_LOOKUP_OR_NEXT_(tree, key, out)
+#define DSK_RBCTREE_LOOKUP_OR_NEXT_COMPARATOR(tree, key, key_comparator, out)        \
+  DSK_RBCTREE_LOOKUP_OR_NEXT_COMPARATOR_(tree, key, key_comparator, out)
+#define DSK_RBCTREE_LOOKUP_OR_PREV(tree, key, out)                                    \
+  DSK_RBCTREE_LOOKUP_OR_PREV_(tree, key, out)
+#define DSK_RBCTREE_LOOKUP_OR_PREV_COMPARATOR(tree, key, key_comparator, out)         \
+  DSK_RBCTREE_LOOKUP_OR_PREV_COMPARATOR_(tree, key, key_comparator, out)
 
 #define DSK_RBCTREE_GET_BY_INDEX(tree, index, out)                             \
   DSK_RBCTREE_GET_BY_INDEX_(tree, index, out)
@@ -951,18 +952,18 @@ DSK_STMT_START{                                                                 
 #define DSK_RBCTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
  DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_count,parent,left,right,comparator, key,key_comparator,out)
-#define DSK_RBCTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
+#define DSK_RBCTREE_LOOKUP_OR_PREV_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
- DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
-#define DSK_RBCTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
+ DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
+#define DSK_RBCTREE_LOOKUP_OR_NEXT_COMPARATOR_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, \
                                       key,key_comparator,out)                 \
- DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
+ DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,key_comparator,out)
 #define DSK_RBCTREE_LOOKUP_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
   DSK_RBTREE_LOOKUP_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define DSK_RBCTREE_SUPREMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
-  DSK_RBTREE_SUPREMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
-#define DSK_RBCTREE_INFIMUM_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
-  DSK_RBTREE_INFIMUM_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBCTREE_LOOKUP_OR_NEXT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_LOOKUP_OR_NEXT_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
+#define DSK_RBCTREE_LOOKUP_OR_PREV_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, key,out) \
+  DSK_RBTREE_LOOKUP_OR_PREV_COMPARATOR_(top,type,is_red,set_is_red,parent,left,right,comparator, key,comparator,out)
 #define DSK_RBCTREE_NEXT_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, in, out)  \
    DSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)
 #define DSK_RBCTREE_PREV_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \

@@ -81,7 +81,6 @@ typedef enum
 #ifndef DSK_GNUC_PRINTF                /* fallback: no compiler hint */
 # define DSK_GNUC_PRINTF( format_idx, arg_idx )
 #endif
-#define DSK_GNUC_NULL_TERMINATED() __attribute__((sentinel))
 
 /* DSK_GNUC_NULL_TERMINATED(): Advise the compiler
  * that the arguments should be like printf(3); it may

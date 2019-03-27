@@ -549,7 +549,7 @@ dsk_dir_set_contents (DskDir                 *dir,
       while (fd < 0)
         {
           DskError *er = NULL;
-          tmp_path = dsk_strdup_printf ("%s.%08x", path, dsk_random_uint32 ());
+          tmp_path = dsk_strdup_printf ("%s.%08x", path, dsk_rand_uint32 (dsk_rand_get_global ()));
           fd = dsk_dir_openfd (dir, tmp_path, openfd_flags, mode, &er);
           if (fd < 0)
             {

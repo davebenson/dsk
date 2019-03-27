@@ -1,7 +1,6 @@
 
 /* For more sophisticated unicode handling, see libicu,
  *           http://site.icu-project.org/
- * 
  */
 
 /* --- utf-8 string handling --- */
@@ -10,8 +9,8 @@ void dsk_utf8_skip_nonwhitespace (const char **p_str);
 
 char **dsk_utf8_split_on_whitespace (const char *str);
 
-unsigned    dsk_utf8_encode_unichar (char *buf_out,
-                                     uint32_t unicode_value);
+unsigned    dsk_utf8_encode_unichar (char       *buf_out,
+                                     uint32_t    unicode_value);
 dsk_boolean dsk_utf8_decode_unichar (unsigned    buf_len,
                                      const char *buf,
                                      unsigned   *bytes_used_out,

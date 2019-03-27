@@ -682,8 +682,8 @@ dsk_ssl_source_init (DskSslSource *source)
 dsk_boolean
 dsk_ssl_stream_new         (DskSslStreamOptions   *options,
                             DskSslStream         **stream_out,
-                            DskOctetSource       **source_out,
                             DskOctetSink         **sink_out,
+                            DskOctetSource       **source_out,
                             DskError             **error)
 {
   DskSslStream *stream;

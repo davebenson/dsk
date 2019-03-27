@@ -11,16 +11,16 @@
 /* includes NUL */
 #define DSK_DECIMAL_UINT64_SIZE		21
 
-dsk_boolean dsk_uint32_parse_decimal (const char  *str,
+dsk_boolean dsk_decimal_uint32_parse (const char  *str,
                                       const char **end_out,
 				      uint32_t    *value_out);
-dsk_boolean dsk_int32_parse_decimal  (const char  *str,
+dsk_boolean dsk_decimal_int32_parse  (const char  *str,
                                       const char **end_out,
 				      int32_t     *value_out);
-dsk_boolean dsk_uint64_parse_decimal (const char  *str,
+dsk_boolean dsk_decimal_uint64_parse (const char  *str,
                                       const char **end_out,
 				      uint64_t    *value_out);
-dsk_boolean dsk_int64_parse_decimal  (const char  *str,
+dsk_boolean dsk_decimal_int64_parse  (const char  *str,
                                       const char **end_out,
 				      int64_t     *value_out);
 
