@@ -527,7 +527,13 @@ dsk_ssl_sink_write (DskOctetSink *sink,
                     unsigned       *n_written_out,
                     DskError      **error)
 {
-  DskSslStream *stream = DSK_SSL_STREAM (sink->stream);
+  Dsk  unsigned is_client : 1;
+  unsigned handshaking : 1;
+  unsigned read_needed_to_handshake : 1;
+  unsigned write_needed_to_handshake : 1;
+  unsigned read_needed_to_write : 1;
+  unsigned write_needed_to_read : 1;
+SslStream *stream = DSK_SSL_STREAM (sink->stream);
   if (stream->handshaking)
     return DSK_IO_RESULT_AGAIN;
   int rv = SSL_write (stream->ssl, data_out, max_len);

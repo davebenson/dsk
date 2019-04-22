@@ -492,10 +492,6 @@ retry:
       char *at = buf;
       char *command, *arg;
       ++lineno;
-      while (*at && dsk_ascii_isspace (*at))
-        at++;
-      if (*at == '#')
-        continue;
       DSK_ASCII_SKIP_SPACE (at);
       if (*at == '#')
         continue;
