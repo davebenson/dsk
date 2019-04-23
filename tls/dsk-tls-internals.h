@@ -16,6 +16,13 @@ typedef enum
   DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,
 } DskTlsHandshakeType;
 
+
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256         0x1301  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384         0x1302  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256   0x1303  /*rfc8439*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256         0x1304  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256       0x1305  /*rfc6655*/
+
 #define DSK_TLS_EXTENSION_TYPE_SERVER_NAME                               0
 #define DSK_TLS_EXTENSION_TYPE_MAX_FRAGMENT_LENGTH                       1
 #define DSK_TLS_EXTENSION_TYPE_STATUS_REQUEST                            5
@@ -68,12 +75,72 @@ struct DskTlsExtension_MaxFragmentLength
   DskTlsExtensionBase base;
   unsigned length;      /* must be 2^9, 2^10, 2^11, 2^12 */
 };
-   | status_request [RFC6066]                         |  CH, CR, CT |
-   |                                                  |             |
-   | supported_groups [RFC7919]                       |      CH, EE |
-   |                                                  |             |
+
+
+/* RFC 6066. Section 8 */
+typedef struct
+{
+  unsigned n_responder_ids;
+  uint16_t *responder_ids;
+  uint16_t extensions;   /*  DER encoding of OCSP request extensions */
+} DskTlsExtension_OCSPStatusRequest;
+#define DSK_TLS_EXTENSION_STATUS_REQUEST_STATUS_TYPE_OCSP   1
+struct DskTlsExtension_StatusRequest
+{
+  DskTlsExtensionBase base;
+  uint8_t status_type;
+  union {
+    DskTlsExtension_OCSPStatusRequest ocsp;
+  };
+};
+
+/* RFC 7919.  Named Elliptic Curves "Supported Group Extension" */
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE2048     256
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE3072     257
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE4096     258
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE6144     259
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE8192     260
+
+struct DskTlsExtension_ECSupportedGroups
+{
+  DskTlsExtensionBase base;
+  unsigned n_supported_groups;
+  uint16_t *supported_groups;
+};
+
+
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256                 0x0401
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384                 0x0501
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512                 0x0601
+
+/* ECDSA algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP256R1_SHA256           0x0403
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP384R1_SHA384           0x0503
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP521R1_SHA512           0x0603
+
+/* RSASSA-PSS algorithms with public key OID rsaEncryption */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256              0x0804
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384              0x0805
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512              0x0806
+
+/* EdDSA algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_ED25519                          0x0807
+#define DSK_TLS_SIGNATURE_SCHEME_ED448                            0x0808
+
+/* RSASSA-PSS algorithms with public key OID RSASSA-PSS */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA256               0x0809
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA384               0x080A
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA512               0x080B
+
+/* Legacy algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA1                   0x0201
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SHA1                       0x0203
+
+
+
+/* Signature Algorithms RFC 8446 */
    | signature_algorithms (RFC 8446)                  |      CH, CR |
-  - |                                                  |             |
+   |                                                  |             |
    | use_srtp [RFC5764]                               |      CH, EE |
    |                                                  |             |
    | heartbeat [RFC6520]                              |      CH, EE |
