@@ -179,6 +179,11 @@ struct DskTlsExtension_ECSupportedGroups
 union {
   uint16_t type;
   DskTlsExtensionBase generic;
+  DskTlsExtension_ServerNameList server_name;
+  DskTlsExtension_MaxFragmentLength max_fragment_length;
+  DskTlsExtension_StatusRequest status_request;
+  DskTlsExtension_ECSupportedGroups supported_groups;
+  DskTlsExtension_SignatureAlgorithms signature_algorithms;
 } DskTlsExtension;
 
 
