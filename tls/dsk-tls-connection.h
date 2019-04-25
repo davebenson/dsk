@@ -26,6 +26,14 @@ typedef enum DskTlsConnectionState
 #define DSK_TLS_CONNECTION_STATE_IS_CLIENT(st)   (((st) >> 8) == 1)
 #define DSK_TLS_CONNECTION_STATE_IS_SERVER(st)   (((st) >> 8) == 2)
 
+static DskTlsCipherSuite std_cipher_suite[] = {
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384,
+  DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256,
+};
+
 struct DskTlsConnectionClass
 {
   DskStreamClass base_class;
@@ -50,24 +58,14 @@ client_hello_to_buffer (DskTlsContext *context,
   gen_random (32, shake.client_hello.random);
   shake.client_hello.legacy_session_id_length = 0;
   shake.client_hello.legacy_session_id = NULL;
-  shake.client_hello.n_cipher_suites = ...
-  shake.client_hello.cipher_suites = ...
+  shake.client_hello.n_cipher_suites = DSK_N_ELEMENTS (std_cipher_suite);
+  shake.client_hello.cipher_suites = std_cipher_suite;
   shake.client_hello.n_compression_methods = ...
   shake.client_hello.compression_methods = ...
-
-
-    struct {
-      uint16_t legacy_version;
-      uint8_t random[32];
-      unsigned legacy_session_id_length;
-      uint8_t *legacy_session_id;
-      unsigned n_cipher_suites;
-      DskTlsCipherSuite *cipher_suites;
-      unsigned n_compression_methods;   /* legacy */
-      uint8_t *compression_methods;     /* legacy */
-      unsigned n_extensions;
-      DskTlsExtension **extensions;
-    } client_hello;
+  shake.client_hello.n_extensions = ...
+  shake.client_hello.extensions = ...
+  dsk_tls_handshake_serialize_to_buffer (&shake, out);
+}
 
 DskTlsConnection *
 dsk_tls_connection_new (DskTlsContext *context,

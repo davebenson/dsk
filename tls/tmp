@@ -1,0 +1,264 @@
+
+/* Implementation of TLS 1.3 RFC 8446. */
+
+typedef enum
+{
+  DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO = 1,
+  DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO = 2,
+  DSK_TLS_HANDSHAKE_TYPE_NEW_SESSION_TICKET = 4,
+  DSK_TLS_HANDSHAKE_TYPE_END_OF_EARLY_DATA = 5,
+  DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS = 8,
+  DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE = 11,
+  DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_REQUEST = 13,
+  DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY = 15,
+  DSK_TLS_HANDSHAKE_TYPE_FINISHED = 20,
+  DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE = 24,
+  DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,
+} DskTlsHandshakeType;
+
+
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256         0x1301  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384         0x1302  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256   0x1303  /*rfc8439*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256         0x1304  /*rfc5116*/
+#define DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256       0x1305  /*rfc6655*/
+
+#define DSK_TLS_EXTENSION_TYPE_SERVER_NAME                               0
+#define DSK_TLS_EXTENSION_TYPE_MAX_FRAGMENT_LENGTH                       1
+#define DSK_TLS_EXTENSION_TYPE_STATUS_REQUEST                            5
+#define DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS                          10
+#define DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS                      13
+#define DSK_TLS_EXTENSION_TYPE_USE_SRTP                                  14
+#define DSK_TLS_EXTENSION_TYPE_HEARTBEAT                                 15
+#define DSK_TLS_EXTENSION_TYPE_APPLICATION_LAYER_PROTOCOL_NEGOTIATION    16
+#define DSK_TLS_EXTENSION_TYPE_SIGNED_CERTIFICATE_TIMESTAMP              18
+#define DSK_TLS_EXTENSION_TYPE_CLIENT_CERTIFICATE_TYPE                   19
+#define DSK_TLS_EXTENSION_TYPE_SERVER_CERTIFICATE_TYPE                   20
+#define DSK_TLS_EXTENSION_TYPE_PADDING                                   21
+#define DSK_TLS_EXTENSION_TYPE_PRE_SHARED_KEY                            41
+#define DSK_TLS_EXTENSION_TYPE_EARLY_DATA                                42
+#define DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS                        43
+#define DSK_TLS_EXTENSION_TYPE_COOKIE                                    44
+#define DSK_TLS_EXTENSION_TYPE_PSK_KEY_EXCHANGE_MODES                    45
+#define DSK_TLS_EXTENSION_TYPE_CERTIFICATE_AUTHORITIES                   47
+#define DSK_TLS_EXTENSION_TYPE_OID_FILTERS                               48
+#define DSK_TLS_EXTENSION_TYPE_POST_HANDSHAKE_AUTH                       49
+#define DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS_CERT                 50
+#define DSK_TLS_EXTENSION_TYPE_KEY_SHARE                                 51
+
+struct DskTlsExtensionBase
+{
+  uint16_t type;
+  size_t extension_data_length;
+  uint8_t *extension_data;
+};
+
+
+/* RFC 6066. Section 3 */
+struct DskTlsExtension_ServerNameList_Entry
+{
+  uint8_t type;
+  unsigned name_length;
+  const char *name;
+};
+#define DSK_TLS_EXTENSION_SERVER_NAME_TYPE_HOSTNAME 0
+struct DskTlsExtension_ServerNameList
+{
+  DskTlsExtensionBase base;
+  unsigned n_entries;
+  DskTlsExtension_ServerNameList_Entry *entries;
+};
+
+/* RFC 6066. Section 4 */
+struct DskTlsExtension_MaxFragmentLength
+{
+  DskTlsExtensionBase base;
+  unsigned length;      /* must be 2^9, 2^10, 2^11, 2^12 */
+};
+
+
+/* RFC 6066. Section 8 */
+typedef struct
+{
+  unsigned n_responder_ids;
+  uint16_t *responder_ids;
+  uint16_t extensions;   /*  DER encoding of OCSP request extensions */
+} DskTlsExtension_OCSPStatusRequest;
+#define DSK_TLS_EXTENSION_STATUS_REQUEST_STATUS_TYPE_OCSP   1
+struct DskTlsExtension_StatusRequest
+{
+  DskTlsExtensionBase base;
+  uint8_t status_type;
+  union {
+    DskTlsExtension_OCSPStatusRequest ocsp;
+  };
+};
+
+/* RFC 7919.  Named Elliptic Curves "Supported Group Extension" */
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE2048     256
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE3072     257
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE4096     258
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE6144     259
+#define DSK_TLS_EXTENSION_EC_SUPPORTED_GROUP_FFDHE8192     260
+
+struct DskTlsExtension_ECSupportedGroups
+{
+  DskTlsExtensionBase base;
+  unsigned n_supported_groups;
+  uint16_t *supported_groups;
+};
+
+
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256                 0x0401
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384                 0x0501
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512                 0x0601
+
+/* ECDSA algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP256R1_SHA256           0x0403
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP384R1_SHA384           0x0503
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP521R1_SHA512           0x0603
+
+/* RSASSA-PSS algorithms with public key OID rsaEncryption */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256              0x0804
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384              0x0805
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512              0x0806
+
+/* EdDSA algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_ED25519                          0x0807
+#define DSK_TLS_SIGNATURE_SCHEME_ED448                            0x0808
+
+/* RSASSA-PSS algorithms with public key OID RSASSA-PSS */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA256               0x0809
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA384               0x080A
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA512               0x080B
+
+/* Legacy algorithms */
+#define DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA1                   0x0201
+#define DSK_TLS_SIGNATURE_SCHEME_ECDSA_SHA1                       0x0203
+
+
+
+/* Signature Algorithms RFC 8446 */
+struct DskTlsExtension_SignatureAlgorithms
+{
+  DskTlsExtensionBase base;
+  uint16_t n_schemes;
+  uint16_t *schemes;  /* values starting DSK_TLS_SIGNATURE_SCHEME_ */
+};
+
+/* Heartbeat Mode RFC 6520 */
+#define DSK_TLS_EXTENSION_HEARTBEAT_MODE_ALLOWED      1
+#define DSK_TLS_EXTENSION_HEARTBEAT_MODE_NOT_ALLOWED  2
+struct DskTlsExtension_Heartbeat
+{
+  DskTlsExtensionBase base;
+  uint8_t mode;
+};
+
+
+/* Application Layer Protocol Negotiation RFC 7301 */
+struct DskTlsExtension_ProtocolName
+{
+  uint8_t length;
+  char *name;
+};
+struct DskTlsExtension_ApplicationLayerProtocolNegotiation
+{
+  DskTlsExtensionBase base;
+  uint16_t n_protocols;
+  DskTlsExtension_ProtocolName *protocols;
+};
+
+
+
+   | signed_certificate_timestamp [RFC6962]           |  CH, CR, CT |
+   |                                                  |             |
+   | client_certificate_type [RFC7250]                |      CH, EE |
+   |                                                  |             |
+   | server_certificate_type [RFC7250]                |      CH, EE |
+   |                                                  |             |
+   | padding [RFC7685]                                |          CH |
+   |                                                  |             |
+   | key_share (RFC 8446)                             | CH, SH, HRR |
+   |                                                  |             |
+   | pre_shared_key (RFC 8446)                        |      CH, SH |
+   |                                                  |             |
+   | psk_key_exchange_modes (RFC 8446)                |          CH |
+   |                                                  |             |
+   | early_data (RFC 8446)                            | CH, EE, NST |
+   |                                                  |             |
+   | cookie (RFC 8446)                                |     CH, HRR |
+   |                                                  |             |
+   | supported_versions (RFC 8446)                    | CH, SH, HRR |
+   |                                                  |             |
+   | certificate_authorities (RFC 8446)               |      CH, CR |
+   |                                                  |             |
+   | oid_filters (RFC 8446)                           |          CR |
+   |                                                  |             |
+   | post_handshake_auth (RFC 8446)                   |          CH |
+   |                                                  |             |
+   | signature_algorithms_cert (RFC 8446)
+
+
+union {
+  uint16_t type;
+  DskTlsExtensionBase generic;
+} DskTlsExtension;
+
+
+struct DskTlsHandshake
+{
+  DskTlsHandshakeType type;
+  union {
+    struct {
+      uint16_t legacy_version;
+      uint8_t random[32];
+      unsigned legacy_session_id_length;
+      uint8_t *legacy_session_id;
+      unsigned n_cipher_suites;
+      DskTlsCipherSuite *cipher_suites;
+      unsigned n_compression_methods;   /* legacy */
+      uint8_t *compression_methods;     /* legacy */
+      unsigned n_extensions;
+      DskTlsExtension *extensions;
+    } client_hello;
+    struct {
+      uint16_t legacy_version;
+      uint8_t random[32];
+      unsigned legacy_session_id_echo_length;
+      uint8_t *legacy_session_id_echo;
+      DskTlsCipherSuite cipher_suite;
+      uint8_t compression_method;       /* must be 0 for tls 1.3 */
+      unsigned n_extensions;
+      DskTlsExtension *extensions;
+    } server_hello, hello_retry_request;
+    struct {
+      unsigned n_extensions;
+      DskTlsExtension *extensions;
+    } encrypted_extensions;
+    struct {
+      unsigned certificate_request_context_length;
+      uint8_t *certificate_request_context;
+      unsigned n_extensions;
+      DskTlsExtension **extensions;
+    } certificate_request;
+  };
+  DskMemPool allocator;
+};
+
+
+typedef enum
+{
+  DSK_TLS_CONTENT_TYPE_CONTENT_INVALID = 0,
+  DSK_TLS_CONTENT_TYPE_CHANGE_CIPHER_SPEC = 20,
+  DSK_TLS_CONTENT_TYPE_ALERT = 21,
+  DSK_TLS_CONTENT_TYPE_HANDSHAKE = 22,
+  DSK_TLS_CONTENT_TYPE_APPLICATION_DATA = 23
+} DskTlsContentType;
+
+struct DskTlsContent
+{
+  DskTlsContentType type;
+  ...
+};
+

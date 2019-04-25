@@ -412,3 +412,7 @@ bool dsk_tls_handshake_buffer_has_message (DskBuffer *buffer,
                                            DskTlsHandshakeType *type_out);
 DskTlsHandshake *dsk_tls_handshake_parse  (DskBuffer *buffer,
                                            DskError **error);
+
+/* --- Serializing --- */
+void dsk_tls_handshake_to_buffer (const DskTlsHandshake *handshake,
+                                  DskBuffer *out);
