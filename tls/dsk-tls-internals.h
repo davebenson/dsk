@@ -16,7 +16,6 @@ typedef enum
   DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,
 } DskTlsHandshakeType;
 
-
 typedef enum
 {
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256         = 0x1301,  /*rfc5116*/
@@ -364,7 +363,7 @@ struct DskTlsHandshake
       unsigned n_compression_methods;   /* legacy */
       uint8_t *compression_methods;     /* legacy */
       unsigned n_extensions;
-      DskTlsExtension *extensions;
+      DskTlsExtension **extensions;
     } client_hello;
     struct {
       uint16_t legacy_version;
@@ -374,7 +373,7 @@ struct DskTlsHandshake
       DskTlsCipherSuite cipher_suite;
       uint8_t compression_method;       /* must be 0 for tls 1.3 */
       unsigned n_extensions;
-      DskTlsExtension *extensions;
+      DskTlsExtension **extensions;
     } server_hello, hello_retry_request;
     struct {
       unsigned n_extensions;
@@ -406,3 +405,10 @@ struct DskTlsContent
   ...
 };
 
+
+
+/* --- Parsing --- */
+bool dsk_tls_handshake_buffer_has_message (DskBuffer *buffer,
+                                           DskTlsHandshakeType *type_out);
+DskTlsHandshake *dsk_tls_handshake_parse  (DskBuffer *buffer,
+                                           DskError **error);
