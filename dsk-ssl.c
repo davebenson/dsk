@@ -527,7 +527,7 @@ dsk_ssl_sink_write (DskOctetSink *sink,
                     unsigned       *n_written_out,
                     DskError      **error)
 {
-  Dsk  unsigned is_client : 1;
+  unsigned is_client : 1;
   unsigned handshaking : 1;
   unsigned read_needed_to_handshake : 1;
   unsigned write_needed_to_handshake : 1;

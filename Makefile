@@ -99,7 +99,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-xml-parser.o dsk-xml.o \
 	  dsk-xml-binding.o \
 	  dsk-xml-binding-parser.o \
-	  dsk-json.o dsk-json-parser.o dsk-json-output.o \
+	  json/dsk-json.o json/dsk-json-parser.o json/dsk-json-output.o \
 	  dsk-ctoken.o \
 	  dsk-zlib.o dsk-bz2lib.o \
 	  dsk-base64.o dsk-base64-encoder.o dsk-base64-decoder.o \
