@@ -7,12 +7,12 @@
 typedef struct _DskBase64DecoderClass DskBase64DecoderClass;
 struct _DskBase64DecoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskBase64Decoder DskBase64Decoder;
 struct _DskBase64Decoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 
   unsigned char state;		/* 0..3 */
   unsigned char partial;
@@ -25,7 +25,7 @@ struct _DskBase64Decoder
 #define dsk_base64_decoder_finalize NULL
 
 static dsk_boolean
-dsk_base64_decoder_process (DskOctetFilter *filter,
+dsk_base64_decoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -76,7 +76,7 @@ dsk_base64_decoder_process (DskOctetFilter *filter,
 }
 #if 0
 static dsk_boolean
-dsk_base64_decoder_finish(DskOctetFilter *filter,
+dsk_base64_decoder_finish(DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
 {
@@ -95,7 +95,7 @@ dsk_base64_decoder_finish(DskOctetFilter *filter,
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskBase64Decoder, dsk_base64_decoder);
 
 
-DskOctetFilter *dsk_base64_decoder_new             (void)
+DskSyncFilter *dsk_base64_decoder_new             (void)
 {
   DskBase64Decoder *rv = dsk_object_new (&dsk_base64_decoder_class);
   return DSK_OCTET_FILTER (rv);

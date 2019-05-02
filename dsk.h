@@ -37,7 +37,7 @@
 #include "dsk-buffer.h"
 
 /* Input/output stream halves. */
-#include "dsk-octet-io.h"
+#include "dsk-stream.h"
 
 /* Input from memory, and output to memory. */
 #include "dsk-memory.h"
@@ -61,7 +61,7 @@
 #include "dsk-dns-protocol.h"
 
 #include "dsk-client-stream.h"
-#include "dsk-octet-fd.h"
+#include "dsk-fd-stream.h"
 #include "dsk-octet-listener-socket.h"
 
 #include "dsk-udp-socket.h"
@@ -82,22 +82,13 @@
 
 #include "dsk-rand.h"
 
-#include "dsk-http-protocol.h"
 #include "dsk-cgi.h"
-#include "dsk-websocket.h"
-#include "dsk-http-client-auth.h"
-#include "dsk-http-client-stream.h"
-#include "dsk-http-client.h"
-#include "dsk-http-server-stream.h"
-#include "dsk-http-server-stream-proxy.h"
-#include "dsk-http-server.h"
 #include "dsk-mime-multipart.h"
 #include "dsk-mime.h"
 
 #include "dsk-xml.h"
 #include "dsk-xml-parser.h"
 #include "dsk-xml-binding.h"
-#include "dsk-xmlrpc.h"
 
 #include "dsk-json.h"
 
@@ -125,11 +116,6 @@
 
 #include "dsk-config.h"
 #include "dsk-logger.h"
-
-#include "dsk-ssl.h"
-#include "dsk-ssl-listener.h"
-
-#include "dsk-https.h"
 
 #include "dsk-table.h"
 #include "dsk-table-file.h"

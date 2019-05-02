@@ -458,19 +458,19 @@ void dsk_print_set_buffer          (DskPrint    *context,
 void dsk_print_set_filtered_buffer   (DskPrint    *context,
                                     const char  *variable_name,
 			            const DskBuffer *buffer,
-                                    DskOctetFilter *filter)
+                                    DskSyncFilter *filter)
 {
   DskBuffer output = DSK_BUFFER_INIT;
   const DskBufferFragment *in = buffer->first_frag;
   DskError *error = NULL;
   while (in)
     {
-      if (!dsk_octet_filter_process (filter, &output, in->buf_length,
+      if (!dsk_sync_filter_process (filter, &output, in->buf_length,
                                      in->buf + in->buf_start, &error))
         goto failed;
       in = in->next;
     }
-  if (!dsk_octet_filter_finish (filter, &output, &error))
+  if (!dsk_sync_filter_finish (filter, &output, &error))
     goto failed;
 
   dsk_print_set_dsk_buffer (context, variable_name, &output);
@@ -489,7 +489,7 @@ failed:
 void dsk_print_set_filtered_string   (DskPrint    *context,
                                     const char  *variable_name,
 			            const char  *raw_string,
-                                    DskOctetFilter *filter)
+                                    DskSyncFilter *filter)
 {
   dsk_print_set_filtered_binary (context, variable_name,
                                strlen (raw_string),
@@ -501,7 +501,7 @@ void dsk_print_set_filtered_binary   (DskPrint    *context,
                                     const char  *variable_name,
                                     size_t       raw_string_length,
 			            const uint8_t*raw_string,
-                                    DskOctetFilter *filter)
+                                    DskSyncFilter *filter)
 {
   DskBuffer buf;
   DskBufferFragment fragment;

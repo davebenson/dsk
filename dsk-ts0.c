@@ -2193,7 +2193,7 @@ static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
     case DSK_TS0_EXPR_LITERAL:
       dsk_filter_to_buffer (expr->info.literal.length,
                             expr->info.literal.data,
-                            dsk_octet_filter_chain_new_take_list (
+                            dsk_sync_filter_chain_new_take_list (
                               dsk_byte_doubler_new ('$'),
                               dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
                               NULL

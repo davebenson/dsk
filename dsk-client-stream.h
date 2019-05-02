@@ -1,37 +1,15 @@
 
-typedef struct _DskClientStreamSourceClass DskClientStreamSourceClass;
-typedef struct _DskClientStreamSource DskClientStreamSource;
-typedef struct _DskClientStreamSinkClass DskClientStreamSinkClass;
-typedef struct _DskClientStreamSink DskClientStreamSink;
 typedef struct _DskClientStreamClass DskClientStreamClass;
 typedef struct _DskClientStream DskClientStream;
 
 
-struct _DskClientStreamSourceClass
-{
-  DskOctetSourceClass base_class;
-};
-struct _DskClientStreamSource
-{
-  DskOctetSource base_instance;
-};
-
-struct _DskClientStreamSinkClass
-{
-  DskOctetSinkClass base_class;
-};
-struct _DskClientStreamSink
-{
-  DskOctetSink base_instance;
-};
-
 struct _DskClientStreamClass
 {
-  DskOctetStreamClass base_class;
+  DskStreamClass base_class;
 };
 struct _DskClientStream
 {
-  DskOctetStream base_instance;
+  DskStream base_instance;
 
   
   /* Hostname for normal (DNS-based) clients,
@@ -74,8 +52,6 @@ struct _DskClientStream
   unsigned char shutdown_write : 1;
 };
 
-extern DskClientStreamSourceClass dsk_client_stream_source_class;
-extern DskClientStreamSinkClass dsk_client_stream_sink_class;
 extern DskClientStreamClass dsk_client_stream_class;
 
 typedef struct _DskClientStreamOptions DskClientStreamOptions;
@@ -97,10 +73,7 @@ struct _DskClientStreamOptions
   -1,                                       /* idle_disconnect_time */   \
 }
 
-dsk_boolean      dsk_client_stream_new       (DskClientStreamOptions *options,
-                                              DskClientStream **stream_out,
-                                              DskOctetSink    **sink_out,
-                                              DskOctetSource  **source_out,
+DskClientStream *dsk_client_stream_new       (DskClientStreamOptions *options,
                                               DskError        **error);
 
 /* use -1 to disable these timeouts */

@@ -3,12 +3,12 @@
 typedef struct _DskWhitespaceTrimmerClass DskWhitespaceTrimmerClass;
 struct _DskWhitespaceTrimmerClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskWhitespaceTrimmer DskWhitespaceTrimmer;
 struct _DskWhitespaceTrimmer
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t in_initial_space;
   uint8_t in_space;
 };
@@ -19,7 +19,7 @@ static void dsk_whitespace_trimmer_init (DskWhitespaceTrimmer *trimmer)
 #define dsk_whitespace_trimmer_finalize NULL
 
 static dsk_boolean
-dsk_whitespace_trimmer_process    (DskOctetFilter *filter,
+dsk_whitespace_trimmer_process    (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
                                    const uint8_t  *in_data,
@@ -57,7 +57,7 @@ dsk_whitespace_trimmer_process    (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskWhitespaceTrimmer, dsk_whitespace_trimmer);
 
-DskOctetFilter *dsk_whitespace_trimmer_new         (void)
+DskSyncFilter *dsk_whitespace_trimmer_new         (void)
 {
   DskWhitespaceTrimmer *trimmer = dsk_object_new (&dsk_whitespace_trimmer_class);
   trimmer->in_initial_space = trimmer->in_space = DSK_TRUE;

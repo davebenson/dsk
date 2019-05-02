@@ -10,26 +10,26 @@ typedef enum
   STATE_TRIGRAPH_2
 } State;
 
-typedef struct _DskOctetFilterCQuoterClass DskOctetFilterCQuoterClass;
-typedef struct _DskOctetFilterCQuoter DskOctetFilterCQuoter;
-struct _DskOctetFilterCQuoterClass
+typedef struct _DskSyncFilterCQuoterClass DskSyncFilterCQuoterClass;
+typedef struct _DskSyncFilterCQuoter DskSyncFilterCQuoter;
+struct _DskSyncFilterCQuoterClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
-struct _DskOctetFilterCQuoter
+struct _DskSyncFilterCQuoter
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t last_char;
   uint8_t state;
   uint8_t add_quotes : 1;
   uint8_t protect_trigraphs : 1;
   uint8_t needs_initial_quote : 1;
 };
-static void dsk_octet_filter_c_quoter_init (DskOctetFilterCQuoter *cquoter)
+static void dsk_sync_filter_c_quoter_init (DskSyncFilterCQuoter *cquoter)
 {
   cquoter->last_char = UNESCAPED_CHAR;
 }
-#define dsk_octet_filter_c_quoter_finalize NULL
+#define dsk_sync_filter_c_quoter_finalize NULL
 static void write_octal (DskBuffer *buffer, uint8_t c)
 {
   char buf[4];
@@ -81,13 +81,13 @@ scan_unquoted_matter__trigraph (unsigned length, const uint8_t *data)
 
 
 static dsk_boolean
-dsk_octet_filter_c_quoter_process (DskOctetFilter *filter,
+dsk_sync_filter_c_quoter_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
                                    const uint8_t  *in_data,
                                    DskError      **error)
 {
-  DskOctetFilterCQuoter *cquoter = (DskOctetFilterCQuoter *) filter;
+  DskSyncFilterCQuoter *cquoter = (DskSyncFilterCQuoter *) filter;
   uint8_t last_char = cquoter->last_char;
   State state = cquoter->state;
   DSK_UNUSED (error);
@@ -214,11 +214,11 @@ return_true:
 }
 
 static dsk_boolean
-dsk_octet_filter_c_quoter_finish  (DskOctetFilter *filter,
+dsk_sync_filter_c_quoter_finish  (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    DskError      **error)
 {
-  DskOctetFilterCQuoter *cquoter = (DskOctetFilterCQuoter *) filter;
+  DskSyncFilterCQuoter *cquoter = (DskSyncFilterCQuoter *) filter;
   DSK_UNUSED (error);
   if (cquoter->last_char != UNESCAPED_CHAR)
     write_octal (out, cquoter->last_char);
@@ -231,13 +231,13 @@ dsk_octet_filter_c_quoter_finish  (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskOctetFilterCQuoter, dsk_octet_filter_c_quoter);
+DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCQuoter, dsk_sync_filter_c_quoter);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_c_quoter_new (dsk_boolean add_quotes,
                   dsk_boolean protect_trigraphs)
 {
-  DskOctetFilterCQuoter *cq = dsk_object_new (&dsk_octet_filter_c_quoter_class);
+  DskSyncFilterCQuoter *cq = dsk_object_new (&dsk_sync_filter_c_quoter_class);
   if (add_quotes)
     cq->add_quotes = cq->needs_initial_quote = 1;
   cq->protect_trigraphs = protect_trigraphs ? 1 : 0;

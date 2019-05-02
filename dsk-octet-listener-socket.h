@@ -1,16 +1,16 @@
 
-typedef struct _DskOctetListenerSocketClass DskOctetListenerSocketClass;
-typedef struct _DskOctetListenerSocket DskOctetListenerSocket;
+typedef struct _DskSocketStreamListenerClass DskSocketStreamListenerClass;
+typedef struct _DskSocketStreamListener DskSocketStreamListener;
 
-struct _DskOctetListenerSocketClass
+struct _DskSocketStreamListenerClass
 {
-  DskOctetListenerClass base_class;
+  DskStreamListenerClass base_class;
 };
-struct _DskOctetListenerSocket
+struct _DskSocketStreamListener
 {
-  DskOctetListener base_instance;
+  DskStreamListener base_instance;
 
-  dsk_boolean is_local;
+  bool is_local;
 
   /* for local (unix-domain) sockets */
   char *path;
@@ -24,8 +24,8 @@ struct _DskOctetListenerSocket
   DskFileDescriptor listening_fd;
 };
 
-typedef struct _DskOctetListenerSocketOptions DskOctetListenerSocketOptions;
-struct _DskOctetListenerSocketOptions
+typedef struct _DskSocketStreamListenerOptions DskSocketStreamListenerOptions;
+struct _DskSocketStreamListenerOptions
 {
   dsk_boolean is_local;
   const char *local_path;
@@ -34,9 +34,9 @@ struct _DskOctetListenerSocketOptions
   const char *bind_iface;
   unsigned max_pending_connections;
 };
-#define DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT               \
+#define DSK_SOCKET_STREAM_LISTENER_OPTIONS_INIT               \
 {                                                               \
-  DSK_FALSE,                                                    \
+  false,                                                    \
   NULL,                                 /* local_path */        \
   DSK_IP_ADDRESS_INIT,               /* bind_address */      \
   0,                                    /* bind_port */         \
@@ -44,10 +44,11 @@ struct _DskOctetListenerSocketOptions
   128                                   /* max_pending_connections */ \
 }
 
-DskOctetListener *dsk_octet_listener_socket_new (const DskOctetListenerSocketOptions *options,
-                                                 DskError **error);
+DskStreamListener *
+dsk_socket_stream_listener_new (const DskSocketStreamListenerOptions *options,
+                                DskError **error);
 
-extern const DskOctetListenerSocketClass dsk_octet_listener_socket_class;
-#define DSK_OCTET_LISTENER_SOCKET(object) DSK_OBJECT_CAST(DskOctetListenerSocket, object, &dsk_octet_listener_socket_class)
+extern const DskSocketStreamListenerClass dsk_socket_stream_listener_class;
+#define DSK_SOCKET_STREAM_LISTENER(object) DSK_OBJECT_CAST(DskSocketStreamListener, object, &dsk_socket_stream_listener_class)
 
 

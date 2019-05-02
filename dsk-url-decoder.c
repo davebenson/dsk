@@ -3,12 +3,12 @@
 typedef struct _DskUrlDecoderClass DskUrlDecoderClass;
 struct _DskUrlDecoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskUrlDecoder DskUrlDecoder;
 struct _DskUrlDecoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   /* state 0 == default
      state 1 == got percent
      state 2 == got percent and one hex digit */
@@ -20,7 +20,7 @@ struct _DskUrlDecoder
 #define dsk_url_decoder_finalize NULL
 
 static dsk_boolean
-dsk_url_decoder_process    (DskOctetFilter *filter,
+dsk_url_decoder_process    (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -123,7 +123,7 @@ ERROR:
   return DSK_FALSE;
 }
 static dsk_boolean
-dsk_url_decoder_finish (DskOctetFilter *filter,
+dsk_url_decoder_finish (DskSyncFilter *filter,
                         DskBuffer      *buffer,
                         DskError      **error)
 
@@ -140,7 +140,7 @@ dsk_url_decoder_finish (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUrlDecoder, dsk_url_decoder);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_url_decoder_new (void)
 {
   return dsk_object_new (&dsk_url_decoder_class);

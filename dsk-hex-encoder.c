@@ -5,12 +5,12 @@
 typedef struct _DskHexEncoderClass DskHexEncoderClass;
 struct _DskHexEncoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskHexEncoder DskHexEncoder;
 struct _DskHexEncoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 
   unsigned char spaces;
   unsigned char newlines;
@@ -23,7 +23,7 @@ struct _DskHexEncoder
 #define dsk_hex_encoder_finalize NULL
 
 static dsk_boolean
-dsk_hex_encoder_process (DskOctetFilter *filter,
+dsk_hex_encoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -66,7 +66,7 @@ dsk_hex_encoder_process (DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_hex_encoder_finish   (DskOctetFilter *filter,
+dsk_hex_encoder_finish   (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
 {
@@ -80,7 +80,7 @@ dsk_hex_encoder_finish   (DskOctetFilter *filter,
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskHexEncoder, dsk_hex_encoder);
 
 
-DskOctetFilter *dsk_hex_encoder_new (dsk_boolean break_lines,
+DskSyncFilter *dsk_hex_encoder_new (dsk_boolean break_lines,
                                      dsk_boolean include_spaces)
 {
   DskHexEncoder *rv = dsk_object_new (&dsk_hex_encoder_class);

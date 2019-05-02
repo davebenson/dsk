@@ -4,19 +4,19 @@
 typedef struct _DskQuotePrintableClass DskQuotePrintableClass;
 struct _DskQuotePrintableClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskQuotePrintable DskQuotePrintable;
 struct _DskQuotePrintable
 {
-  DskOctetFilter base_filter;
+  DskSyncFilter base_filter;
   unsigned cur_line_length;
 };
 #define IS_PASSTHROUGH(c)   \
       ((33 <= (c) && (c) <= 60) || (62 <= (c) && (c) <= 126))
 #define MAX_LINE_LENGTH 76
 static dsk_boolean
-dsk_quote_printable_process (DskOctetFilter *filter,
+dsk_quote_printable_process (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
                              const uint8_t  *in_data,
@@ -59,7 +59,7 @@ dsk_quote_printable_process (DskOctetFilter *filter,
 
 /* TODO: if we never need this, simple #define dsk_quote_printable_finish to NULL */
 static dsk_boolean
-dsk_quote_printable_finish  (DskOctetFilter *filter,
+dsk_quote_printable_finish  (DskSyncFilter *filter,
                              DskBuffer      *out,
                              DskError      **error)
 {
@@ -72,7 +72,7 @@ dsk_quote_printable_finish  (DskOctetFilter *filter,
 #define dsk_quote_printable_finalize NULL
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskQuotePrintable, dsk_quote_printable);
 
-DskOctetFilter *dsk_quote_printable_new            (void)
+DskSyncFilter *dsk_quote_printable_new            (void)
 {
   return dsk_object_new (&dsk_quote_printable_class);
 }

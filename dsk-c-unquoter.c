@@ -3,15 +3,15 @@
 
 #define UNESCAPED_CHAR  32
 
-typedef struct _DskOctetFilterCUnquoterClass DskOctetFilterCUnquoterClass;
-typedef struct _DskOctetFilterCUnquoter DskOctetFilterCUnquoter;
-struct _DskOctetFilterCUnquoterClass
+typedef struct _DskSyncFilterCUnquoterClass DskSyncFilterCUnquoterClass;
+typedef struct _DskSyncFilterCUnquoter DskSyncFilterCUnquoter;
+struct _DskSyncFilterCUnquoterClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
-struct _DskOctetFilterCUnquoter
+struct _DskSyncFilterCUnquoter
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t partial_octal;
   uint8_t state;
   uint8_t remove_initial_quote : 1;
@@ -26,8 +26,8 @@ typedef enum
   STATE_AFTER_2_OCTAL,
   STATE_DONE            /* if remove_quotes and got final quote */
 } State;
-#define dsk_octet_filter_c_unquoter_init NULL
-#define dsk_octet_filter_c_unquoter_finalize NULL
+#define dsk_sync_filter_c_unquoter_init NULL
+#define dsk_sync_filter_c_unquoter_finalize NULL
 #define WRITE_CASE_SIMPLE_ESCAPED(c, str) \
             case c: \
               dsk_buffer_append (out, 2, str);  \
@@ -49,13 +49,13 @@ typedef enum
             WRITE_CASE_SIMPLE_ESCAPED ('"' , "\\\""); \
             WRITE_CASE_SIMPLE_ESCAPED ('\\', "\\\\");
 static dsk_boolean
-dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
+dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
                                    const uint8_t  *in_data,
                                    DskError      **error)
 {
-  DskOctetFilterCUnquoter *cunquoter = (DskOctetFilterCUnquoter *) filter;
+  DskSyncFilterCUnquoter *cunquoter = (DskSyncFilterCUnquoter *) filter;
   if (in_length == 0)
     return DSK_TRUE;
   if (cunquoter->remove_initial_quote)
@@ -244,11 +244,11 @@ dsk_octet_filter_c_unquoter_process (DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_octet_filter_c_unquoter_finish  (DskOctetFilter *filter,
+dsk_sync_filter_c_unquoter_finish  (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    DskError      **error)
 {
-  DskOctetFilterCUnquoter *cunquoter = (DskOctetFilterCUnquoter *) filter;
+  DskSyncFilterCUnquoter *cunquoter = (DskSyncFilterCUnquoter *) filter;
   switch (cunquoter->state)
     {
     case STATE_DEFAULT:
@@ -264,12 +264,12 @@ dsk_octet_filter_c_unquoter_finish  (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskOctetFilterCUnquoter, dsk_octet_filter_c_unquoter);
+DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCUnquoter, dsk_sync_filter_c_unquoter);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_c_unquoter_new (dsk_boolean remove_quotes)
 {
-  DskOctetFilterCUnquoter *cu = dsk_object_new (&dsk_octet_filter_c_unquoter_class);
+  DskSyncFilterCUnquoter *cu = dsk_object_new (&dsk_sync_filter_c_unquoter_class);
   if (remove_quotes)
     cu->remove_quotes = cu->remove_initial_quote = 1;
   return DSK_OCTET_FILTER (cu);

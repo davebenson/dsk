@@ -9,12 +9,12 @@ typedef struct _DskUtf8ToUtf16 DskUtf8ToUtf16;
 
 struct _DskUtf8ToUtf16Class
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 
 struct _DskUtf8ToUtf16
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t n_utf8_bytes : 4;
   uint8_t swap : 1;
   uint8_t must_emit_bom : 1;
@@ -34,7 +34,7 @@ uint16_array_swap (unsigned count,
 }
 
 static dsk_boolean
-dsk_utf8_to_utf16_process (DskOctetFilter *filter,
+dsk_utf8_to_utf16_process (DskSyncFilter *filter,
                            DskBuffer      *out,
                            unsigned        in_length,
                            const uint8_t  *in_data,
@@ -157,7 +157,7 @@ partial:
 }
 
 dsk_boolean
-dsk_utf8_to_utf16_finish (DskOctetFilter *filter,
+dsk_utf8_to_utf16_finish (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
 {
@@ -182,7 +182,7 @@ dsk_utf8_to_utf16_finish (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUtf8ToUtf16, dsk_utf8_to_utf16);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_utf8_to_utf16_converter_new    (DskUtf16WriterFlags flags)
 {
   DskUtf8ToUtf16 *u8to16 = dsk_object_new (&dsk_utf8_to_utf16_class);

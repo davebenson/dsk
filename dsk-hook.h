@@ -76,6 +76,8 @@ DSK_INLINE_FUNC void         dsk_hook_set_idle_notify(DskHook       *hook,
                 void         dsk_hook_notify       (DskHook       *hook);
                 void         dsk_hook_clear        (DskHook       *hook);
 
+DSK_INLINE_FUNC dsk_boolean  dsk_hook_is_cleared   (DskHook       *hook);
+
 extern DskHookFuncs dsk_hook_funcs_default;
 extern DskMemPoolFixed dsk_hook_trap_pool;
 
@@ -208,6 +210,10 @@ dsk_hook_trap_free (DskHookTrap   *trap)
 {
   trap->callback_data_destroy = NULL;
   dsk_hook_trap_destroy (trap);
+}
+DSK_INLINE_FUNC dsk_boolean  dsk_hook_is_cleared   (DskHook       *hook)
+{
+  return hook->is_cleared || hook->clear_in_notify;
 }
 
 #endif

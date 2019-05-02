@@ -5,12 +5,12 @@
 typedef struct _DskByteUndoublerClass DskByteUndoublerClass;
 struct _DskByteUndoublerClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskByteUndoubler DskByteUndoubler;
 struct _DskByteUndoubler
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t byte;
   uint8_t has_one_byte;
   uint8_t ignore_errors;
@@ -20,7 +20,7 @@ struct _DskByteUndoubler
 #define dsk_byte_undoubler_finalize NULL
 
 static dsk_boolean
-dsk_byte_undoubler_process  (DskOctetFilter *filter,
+dsk_byte_undoubler_process  (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
                              const uint8_t  *in_data,
@@ -78,7 +78,7 @@ ERROR:
   return DSK_FALSE;
 }
 static dsk_boolean
-dsk_byte_undoubler_finish (DskOctetFilter *filter,
+dsk_byte_undoubler_finish (DskSyncFilter *filter,
                            DskBuffer *out,
                            DskError **error)
 {
@@ -95,12 +95,12 @@ dsk_byte_undoubler_finish (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskByteUndoubler, dsk_byte_undoubler);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_byte_undoubler_new (uint8_t byte,
                         dsk_boolean ignore_errors)
 {
   DskByteUndoubler *d = dsk_object_new (&dsk_byte_undoubler_class);
   d->byte = byte;
   d->ignore_errors = ignore_errors ? 1 : 0;
-  return (DskOctetFilter *) d;
+  return (DskSyncFilter *) d;
 }

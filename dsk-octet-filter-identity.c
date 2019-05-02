@@ -1,17 +1,17 @@
 #include "dsk.h"
 
-typedef struct _DskOctetFilterIdentityClass DskOctetFilterIdentityClass;
-struct _DskOctetFilterIdentityClass
+typedef struct _DskSyncFilterIdentityClass DskSyncFilterIdentityClass;
+struct _DskSyncFilterIdentityClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
-typedef struct _DskOctetFilterIdentity DskOctetFilterIdentity;
-struct _DskOctetFilterIdentity
+typedef struct _DskSyncFilterIdentity DskSyncFilterIdentity;
+struct _DskSyncFilterIdentity
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 };
 static dsk_boolean
-dsk_octet_filter_identity_process (DskOctetFilter *filter,
+dsk_sync_filter_identity_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
                                    const uint8_t  *in_data,
@@ -22,14 +22,14 @@ dsk_octet_filter_identity_process (DskOctetFilter *filter,
   dsk_buffer_append (out, in_length, in_data);
   return DSK_TRUE;
 }
-#define dsk_octet_filter_identity_init NULL
-#define dsk_octet_filter_identity_finalize NULL
-#define dsk_octet_filter_identity_finish NULL
+#define dsk_sync_filter_identity_init NULL
+#define dsk_sync_filter_identity_finalize NULL
+#define dsk_sync_filter_identity_finish NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskOctetFilterIdentity,
-                                 dsk_octet_filter_identity);
+DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterIdentity,
+                                 dsk_sync_filter_identity);
 
-DskOctetFilter *dsk_octet_filter_identity_new      (void)
+DskSyncFilter *dsk_sync_filter_identity_new      (void)
 {
-  return dsk_object_new (&dsk_octet_filter_identity_class);
+  return dsk_object_new (&dsk_sync_filter_identity_class);
 }

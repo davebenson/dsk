@@ -3,19 +3,19 @@
 typedef struct _DskUrlEncoderClass DskUrlEncoderClass;
 struct _DskUrlEncoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskUrlEncoder DskUrlEncoder;
 struct _DskUrlEncoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 };
 
 #define dsk_url_encoder_init NULL
 #define dsk_url_encoder_finalize NULL
 
 static dsk_boolean
-dsk_url_encoder_process    (DskOctetFilter *filter,
+dsk_url_encoder_process    (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -57,7 +57,7 @@ dsk_url_encoder_process    (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUrlEncoder, dsk_url_encoder);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_url_encoder_new (void)
 {
   return dsk_object_new (&dsk_url_encoder_class);

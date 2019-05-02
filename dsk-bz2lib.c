@@ -14,12 +14,12 @@ fragment_has_empty_space (DskBufferFragment *fragment)
 typedef struct _DskBz2libCompressorClass DskBz2libCompressorClass;
 struct _DskBz2libCompressorClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskBz2libCompressor DskBz2libCompressor;
 struct _DskBz2libCompressor
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   bz_stream bz2lib;
   dsk_boolean initialized;
 };
@@ -43,7 +43,7 @@ bzrv_to_string (int rv_code)
 }
 
 static dsk_boolean
-dsk_bz2lib_compressor_process(DskOctetFilter *filter,
+dsk_bz2lib_compressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -103,7 +103,7 @@ dsk_bz2lib_compressor_process(DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_bz2lib_compressor_finish (DskOctetFilter *filter,
+dsk_bz2lib_compressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
@@ -171,14 +171,14 @@ DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskBz2libCompressor);
 static DskBz2libCompressorClass dsk_bz2lib_compressor_class =
 { {
   DSK_OBJECT_CLASS_DEFINE(DskBz2libCompressor,
-                          &dsk_octet_filter_class,
+                          &dsk_sync_filter_class,
 			  NULL,
 			  dsk_bz2lib_compressor_finalize),
   dsk_bz2lib_compressor_process,
   dsk_bz2lib_compressor_finish
 } };
 
-DskOctetFilter *dsk_bz2lib_compressor_new   (unsigned    level)
+DskSyncFilter *dsk_bz2lib_compressor_new   (unsigned    level)
 {
   DskBz2libCompressor *rv = dsk_object_new (&dsk_bz2lib_compressor_class);
   int zrv;
@@ -200,18 +200,18 @@ typedef struct _DskBz2libDecompressorClass DskBz2libDecompressorClass;
 typedef struct _DskBz2libDecompressor DskBz2libDecompressor;
 struct _DskBz2libDecompressorClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 struct _DskBz2libDecompressor
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   bz_stream bz2lib;
   unsigned initialized : 1;
   unsigned input_ended : 1;
 };
 
 static dsk_boolean
-dsk_bz2lib_decompressor_process(DskOctetFilter *filter,
+dsk_bz2lib_decompressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -290,7 +290,7 @@ dsk_bz2lib_decompressor_process(DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_bz2lib_decompressor_finish (DskOctetFilter *filter,
+dsk_bz2lib_decompressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
@@ -360,14 +360,14 @@ DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskBz2libDecompressor);
 static DskBz2libDecompressorClass dsk_bz2lib_decompressor_class =
 { {
   DSK_OBJECT_CLASS_DEFINE(DskBz2libDecompressor,
-                          &dsk_octet_filter_class,
+                          &dsk_sync_filter_class,
 			  NULL,
 			  dsk_bz2lib_decompressor_finalize),
   dsk_bz2lib_decompressor_process,
   dsk_bz2lib_decompressor_finish
 } };
 
-DskOctetFilter *dsk_bz2lib_decompressor_new   (void)
+DskSyncFilter *dsk_bz2lib_decompressor_new   (void)
 {
   DskBz2libDecompressor *rv = dsk_object_new (&dsk_bz2lib_decompressor_class);
   int zrv;

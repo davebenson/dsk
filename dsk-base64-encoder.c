@@ -7,12 +7,12 @@
 typedef struct _DskBase64EncoderClass DskBase64EncoderClass;
 struct _DskBase64EncoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskBase64Encoder DskBase64Encoder;
 struct _DskBase64Encoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 
   /* if -1, then don't break lines; in output bytes; never 0 */
   int length_remaining;
@@ -57,7 +57,7 @@ emit_block (DskBase64Encoder *enc,
 }
 
 static dsk_boolean
-dsk_base64_encoder_process (DskOctetFilter *filter,
+dsk_base64_encoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -86,7 +86,7 @@ dsk_base64_encoder_process (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 static dsk_boolean
-dsk_base64_encoder_finish(DskOctetFilter *filter,
+dsk_base64_encoder_finish(DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
 {
@@ -115,7 +115,7 @@ dsk_base64_encoder_finish(DskOctetFilter *filter,
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskBase64Encoder, dsk_base64_encoder);
 
 
-DskOctetFilter *dsk_base64_encoder_new             (dsk_boolean break_lines)
+DskSyncFilter *dsk_base64_encoder_new             (dsk_boolean break_lines)
 {
   DskBase64Encoder *rv = dsk_object_new (&dsk_base64_encoder_class);
   rv->length_remaining = break_lines ? BASE64_LINE_LENGTH : -1;

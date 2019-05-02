@@ -27,12 +27,12 @@ typedef enum
 #define MAX_SPACES   76
 struct _DskUnquotePrintableClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskUnquotePrintable DskUnquotePrintable;
 struct _DskUnquotePrintable
 {
-  DskOctetFilter base_filter;
+  DskSyncFilter base_filter;
   State state;
 
   /* state specific state */
@@ -48,7 +48,7 @@ struct _DskUnquotePrintable
   } info;
 };
 static dsk_boolean
-dsk_unquote_printable_process (DskOctetFilter *filter,
+dsk_unquote_printable_process (DskSyncFilter *filter,
                                DskBuffer      *out,
                                unsigned        in_length,
                                const uint8_t  *in_data,
@@ -235,7 +235,7 @@ unexpected_cr:
 }
 
 static dsk_boolean
-dsk_unquote_printable_finish  (DskOctetFilter *filter,
+dsk_unquote_printable_finish  (DskSyncFilter *filter,
                                DskBuffer      *out,
                                DskError      **error)
 {
@@ -263,7 +263,7 @@ dsk_unquote_printable_finish  (DskOctetFilter *filter,
 #define dsk_unquote_printable_finalize NULL
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUnquotePrintable, dsk_unquote_printable);
 
-DskOctetFilter *dsk_unquote_printable_new            (void)
+DskSyncFilter *dsk_unquote_printable_new            (void)
 {
   return dsk_object_new (&dsk_unquote_printable_class);
 }

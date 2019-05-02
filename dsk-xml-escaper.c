@@ -4,19 +4,19 @@
 typedef struct _DskXmlEscaperClass DskXmlEscaperClass;
 struct _DskXmlEscaperClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskXmlEscaper DskXmlEscaper;
 struct _DskXmlEscaper
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
 };
 
 #define dsk_xml_escaper_init NULL
 #define dsk_xml_escaper_finalize NULL
 
 static dsk_boolean
-dsk_xml_escaper_process (DskOctetFilter *filter,
+dsk_xml_escaper_process (DskSyncFilter *filter,
                         DskBuffer      *out,
                         unsigned        in_length,
                         const uint8_t  *in_data,
@@ -60,9 +60,9 @@ dsk_xml_escaper_process (DskOctetFilter *filter,
 }
 #define dsk_xml_escaper_finish NULL
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskXmlEscaper, dsk_xml_escaper);
-DskOctetFilter *dsk_xml_escaper_new            (void)
+DskSyncFilter *dsk_xml_escaper_new            (void)
 {
   return dsk_object_new (&dsk_xml_escaper_class);
 }
 
-DskOctetFilter *dsk_xml_unescaper_new  (void);
+DskSyncFilter *dsk_xml_unescaper_new  (void);

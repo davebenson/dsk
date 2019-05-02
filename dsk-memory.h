@@ -9,11 +9,11 @@ typedef struct _DskMemorySink DskMemorySink;
 
 struct _DskMemorySourceClass
 {
-  DskOctetSourceClass base_class;
+  DskStreamClass base_class;
 };
 struct _DskMemorySource
 {
-  DskOctetSource base_instance;
+  DskStream base_instance;
   DskBuffer buffer;
 
   /* emit 'buffer_low' while buffer.size <= buffer_low_amount
@@ -29,11 +29,11 @@ struct _DskMemorySource
 };
 struct _DskMemorySinkClass
 {
-  DskOctetSinkClass base_class;
+  DskStreamClass base_class;
 };
 struct _DskMemorySink
 {
-  DskOctetSink base_instance;
+  DskStream base_instance;
   DskBuffer buffer;
   DskHook buffer_nonempty;
   dsk_boolean got_shutdown;

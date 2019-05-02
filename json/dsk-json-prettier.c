@@ -1,5 +1,5 @@
 #include <string.h>
-#include "dsk.h"
+#include "../dsk.h"
 
 /* --- encoder --- */
 typedef struct _DskJsonPrettierClass DskJsonPrettierClass;

@@ -14,18 +14,18 @@ fragment_has_empty_space (DskBufferFragment *fragment)
 typedef struct _DskZlibCompressorClass DskZlibCompressorClass;
 struct _DskZlibCompressorClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskZlibCompressor DskZlibCompressor;
 struct _DskZlibCompressor
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   z_stream zlib;
   dsk_boolean initialized;
 };
 
 static dsk_boolean
-dsk_zlib_compressor_process(DskOctetFilter *filter,
+dsk_zlib_compressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -86,7 +86,7 @@ dsk_zlib_compressor_process(DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_zlib_compressor_finish (DskOctetFilter *filter,
+dsk_zlib_compressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
@@ -152,7 +152,7 @@ dsk_zlib_compressor_finalize (DskZlibCompressor *compressor)
   
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibCompressor, dsk_zlib_compressor);
 
-DskOctetFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
+DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
                                            unsigned    level)
 {
   DskZlibCompressor *rv = dsk_object_new (&dsk_zlib_compressor_class);
@@ -179,18 +179,18 @@ typedef struct _DskZlibDecompressorClass DskZlibDecompressorClass;
 typedef struct _DskZlibDecompressor DskZlibDecompressor;
 struct _DskZlibDecompressorClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 struct _DskZlibDecompressor
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   z_stream zlib;
   unsigned initialized : 1;
   unsigned input_ended : 1;
 };
 
 static dsk_boolean
-dsk_zlib_decompressor_process(DskOctetFilter *filter,
+dsk_zlib_decompressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -268,7 +268,7 @@ dsk_zlib_decompressor_process(DskOctetFilter *filter,
 }
 
 static dsk_boolean
-dsk_zlib_decompressor_finish (DskOctetFilter *filter,
+dsk_zlib_decompressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
@@ -336,7 +336,7 @@ dsk_zlib_decompressor_finalize (DskZlibDecompressor *compressor)
   
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibDecompressor, dsk_zlib_decompressor);
 
-DskOctetFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
+DskSyncFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
 {
   DskZlibDecompressor *rv = dsk_object_new (&dsk_zlib_decompressor_class);
   int zrv;

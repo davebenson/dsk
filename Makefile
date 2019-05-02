@@ -79,7 +79,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-cmdline.o dsk-ip-address.o dsk-ethernet-address.o dsk-dns-client.o \
 	  dsk-network-interface-list.o \
 	  dsk-mem-pool.o \
-	  dsk-fd.o dsk-octet-io.o dsk-octet-fd.o dsk-octet-pipe.o \
+	  dsk-fd.o dsk-stream.o dsk-fd-stream.o \
 	  dsk-ascii.o dsk-utf8.o dsk-client-stream.o \
 	  dsk-buffer.o dsk-main.o dsk-octet-connection.o dsk-octet-listener.o \
 	  dsk-octet-filter.o dsk-octet-filter-source.o \
@@ -93,7 +93,6 @@ libdsk.a: dsk-inlines.o \
 	  dsk-http-header-printing.o \
 	  dsk-http-server.o \
 	  dsk-https-server.o \
-	  dsk-websocket.o \
 	  dsk-cgi.o \
 	  dsk-date.o \
 	  dsk-xml-parser.o dsk-xml.o \
@@ -110,7 +109,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-url-encoder.o dsk-url-decoder.o \
 	  dsk-byte-doubler.o dsk-byte-undoubler.o \
 	  dsk-utf8-fixer.o \
-	  dsk-json-prettier.o \
+	  json/dsk-json-prettier.o \
 	  dsk-codepage.o \
 	  dsk-strv.o \
 	  dsk-mime-multipart.o \
@@ -126,6 +125,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-table-checkpoint-trivial.o \
 	  dsk-table.o \
 	  dsk-ts0.o dsk-ts0-builtins.o \
+          tls/dsk-aes.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \

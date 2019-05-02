@@ -36,7 +36,7 @@ parse_name_value_block (DskSpdySession *session,
 {
   DskBuffer decompressed = DSK_BUFFER_INIT;
   DskError *e = NULL;
-  if (!dsk_octet_filter_process_buffer (session->decompressor, &decompressed,
+  if (!dsk_sync_filter_process_buffer (session->decompressor, &decompressed,
                                         n_bytes, &session->incoming, DSK_FALSE,
                                         &e)
    || !dsk_zlib_decompressor_sync (session->decompressor, &decompressed,

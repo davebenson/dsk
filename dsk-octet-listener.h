@@ -1,31 +1,27 @@
 
-typedef struct _DskOctetListenerClass DskOctetListenerClass;
-typedef struct _DskOctetListener DskOctetListener;
+typedef struct _DskStreamListenerClass DskStreamListenerClass;
+typedef struct _DskStreamListener DskStreamListener;
 
-struct _DskOctetListenerClass
+struct _DskStreamListenerClass
 {
   DskObjectClass base_class;
-  DskIOResult (*accept) (DskOctetListener        *listener,
-                         DskOctetStream         **stream_out,
-			 DskOctetSource         **source_out,
-			 DskOctetSink           **sink_out,
+  DskIOResult (*accept) (DskStreamListener        *listener,
+                         DskStream               **stream,
                          DskError               **error);
-  void        (*shutdown)(DskOctetListener       *listener);
+  void        (*shutdown)(DskStreamListener       *listener);
 };
 
-struct _DskOctetListener
+struct _DskStreamListener
 {
   DskObject base_instance;
   DskHook   incoming;
 };
 
-DskIOResult dsk_octet_listener_accept (DskOctetListener        *listener,
-                                       DskOctetStream         **stream_out,
-			               DskOctetSource         **source_out,
-			               DskOctetSink           **sink_out,
+DskIOResult dsk_stream_listener_accept (DskStreamListener        *listener,
+                                       DskStream                **stream_out,
                                        DskError               **error);
-void        dsk_octet_listener_shutdown (DskOctetListener *listener);
+void        dsk_stream_listener_shutdown (DskStreamListener *listener);
 
-extern const DskOctetListenerClass dsk_octet_listener_class;
-#define DSK_OCTET_LISTENER_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskOctetListener, object, &dsk_octet_listener_class)
-#define DSK_OCTET_LISTENER(object) DSK_OBJECT_CAST(DskOctetListener, object, &dsk_octet_listener_class)
+extern const DskStreamListenerClass dsk_stream_listener_class;
+#define DSK_STREAM_LISTENER_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskStreamListener, object, &dsk_stream_listener_class)
+#define DSK_STREAM_LISTENER(object) DSK_OBJECT_CAST(DskStreamListener, object, &dsk_stream_listener_class)

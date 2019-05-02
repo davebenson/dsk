@@ -6,7 +6,7 @@ typedef enum
   DSK_ZLIB_GZIP,
 } DskZlibMode;
 
-DskOctetFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
+DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
                                            unsigned    level);  /* 0 .. 9 */
-DskOctetFilter *dsk_zlib_decompressor_new (DskZlibMode mode);
+DskSyncFilter *dsk_zlib_decompressor_new (DskZlibMode mode);
 

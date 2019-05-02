@@ -85,7 +85,7 @@ struct _DskMimeMultipartDecoder
 
   DskCgiVariable cur_piece;
   DskBuffer cur_buffer;
-  DskOctetFilter *transfer_decoder;
+  DskSyncFilter *transfer_decoder;
   DskMemPool header_storage;
 #define DSK_MIME_MULTIPART_DECODER_INIT_HEADER_SPACE  1024
   char *header_pad;
@@ -264,7 +264,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
 
       /* parse various transfer-encodings */
       if (dsk_ascii_strncasecmp (encoding, "identity", 8) == 0)
-        decoder->transfer_decoder = dsk_octet_filter_identity_new ();
+        decoder->transfer_decoder = dsk_sync_filter_identity_new ();
       else if (dsk_ascii_strncasecmp (encoding, "base64", 6) == 0)
         decoder->transfer_decoder = dsk_base64_decoder_new ();
       else if (dsk_ascii_strncasecmp (encoding, "quoted-printable", 16) == 0)
@@ -315,7 +315,7 @@ done_with_header (DskMimeMultipartDecoder *decoder,
 {
   DSK_UNUSED (error);
   if (decoder->transfer_decoder == NULL)
-    decoder->transfer_decoder = dsk_octet_filter_identity_new ();
+    decoder->transfer_decoder = dsk_sync_filter_identity_new ();
   return DSK_TRUE;
 }
 
@@ -326,7 +326,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
   unsigned str_length;
   char *at, *out;
   DskCgiVariable cur;
-  if (!dsk_octet_filter_finish (decoder->transfer_decoder,
+  if (!dsk_sync_filter_finish (decoder->transfer_decoder,
                                 &decoder->cur_buffer,
                                 error))
     {
@@ -571,7 +571,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
           }
         if (decoder->state == STATE_CONTENT_LINE_START_CRLF)
           {
-            if (!dsk_octet_filter_process (decoder->transfer_decoder,
+            if (!dsk_sync_filter_process (decoder->transfer_decoder,
                                            &decoder->cur_buffer,
                                            2, (uint8_t*) "\r\n",
                                            error))
@@ -595,7 +595,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
             else
               amount = nl + 1;
           }
-        if (!dsk_octet_filter_process_buffer (decoder->transfer_decoder,
+        if (!dsk_sync_filter_process_buffer (decoder->transfer_decoder,
                                               &decoder->cur_buffer,
                                               amount,
                                               &decoder->incoming,

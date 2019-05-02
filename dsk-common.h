@@ -8,6 +8,7 @@
 #include <stddef.h>             /* for size_t, offsetof */
 #include <stdarg.h>             /* for va_ macros */
 #include <errno.h>              /* for E* definitions */
+#include <stdbool.h>            /* for bool, true, false */
 
 typedef int dsk_boolean;
 #define DSK_FALSE		0

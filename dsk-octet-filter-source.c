@@ -12,7 +12,7 @@ struct _DskOctetSourceFilter
 {
   DskOctetSource base_instance;
   DskBuffer buffer;
-  DskOctetFilter *filter;
+  DskSyncFilter *filter;
   DskOctetSource *sub;
   DskHookTrap *read_trap;
 };
@@ -38,7 +38,7 @@ read_into_buffer (DskOctetSourceFilter *filter,
         dsk_object_unref (filter->sub);
         filter->sub = NULL;
 
-        if (!dsk_octet_filter_finish (filter->filter, &filter->buffer, error))
+        if (!dsk_sync_filter_finish (filter->filter, &filter->buffer, error))
           return DSK_FALSE;
         dsk_object_unref (filter->filter);
         filter->filter = NULL;
@@ -47,7 +47,7 @@ read_into_buffer (DskOctetSourceFilter *filter,
     case DSK_IO_RESULT_AGAIN:
       return DSK_TRUE;
     }
-  if (!dsk_octet_filter_process_buffer (filter->filter, &filter->buffer,
+  if (!dsk_sync_filter_process_buffer (filter->filter, &filter->buffer,
                                         tmp.size, &tmp, DSK_TRUE, error))
     {
       dsk_buffer_clear (&tmp);
@@ -207,8 +207,8 @@ static DskHookFuncs poll_funcs =
 };
 
 
-DskOctetSource *dsk_octet_filter_source (DskOctetSource *source,
-                                         DskOctetFilter *filter)
+DskOctetSource *dsk_sync_filter_source (DskOctetSource *source,
+                                         DskSyncFilter *filter)
 {
   DskOctetSourceFilter *sf = dsk_object_new (&dsk_octet_source_filter_class);
   sf->sub = dsk_object_ref (source);

@@ -25,7 +25,7 @@ struct _DskCipherInfo
   void *internal1;
 };
 
-DskOctetFilter *dsk_crypto_filter_new (DskCryptoOptions *options,
+DskSyncFilter *dsk_crypto_filter_new (DskCryptoOptions *options,
                                        DskError        **error);
 
 extern DskCipherInfo dsk_ciphers[];

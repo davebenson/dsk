@@ -5,12 +5,12 @@
 typedef struct _DskHexDecoderClass DskHexDecoderClass;
 struct _DskHexDecoderClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskHexDecoder DskHexDecoder;
 struct _DskHexDecoder
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   unsigned char has_nibble;
   unsigned char nibble;
 };
@@ -19,7 +19,7 @@ struct _DskHexDecoder
 #define dsk_hex_decoder_finalize NULL
 
 static dsk_boolean
-dsk_hex_decoder_process (DskOctetFilter *filter,
+dsk_hex_decoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -61,7 +61,7 @@ dsk_hex_decoder_process (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 static dsk_boolean
-dsk_hex_decoder_finish(DskOctetFilter *filter,
+dsk_hex_decoder_finish(DskSyncFilter *filter,
                        DskBuffer      *out,
                        DskError      **error)
 {
@@ -78,7 +78,7 @@ dsk_hex_decoder_finish(DskOctetFilter *filter,
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskHexDecoder, dsk_hex_decoder);
 
 
-DskOctetFilter *dsk_hex_decoder_new             (void)
+DskSyncFilter *dsk_hex_decoder_new             (void)
 {
   DskHexDecoder *rv = dsk_object_new (&dsk_hex_decoder_class);
   return DSK_OCTET_FILTER (rv);

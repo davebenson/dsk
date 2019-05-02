@@ -166,3 +166,132 @@ dsk_aes128_encrypt_inplace(const DskAES128Encryptor *s,
   SHIFTROWS(in_out);
   ADDROUNDKEY(in_out, s->w, 10);
 }
+
+#define INVSHIFTROWS(state) \
+    do{ uint8_t tmp; \
+        tmp = state[4]; \
+        state[4] = state[7]; \
+        state[7] = state[6]; \
+        state[6] = state[5]; \
+        state[5] = tmp; \
+        tmp = state[8]; \
+        state[8] = state[10]; \
+        state[10] = tmp; \
+        tmp = state[9]; \
+        state[9] = state[11]; \
+        state[11] = tmp; \
+        tmp = state[12]; \
+        state[12] = state[13]; \
+        state[13] = state[14]; \
+        state[14] = state[15]; \
+        state[15] = tmp; \
+         }while(0)
+#define INVSUBBYTES(state) \
+    do{ for (unsigned i = 0; i < 16; i++) \
+          state[i] = inv_subbytes_table[state[i]]; }while(0)
+
+#if 0
+static inline uint8_t multiply(uint8_t x, uint8_t y)
+{
+  uint8_t rv = ((y & 1) ? x : 0);
+  x = xtime(x);
+  if (y & 2) rv ^= x;
+  x = xtime(x);
+  if (y & 4) rv ^= x;
+  x = xtime(x);
+  if (y & 8) rv ^= x;
+  x = xtime(x);
+  if (y & 16) rv ^= x;
+  return rv;
+}
+static void InvMixColumns(state_t* state)
+{
+  int i;
+  uint8_t a, b, c, d;
+  for (i = 0; i < 4; ++i)
+  {
+    a = (*state)[i][0];
+    b = (*state)[i][1];
+    c = (*state)[i][2];
+    d = (*state)[i][3];
+
+    (*state)[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
+    (*state)[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
+    (*state)[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
+    (*state)[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
+  }
+}
+
+
+#endif
+
+#define INVMIXCOLUMNS_1(state)                     \
+do{                                                \
+                                                   \
+ uint8_t a = (state)[0];                           \
+ uint8_t out0 = 0, out1 = a, out2 = a, out3 = a;   \
+ XTIME(a);                                         \
+ out0 ^= a; out3 ^= a;                             \
+ XTIME(a);                                         \
+ out0 ^= a; out2 ^= a;                             \
+ XTIME(a);                                         \
+ out0 ^= a; out1 ^= a; out2 ^= a; out3 ^= a;       \
+                                                   \
+ uint8_t b = (state)[1];                           \
+ out0 ^= b; out2 ^= b; out3 ^= b;                  \
+ XTIME(b);                                         \
+ out0 ^= b; out1 ^= b;                             \
+ XTIME(b);                                         \
+ out1 ^= b; out3 ^= b;                             \
+ XTIME(b);                                         \
+ out0 ^= b; out1 ^= b; out2 ^= b; out3 ^= b;       \
+                                                   \
+ uint8_t c = (state)[2];                           \
+ out0 ^= c; out1 ^= c; out3 ^= c;                  \
+ XTIME(c);                                         \
+ out1 ^= c; out2 ^= c;                             \
+ XTIME(c);                                         \
+ out0 ^= c; out2 ^= c;                             \
+ XTIME(c);                                         \
+ out0 ^= c; out1 ^= c; out2 ^= c; out3 ^= c;       \
+                                                   \
+ uint8_t d = (state)[3];                           \
+ out0 ^= d; out1 ^= d; out2 ^= d;                  \
+ XTIME(d);                                         \
+ out2 ^= d; out3 ^= d;                             \
+ XTIME(d);                                         \
+ out1 ^= d; out3 ^= d;                             \
+ XTIME(d);                                         \
+ out0 ^= d; out1 ^= d; out2 ^= d; out3 ^= d;       \
+                                                   \
+ (state)[0] = out0;                                \
+ (state)[1] = out1;                                \
+ (state)[2] = out2;                                \
+ (state)[3] = out3;                                \
+}while(0)
+
+#define INVMIXCOLUMNS(state)                       \
+  do{                                              \
+    INVMIXCOLUMNS_1(state + 0);                    \
+    INVMIXCOLUMNS_1(state + 4);                    \
+    INVMIXCOLUMNS_1(state + 8);                    \
+    INVMIXCOLUMNS_1(state + 12);                   \
+  }while(0)
+
+
+void
+dsk_aes128_decrypt_inplace(const DskAES128      *aes_key,
+                           uint8_t              *in_out)   /* length 16 */
+{
+  ADDROUNDKEY(in_out, s->w, 10);
+  for (unsigned round = 9; round >= 1; round--)
+    {
+      INVSHIFTROWS(in_out);
+      INVSUBBYTES(in_out);
+      ADDROUNDKEY(in_out, s->w, round);
+      INVMIXCOLUMNS(in_out);
+    }
+  INVSHIFTROWS(in_out);
+  INVSUBBYTES(in_out);
+  ADDROUNDKEY(in_out, s->w, 0);
+}

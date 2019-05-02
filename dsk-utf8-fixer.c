@@ -5,11 +5,11 @@ typedef struct _DskUtf8Fixer DskUtf8Fixer;
 typedef struct _DskUtf8FixerClass DskUtf8FixerClass;
 struct _DskUtf8FixerClass
 {
-  DskOctetFilterClass base;
+  DskSyncFilterClass base;
 };
 struct _DskUtf8Fixer
 {
-  DskOctetFilter base;
+  DskSyncFilter base;
 
   DskUtf8FixerMode mode;
 
@@ -35,7 +35,7 @@ handle_bad_char (DskUtf8Fixer *fixer,
 }
 
 static dsk_boolean
-dsk_utf8_fixer_process  (DskOctetFilter *filter,
+dsk_utf8_fixer_process  (DskSyncFilter *filter,
                          DskBuffer      *out,
                          unsigned        in_length,
                          const uint8_t  *in_data,
@@ -118,7 +118,7 @@ retry_spare:
 }
 
 static dsk_boolean
-dsk_utf8_fixer_finish  (DskOctetFilter *filter,
+dsk_utf8_fixer_finish  (DskSyncFilter *filter,
                         DskBuffer      *out,
                         DskError      **error)
 {
@@ -135,7 +135,7 @@ dsk_utf8_fixer_finish  (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUtf8Fixer, dsk_utf8_fixer);
 
-DskOctetFilter *dsk_utf8_fixer_new     (DskUtf8FixerMode mode)
+DskSyncFilter *dsk_utf8_fixer_new     (DskUtf8FixerMode mode)
 {
   DskUtf8Fixer *fixer = dsk_object_new (&dsk_utf8_fixer_class);
   fixer->mode = mode;

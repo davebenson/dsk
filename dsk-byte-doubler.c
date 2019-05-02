@@ -5,12 +5,12 @@
 typedef struct _DskByteDoublerClass DskByteDoublerClass;
 struct _DskByteDoublerClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskByteDoubler DskByteDoubler;
 struct _DskByteDoubler
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   uint8_t byte;
 };
 
@@ -18,7 +18,7 @@ struct _DskByteDoubler
 #define dsk_byte_doubler_finalize NULL
 
 static dsk_boolean
-dsk_byte_doubler_process    (DskOctetFilter *filter,
+dsk_byte_doubler_process    (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
                              const uint8_t  *in_data,
@@ -51,10 +51,10 @@ dsk_byte_doubler_process    (DskOctetFilter *filter,
 
 DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskByteDoubler, dsk_byte_doubler);
 
-DskOctetFilter *
+DskSyncFilter *
 dsk_byte_doubler_new (uint8_t byte)
 {
   DskByteDoubler *d = dsk_object_new (&dsk_byte_doubler_class);
   d->byte = byte;
-  return (DskOctetFilter *) d;
+  return (DskSyncFilter *) d;
 }
