@@ -180,7 +180,7 @@ dsk_utf8_to_utf16_finish (DskSyncFilter *filter,
 #define dsk_utf8_to_utf16_init NULL
 #define dsk_utf8_to_utf16_finalize NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUtf8ToUtf16, dsk_utf8_to_utf16);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUtf8ToUtf16, dsk_utf8_to_utf16);
 
 DskSyncFilter *
 dsk_utf8_to_utf16_converter_new    (DskUtf16WriterFlags flags)
@@ -206,5 +206,5 @@ dsk_utf8_to_utf16_converter_new    (DskUtf16WriterFlags flags)
     }
   if (flags & DSK_UTF16_WRITER_EMIT_MARKER)
     u8to16->must_emit_bom = 1;
-  return DSK_OCTET_FILTER (u8to16);
+  return DSK_SYNC_FILTER (u8to16);
 }

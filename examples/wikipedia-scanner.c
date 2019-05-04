@@ -15,7 +15,7 @@ process_page (Wikiformats__Page *page)
 
 int main(int argc, char **argv)
 {
-  DskOctetFilter *decompressor = NULL;
+  DskSyncFilter *decompressor = NULL;
   const char *input_filename = NULL;
   FILE *fp;
   const char *extension;
@@ -39,12 +39,10 @@ int main(int argc, char **argv)
     {
       if (strcmp (extension, ".gz") == 0)
         decompressor = dsk_zlib_decompressor_new (DSK_ZLIB_GZIP);
-      else if (strcmp (extension, ".bz2") == 0)
-        decompressor = dsk_bz2lib_decompressor_new ();
     }
   
   if (decompressor == NULL)
-    decompressor = dsk_octet_filter_identity_new ();
+    decompressor = dsk_sync_filter_identity_new ();
 
   config = dsk_xml_parser_config_new_simple (0, "mediawiki/page");
   parser = dsk_xml_parser_new (config, input_filename);
@@ -55,7 +53,7 @@ int main(int argc, char **argv)
   while ((nread=fread (buf, 1, sizeof (buf), fp)) != 0)
     {
       DskError *error = NULL;
-      if (!dsk_octet_filter_process (decompressor, &buffer, nread, buf, &error))
+      if (!dsk_sync_filter_process (decompressor, &buffer, nread, buf, &error))
         {
           dsk_error ("error decompressing data: %s", error->message);
         }

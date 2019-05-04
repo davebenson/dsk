@@ -2,6 +2,8 @@
 typedef struct _DskClientStreamClass DskClientStreamClass;
 typedef struct _DskClientStream DskClientStream;
 
+#define DSK_CLIENT_STREAM(object) DSK_OBJECT_CAST(DskClientStream, object, &dsk_client_stream_class)
+#define DSK_CLIENT_STREAM_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskClientStream, object, &dsk_client_stream_class)
 
 struct _DskClientStreamClass
 {
@@ -83,10 +85,5 @@ void             dsk_client_stream_set_max_idle_time  (DskClientStream *client,
                                                        int              millis);
 
 void dsk_client_stream_disconnect (DskClientStream *stream);
+extern DskClientStreamClass dsk_client_stream_class;
 
-#define DSK_CLIENT_SOURCE(object) DSK_OBJECT_CAST(DskClientSource, object, &dsk_octet_source_class)
-#define DSK_CLIENT_SINK(object) DSK_OBJECT_CAST(DskClientSink, object, &dsk_octet_sink_class)
-#define DSK_CLIENT_STREAM(object) DSK_OBJECT_CAST(DskClientStream, object, &dsk_octet_stream_class)
-#define DSK_CLIENT_SOURCE_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskClientSource, object, &dsk_octet_source_class)
-#define DSK_CLIENT_SINK_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskClientSink, object, &dsk_octet_sink_class)
-#define DSK_CLIENT_STREAM_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskClientStream, object, &dsk_octet_stream_class)

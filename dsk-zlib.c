@@ -150,7 +150,7 @@ dsk_zlib_compressor_finalize (DskZlibCompressor *compressor)
     deflateEnd (&compressor->zlib);
 }
   
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibCompressor, dsk_zlib_compressor);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskZlibCompressor, dsk_zlib_compressor);
 
 DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
                                            unsigned    level)
@@ -169,7 +169,7 @@ DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
       return NULL;
     }
   rv->initialized = DSK_TRUE;
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }
 
 
@@ -334,7 +334,7 @@ dsk_zlib_decompressor_finalize (DskZlibDecompressor *compressor)
     inflateEnd (&compressor->zlib);
 }
   
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskZlibDecompressor, dsk_zlib_decompressor);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskZlibDecompressor, dsk_zlib_decompressor);
 
 DskSyncFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
 {
@@ -351,5 +351,5 @@ DskSyncFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
       return NULL;
     }
   rv->initialized = DSK_TRUE;
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }

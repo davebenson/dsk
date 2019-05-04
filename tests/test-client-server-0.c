@@ -14,20 +14,20 @@ struct _EchoConnection
   DskBuffer pending;
 
   DskHookTrap *read_trap;
-  DskOctetSource *source;
+  DskStream *source;
 
   DskHookTrap *write_trap;
-  DskOctetSink *sink;
+  DskStream *sink;
 };
 
 static dsk_boolean
-handle_sink_writable (DskOctetSink *sink,
+handle_sink_writable (DskStream *sink,
                       EchoConnection *ec)
 {
   DskError *error = NULL;
   if (cmdline_debug_server)
     dsk_warning ("server: handle_sink_writable: pending size = %u", (unsigned)(ec->pending.size));
-  switch (dsk_octet_sink_write_buffer (sink, &ec->pending, &error))
+  switch (dsk_stream_write_buffer (sink, &ec->pending, &error))
     {
     case DSK_IO_RESULT_SUCCESS:
       if (ec->pending.size == 0)
@@ -36,7 +36,7 @@ handle_sink_writable (DskOctetSink *sink,
           if (ec->source == NULL)
             {
               /* the end */
-              dsk_octet_sink_shutdown (sink);
+              dsk_stream_shutdown_write (sink);
               dsk_object_unref (sink);
               ec->sink = NULL;
             }
@@ -55,13 +55,13 @@ handle_sink_writable (DskOctetSink *sink,
 }
 
 static dsk_boolean
-handle_source_readable (DskOctetSource *source,
+handle_source_readable (DskStream      *source,
                         EchoConnection *ec)
 {
   DskError *error = NULL;
   if (cmdline_debug_server)
     dsk_warning ("handle_source_readable (initial pending=%u)", ec->pending.size);
-  switch (dsk_octet_source_read_buffer (source, &ec->pending, &error))
+  switch (dsk_stream_read_buffer (source, &ec->pending, &error))
     {
     case DSK_IO_RESULT_SUCCESS:
       if (ec->write_trap == NULL && ec->pending.size > 0)
@@ -85,7 +85,7 @@ handle_source_readable (DskOctetSource *source,
         if (ec->pending.size == 0)
           {
             dsk_assert (ec->write_trap == NULL);
-            dsk_octet_sink_shutdown (ec->sink);
+            dsk_stream_shutdown_write (ec->sink);
             dsk_object_unref (ec->sink);
             dsk_free (ec);
           }
@@ -98,23 +98,22 @@ handle_source_readable (DskOctetSource *source,
 }
 
 static dsk_boolean
-handle_incoming_connection (DskOctetListener *listener)
+handle_incoming_connection (DskStreamListener *listener)
 {
   DskError *error = NULL;
-  DskOctetSource *source;
-  DskOctetSink *sink;
-  switch (dsk_octet_listener_accept (listener, NULL, &source, &sink, &error))
+  DskStream *stream;
+  switch (dsk_stream_listener_accept (listener, &stream, &error))
     {
     case DSK_IO_RESULT_SUCCESS:
       {
         EchoConnection *ec = dsk_malloc (sizeof (EchoConnection));
         dsk_buffer_init (&ec->pending);
-        ec->source = source;
-        ec->read_trap = dsk_hook_trap (&source->readable_hook,
+        ec->source = stream;
+        ec->read_trap = dsk_hook_trap (&stream->readable_hook,
                                        (DskHookFunc) handle_source_readable,
                                        ec,
                                        NULL);
-        ec->sink = sink;
+        ec->sink = stream;
         ec->write_trap = NULL;
         break;
       }
@@ -129,14 +128,14 @@ handle_incoming_connection (DskOctetListener *listener)
   return DSK_TRUE;
 }
 
-static DskOctetListener *global_listener = NULL;
+static DskStreamListener *global_listener = NULL;
 
 
 static void
 create_server (void)
 {
-  DskOctetListenerSocketOptions opts = DSK_OCTET_LISTENER_SOCKET_OPTIONS_INIT;
-  DskOctetListener *listener;
+  DskSocketStreamListenerOptions opts = DSK_SOCKET_STREAM_LISTENER_OPTIONS_INIT;
+  DskStreamListener *listener;
   DskError *error = NULL;
   opts.is_local = !cmdline_is_tcp;
   opts.local_path = cmdline_local_path; 
@@ -144,7 +143,7 @@ create_server (void)
 
   dsk_assert (global_listener == NULL);
 
-  listener = dsk_octet_listener_socket_new (&opts, &error);
+  listener = dsk_socket_stream_listener_new (&opts, &error);
   if (listener == NULL)
     dsk_die ("error creating listener: %s", error->message);
   dsk_hook_trap (&listener->incoming, (DskHookFunc) handle_incoming_connection, NULL, NULL);
@@ -158,8 +157,6 @@ kill_server (void)
   global_listener = NULL;
 }
 /* --- client implementation --- */
-static DskClientStreamSink *client_sink;
-static DskClientStreamSource *client_source;
 static DskClientStream *client_stream;
 static unsigned cmdline_wait_time = 250;
 static dsk_boolean cmdline_debug_client = DSK_FALSE;
@@ -177,21 +174,14 @@ create_client (void)
   else
     options.path = cmdline_local_path;
   options.reconnect_time = 10;
-  if (!dsk_client_stream_new (&options,
-                              &client_stream,
-                              (DskOctetSink **) &client_sink,
-                              (DskOctetSource **) &client_source,
-                              &error))
+  client_stream = dsk_client_stream_new (&options, &error);
+  if (client_stream == NULL)
     dsk_die ("failed creating client-stream: %s", error->message);
 }
 static void
 kill_client (void)
 {
-  dsk_object_unref (client_sink);
-  dsk_object_unref (client_source);
   dsk_object_unref (client_stream);
-  client_sink = NULL;
-  client_source = NULL;
   client_stream = NULL;
 }
 static dsk_boolean set_boolean_true (void *object, void *data)
@@ -226,13 +216,13 @@ write_then_read (unsigned write_len,
   while (!timer_expired && n_written < write_len)
     {
       dsk_boolean is_writable = DSK_FALSE;
-      DskHookTrap *trap = dsk_hook_trap (&client_sink->base_instance.writable_hook, set_boolean_true, &is_writable, NULL);
+      DskHookTrap *trap = dsk_hook_trap (&client_stream->base_instance.writable_hook, set_boolean_true, &is_writable, NULL);
       unsigned nw;
       while (!is_writable && !timer_expired)
         dsk_main_run_once ();
       if (timer_expired && !is_writable)
         dsk_hook_trap_destroy (trap);
-      switch (dsk_octet_sink_write (DSK_OCTET_SINK (client_sink), write_len - n_written, write_data + n_written, &nw, error_out))
+      switch (dsk_stream_write (DSK_STREAM (client_stream), write_len - n_written, write_data + n_written, &nw, error_out))
         {
         case DSK_IO_RESULT_SUCCESS:
           n_written += nw;
@@ -258,12 +248,12 @@ write_then_read (unsigned write_len,
       dsk_boolean is_readable = DSK_FALSE;
       if (cmdline_debug_client)
         dsk_warning ("client: trapping readability");
-      trap = dsk_hook_trap (&client_source->base_instance.readable_hook, set_boolean_true, &is_readable, NULL);
+      trap = dsk_hook_trap (&client_stream->base_instance.readable_hook, set_boolean_true, &is_readable, NULL);
       while (!is_readable && !timer_expired)
         dsk_main_run_once ();
       if (timer_expired && !is_readable)
         dsk_hook_trap_destroy (trap);
-      switch (dsk_octet_source_read_buffer (DSK_OCTET_SOURCE (client_source), &readbuf, error_out))
+      switch (dsk_stream_read_buffer (DSK_STREAM (client_stream), &readbuf, error_out))
         {
         case DSK_IO_RESULT_SUCCESS:
           if (cmdline_debug_client)

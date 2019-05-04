@@ -1,0 +1,84 @@
+
+
+<li>
+ <b>AES</b>: Advanced Encryption Standard.  A standardized <i>block cipher</i>.
+Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
+128-, 192- and 256-bit variants.  For our purposes,
+<a href="...">FIPS 197</a> specifies this algorithm.
+</li>
+
+<li>
+ AEAD, Authenticated Encryption with Associated Data:
+ a means to convert a block cipher into one that can accept
+ variable length plaintext and perform authentication.  (It also
+ can provide authenticated but unencrypted data, called "associated data"
+ which is needed for ...) (<i>GCM</i> and <i>CCM</i> are the AEAD required
+ by TLS 1.3)
+</li>
+
+<li>
+ <b>Block cipher</b>: a way of encrypting data of a fixed size
+ using a key known to the encryptor and decryptor.  
+ They involve a routine pre-compute for a key ("Key Expansion"),
+ then an optimized routine to do the block-decryption/encryption.
+
+ These tend to do the heavy
+ work of the encryption algorithm, but they need to be coupled with
+ a means to check the authenticity and integrity of the message.
+</li>
+
+<li>
+ <b>Ciphertext</b>: the encrypted data
+</li>
+
+<li>
+ DES: a series of encryption standards developed by
+ the US government that are now considered to be too weak,
+ in part due to its 56-bit key, and slower modern algorithms.
+ Essentially, it's been replaced by AES.
+</li>
+
+<li>
+  GCM "Galois/Counter Mode": <i>mode of operation</i> and <i>AEAD</i>
+  that converts a block cipher into a variable-length
+  cipher with authentication.
+  It uses a finite-field with power-of-two order (finite fields
+  are sometimes called Galois fields).
+</li>
+
+
+<li>
+ ECB, a classical <i>mode of operation</i> for a block cipher.
+ It's trivial: simply break the input into blocks,
+ encrypt or decrypt them,
+ and concatenate the results.
+ Cannot handle arbitrary length data,
+ and is susceptible to replay and reordering attacks.
+</li>
+<li>
+ <b>HMAC</b> - Message Authentication Code
+</li>
+
+<li>
+ MAC - Message Authentication Code
+</li>
+
+<li>
+ MD5 - a venerable, but deprecated, cryptographic hash.  Still widely used.
+</li>
+
+<li>
+ <b>Nonce</b> - A value that is used only once, often to avoid <i>replay attacks</i>.
+</li>
+<li>
+ Octet: a term used in RFC standards for "byte", an 8-bit value,
+ usually represented as a number in the range 0 to 255.
+</li>
+<li>
+ <b>Plaintext</b>: the unencrypted data: either the input to the encryption
+ algorithm, or, equivalently, the output of the decryption algorithm.
+</li>
+
+<li>
+ SHA1 - a venerable, cryptographic hash.  Still widely used.
+</li>

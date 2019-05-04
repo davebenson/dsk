@@ -55,7 +55,7 @@ dsk_url_encoder_process    (DskSyncFilter *filter,
 }
 #define dsk_url_encoder_finish NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUrlEncoder, dsk_url_encoder);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUrlEncoder, dsk_url_encoder);
 
 DskSyncFilter *
 dsk_url_encoder_new (void)

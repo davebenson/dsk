@@ -22,6 +22,20 @@ struct _DskSyncFilter
 {
   DskObject base_instance;
 };
+
+/* Defining subclasses of DskSyncFilter is easy and fun;
+ */
+
+#define DSK_SYNC_FILTER_SUBCLASS_DEFINE(class_static, ClassName, class_name) \
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(ClassName);                                \
+class_static ClassName##Class class_name ## _class = { {                      \
+  DSK_OBJECT_CLASS_DEFINE(ClassName, &dsk_sync_filter_class,                 \
+                          class_name ## _init,                                \
+                          class_name ## _finalize),                           \
+  class_name ## _process,                                                     \
+  class_name ## _finish                                                       \
+} }
+extern const DskSyncFilterClass dsk_sync_filter_class;
 DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
@@ -40,9 +54,9 @@ DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
 
 
 /* Filtering sources or sinks */
-DskStream *dsk_stream_filter_read_end (DskOctetSource *source,
+DskStream *dsk_stream_filter_read_end (DskStream *source,
                                             DskSyncFilter *filter);
-DskStream *dsk_stream_filter_write_end(DskOctetSource *sink,
+DskStream *dsk_stream_filter_write_end(DskStream *sink,
                                             DskSyncFilter *filter);
 
 /* hackneyed helper function: unrefs the filter. */

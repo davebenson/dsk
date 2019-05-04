@@ -261,7 +261,7 @@ dsk_unquote_printable_finish  (DskSyncFilter *filter,
 
 #define dsk_unquote_printable_init NULL
 #define dsk_unquote_printable_finalize NULL
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUnquotePrintable, dsk_unquote_printable);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUnquotePrintable, dsk_unquote_printable);
 
 DskSyncFilter *dsk_unquote_printable_new            (void)
 {

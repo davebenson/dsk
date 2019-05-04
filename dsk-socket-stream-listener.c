@@ -13,27 +13,25 @@
 #include "dsk-object.h"
 #include "dsk-error.h"
 #include "dsk-buffer.h"
-#include "dsk-octet-io.h"
-#include "dsk-octet-listener.h"
+#include "dsk-stream.h"
+#include "dsk-stream-listener.h"
 #include "dsk-fd.h"
 #include "dsk-ip-address.h"
 #include "dsk-dispatch.h"
 #include "dsk-main.h"
-#include "dsk-octet-fd.h"
-#include "dsk-octet-listener-socket.h"
+#include "dsk-fd-stream.h"
+#include "dsk-socket-stream-listener.h"
 
 #if !defined(AF_LOCAL) && defined(AF_UNIX)
 #  define AF_LOCAL AF_UNIX
 #endif
 
 static DskIOResult
-dsk_octet_listener_socket_accept (DskOctetListener        *listener,
-                                  DskOctetStream         **stream_out,
-			          DskOctetSource         **source_out,
-			          DskOctetSink           **sink_out,
+dsk_socket_stream_listener_accept (DskStreamListener        *listener,
+                                  DskStream         **stream_out,
                                   DskError               **error)
 {
-  DskOctetListenerSocket *s = DSK_OCTET_LISTENER_SOCKET (listener);
+  DskSocketStreamListener *s = DSK_SOCKET_STREAM_LISTENER (listener);
   struct sockaddr addr;
   socklen_t addr_len = sizeof (addr);
   DskFileDescriptor fd = accept (s->listening_fd, &addr, &addr_len);
@@ -47,13 +45,13 @@ dsk_octet_listener_socket_accept (DskOctetListener        *listener,
     }
 
 
-  if (!dsk_octet_stream_new_fd (fd, DSK_FILE_DESCRIPTOR_IS_READABLE|
+  *stream_out = DSK_STREAM (dsk_fd_stream_new (fd,
+                                   DSK_FILE_DESCRIPTOR_IS_READABLE|
                                     DSK_FILE_DESCRIPTOR_IS_WRITABLE|
                                     DSK_FILE_DESCRIPTOR_IS_POLLABLE,
-                                    (DskOctetStreamFd **) stream_out,
-                                    (DskOctetStreamFdSource **) source_out,
-                                    (DskOctetStreamFdSink **) sink_out,
-                                    error))
+                                   error));
+
+  if (*stream_out == NULL)
     {
       close (fd);
       return DSK_IO_RESULT_ERROR;
@@ -62,9 +60,9 @@ dsk_octet_listener_socket_accept (DskOctetListener        *listener,
 }
 
 static void
-dsk_octet_listener_socket_shutdown (DskOctetListener *listener)
+dsk_socket_stream_listener_shutdown (DskStreamListener *listener)
 {
-  DskOctetListenerSocket *s = (DskOctetListenerSocket *) listener;
+  DskSocketStreamListener *s = (DskSocketStreamListener *) listener;
   if (s->listening_fd >= 0)
     listen (s->listening_fd, 0);
   dsk_hook_clear (&listener->incoming);
@@ -75,15 +73,15 @@ listener_handle_fd_readable (DskFileDescriptor   fd,
                              unsigned            events,
                              void               *callback_data)
 {
-  DskOctetListener *listener = DSK_OCTET_LISTENER (callback_data);
-  DskOctetListenerSocket *sock = DSK_OCTET_LISTENER_SOCKET (callback_data);
+  DskStreamListener *listener = DSK_STREAM_LISTENER (callback_data);
+  DskSocketStreamListener *sock = DSK_SOCKET_STREAM_LISTENER (callback_data);
   dsk_assert (fd == sock->listening_fd);
   dsk_assert (events & DSK_EVENT_READABLE);
   dsk_hook_notify (&listener->incoming);
 }
 
 static void
-dsk_octet_listener_socket_set_poll (DskOctetListenerSocket *listener_socket,
+dsk_socket_stream_listener_set_poll (DskSocketStreamListener *listener_socket,
                                     dsk_boolean             poll)
 {
   if (listener_socket->listening_fd < 0)
@@ -107,18 +105,18 @@ static DskHookFuncs listener_incoming_hook_funcs =
 {
   (DskHookObjectFunc) dsk_object_ref_f,
   (DskHookObjectFunc) dsk_object_unref_f,
-  (DskHookSetPoll) dsk_octet_listener_socket_set_poll
+  (DskHookSetPoll) dsk_socket_stream_listener_set_poll
 };
    
 
 static void
-dsk_octet_listener_socket_init (DskOctetListenerSocket *s)
+dsk_socket_stream_listener_init (DskSocketStreamListener *s)
 {
   s->listening_fd = -1;
   dsk_hook_set_funcs (&s->base_instance.incoming, &listener_incoming_hook_funcs);
 }
 static void
-dsk_octet_listener_socket_finalize (DskOctetListenerSocket *s)
+dsk_socket_stream_listener_finalize (DskSocketStreamListener *s)
 {
   dsk_main_close_fd (s->listening_fd);
   s->listening_fd = -1;
@@ -132,14 +130,14 @@ dsk_octet_listener_socket_finalize (DskOctetListenerSocket *s)
   dsk_free (s->bind_iface);
 }
 
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskOctetListenerSocket);
-const DskOctetListenerSocketClass dsk_octet_listener_socket_class =
-{ { DSK_OBJECT_CLASS_DEFINE(DskOctetListenerSocket,
-                            &dsk_octet_listener_class,
-                            dsk_octet_listener_socket_init,
-                            dsk_octet_listener_socket_finalize),
-    dsk_octet_listener_socket_accept,
-    dsk_octet_listener_socket_shutdown
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskSocketStreamListener);
+const DskSocketStreamListenerClass dsk_socket_stream_listener_class =
+{ { DSK_OBJECT_CLASS_DEFINE(DskSocketStreamListener,
+                            &dsk_stream_listener_class,
+                            dsk_socket_stream_listener_init,
+                            dsk_socket_stream_listener_finalize),
+    dsk_socket_stream_listener_accept,
+    dsk_socket_stream_listener_shutdown
 } };
 
 static dsk_boolean
@@ -187,8 +185,8 @@ maybe_delete_stale_socket (const char *path,
 }
 
 
-DskOctetListener *
-dsk_octet_listener_socket_new (const DskOctetListenerSocketOptions *options,
+DskStreamListener *
+dsk_socket_stream_listener_new (const DskSocketStreamListenerOptions *options,
                                DskError **error)
 {
   union {
@@ -199,7 +197,7 @@ dsk_octet_listener_socket_new (const DskOctetListenerSocketOptions *options,
   struct sockaddr *addr = &storage.addr;
   socklen_t addr_len = sizeof (storage);
   DskFileDescriptor fd;
-  DskOctetListenerSocket *rv;
+  DskSocketStreamListener *rv;
   /* check options for validity */
   if (options->is_local)
     {
@@ -282,7 +280,7 @@ retry_listen_syscall:
   dsk_fd_set_nonblocking (fd);
   dsk_fd_set_close_on_exec (fd);
 
-  rv = dsk_object_new (&dsk_octet_listener_socket_class);
+  rv = dsk_object_new (&dsk_socket_stream_listener_class);
   rv->is_local = options->is_local;
   rv->path = dsk_strdup (options->local_path);
   rv->bind_address = options->bind_address;

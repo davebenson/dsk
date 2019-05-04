@@ -21,7 +21,7 @@ dsk_stream_finalize (DskStream *stream)
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskStream);
 const DskStreamClass dsk_stream_class =
 {
-  DSK_OBJECT_CLASS_DEFINE (DskStream, &dsk_stream_class, 
+  DSK_OBJECT_CLASS_DEFINE (DskStream, &dsk_object_class, 
                            dsk_stream_init,
                            dsk_stream_finalize),
   NULL,                 /* no default read impl */

@@ -264,7 +264,7 @@ dsk_sync_filter_c_unquoter_finish  (DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCUnquoter, dsk_sync_filter_c_unquoter);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCUnquoter, dsk_sync_filter_c_unquoter);
 
 DskSyncFilter *
 dsk_c_unquoter_new (dsk_boolean remove_quotes)
@@ -272,5 +272,5 @@ dsk_c_unquoter_new (dsk_boolean remove_quotes)
   DskSyncFilterCUnquoter *cu = dsk_object_new (&dsk_sync_filter_c_unquoter_class);
   if (remove_quotes)
     cu->remove_quotes = cu->remove_initial_quote = 1;
-  return DSK_OCTET_FILTER (cu);
+  return DSK_SYNC_FILTER (cu);
 }

@@ -2,3 +2,6 @@
 *.a
 *.inc
 mk-codepage
+tests/*.dSYM
+programs/*.dSYM
+examples/generated

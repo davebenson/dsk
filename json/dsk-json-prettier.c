@@ -5,12 +5,12 @@
 typedef struct _DskJsonPrettierClass DskJsonPrettierClass;
 struct _DskJsonPrettierClass
 {
-  DskOctetFilterClass base_class;
+  DskSyncFilterClass base_class;
 };
 typedef struct _DskJsonPrettier DskJsonPrettier;
 struct _DskJsonPrettier
 {
-  DskOctetFilter base_instance;
+  DskSyncFilter base_instance;
   DskJsonParser *parser;
 };
 
@@ -38,7 +38,7 @@ static void flush_parser (DskJsonParser *parser,
 }
 
 static dsk_boolean
-dsk_json_prettier_process  (DskOctetFilter *filter,
+dsk_json_prettier_process  (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
                             const uint8_t  *in_data,
@@ -51,7 +51,7 @@ dsk_json_prettier_process  (DskOctetFilter *filter,
   return DSK_TRUE;
 }
 static dsk_boolean
-dsk_json_prettier_finish(DskOctetFilter *filter,
+dsk_json_prettier_finish(DskSyncFilter *filter,
                          DskBuffer      *out,
                          DskError      **error)
 {
@@ -62,11 +62,11 @@ dsk_json_prettier_finish(DskOctetFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskJsonPrettier, dsk_json_prettier);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskJsonPrettier, dsk_json_prettier);
 
 
-DskOctetFilter *dsk_json_prettier_new (void)
+DskSyncFilter *dsk_json_prettier_new (void)
 {
   DskJsonPrettier *rv = dsk_object_new (&dsk_json_prettier_class);
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }

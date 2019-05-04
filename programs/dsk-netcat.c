@@ -8,6 +8,8 @@ static unsigned port = 0;
 static const char *hostname = NULL;
 static dsk_boolean do_listen = DSK_FALSE;
 static const char *local_path = NULL;
+DskStream *std_input;
+DskStream *std_output;
 
 int main(int argc, char **argv)
 {
@@ -61,31 +63,22 @@ int main(int argc, char **argv)
   else
     {
       DskClientStream *client_stream;
-      DskOctetSource *std_input;
-      DskOctetSink *std_output;
-      DskOctetSource *csource;
-      DskOctetSink *csink;
       DskError *error = NULL;
       options.hostname = hostname;
       options.port = port;
       options.path = local_path;
-      if (!dsk_client_stream_new (&options,
-                                  &client_stream,
-                                  &csink,
-                                  &csource,
-                                  &error))
+      client_stream = dsk_client_stream_new (&options, &error);
+      if (client_stream == NULL)
         dsk_die ("error creating client-stream: %s", error->message);
 
-      std_input = dsk_octet_source_new_stdin ();
-      std_output = dsk_octet_sink_new_stdout ();
-      dsk_octet_connect (std_input, csink, NULL);
-      dsk_octet_connect (csource, std_output, NULL);
+      std_input = dsk_stream_new_stdin ();
+      std_output = dsk_stream_new_stdout ();
+      dsk_stream_connect (std_input, DSK_STREAM (client_stream), NULL);
+      dsk_stream_connect (DSK_STREAM (client_stream), std_output, NULL);
 
       /* keep running until i/o is done ?!? */
-      dsk_main_add_object (csink);
-      dsk_main_add_object (csource);
-      dsk_object_unref (csource);
-      dsk_object_unref (csink);
+      dsk_main_add_object (client_stream);
+      dsk_object_unref (client_stream);
       return dsk_main_run ();
     }
   return 1;             /* should not reach here */

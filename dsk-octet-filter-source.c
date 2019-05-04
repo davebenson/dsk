@@ -1,28 +1,28 @@
 #include "dsk.h"
 
-typedef struct _DskOctetSourceFilterClass DskOctetSourceFilterClass;
-typedef struct _DskOctetSourceFilter DskOctetSourceFilter;
+typedef struct _DskStreamSourceFilterClass DskStreamSourceFilterClass;
+typedef struct _DskStreamSourceFilter DskStreamSourceFilter;
 
-struct _DskOctetSourceFilterClass
+struct _DskStreamSourceFilterClass
 {
-  DskOctetSourceClass base_class;
+  DskStreamClass base_class;
 };
 
-struct _DskOctetSourceFilter
+struct _DskStreamSourceFilter
 {
-  DskOctetSource base_instance;
+  DskStream base_instance;
   DskBuffer buffer;
   DskSyncFilter *filter;
-  DskOctetSource *sub;
+  DskStream *sub;
   DskHookTrap *read_trap;
 };
 
 static dsk_boolean
-read_into_buffer (DskOctetSourceFilter *filter,
+read_into_buffer (DskStreamSourceFilter *filter,
                   DskError            **error)
 {
   DskBuffer tmp = DSK_BUFFER_INIT;
-  switch (dsk_octet_source_read_buffer (filter->sub, &tmp, error))
+  switch (dsk_stream_read_buffer (filter->sub, &tmp, error))
     {
     case DSK_IO_RESULT_SUCCESS:
       break;
@@ -57,8 +57,8 @@ read_into_buffer (DskOctetSourceFilter *filter,
 }
 
 static dsk_boolean
-notify_filter_readable (DskOctetSource *sub,
-                        DskOctetSourceFilter *sf)
+notify_filter_readable (DskStream *sub,
+                        DskStreamSourceFilter *sf)
 {
   DSK_UNUSED (sub);
   dsk_hook_notify (&sf->base_instance.readable_hook);
@@ -73,13 +73,13 @@ notify_filter_readable (DskOctetSource *sub,
 
 
 static DskIOResult
-dsk_octet_source_filter_read (DskOctetSource *source,
+dsk_stream_source_filter_read (DskStream *source,
                               unsigned        max_len,
                               void           *data_out,
                               unsigned       *bytes_read_out,
                               DskError      **error)
 {
-  DskOctetSourceFilter *sf = (DskOctetSourceFilter *) source;
+  DskStreamSourceFilter *sf = (DskStreamSourceFilter *) source;
   if (sf->buffer.size == 0)
     {
       if (sf->filter == NULL)
@@ -102,11 +102,11 @@ dsk_octet_source_filter_read (DskOctetSource *source,
 }
 
 static DskIOResult
-dsk_octet_source_filter_read_buffer (DskOctetSource *source,
+dsk_stream_source_filter_read_buffer (DskStream *source,
                                      DskBuffer      *read_buffer,
                                      DskError      **error)
 {
-  DskOctetSourceFilter *sf = (DskOctetSourceFilter *) source;
+  DskStreamSourceFilter *sf = (DskStreamSourceFilter *) source;
   if (sf->buffer.size == 0)
     {
       if (sf->filter == NULL)
@@ -129,9 +129,9 @@ dsk_octet_source_filter_read_buffer (DskOctetSource *source,
 }
 
 static void       
-dsk_octet_source_filter_shutdown  (DskOctetSource *source)
+dsk_stream_source_filter_shutdown_read  (DskStream *source)
 {
-  DskOctetSourceFilter *sf = (DskOctetSourceFilter *) source;
+  DskStreamSourceFilter *sf = (DskStreamSourceFilter *) source;
   if (sf->read_trap)
     {
       dsk_hook_trap_destroy (sf->read_trap);
@@ -139,7 +139,7 @@ dsk_octet_source_filter_shutdown  (DskOctetSource *source)
     }
   if (sf->sub)
     {
-      dsk_octet_source_shutdown (sf->sub);
+      dsk_stream_shutdown_read (sf->sub);
       dsk_object_unref (sf->sub);
       sf->sub = NULL;
     }
@@ -153,7 +153,7 @@ dsk_octet_source_filter_shutdown  (DskOctetSource *source)
 }
 
 static void
-dsk_octet_source_filter_finalize (DskOctetSourceFilter *sf)
+dsk_stream_source_filter_finalize (DskStreamSourceFilter *sf)
 {
   if (sf->read_trap != NULL)
     dsk_hook_trap_destroy (sf->read_trap);
@@ -164,14 +164,17 @@ dsk_octet_source_filter_finalize (DskOctetSourceFilter *sf)
   dsk_buffer_clear (&sf->buffer);
 }
 
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskOctetSourceFilter);
-static DskOctetSourceFilterClass dsk_octet_source_filter_class =
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskStreamSourceFilter);
+static DskStreamSourceFilterClass dsk_stream_source_filter_class =
 {
-  { DSK_OBJECT_CLASS_DEFINE (DskOctetSourceFilter, &dsk_octet_source_class, 
-                             NULL, dsk_octet_source_filter_finalize),
-    dsk_octet_source_filter_read,
-    dsk_octet_source_filter_read_buffer,
-    dsk_octet_source_filter_shutdown
+  { DSK_OBJECT_CLASS_DEFINE (DskStreamSourceFilter, &dsk_stream_source_filter_class, 
+                             NULL, dsk_stream_source_filter_finalize),
+    dsk_stream_source_filter_read,
+    dsk_stream_source_filter_read_buffer,
+    dsk_stream_source_filter_shutdown_read,
+    NULL,
+    NULL,
+    NULL,
   }
 };
 
@@ -179,7 +182,7 @@ static void
 set_poll   (void       *object,
             dsk_boolean is_trapped)
 {
-  DskOctetSourceFilter *sf = (DskOctetSourceFilter *) object;
+  DskStreamSourceFilter *sf = (DskStreamSourceFilter *) object;
   if (sf->sub == NULL)
     return;
   if (is_trapped)
@@ -207,12 +210,12 @@ static DskHookFuncs poll_funcs =
 };
 
 
-DskOctetSource *dsk_sync_filter_source (DskOctetSource *source,
+DskStream *dsk_sync_filter_source (DskStream *source,
                                          DskSyncFilter *filter)
 {
-  DskOctetSourceFilter *sf = dsk_object_new (&dsk_octet_source_filter_class);
+  DskStreamSourceFilter *sf = dsk_object_new (&dsk_stream_source_filter_class);
   sf->sub = dsk_object_ref (source);
   sf->filter = dsk_object_ref (filter);
   dsk_hook_set_funcs (&sf->base_instance.readable_hook, &poll_funcs);
-  return DSK_OCTET_SOURCE (sf);
+  return DSK_STREAM (sf);
 }

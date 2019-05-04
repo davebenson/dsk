@@ -49,7 +49,7 @@ dsk_byte_doubler_process    (DskSyncFilter *filter,
 }
 #define dsk_byte_doubler_finish NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskByteDoubler, dsk_byte_doubler);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskByteDoubler, dsk_byte_doubler);
 
 DskSyncFilter *
 dsk_byte_doubler_new (uint8_t byte)

@@ -1,7 +1,5 @@
 typedef struct DskStreamClass DskStreamClass;
 typedef struct DskStream DskStream;
-typedef struct DskSyncFilterClass DskSyncFilterClass;
-typedef struct DskSyncFilter DskSyncFilter;
 
 #define DSK_STREAM(object) DSK_OBJECT_CAST(DskStream, object, &dsk_stream_class)
 #define DSK_STREAM_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskStream, object, &dsk_stream_class)
@@ -110,15 +108,15 @@ struct _DskStreamConnectionOptions
   DSK_TRUE                      /* shutdown_on_write_error */   \
 }
 
-DSK_INLINE_FUNC void dsk_octet_connect       (DskStream *source,
+DSK_INLINE_FUNC void dsk_stream_connect       (DskStream *source,
                                               DskStream   *sink,
                                               DskStreamConnectionOptions *opt);
 
-DskStreamConnection *dsk_octet_connection_new (DskStream *source,
-                                              DskStream   *sink,
-                                              DskStreamConnectionOptions *opt);
-void                dsk_octet_connection_shutdown (DskStreamConnection *);
-void                dsk_octet_connection_disconnect (DskStreamConnection *);
+DskStreamConnection *dsk_stream_connection_new (DskStream *source,
+                                                DskStream   *sink,
+                                                DskStreamConnectionOptions *opt);
+void                dsk_stream_connection_shutdown (DskStreamConnection *);
+void                dsk_stream_connection_disconnect (DskStreamConnection *);
 
 /* --- pipes --- */
 /* Pipes are the opposite of connections, in some sense.
@@ -126,27 +124,13 @@ void                dsk_octet_connection_disconnect (DskStreamConnection *);
    In a pipe, data written to the sink will appear on a source;
 */
 /* Specify pipe_buffer_size==0 to get the default buffer size */
-void          dsk_octet_pipe_new (unsigned       pipe_buffer_size,
-                                  DskStream **sink_out,
-                                  DskStream **source_out);
+void          dsk_pipe_new (unsigned       pipe_buffer_size,
+                            DskStream **sink_out,
+                            DskStream **source_out);
 
-
-/* Defining subclasses of DskSyncFilter is easy and fun;
- */
-
-#define DSK_SYNC_FILTER_SUBCLASS_DEFINE(class_static, ClassName, class_name) \
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(ClassName);                                \
-class_static ClassName##Class class_name ## _class = { {                      \
-  DSK_OBJECT_CLASS_DEFINE(ClassName, &dsk_sync_filter_class,                 \
-                          class_name ## _init,                                \
-                          class_name ## _finalize),                           \
-  class_name ## _process,                                                     \
-  class_name ## _finish                                                       \
-} }
 
 extern const DskStreamClass dsk_stream_class;
 extern const DskStreamConnectionClass dsk_stream_connection_class;
-extern const DskSyncFilterClass dsk_sync_filter_class;
 
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC DskIOResult dsk_stream_read (void         *stream,
@@ -193,11 +177,11 @@ DSK_INLINE_FUNC void dsk_stream_shutdown_write     (void           *stream)
   if (c->shutdown_write != NULL)
     c->shutdown_write (stream);
 }
-DSK_INLINE_FUNC void dsk_octet_connect       (DskStream *source,
-                                              DskStream   *sink,
-                                              DskStreamConnectionOptions *opt)
+DSK_INLINE_FUNC void dsk_stream_connect       (DskStream *source,
+                                               DskStream   *sink,
+                                               DskStreamConnectionOptions *opt)
 {
-  dsk_object_unref (dsk_octet_connection_new (source, sink, opt));
+  dsk_object_unref (dsk_stream_connection_new (source, sink, opt));
 }
 DSK_INLINE_FUNC bool dsk_stream_is_readable       (void           *stream)
 {

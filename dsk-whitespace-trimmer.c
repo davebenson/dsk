@@ -55,12 +55,12 @@ dsk_whitespace_trimmer_process    (DskSyncFilter *filter,
 
 #define dsk_whitespace_trimmer_finish NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskWhitespaceTrimmer, dsk_whitespace_trimmer);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskWhitespaceTrimmer, dsk_whitespace_trimmer);
 
 DskSyncFilter *dsk_whitespace_trimmer_new         (void)
 {
   DskWhitespaceTrimmer *trimmer = dsk_object_new (&dsk_whitespace_trimmer_class);
   trimmer->in_initial_space = trimmer->in_space = DSK_TRUE;
-  return DSK_OCTET_FILTER (trimmer);
+  return DSK_SYNC_FILTER (trimmer);
 }
   

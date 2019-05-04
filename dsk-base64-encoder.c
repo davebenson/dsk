@@ -112,12 +112,12 @@ dsk_base64_encoder_finish(DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskBase64Encoder, dsk_base64_encoder);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskBase64Encoder, dsk_base64_encoder);
 
 
 DskSyncFilter *dsk_base64_encoder_new             (dsk_boolean break_lines)
 {
   DskBase64Encoder *rv = dsk_object_new (&dsk_base64_encoder_class);
   rv->length_remaining = break_lines ? BASE64_LINE_LENGTH : -1;
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }

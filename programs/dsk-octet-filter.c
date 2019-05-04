@@ -6,11 +6,11 @@
 
 #define MAX_FILTERS 64
 
-static DskOctetFilter *filters[MAX_FILTERS];
+static DskSyncFilter *filters[MAX_FILTERS];
 static unsigned        n_filters = 0;
 
 static void
-add_filter (DskOctetFilter *filter)
+add_filter (DskSyncFilter *filter)
 {
   if (n_filters == MAX_FILTERS)
     dsk_die ("too many filters");
@@ -121,6 +121,7 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_gzip_decompress)
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value);
   return handle_generic_decompress (DSK_ZLIB_GZIP, error);
 }
+#if 0
 DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_compress)
 {
   int level = atoi (arg_value);
@@ -140,6 +141,7 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_decompress)
   add_filter (dsk_bz2lib_decompressor_new ());
   return DSK_TRUE;
 }
+#endif
 DSK_CMDLINE_CALLBACK_DECLARE(handle_c_quote)
 {
   dsk_boolean add_quotes = DSK_TRUE, protect_trigraphs = DSK_FALSE;
@@ -287,9 +289,9 @@ parse_byte_spec (const char *spec, uint8_t *out, DskError **error)
     {
       /* fire up c-unquoter */
       DskBuffer buf = DSK_BUFFER_INIT;
-      DskOctetFilter *f = dsk_c_unquoter_new (DSK_FALSE);
-      if (!dsk_octet_filter_process (f, &buf, strlen (spec), (uint8_t*)spec, error)
-       || !dsk_octet_filter_finish (f, &buf, error))
+      DskSyncFilter *f = dsk_c_unquoter_new (DSK_FALSE);
+      if (!dsk_sync_filter_process (f, &buf, strlen (spec), (uint8_t*)spec, error)
+       || !dsk_sync_filter_finish (f, &buf, error))
         {
           dsk_object_unref (f);
           dsk_buffer_clear (&buf);
@@ -394,7 +396,7 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_json_prettier)
 int main(int argc, char **argv)
 {
   DskError *error = NULL;
-  DskOctetFilter *filter;
+  DskSyncFilter *filter;
   DskBuffer in = DSK_BUFFER_INIT;
   DskBuffer out = DSK_BUFFER_INIT;
   dsk_cmdline_init ("run various filters",
@@ -412,10 +414,10 @@ int main(int argc, char **argv)
                         handle_raw_zlib_decompress, NULL);
   dsk_cmdline_add_func ("gzip-decompress", "do gzip decompression", NULL, 0,
                         handle_gzip_decompress, NULL);
-  dsk_cmdline_add_func ("bz2lib-compress", "do bz2 compression", "LEVEL", 0,
-                        handle_bz2lib_compress, NULL);
-  dsk_cmdline_add_func ("bz2lib-decompress", "do bz2 decompression", NULL, 0,
-                        handle_bz2lib_decompress, NULL);
+  //dsk_cmdline_add_func ("bz2lib-compress", "do bz2 compression", "LEVEL", 0,
+                        //handle_bz2lib_compress, NULL);
+  //dsk_cmdline_add_func ("bz2lib-decompress", "do bz2 decompression", NULL, 0,
+                        //handle_bz2lib_decompress, NULL);
   dsk_cmdline_add_func ("c-quote", "do c quoting", NULL, 0,
                         handle_c_quote, NULL);
   dsk_cmdline_add_func ("c-unquote", "do c unquoting", NULL, 0,
@@ -454,7 +456,7 @@ int main(int argc, char **argv)
   dsk_cmdline_process_args (&argc, &argv);
 
 
-  filter = dsk_octet_filter_chain_new_take (n_filters, filters);
+  filter = dsk_sync_filter_chain_new_take (n_filters, filters);
   for (;;)
     {
       int rv = dsk_buffer_readv (&in, 0);
@@ -466,7 +468,7 @@ int main(int argc, char **argv)
         }
       if (rv == 0)
         break;
-      if (!dsk_octet_filter_process_buffer (filter, &out, in.size, &in, DSK_TRUE, &error))
+      if (!dsk_sync_filter_process_buffer (filter, &out, in.size, &in, DSK_TRUE, &error))
         dsk_die ("error running filter: %s", error->message);
       if (!dsk_buffer_write_all_to_fd (&out, STDOUT_FILENO, &error))
         dsk_die ("error writing to stdout: %s", error->message);
@@ -476,7 +478,7 @@ int main(int argc, char **argv)
     }
 
   /* finish the filters */
-  if (!dsk_octet_filter_finish (filter, &in, &error))
+  if (!dsk_sync_filter_finish (filter, &in, &error))
     dsk_die ("error finishing filter: %s", error->message);
   while (in.size != 0)
     {

@@ -26,7 +26,7 @@ dsk_sync_filter_identity_process (DskSyncFilter *filter,
 #define dsk_sync_filter_identity_finalize NULL
 #define dsk_sync_filter_identity_finish NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterIdentity,
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterIdentity,
                                  dsk_sync_filter_identity);
 
 DskSyncFilter *dsk_sync_filter_identity_new      (void)

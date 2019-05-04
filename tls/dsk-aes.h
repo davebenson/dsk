@@ -21,7 +21,7 @@
  */
 #define DSK_AES_BLOCKSIZE_IN_BYTES             16
 
-typedef struct { uint8_t w[16 * 11]; } } DskAES128;
+typedef struct { uint8_t w[16 * 11]; uint32_t align[4 * 11]; } DskAES128;
 
 
 void
@@ -32,5 +32,33 @@ dsk_aes128_encrypt_inplace(const DskAES128      *aes_key,
                            uint8_t              *in_out);  /* length 16 */
 void
 dsk_aes128_decrypt_inplace(const DskAES128      *aes_key,
+                           uint8_t              *in_out);  /* length 16 */
+
+
+typedef struct { uint8_t w[16 * 13]; uint32_t align[4 * 13]; } DskAES192;
+
+
+void
+dsk_aes192_init           (DskAES192            *s,
+                           const uint8_t        *key);     /* length 16 */
+void
+dsk_aes192_encrypt_inplace(const DskAES192      *aes_key,
+                           uint8_t              *in_out);  /* length 16 */
+void
+dsk_aes192_decrypt_inplace(const DskAES192      *aes_key,
+                           uint8_t              *in_out);  /* length 16 */
+
+
+typedef struct { uint8_t w[16 * 15]; uint32_t align[4 * 15]; } DskAES256;
+
+
+void
+dsk_aes256_init           (DskAES256            *s,
+                           const uint8_t        *key);     /* length 16 */
+void
+dsk_aes256_encrypt_inplace(const DskAES256      *aes_key,
+                           uint8_t              *in_out);  /* length 16 */
+void
+dsk_aes256_decrypt_inplace(const DskAES256      *aes_key,
                            uint8_t              *in_out);  /* length 16 */
 

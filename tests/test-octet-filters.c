@@ -14,10 +14,10 @@ dequote (const char *c_quoted, unsigned line,
          unsigned *len_out, uint8_t **data_out)
 {
   DskBuffer buffer = DSK_BUFFER_INIT;
-  DskOctetFilter *filter = dsk_c_unquoter_new (DSK_FALSE);
-  if (!dsk_octet_filter_process (filter, &buffer, strlen (c_quoted),
+  DskSyncFilter *filter = dsk_c_unquoter_new (DSK_FALSE);
+  if (!dsk_sync_filter_process (filter, &buffer, strlen (c_quoted),
                                  (uint8_t*) c_quoted, NULL)
-   || !dsk_octet_filter_finish (filter, &buffer, NULL))
+   || !dsk_sync_filter_finish (filter, &buffer, NULL))
     dsk_die ("error dequoting at line %u", line);
   dsk_object_unref (filter);
   *len_out = buffer.size;
@@ -25,10 +25,10 @@ dequote (const char *c_quoted, unsigned line,
   dsk_buffer_read (&buffer, *len_out, *data_out);
   (*data_out)[*len_out] = 0;
 }
-static DskOctetFilter *
+static DskSyncFilter *
 create_filter (const char *code)
 {
-  DskOctetFilter *filters[MAX_FILTERS];
+  DskSyncFilter *filters[MAX_FILTERS];
   unsigned n_filters = 0;
   while (*code)
     {
@@ -52,7 +52,7 @@ create_filter (const char *code)
 	}
       code++;
     }
-  return dsk_octet_filter_chain_new_take (n_filters, filters);
+  return dsk_sync_filter_chain_new_take (n_filters, filters);
 }
 
 int main(int argc, char **argv)
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
       uint8_t *filter_data;
       unsigned output_len;
       uint8_t *output_data;
-      DskOctetFilter *filter;
+      DskSyncFilter *filter;
       DskBuffer output_buffer;
       unsigned i;
       DskError *error = NULL;
@@ -124,10 +124,10 @@ int main(int argc, char **argv)
       filter = create_filter ((char*) filter_data);
       dsk_buffer_init (&output_buffer);
       for (i = 0; i < input_len; i++)
-        if (!dsk_octet_filter_process (filter, &output_buffer,
+        if (!dsk_sync_filter_process (filter, &output_buffer,
 	                               1, input_data+i, &error))
           dsk_die ("error running filter: %s", error->message);
-      if (!dsk_octet_filter_finish (filter, &output_buffer, &error))
+      if (!dsk_sync_filter_finish (filter, &output_buffer, &error))
 	dsk_die ("error running filter: %s", error->message);
       if (output_buffer.size != output_len)
         dsk_die ("output of filter was %u bytes long, expected %u [%s:%u]",
@@ -144,10 +144,10 @@ int main(int argc, char **argv)
       /* feed data in one-shot */
       filter = create_filter ((char*) filter_data);
       dsk_buffer_init (&output_buffer);
-      if (!dsk_octet_filter_process (filter, &output_buffer,
+      if (!dsk_sync_filter_process (filter, &output_buffer,
 	                             input_len, input_data, &error))
           dsk_die ("error running filter: %s", error->message);
-      if (!dsk_octet_filter_finish (filter, &output_buffer, &error))
+      if (!dsk_sync_filter_finish (filter, &output_buffer, &error))
 	dsk_die ("error running filter: %s", error->message);
       if (output_buffer.size != output_len)
         dsk_die ("output of filter was %u bytes long, expected %u [%s:%u]",

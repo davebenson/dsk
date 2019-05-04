@@ -38,6 +38,7 @@
 
 /* Input/output stream halves. */
 #include "dsk-stream.h"
+#include "dsk-sync-filter.h"
 
 /* Input from memory, and output to memory. */
 #include "dsk-memory.h"
@@ -54,7 +55,7 @@
 /* Our limited threading support */
 #include "dsk-thread-pool.h"
 
-#include "dsk-octet-listener.h"
+#include "dsk-stream-listener.h"
 
 #include "dsk-network-interface-list.h"
 
@@ -62,7 +63,7 @@
 
 #include "dsk-client-stream.h"
 #include "dsk-fd-stream.h"
-#include "dsk-octet-listener-socket.h"
+#include "dsk-socket-stream-listener.h"
 
 #include "dsk-udp-socket.h"
 
@@ -119,6 +120,9 @@
 
 #include "dsk-table.h"
 #include "dsk-table-file.h"
+
+/* --- crypto --- */
+#include "tls/dsk-aes.h"
 
 #ifdef DSK_INCLUDE_TS0
 #include "dsk-ts0.h"

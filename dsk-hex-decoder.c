@@ -75,11 +75,11 @@ dsk_hex_decoder_finish(DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskHexDecoder, dsk_hex_decoder);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskHexDecoder, dsk_hex_decoder);
 
 
 DskSyncFilter *dsk_hex_decoder_new             (void)
 {
   DskHexDecoder *rv = dsk_object_new (&dsk_hex_decoder_class);
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }

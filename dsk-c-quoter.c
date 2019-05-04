@@ -231,7 +231,7 @@ dsk_sync_filter_c_quoter_finish  (DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCQuoter, dsk_sync_filter_c_quoter);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCQuoter, dsk_sync_filter_c_quoter);
 
 DskSyncFilter *
 dsk_c_quoter_new (dsk_boolean add_quotes,
@@ -241,6 +241,6 @@ dsk_c_quoter_new (dsk_boolean add_quotes,
   if (add_quotes)
     cq->add_quotes = cq->needs_initial_quote = 1;
   cq->protect_trigraphs = protect_trigraphs ? 1 : 0;
-  return DSK_OCTET_FILTER (cq);
+  return DSK_SYNC_FILTER (cq);
 }
 

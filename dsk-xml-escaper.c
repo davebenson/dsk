@@ -59,7 +59,7 @@ dsk_xml_escaper_process (DskSyncFilter *filter,
   return DSK_TRUE;
 }
 #define dsk_xml_escaper_finish NULL
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskXmlEscaper, dsk_xml_escaper);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskXmlEscaper, dsk_xml_escaper);
 DskSyncFilter *dsk_xml_escaper_new            (void)
 {
   return dsk_object_new (&dsk_xml_escaper_class);

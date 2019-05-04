@@ -93,7 +93,7 @@ dsk_byte_undoubler_finish (DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskByteUndoubler, dsk_byte_undoubler);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskByteUndoubler, dsk_byte_undoubler);
 
 DskSyncFilter *
 dsk_byte_undoubler_new (uint8_t byte,

@@ -138,7 +138,7 @@ dsk_url_decoder_finish (DskSyncFilter *filter,
   return DSK_TRUE;
 }
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUrlDecoder, dsk_url_decoder);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUrlDecoder, dsk_url_decoder);
 
 DskSyncFilter *
 dsk_url_decoder_new (void)

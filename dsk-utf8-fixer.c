@@ -133,7 +133,7 @@ dsk_utf8_fixer_finish  (DskSyncFilter *filter,
 #define dsk_utf8_fixer_init NULL
 #define dsk_utf8_fixer_finalize NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskUtf8Fixer, dsk_utf8_fixer);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUtf8Fixer, dsk_utf8_fixer);
 
 DskSyncFilter *dsk_utf8_fixer_new     (DskUtf8FixerMode mode)
 {

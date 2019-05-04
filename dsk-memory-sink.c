@@ -15,7 +15,7 @@ dsk_memory_sink_finalize (DskMemorySink *sink)
 }
 
 static DskIOResult
-dsk_memory_sink_write (DskOctetSink   *sink,
+dsk_memory_sink_write (DskStream      *sink,
                        unsigned        max_len,
                        const void     *data_out,
                        unsigned       *n_written_out,
@@ -35,7 +35,7 @@ dsk_memory_sink_write (DskOctetSink   *sink,
 }
 
 static DskIOResult
-dsk_memory_sink_write_buffer (DskOctetSink   *sink,
+dsk_memory_sink_write_buffer (DskStream      *sink,
                               DskBuffer      *buffer,
                               DskError      **error)
 {
@@ -49,7 +49,7 @@ dsk_memory_sink_write_buffer (DskOctetSink   *sink,
   return DSK_IO_RESULT_SUCCESS;
 }
 static void
-dsk_memory_sink_shutdown (DskOctetSink   *sink)
+dsk_memory_sink_shutdown (DskStream      *sink)
 {
   DSK_MEMORY_SINK (sink)->got_shutdown = DSK_TRUE;
 }
@@ -59,9 +59,12 @@ DskMemorySinkClass dsk_memory_sink_class =
 {
   {
     DSK_OBJECT_CLASS_DEFINE(DskMemorySink,
-                            &dsk_octet_sink_class,
+                            &dsk_stream_class,
                             dsk_memory_sink_init,
                             dsk_memory_sink_finalize),
+    NULL,
+    NULL,
+    NULL,
     dsk_memory_sink_write,
     dsk_memory_sink_write_buffer,
     dsk_memory_sink_shutdown

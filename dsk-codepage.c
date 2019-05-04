@@ -57,12 +57,12 @@ dsk_codepage_to_utf8_finish (DskSyncFilter *filter,
 #define dsk_codepage_to_utf8_init NULL
 #define dsk_codepage_to_utf8_finalize NULL
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskCodepageToUtf8, dsk_codepage_to_utf8);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskCodepageToUtf8, dsk_codepage_to_utf8);
 
 DskSyncFilter *
 dsk_codepage_to_utf8_new           (const DskCodepage *codepage)
 {
   DskCodepageToUtf8 *cp = dsk_object_new (&dsk_codepage_to_utf8_class);
   cp->codepage = codepage;
-  return DSK_OCTET_FILTER (cp);
+  return DSK_SYNC_FILTER (cp);
 }

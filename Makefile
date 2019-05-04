@@ -12,11 +12,6 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-url-0 \
 		tests/test-buffer \
                 tests/test-hook-0 \
-	        tests/test-http-client-stream-0 \
-		tests/test-http-server-stream-0 \
-		tests/test-http-server-0 \
-		tests/test-http-protocol-0 \
-		tests/test-http-loopback \
 		tests/test-mime-multipart-decoder \
 		tests/test-cgi \
 		tests/test-date-0 \
@@ -32,7 +27,8 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-json-0 \
 		tests/test-ctoken \
 		tests/test-dsk-ts0 \
-		tests/test-daemonize
+		tests/test-daemonize \
+                tests/test-aes
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
@@ -65,7 +61,7 @@ full: all extra
 
 # For standard initial size:
 CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
-LINK_FLAGS = -g -lz -lbz2 $(EXTRA_LDFLAGS) $(DEP_LIBS)
+LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS) $(DEP_LIBS)
 
 tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
@@ -81,18 +77,13 @@ libdsk.a: dsk-inlines.o \
 	  dsk-mem-pool.o \
 	  dsk-fd.o dsk-stream.o dsk-fd-stream.o \
 	  dsk-ascii.o dsk-utf8.o dsk-client-stream.o \
-	  dsk-buffer.o dsk-main.o dsk-octet-connection.o dsk-octet-listener.o \
-	  dsk-octet-filter.o dsk-octet-filter-source.o \
-	  dsk-octet-listener-socket.o dsk-cleanup.o \
-	  dsk-http-client-stream.o dsk-http-server-stream.o \
+	  dsk-buffer.o dsk-main.o dsk-stream-connection.o dsk-stream-listener.o \
+          dsk-sync-filter.o \
+	  dsk-octet-filter-source.o \
+	  dsk-socket-stream-listener.o dsk-cleanup.o \
 	  dsk-memory-source.o dsk-memory-sink.o \
 	  dsk-mime.o \
 	  dsk-url.o \
-	  dsk-http-internals.o \
-	  dsk-http-header-parsing.o dsk-http-protocol.o \
-	  dsk-http-header-printing.o \
-	  dsk-http-server.o \
-	  dsk-https-server.o \
 	  dsk-cgi.o \
 	  dsk-date.o \
 	  dsk-xml-parser.o dsk-xml.o \
@@ -100,7 +91,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-xml-binding-parser.o \
 	  json/dsk-json.o json/dsk-json-parser.o json/dsk-json-output.o \
 	  dsk-ctoken.o \
-	  dsk-zlib.o dsk-bz2lib.o \
+	  dsk-zlib.o \
 	  dsk-base64.o dsk-base64-encoder.o dsk-base64-decoder.o \
 	  dsk-c-quoter.o dsk-c-unquoter.o \
 	  dsk-unquote-printable.o dsk-quote-printable.o \
@@ -118,7 +109,6 @@ libdsk.a: dsk-inlines.o \
 	  dsk-codegen.o \
 	  dsk-checksum.o \
 	  dsk-daemon.o \
-	  dsk-ssl.o dsk-ssl-listener.o \
 	  dsk-file-util.o dsk-path.o dsk-pattern.o dsk-dir.o \
 	  dsk-logger.o \
 	  dsk-table-file-trivial.o \
@@ -126,6 +116,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-table.o \
 	  dsk-ts0.o dsk-ts0-builtins.o \
           tls/dsk-aes.o \
+          tls/dsk-aead-gcm.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \
@@ -142,7 +133,7 @@ libdsk.a: dsk-inlines.o \
 codepages/%.o: codepages/%.c
 	gcc $(CC_FLAGS) -o $@ -c $^
 %.o: %.c
-	gcc $(CC_FLAGS) -c $^
+	gcc $(CC_FLAGS) -o $@ -c $^
 
 dsk-ascii-chartable.inc: mk-ascii-chartable.pl
 	./mk-ascii-chartable.pl > dsk-ascii-chartable.inc

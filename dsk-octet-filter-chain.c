@@ -94,7 +94,7 @@ dsk_sync_filter_chain_finalize (DskSyncFilterChain *chain)
   dsk_free (chain->filters);
 }
 #define dsk_sync_filter_chain_init NULL
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterChain, dsk_sync_filter_chain);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterChain, dsk_sync_filter_chain);
 
 DskSyncFilter *
 dsk_sync_filter_chain_new_take    (unsigned         n_filters,
@@ -110,7 +110,7 @@ dsk_sync_filter_chain_new_take    (unsigned         n_filters,
       chain->n_filters = n_filters;
       chain->filters = DSK_NEW_ARRAY (n_filters, DskSyncFilter *);
       memcpy (chain->filters, filters, sizeof (DskSyncFilter*) * n_filters);
-      return DSK_OCTET_FILTER (chain);
+      return DSK_SYNC_FILTER (chain);
     }
 }
 

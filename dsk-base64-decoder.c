@@ -92,11 +92,11 @@ dsk_base64_decoder_finish(DskSyncFilter *filter,
 #define dsk_base64_decoder_finish NULL
 #endif
 
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskBase64Decoder, dsk_base64_decoder);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskBase64Decoder, dsk_base64_decoder);
 
 
 DskSyncFilter *dsk_base64_decoder_new             (void)
 {
   DskBase64Decoder *rv = dsk_object_new (&dsk_base64_decoder_class);
-  return DSK_OCTET_FILTER (rv);
+  return DSK_SYNC_FILTER (rv);
 }

@@ -70,7 +70,7 @@ dsk_quote_printable_finish  (DskSyncFilter *filter,
 }
 #define dsk_quote_printable_init NULL
 #define dsk_quote_printable_finalize NULL
-DSK_OCTET_FILTER_SUBCLASS_DEFINE(static, DskQuotePrintable, dsk_quote_printable);
+DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskQuotePrintable, dsk_quote_printable);
 
 DskSyncFilter *dsk_quote_printable_new            (void)
 {
