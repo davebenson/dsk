@@ -125,6 +125,7 @@
 #include "tls/dsk-aes.h"
 #include "tls/dsk-block-cipher.h"
 #include "tls/dsk-aead-gcm.h"
+#include "tls/dsk-aead-ccm.h"
 
 #ifdef DSK_INCLUDE_TS0
 #include "dsk-ts0.h"
