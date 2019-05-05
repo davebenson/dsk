@@ -117,6 +117,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-ts0.o dsk-ts0-builtins.o \
           tls/dsk-aes.o \
           tls/dsk-aead-gcm.o \
+          tls/dsk-aead-ccm.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \
