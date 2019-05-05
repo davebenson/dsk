@@ -1,6 +1,7 @@
 #include "../dsk.h"
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdio.h>
 
 typedef union BLOCK
 {
@@ -85,11 +86,16 @@ void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
   (*cipher_func) (cipher_object, H.u8);
   block_byte_to_u32 (&H);
 
+  fprintf(stderr, "H = %08x %08x %08x %08x\n",
+       H.u32[0], H.u32[1], H.u32[2], H.u32[3]);
+
   BLOCK V = H;
   for (unsigned i = 0; i < 128; i++)
     {
+      fprintf(stderr, "h_v_table[%u .. %u] = %08x %08x %08x %08x\n",
+            i*4, i*4+3, V.u32[0], V.u32[1], V.u32[2], V.u32[3]);
       // populate precalculated V table
-      memcpy (&out->h_v_table[i], &V, 16);
+      memcpy (out->h_v_table + i * 4, &V, 16);
       
       // shift V by 1 in u32
       uint32_t carry = shiftright_4x32_return_carry (V.u32);
@@ -99,6 +105,9 @@ void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
       // Intention is to avoid conditional jumps.
       V.u32[0] ^= (-carry) & (MULIPLY_MSB_BYTE_OF_R << 24); // R in section 6.3
     }
+
+  out->block_cipher_object = cipher_object;
+  out->block_cipher = cipher_func;
 }
 
 
@@ -160,8 +169,8 @@ multiply (const uint32_t *x, const uint32_t *y, uint32_t *out)
 //
 static void
 multiply_precomputed_part (uint32_t bits,
-                           uint32_t *z_inout,
-                           const uint32_t *v_part)
+                           const uint32_t *v_part,
+                           uint32_t *z_inout)
 {
   uint32_t mask;
 
@@ -169,6 +178,7 @@ multiply_precomputed_part (uint32_t bits,
     {
       // Compute mask to be 0xffffffff if the high bit is set, 0 otherwise.
       mask = -(bits >> 31);
+      //fprintf(stderr,"mask=%08x v_parts=%08x %08x %08x %08x\n", mask, v_part[0], v_part[1], v_part[2], v_part[3]);
 
       // Equivalent to "if (bits & 0x8000000) { z ^= v_part }"
       // but without branching.
@@ -187,11 +197,12 @@ multiply_precomputed      (const uint32_t *A,
                            Dsk_AEAD_GCM_Precomputation *B,
                            uint32_t *out)
 {
-  out[0] = out[1] = out[2] = out[3] = 0;
-  multiply_precomputed_part (A[0], B->h_v_table, out);
-  multiply_precomputed_part (A[1], B->h_v_table + 128, out);
-  multiply_precomputed_part (A[2], B->h_v_table + 256, out);
-  multiply_precomputed_part (A[3], B->h_v_table + 384, out);
+  uint32_t tmp[4] = {0,0,0,0};
+  multiply_precomputed_part (A[0], B->h_v_table, tmp);
+  multiply_precomputed_part (A[1], B->h_v_table + 128, tmp);
+  multiply_precomputed_part (A[2], B->h_v_table + 256, tmp);
+  multiply_precomputed_part (A[3], B->h_v_table + 384, tmp);
+  memcpy (out, tmp, 4*4);
 }
 
 /* Section 6.4 GHASH function */
@@ -205,6 +216,9 @@ ghash_step (uint32_t *y_inout,
             const uint32_t *x,
             Dsk_AEAD_GCM_Precomputation *precompute)
 {
+  fprintf(stderr, "ghash_step (input hash=%08x %08x %08x %08x) %08x %08x %08x %08x\n",
+     y_inout[0], y_inout[1], y_inout[2], y_inout[3],
+     x[0],x[1],x[2],x[3]);
   /* y ^= x_i */
   y_inout[0] ^= x[0];
   y_inout[1] ^= x[1];
@@ -213,6 +227,8 @@ ghash_step (uint32_t *y_inout,
 
   /* y := y * h */
   multiply_precomputed (y_inout, precompute, y_inout);
+  fprintf(stderr, "ghash_step: end: output hash=%08x %08x %08x %08x\n",
+     y_inout[0], y_inout[1], y_inout[2], y_inout[3]);
 }
 static void
 ghash_step_bytes_zero_padded (uint32_t *y_inout,
@@ -255,30 +271,47 @@ gctr (DskBlockCipherInplaceFunc cipher_func,
       unsigned inout_length,
       uint8_t *x_y)
 {
-  unsigned n = inout_length / 16;
+  unsigned n = (inout_length + 15) / 16;
   uint32_t icb_lsw = icb[3];
   uint8_t icb_copy[16];
 
 
   uint8_t *at = x_y;
   unsigned i;
-  for (i = 0; i < n - 1; i++)
-    {
-      be32_to_bytes (icb, icb_copy, 3);
-      be32_to_bytes (&icb_lsw, icb_copy + 12, 1);
-      icb_lsw++;
-      cipher_func (cipher_data, icb_copy);
-      for (unsigned j = 0; j < 16; j++)
-        *at++ ^= icb_copy[j];
-    }
+  if (n > 1)
+    for (i = 0; i < n - 1; i++)
+      {
+        be32_to_bytes (icb, icb_copy, 3);
+        be32_to_bytes (&icb_lsw, icb_copy + 12, 1);
+        fprintf(stderr, "Y_%u = ", i+1);
+        for (unsigned j = 0; j < 16; j++)
+          fprintf(stderr, "%02x", icb_copy[j]);
+        fprintf(stderr, "\n");
+        icb_lsw++;
+        cipher_func (cipher_data, icb_copy);
+        for (unsigned j = 0; j < 16; j++)
+          *at++ ^= icb_copy[j];
+        fprintf(stderr, "E(K,Y_%u) = ", i+1);
+        for (unsigned j = 0; j < 16; j++)
+          fprintf(stderr, "%02x", icb_copy[j]);
+        fprintf(stderr, "\n");
+        fprintf(stderr, "X_%u? = ", i+1);
+        for (unsigned j = 0; j < 16; j++)
+          fprintf(stderr, "%02x", (at-16)[j]);
+        fprintf(stderr, "\n");
+      }
 
   uint8_t *end = x_y + inout_length;
   if (at < end)
     {
-      memcpy (icb_copy, icb, 12);
+      be32_to_bytes (icb, icb_copy, 3);
       be32_to_bytes (&icb_lsw, icb_copy + 12, 1);
       cipher_func (cipher_data, icb_copy);
       const uint8_t *in = icb_copy;
+        fprintf(stderr, "E(K,Y_%u)* = ", n+1);
+        for (unsigned j = 0; j < 16; j++)
+          fprintf(stderr, "%02x", icb_copy[j]);
+        fprintf(stderr, "\n");
       while (at < end)
         *at++ ^= *in++;
     }
@@ -328,6 +361,8 @@ compute_j0 (size_t iv_len,
       size_t ivlen_bits = iv_len * 8;
       uint32_t lenblock[4] = {0, 0, 0, ivlen_bits};
       ghash_step (J0_out, lenblock, precompute);
+      fprintf(stderr, "J0 = %08x %08x %08x %08x\n", J0_out[0], J0_out[1], J0_out[2], J0_out[3]);
+
     }
 }
 
@@ -337,12 +372,13 @@ compute_s (Dsk_AEAD_GCM_Precomputation *precompute,
              size_t ciphertext_len, const uint8_t *ciphertext,
              uint32_t *s)
 {
+  fprintf(stderr, "adlen=%u clen=%u\n", (unsigned) associated_data_len, (unsigned) ciphertext_len);
   ghash_init (s);
   ghash_step_bytes_zero_padded (s, associated_data_len, associated_data, precompute);
   ghash_step_bytes_zero_padded (s, ciphertext_len, ciphertext, precompute);
 
-  uint64_t atmp = associated_data_len;
-  uint64_t ctmp = ciphertext_len;
+  uint64_t atmp = associated_data_len * 8;
+  uint64_t ctmp = ciphertext_len * 8;
   uint32_t lastblock[4] = {
     atmp >> 32,
     atmp & 0xffffffff,
@@ -431,6 +467,7 @@ void dsk_aead_gcm_encrypt (Dsk_AEAD_GCM_Precomputation *precompute,
              associated_data_len, associated_data,
              plaintext_len, ciphertext,
              s);
+  fprintf(stderr, "S=%08x %08x %08x %08x\n", s[0], s[1], s[2], s[3]);
 
   //
   // Step 6: T = MSB(GCTR(J0, S).
@@ -486,6 +523,8 @@ dsk_aead_gcm_decrypt  (Dsk_AEAD_GCM_Precomputation *precompute,
              associated_data_len, associated_data,
              ciphertext_len, ciphertext,
              s);
+  fprintf(stderr, "S=%08x %08x %08x %08x\n", s[0], s[1], s[2], s[3]);
+
 
   // Step 7: Compute T.
   uint8_t t_tmp[16];
