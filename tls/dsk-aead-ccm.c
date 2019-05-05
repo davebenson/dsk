@@ -31,11 +31,6 @@ compute_b0 (size_t plaintext_len,
 
   for (unsigned i = 0; i < q; i++)
     block0_out[1 + iv_len + i] = plaintext_len >> ((q-i-1) * 8);
-
-
-  fprintf(stderr, "block0:");
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block0_out[i]);
-  fprintf(stderr,"\n");
 }
 
 static unsigned
@@ -119,9 +114,6 @@ compute_T                 (DskBlockCipher128InplaceFunc func,
           memcpy (block + used, associated_data, 16 - used);
           ass_at = 16 - used;
         }
-  fprintf(stderr, "block1:");
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block[i]);
-  fprintf(stderr,"\n");
 
       // do round
       xor_assign_aligned (rv, block);
@@ -134,9 +126,6 @@ compute_T                 (DskBlockCipher128InplaceFunc func,
           xor_assign_aligned (rv, block);
           func (cipher_object, rv);
           ass_at += 16;
-  fprintf(stderr, "ass data block:");
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block[i]);
-  fprintf(stderr,"\n");
         }
       if (ass_at < associated_data_len)
         {
@@ -146,9 +135,6 @@ compute_T                 (DskBlockCipher128InplaceFunc func,
           memset (block + rem, 0, 16 - rem);
           xor_assign_aligned (rv, block);
           func (cipher_object, rv);
-  fprintf(stderr, "final partial data block:");
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block[i]);
-  fprintf(stderr,"\n");
         }
     }
 
@@ -159,9 +145,6 @@ compute_T                 (DskBlockCipher128InplaceFunc func,
       memcpy (block, plaintext + p_at, 16);
       xor_assign_aligned (rv, block);
       func (cipher_object, rv);
-  fprintf(stderr, "full plaintext block p_at=%u:", (unsigned)p_at);
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block[i]);
-  fprintf(stderr,"\n");
       p_at += 16;
     }
   if (p_at < plaintext_len)
@@ -169,9 +152,6 @@ compute_T                 (DskBlockCipher128InplaceFunc func,
       unsigned rem = plaintext_len - p_at;
       memcpy (block, plaintext + p_at, rem);
       memset (block + rem, 0, 16 - rem);
-  fprintf(stderr, "final partial plaintext block:");
-  for (unsigned i = 0; i < 16; i++)fprintf(stderr," %02x", block[i]);
-  fprintf(stderr,"\n");
       xor_assign_aligned (rv, block);
       func (cipher_object, rv);
     }
@@ -213,9 +193,6 @@ void dsk_aead_ccm_encrypt (DskBlockCipher128InplaceFunc func,
              associated_data_len, associated_data,
              iv_len, iv,
              authentication_tag_len, authentication_tag);
-
-  fprintf(stderr, "T=");for (unsigned i =0 ;i  < authentication_tag_len;i++) fprintf(stderr," %02x", authentication_tag[i]);
-  fprintf(stderr,"\n");
 
   // Compute Ctr_0.
   unsigned q = 15 - iv_len;
