@@ -28,7 +28,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-ctoken \
 		tests/test-dsk-ts0 \
 		tests/test-daemonize \
-                tests/test-aes
+                tests/test-crypto
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
