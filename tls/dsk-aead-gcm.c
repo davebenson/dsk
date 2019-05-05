@@ -1,9 +1,11 @@
 #include "../dsk.h"
+#include <arpa/inet.h>
+#include <string.h>
 
 typedef union BLOCK
 {
-  uint8_t u8;
-  uint32_t u32;
+  uint8_t u8[16];
+  uint32_t u32[4];
 } BLOCK;
 
 /* References:
@@ -43,13 +45,43 @@ be32_to_bytes (const uint32_t *in, uint8_t *bytes_out, unsigned n_word32)
 #endif
 }
 
+static inline void
+block_byte_to_u32 (BLOCK *inout)
+{
+#if DSK_IS_LITTLE_ENDIAN
+  inout->u32[0] = htonl (inout->u32[0]);
+  inout->u32[1] = htonl (inout->u32[1]);
+  inout->u32[2] = htonl (inout->u32[2]);
+  inout->u32[3] = htonl (inout->u32[3]);
+#endif
+}
+#define block_u32_to_byte block_byte_to_u32
+
 #define MULIPLY_MSB_BYTE_OF_R  0xe1
+
+static inline uint32_t
+shiftright_4x32_return_carry (uint32_t *v)
+{
+  uint32_t carry = v[0] & 1;
+  v[0] >>= 1;
+  uint32_t carry2 = v[1] & 1;
+  v[1] >>= 1;
+  v[1] |= carry << 31;
+  carry = v[2] & 1;
+  v[2] >>= 1;
+  v[2] |= carry2 << 31;
+  carry2 = v[3] & 1;
+  v[3] >>= 1;
+  v[3] |= carry << 31;
+  return carry2;
+}
+
 
 void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
                               void *cipher_object,
                               Dsk_AEAD_GCM_Precomputation *out)
 {
-  BLOCK H = {u32:{0,0,0,0}};
+  BLOCK H = {.u32 = {0,0,0,0}};
   (*cipher_func) (cipher_object, H.u8);
   block_byte_to_u32 (&H);
 
@@ -57,7 +89,7 @@ void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
   for (unsigned i = 0; i < 128; i++)
     {
       // populate precalculated V table
-      memcpy (&out->h_v_table[i], V, 16);
+      memcpy (&out->h_v_table[i], &V, 16);
       
       // shift V by 1 in u32
       uint32_t carry = shiftright_4x32_return_carry (V.u32);
@@ -70,6 +102,7 @@ void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
 }
 
 
+#if 0
 static unsigned
 shiftright_4x32_return_carry (uint32_t *v)
 {
@@ -86,8 +119,10 @@ shiftright_4x32_return_carry (uint32_t *v)
   v[3] |= n2;
   return rv;
 }
+#endif
 
 /* 6.3 Multiplication Operation on Blocks */
+#if 0
 static void
 multiply (const uint32_t *x, const uint32_t *y, uint32_t *out)
 {
@@ -118,6 +153,7 @@ multiply (const uint32_t *x, const uint32_t *y, uint32_t *out)
 
   memcpy (out, z, 16);
 }
+#endif
 
 //
 // Compute 32-bit of a multiply using a part of the precomputed data.
@@ -137,7 +173,7 @@ multiply_precomputed_part (uint32_t bits,
       // Equivalent to "if (bits & 0x8000000) { z ^= v_part }"
       // but without branching.
 
-      uint32_t z_at = z_inout;
+      uint32_t *z_at = z_inout;
       *z_at++ ^= mask & *v_part++;
       *z_at++ ^= mask & *v_part++;
       *z_at++ ^= mask & *v_part++;
@@ -145,6 +181,17 @@ multiply_precomputed_part (uint32_t bits,
 
       bits <<= 1;
     }
+}
+static void
+multiply_precomputed      (const uint32_t *A,
+                           Dsk_AEAD_GCM_Precomputation *B,
+                           uint32_t *out)
+{
+  out[0] = out[1] = out[2] = out[3] = 0;
+  multiply_precomputed_part (A[0], B->h_v_table, out);
+  multiply_precomputed_part (A[1], B->h_v_table + 128, out);
+  multiply_precomputed_part (A[2], B->h_v_table + 256, out);
+  multiply_precomputed_part (A[3], B->h_v_table + 384, out);
 }
 
 /* Section 6.4 GHASH function */
@@ -159,24 +206,25 @@ ghash_step (uint32_t *y_inout,
             Dsk_AEAD_GCM_Precomputation *precompute)
 {
   /* y ^= x_i */
-  y_inout[0] ^= x[4*i+0];
-  y_inout[1] ^= x[4*i+1];
-  y_inout[2] ^= x[4*i+2];
-  y_inout[3] ^= x[4*i+3];
+  y_inout[0] ^= x[0];
+  y_inout[1] ^= x[1];
+  y_inout[2] ^= x[2];
+  y_inout[3] ^= x[3];
 
   /* y := y * h */
-  multiply_precomputed (y_inout, h, y_inout);
+  multiply_precomputed (y_inout, precompute, y_inout);
 }
 static void
 ghash_step_bytes_zero_padded (uint32_t *y_inout,
                               size_t x_len,
-                              const uint8_t *x)
+                              const uint8_t *x,
+                              Dsk_AEAD_GCM_Precomputation *precompute)
 {
   BLOCK b;
   while (x_len >= 16)
     {
-      bytes_to_be32 (x, &b.u32, 4);
-      ghash_step (y_inout, &b.u32);
+      bytes_to_be32 (x, b.u32, 4);
+      ghash_step (y_inout, b.u32, precompute);
       x += 16;
       x_len -= 16;
     }
@@ -185,56 +233,55 @@ ghash_step_bytes_zero_padded (uint32_t *y_inout,
       memcpy (b.u8, x, x_len);
       memset (b.u8 + x_len, 0, 16 - x_len);
       bytes_to_be32 (b.u8, b.u32, 4);
-      ghash_step (y_inout, &b.u32);
+      ghash_step (y_inout, b.u32, precompute);
     }
 }
 static void
-ghash (const uint32_t *h,               // length 4
-       unsigned n_blocks_in_x,
+ghash (unsigned n_blocks_in_x,
        const uint32_t *x,
+       Dsk_AEAD_GCM_Precomputation *precompute,
        uint32_t *out)
 {
   ghash_init (out);
   for (unsigned i = 0; i < n_blocks_in_x; i++)
-    ghash_step (out, x + 4 * i);
+    ghash_step (out, x + 4 * i, precompute);
 }
 
 /* Section 6.5 GCTR function */
 static void
-gctr (cipher_func, cipher_data,
-      uint8_t *ibc,             // length 16
+gctr (DskBlockCipherInplaceFunc cipher_func,
+      void *cipher_data,
+      uint32_t *icb,             // length 4
       unsigned inout_length,
       uint8_t *x_y)
 {
   unsigned n = inout_length / 16;
-  uint32_t ibc_lsw = ((uint32_t) ibc[12] << 24)
-                   | ((uint32_t) ibc[13] << 16)
-                   | ((uint32_t) ibc[14] << 8)
-                   | ((uint32_t) ibc[15] << 0);
-  uint8_t ibc_copy[16];
+  uint32_t icb_lsw = icb[3];
+  uint8_t icb_copy[16];
 
 
-  uint32_t *at = x_y;
+  uint8_t *at = x_y;
+  unsigned i;
   for (i = 0; i < n - 1; i++)
     {
-      memcpy (ibc_copy, icb, 12);
-      be32_to_bytes (&ibc_lsw, ibc_copy + 12, 1);
-      ibc_lsw++;
-      cipher_func (cipher_data, ibc_copy);
-      *at++ ^= ((uint32_t *)ibc_copy)[0];
-      *at++ ^= ((uint32_t *)ibc_copy)[1];
-      *at++ ^= ((uint32_t *)ibc_copy)[2];
-      *at++ ^= ((uint32_t *)ibc_copy)[3];
+      be32_to_bytes (icb, icb_copy, 3);
+      be32_to_bytes (&icb_lsw, icb_copy + 12, 1);
+      icb_lsw++;
+      cipher_func (cipher_data, icb_copy);
+      for (unsigned j = 0; j < 16; j++)
+        *at++ ^= icb_copy[j];
     }
 
-  uint8_t *at8 = (uint8_t *) at;
-  memcpy (ibc_copy, icb, 12);
-  be32_to_bytes (&ibc_lsw, ibc_copy + 12, 1);
-  cipher_func (cipher_data, ibc_copy);
   uint8_t *end = x_y + inout_length;
-  const uint8_t *in = ibc_copy;
-  while (at8 < end)
-    *at8++ = *in++;
+  if (at < end)
+    {
+      memcpy (icb_copy, icb, 12);
+      be32_to_bytes (&icb_lsw, icb_copy + 12, 1);
+      cipher_func (cipher_data, icb_copy);
+      const uint8_t *in = icb_copy;
+      while (at < end)
+        *at++ ^= *in++;
+    }
 }
 
 static inline bool
@@ -246,35 +293,63 @@ is_valid_authentication_tag_len (size_t authentication_tag_len)
 }
 
 static inline void
-compute_j0 (size_t iv_len_in_words, const uint32_t *iv, uint32_t *J0_out)
+compute_j0 (size_t iv_len,
+            const uint8_t *iv,
+            Dsk_AEAD_GCM_Precomputation *precompute,
+            uint32_t *J0_out)
 {
-  if (iv_len_in_words == 3)
+  if (iv_len == 12)
     {
-      memcpy (J0.u32, iv, 12);
-      J0.u32[3] = 1;
+      bytes_to_be32 (iv, J0_out, 3);
+      J0_out[3] = 1;
     }
   else
     {
       // 1/32th the algorithm's s
-      size_t s_words = (iv_len_in_words + 3) / 4 * 4 - iv_len_in_words;
-      size_t iv_blocks = iv_len_in_words / 4;
-      ghash_init (J0.u32);
+      //size_t s_words = (iv_len_in_words + 3) / 4 * 4 - iv_len_in_words;
+      size_t iv_blocks = iv_len / 16;
+      ghash_init (J0_out);
       size_t i;
-      for (i < 0; i < iv_blocks; i++)
-        ghash_step (J0.u32, iv + 4*i);
-      if (i * 4 < iv_len_in_words)
+      for (i = 0; i < iv_blocks; i++)
         {
-          uint32_t rem32 = iv_len_in_words - 4 * iv_blocks;
-          uint32 tmp[4];
-          memcpy (tmp, iv + 4*iv_blocks, rem32 * 4);
-          memset (tmp + rem32, 0, 16 - rem32 * 4);
-          ghash_step (J0.u32, tmp);
+          uint32_t tmp[4];
+          bytes_to_be32 (iv + 16*i, tmp, 4);
+          ghash_step (J0_out, tmp, precompute);
         }
-      size_t ivlen_bits = iv_len_in_words * 32;
+      if (i * 16 < iv_len)
+        {
+          uint32_t rem_bytes = iv_len - 16 * iv_blocks;
+          uint32_t tmp[4];
+          assert (rem_bytes % 4 == 0);
+          bytes_to_be32 (iv + 16*iv_blocks, tmp, rem_bytes / 4);
+          memset (tmp + rem_bytes / 4, 0, 16 - rem_bytes);
+          ghash_step (J0_out, tmp, precompute);
+        }
+      size_t ivlen_bits = iv_len * 8;
       uint32_t lenblock[4] = {0, 0, 0, ivlen_bits};
-      ghash_step (J0.u32, lenblock);
+      ghash_step (J0_out, lenblock, precompute);
     }
-  return true;
+}
+
+static void
+compute_s (Dsk_AEAD_GCM_Precomputation *precompute,
+             size_t associated_data_len, const uint8_t *associated_data,
+             size_t ciphertext_len, const uint8_t *ciphertext,
+             uint32_t *s)
+{
+  ghash_init (s);
+  ghash_step_bytes_zero_padded (s, associated_data_len, associated_data, precompute);
+  ghash_step_bytes_zero_padded (s, ciphertext_len, ciphertext, precompute);
+
+  uint64_t atmp = associated_data_len;
+  uint64_t ctmp = ciphertext_len;
+  uint32_t lastblock[4] = {
+    atmp >> 32,
+    atmp & 0xffffffff,
+    ctmp >> 32,
+    ctmp & 0xffffffff
+  };
+  ghash_step(s, lastblock, precompute);
 }
 
 /*
@@ -290,14 +365,13 @@ compute_j0 (size_t iv_len_in_words, const uint32_t *iv, uint32_t *J0_out)
  * authentication_tag_len:
  * authentication_tag:
  */
-void dsk_aead_gcm_encrypt (DskBlock128CipherInplace inplace_cipher_func,
-                           void *inplace_cipher_object,
+void dsk_aead_gcm_encrypt (Dsk_AEAD_GCM_Precomputation *precompute,
                            size_t plaintext_len,
                            const uint8_t *plaintext,
                            size_t associated_data_len,
                            const uint8_t *associated_data,
-                           size_t iv_len_in_words,
-                           const uint32_t *iv,
+                           size_t iv_len,
+                           const uint8_t *iv,
                            uint8_t *ciphertext,
                            size_t authentication_tag_len,
                            uint8_t *authentication_tag)
@@ -323,20 +397,21 @@ void dsk_aead_gcm_encrypt (DskBlock128CipherInplace inplace_cipher_func,
   // Step 1: Compute H.  This is baked into the precomputed data.
   //
   assert (is_valid_authentication_tag_len (authentication_tag_len));
+  assert (iv_len % 4 == 0);
 
   //
   // Step 2: Compute J0.
   //
-  compute_j0 (iv_len_in_words, iv, &J0.u32);
+  compute_j0 (iv_len, iv, precompute, J0.u32);
 
   //
   // Step 3:  C = GCTR(inc32(J0), P).
   //
-  j0[3] += 1;
+  J0.u32[3] += 1;
   memcpy(ciphertext, plaintext, plaintext_len);
-  gctr (inplace_cipher_func, inplace_cipher_object,
-        j0, plaintext_len, ciphertext);
-  j0[3] -= 1;
+  gctr (precompute->block_cipher, precompute->block_cipher_object,
+        J0.u32, plaintext_len, ciphertext);
+  J0.u32[3] -= 1;
 
 
   //
@@ -352,39 +427,29 @@ void dsk_aead_gcm_encrypt (DskBlock128CipherInplace inplace_cipher_func,
   // Step 5: compute S = GHASH((A || 0^v || C || 0^u || [len(A)]_64 || [len(C)]_64)
   //
   uint32_t s[4];
-  ghash_init (s);
-  ghash_step_bytes_zero_padded (s, associated_data_len, associated_data);
-  ghash_step_bytes_zero_padded (s, plaintext_len, ciphertext);
-
-  uint64_t atmp = associated_data_len;
-  uint64_t ctmp = plaintext_len;
-  uint32_t lastblock[4] = {
-    atmp >> 32,
-    atmp & 0xffffffff,
-    ctmp >> 32,
-    ctmp & 0xffffffff
-  };
-  ghash_step(s, lastblock);
+  compute_s (precompute,
+             associated_data_len, associated_data,
+             plaintext_len, ciphertext,
+             s);
 
   //
   // Step 6: T = MSB(GCTR(J0, S).
   //
   uint8_t t_tmp[16];
   be32_to_bytes (s, t_tmp, 4);
-  gctr (inplace_cipher_func, inplace_cipher_object, j0, t_tmp);
+  gctr (precompute->block_cipher, precompute->block_cipher_object,
+        J0.u32, 16, t_tmp);
   memcpy (authentication_tag, t_tmp, authentication_tag_len);
 }
 
 bool
-dsk_aead_gcm_decrypt  (DskBlockCipherInplaceFunc inplace_cipher_func,
-                       void                     *inplace_cipher_object,
+dsk_aead_gcm_decrypt  (Dsk_AEAD_GCM_Precomputation *precompute,
                        size_t                     ciphertext_len,
                        const uint8_t             *ciphertext,
                        size_t                     associated_data_len,
                        const uint8_t             *associated_data,
-                       size_t                     iv_len_in_words,
-                       const uint8_t             *iv_in_words,
-                       const uint8_t             *iv_in_words,
+                       size_t                     iv_len,
+                       const uint8_t             *iv,
                        uint8_t                   *plaintext,
                        size_t                     authentication_tag_len,
                        const uint8_t             *authentication_tag)
@@ -404,27 +469,32 @@ dsk_aead_gcm_decrypt  (DskBlockCipherInplaceFunc inplace_cipher_func,
 
   // Step 3: Compute J0.  Re-use code from encryption side.
   BLOCK J0;
-  compute_j0 (iv_len_in_words, iv, &J0.u32);
+  compute_j0 (iv_len, iv, precompute, J0.u32);
 
   // Step 4: Compute P, the plaintext, using GCTR:
   //         P = GCTR(inc32(J_0), C)
   memcpy(plaintext, ciphertext, ciphertext_len);
-  j0[3] += 1;
-  gctr (inplace_cipher_func, inplace_cipher_object,
-        j0, plaintext_len, plaintext);
-  j0[3] -= 1;
+  J0.u32[3] += 1;
+  gctr (precompute->block_cipher, precompute->block_cipher_object,
+        J0.u32, ciphertext_len, plaintext);
+  J0.u32[3] -= 1;
 
   // Step 5: compute u,v which are just intermediate values for Step 6.
   // Step 6: Compute the signature block S.
   uint32_t s[4];
-  compute_s (inplace_cipher_func, inplace_cipher_object,
+  compute_s (precompute,
              associated_data_len, associated_data,
              ciphertext_len, ciphertext,
              s);
 
   // Step 7: Compute T.
-  ...
-    
-...
+  uint8_t t_tmp[16];
+  be32_to_bytes (s, t_tmp, 4);
+  gctr (precompute->block_cipher, precompute->block_cipher_object,
+        J0.u32, 16, t_tmp);
+  if (memcmp (authentication_tag, t_tmp, authentication_tag_len) != 0)
+    return false;
+
+  return true;
 }
 

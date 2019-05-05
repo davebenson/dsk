@@ -9,11 +9,11 @@ typedef void (*DskBlockCipherInplaceFunc) (void *cipher_object,
                                            uint8_t *inout);
 
 // key-dependent pre-computations.
-struct {
+typedef struct {
   void *block_cipher_object;
   DskBlockCipherInplaceFunc block_cipher;
 
-  uint32_t h_v_table[128][4];
+  uint32_t h_v_table[128 * 4];
 } Dsk_AEAD_GCM_Precomputation;
 void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
                               void *cipher_object,
@@ -43,8 +43,7 @@ void dsk_aead_gcm_encrypt (Dsk_AEAD_GCM_Precomputation *cipher_precomputation,
                            size_t                     authentication_tag_len,
                            uint8_t                   *authentication_tag);
 
-bool dsk_aead_gcm_decrypt (DskBlockCipherInplaceFunc inplace_cipher_func,
-                           void                     *inplace_cipher_object,
+bool dsk_aead_gcm_decrypt (Dsk_AEAD_GCM_Precomputation *precompute,
                            size_t                     ciphertext_len,
                            const uint8_t             *ciphertext,
                            size_t                     associated_data_len,
