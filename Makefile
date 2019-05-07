@@ -57,7 +57,7 @@ DEP_LIBS := `pkg-config --libs openssl`
 full: all extra
 
 # For minimum size:
-#CC_FLAGS =  -W -Wall -g -Os -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1
+#CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
 
 # For standard initial size:
 CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
@@ -118,6 +118,9 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-aes.o \
           tls/dsk-aead-gcm.o \
           tls/dsk-aead-ccm.o \
+          tls/dsk-curve25519.o \
+          tls/dsk-hmac.o \
+          tls/dsk-hkdf.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \

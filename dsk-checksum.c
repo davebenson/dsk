@@ -1474,6 +1474,18 @@ dsk_checksum_init  (void *instance,
       return;
     }
 }
+size_t
+dsk_checksum_type_get_size(DskChecksumType  checksum)
+{
+  switch (checksum)
+    {
+    case DSK_CHECKSUM_MD5: return 16;
+    case DSK_CHECKSUM_SHA1: return 20;
+    case DSK_CHECKSUM_SHA256: return 32;
+    case DSK_CHECKSUM_CRC32_BIG_ENDIAN:
+    case DSK_CHECKSUM_CRC32_LITTLE_ENDIAN: return 4;
+    }
+}
 
 DskChecksum *
 dsk_checksum_new (DskChecksumType type)
@@ -1482,4 +1494,16 @@ dsk_checksum_new (DskChecksumType type)
   dsk_checksum_init (rv, type);
   rv->flags |= 2;
   return rv;
+}
+unsigned       dsk_checksum_type_get_block_size (DskChecksumType type)
+{
+  switch (type)
+    {
+    case DSK_CHECKSUM_MD5:
+    case DSK_CHECKSUM_SHA1:
+    case DSK_CHECKSUM_SHA256:
+      return 64;
+    default:
+      return 0;
+    }
 }

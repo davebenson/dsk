@@ -78,6 +78,8 @@ DskRand *dsk_rand_get_global     (void);
 void     dsk_rand_gaussian_pair  (DskRand  *rand,
                                   double   *values);
 
+
+
 #if 0
 uint32_t dsk_random_uint32       (void);
 int32_t  dsk_random_int_range    (int32_t begin,

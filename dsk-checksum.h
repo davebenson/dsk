@@ -29,8 +29,13 @@ void           dsk_checksum_get_hex    (DskChecksum    *checksum,
 size_t         dsk_checksum_type_get_size(DskChecksumType  checksum);
 
 /* for efficiency: non-allocating versions */
-size_t         dsk_checksum_type_get_instance_size (DskChecksumType type);
+size_t         dsk_checksum_sizeof_instance (DskChecksumType type);
 void           dsk_checksum_init       (void           *checksum_instance,
                                         DskChecksumType type);
 
 
+/* Size of blocks (in bytes) in which this algorithm operates.
+ *
+ * This is used for computing HMACs (see RFC 2104, RFC 4868).
+ */
+unsigned       dsk_checksum_type_get_block_size (DskChecksumType type);

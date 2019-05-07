@@ -1,10 +1,9 @@
-
-
 <li>
  <b>AES</b>: Advanced Encryption Standard.  A standardized <i>block cipher</i>.
-Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
-128-, 192- and 256-bit variants.  For our purposes,
-<a href="...">FIPS 197</a> specifies this algorithm.
+Invented by Joan Daemen and Vincent Rijmen.
+<i>NIST</i> standardized some variants into FIPS 197.  All standard AES algorithms have
+a block-size of 128-bits.  The key-size may be 128, 192, or 256 bits.
+For our purposes,
 </li>
 
 <li>
@@ -17,14 +16,18 @@ Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
 </li>
 
 <li>
+ <p>
  <b>Block cipher</b>: a way of encrypting data of a fixed size
  using a key known to the encryptor and decryptor.  
  They involve a routine pre-compute for a key ("Key Expansion"),
  then an optimized routine to do the block-decryption/encryption.
+ </p>
 
+ <p>
  These tend to do the heavy
  work of the encryption algorithm, but they need to be coupled with
  a means to check the authenticity and integrity of the message.
+ </p>
 </li>
 
 <li>
@@ -32,9 +35,14 @@ Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
 </li>
 
 <li>
+ <b>Cryptographic Hash</b>: A function that computes a fixed-length byte-string (the "hash")
+ for each input byte-string, where it is hard to generate a partial inverse (ie one
+ that finds a byte-string for a given hash).
+
+<li>
  DES: a series of encryption standards developed by
  the US government that are now considered to be too weak,
- in part due to its 56-bit key, and slower modern algorithms.
+ in part due to its 56-bit key.  And its also slow compared to modern algorithms.
  Essentially, it's been replaced by AES.
 </li>
 
@@ -46,7 +54,6 @@ Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
   are sometimes called Galois fields).
 </li>
 
-
 <li>
  ECB, a classical <i>mode of operation</i> for a block cipher.
  It's trivial: simply break the input into blocks,
@@ -55,12 +62,32 @@ Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
  Cannot handle arbitrary length data,
  and is susceptible to replay and reordering attacks.
 </li>
+
 <li>
- <b>HMAC</b> - Message Authentication Code
+ <b>HMAC</b> - Hashed Message Authentication Code.
+ Takes a secret key and a message and generates a signature that can be validated
+ by someone who has the secret key, using a cryptographic hash-function.
+</li>
+
+<li>
+  Elliptic Curve Cryptography.  Heavy-duty cryptography used for assymmetric operations like
+  key-exchange and signatures.  
+</li>
+
+<li>
+  Key Exchange.  In TLS, this is the most common way to set up a symmetric key arrangement.
+  As a practical matter, it involves three steps:
+      (1) each side computes a public key and private key that match;
+      (2) each side shares its public key
+      (3) the private key + the other side's public key are
+          combined into a shared key (ie the computation will result
+            in the same shared data: shared = A_private+B_public = B_private+A_public
 </li>
 
 <li>
  MAC - Message Authentication Code
+ Takes a secret key and a message and generates a signature that can be validated
+ by someone who has the secret key.
 </li>
 
 <li>
@@ -71,14 +98,45 @@ Invented by Joan Daemen and Vincent Rijmen.  <i>NIST</i> accepted
  <b>Nonce</b> - A value that is used only once, often to avoid <i>replay attacks</i>.
 </li>
 <li>
- Octet: a term used in RFC standards for "byte", an 8-bit value,
- usually represented as a number in the range 0 to 255.
-</li>
-<li>
- <b>Plaintext</b>: the unencrypted data: either the input to the encryption
- algorithm, or, equivalently, the output of the decryption algorithm.
+  Octet: a term used in RFC standards for "byte", an 8-bit value,
+  usually represented as a number in the range 0 to 255.
 </li>
 
 <li>
- SHA1 - a venerable, cryptographic hash.  Still widely used.
+  <b>Plaintext</b>: the unencrypted data: either the input to the encryption
+  algorithm, or, equivalently, the output of the decryption algorithm.
+</li>
+
+<li>
+  <p>Record Layer: the outermost layer of TLS,
+  which is very light, since all encryption occurs under this layer.
+  <br>
+  Encryption changes must occur in between records (ie records must only use one
+  type of encryption).
+  <br>
+  And records must not comingle handshake and application data.
+  <br>
+  But messages may otherwise by combined and split as they are moved into records.
+  </p>
+</li>
+
+<li>
+  SHA1 - a venerable, cryptographic hash, whose output is 160 bits long (20 bytes).
+  Still widely used, although some attacks have been found (including some collisions).
+</li>
+
+<li>
+  SHA224, SHA256, SHA384, SHA512 - a family of cryptographic hash functions, collectively
+  standardized as SHA2.
+  The number gives the number of bits of output.
+</li>
+
+<li>
+  SSL "Secure Socket Layer", the predecessor to TLS.  Although the protocol has been
+  replaced by TLS, people still refer to SSL as the secure protocol, even though actual
+  SSL connections are rarely seen in the wild. [as of 2019]
+</li>
+
+<li>
+  TLS "Transport Layer Security", the modern protocol for securing internet connections.
 </li>

@@ -32,7 +32,6 @@ dsk_rand_xorshift1024_generate32(DskRand *rand, size_t N, uint32_t *out)
 ///  #if DSK_IS_LITTLE_ENDIAN    maybe *(uint64_t*)out = rv64 on LE platforms?  alignment?
       *out++ = rv64 & 0xffffffff;
       *out++ = rv64 >> 32;
-      dsk_assert(DSK_FALSE);
       N -= 2;
     }
   if (N == 1)
@@ -49,13 +48,16 @@ static void
 dsk_rand_xorshift1024_seed(DskRand *rand, size_t N, const uint32_t *seed)
 {
   DskRandXorshift1024 *xs = (DskRandXorshift1024 *) rand;
-  rand->generate32 = dsk_rand_xorshift1024_generate32;
   xs->p = 0;
   xs->has_extra = DSK_FALSE;
   dsk_rand_protected_seed_array (N, seed, 32, (uint32_t *) xs->s);
 }
 
-#define dsk_rand_xorshift1024_init NULL
+static void
+dsk_rand_xorshift1024_init (DskRandXorshift1024 *r)
+{
+  r->base_instance.generate32 = dsk_rand_xorshift1024_generate32;
+}
 #define dsk_rand_xorshift1024_finalize NULL
 DSK_RAND_SUBCLASS_DEFINE(, DskRandXorshift1024, dsk_rand_xorshift1024);
 

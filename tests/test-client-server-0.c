@@ -113,7 +113,7 @@ handle_incoming_connection (DskStreamListener *listener)
                                        (DskHookFunc) handle_source_readable,
                                        ec,
                                        NULL);
-        ec->sink = stream;
+        ec->sink = dsk_object_ref (stream);
         ec->write_trap = NULL;
         break;
       }

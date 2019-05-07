@@ -23,6 +23,7 @@ typedef enum DskTlsConnectionState
   DSK_TLS_CONNECTION_SERVER_FAILED,
 } DskTlsConnectionState;
 
+
 #define DSK_TLS_CONNECTION_STATE_IS_CLIENT(st)   (((st) >> 8) == 1)
 #define DSK_TLS_CONNECTION_STATE_IS_SERVER(st)   (((st) >> 8) == 2)
 
@@ -46,42 +47,8 @@ struct DskTlsConnection
   DskTlsConnectionState state;
   DskBuffer incoming_raw, outgoing_raw;
   DskBuffer incoming_plaintext, outgoing_plaintext;
+
+
+  uint
 };
 
-static void
-client_hello_to_buffer (DskTlsContext *context,
-                        DskBuffer     *out)
-{
-  DskTlsHandshake shake;
-  shake.type = DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO;
-  shake.client_hello.legacy_version = DSK_TLS_HANDSHAKE_CLIENT_HELLO_LEGACY_VERSION;
-  gen_random (32, shake.client_hello.random);
-  shake.client_hello.legacy_session_id_length = 0;
-  shake.client_hello.legacy_session_id = NULL;
-  shake.client_hello.n_cipher_suites = DSK_N_ELEMENTS (std_cipher_suite);
-  shake.client_hello.cipher_suites = std_cipher_suite;
-  shake.client_hello.n_compression_methods = ...
-  shake.client_hello.compression_methods = ...
-  shake.client_hello.n_extensions = ...
-  shake.client_hello.extensions = ...
-  dsk_tls_handshake_serialize_to_buffer (&shake, out);
-}
-
-DskTlsConnection *
-dsk_tls_connection_new (DskTlsContext *context,
-                        boolean        is_server,
-                        DskStream     *underlying)
-{
-  DskTlsConnection *conn = dsk_object_new (&dsk_tls_connection_class);
-  conn->underlying = dsk_object_ref (underlying);
-  conn->context = dsk_object_ref (context);
-  conn->state = is_server ? DSK_TLS_CONNECTION_SERVER_START
-                          : DSK_TLS_CONNECTION_CLIENT_START;
-  if (!is_server)
-    {
-      client_hello_to_buffer (context, &conn->outgoing_raw);
-      ensure_has_write_hook (conn);
-      conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO;
-    }
-  return conn;
-}

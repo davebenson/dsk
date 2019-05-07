@@ -714,7 +714,7 @@ dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
   switch (parser->lex_state)
     {
     case JSON_LEX_STATE_INIT:
-      assert (0);
+      return DSK_TRUE;
 
     case JSON_LEX_STATE_TRUE:
       if (parser->fixed_n_chars == 4)
