@@ -1,4 +1,3 @@
-
 typedef enum DskTlsConnectionState
 {
   DSK_TLS_CONNECTION_CLIENT_START = 0x100,
@@ -29,16 +28,23 @@ typedef enum DskTlsConnectionState
 
 static DskTlsCipherSuite std_cipher_suite[] = {
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384,
-  DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256,
 };
 
+struct DskTlsConnectionHandshakeInfo
+{
+  DskTlsHandshake *first_handshake;
+  DskTlsHandshake *last_handshake;
+  DskMemPool mem_pool;
+};
+
+typedef struct DskTlsContext DskTlsContext;
+typedef struct DskTlsConnectionClass DskTlsConnectionClass;
 struct DskTlsConnectionClass
 {
   DskStreamClass base_class;
 };
+typedef struct DskTlsConnection DskTlsConnection;
 struct DskTlsConnection
 {
   DskStream base_instance;
@@ -47,8 +53,5 @@ struct DskTlsConnection
   DskTlsConnectionState state;
   DskBuffer incoming_raw, outgoing_raw;
   DskBuffer incoming_plaintext, outgoing_plaintext;
-
-
-  uint
 };
 

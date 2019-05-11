@@ -1,0 +1,93 @@
+#include "../dsk.h"
+#include <stdio.h>
+
+
+static void
+test_client_hello ()
+{
+  // RFC 8448.  Section 3.
+  const char hs_data[] = 
+           "\x03\x03\xcb\x34\xec\xb1\xe7\x81\x63\xba\x1c\x38\xc6\xda\xcb\x19\x6a\x6d\xff\xa2"
+           "\x1a\x8d\x99\x12\xec\x18\xa2\xef\x62\x83\x02\x4d\xec\xe7\x00\x00\x06\x13\x01\x13"
+           "\x03\x13\x02\x01\x00\x00\x91\x00\x00\x00\x0b\x00\x09\x00\x00\x06\x73\x65\x72\x76"
+           "\x65\x72\xff\x01\x00\x01\x00\x00\x0a\x00\x14\x00\x12\x00\x1d\x00\x17\x00\x18\x00"
+           "\x19\x01\x00\x01\x01\x01\x02\x01\x03\x01\x04\x00\x23\x00\x00\x00\x33\x00\x26\x00"
+           "\x24\x00\x1d\x00\x20\x99\x38\x1d\xe5\x60\xe4\xbd\x43\xd2\x3d\x8e\x43\x5a\x7d\xba"
+           "\xfe\xb3\xc0\x6e\x51\xc1\x3c\xae\x4d\x54\x13\x69\x1e\x52\x9a\xaf\x2c\x00\x2b\x00"
+           "\x03\x02\x03\x04\x00\x0d\x00\x20\x00\x1e\x04\x03\x05\x03\x06\x03\x02\x03\x08\x04"
+           "\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x02\x01\x04\x02\x05\x02\x06\x02\x02\x02"
+           "\x00\x2d\x00\x02\x01\x01\x00\x1c\x00\x02\x40\x01";
+  DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
+  DskError *error = NULL;
+  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO,
+                                                    sizeof (hs_data), (uint8_t*) hs_data, &pool,
+                                                    &error);
+  if (shake == NULL)
+    dsk_die ("error parsing client-hello: %s", error->message);
+  assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO);
+  bool has_supported_groups = false;
+  for (unsigned i = 0; i < shake->client_hello.n_extensions; i++)
+    {
+      DskTlsExtension *ext = shake->client_hello.extensions[i];
+      fprintf(stderr, "ext %u: %04x\n", i, ext->type);
+      switch (ext->type)
+        {
+        case DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS:
+          {
+            DskTlsExtension_SupportedGroups *sg = (DskTlsExtension_SupportedGroups *) ext;
+            assert (sg->n_supported_groups == 9);
+
+            // ensure x25519 is in the list.
+            unsigned j;
+            for (j = 0; j < sg->n_supported_groups; j++)
+              if (sg->supported_groups[j] == DSK_TLS_NAMED_GROUP_X25519)
+                break;
+            assert (j < sg->n_supported_groups);
+          
+            has_supported_groups = true;
+            break;
+
+          //TODO: case DSK_TLS_EXTENSION_SERVER_NAME:
+          //TODO: case DSK_TLS_EXTENSION_KEY_SHARE]: payload_len=38
+          //TODO: case DSK_TLS_EXTENSION_SUPPORTED_VERSIONS]: payload_len=3
+          //TODO: case DSK_TLS_EXTENSION_SIGNATURE_ALGORITHMS]: payload_len=32
+          //TODO: case DSK_TLS_EXTENSION_PSK_KEY_EXCHANGE_MODES]: payload_len=2
+          // optional TODO: RECORD_SIZE_LIMIT
+
+          }
+        }
+    }
+  assert(has_supported_groups);
+}
+
+static struct 
+{
+  const char *name;
+  void (*test)(void);
+} tests[] =
+{
+  { "Client Hello parsing", test_client_hello },
+};
+
+
+int main(int argc, char **argv)
+{
+  unsigned i;
+  dsk_boolean cmdline_verbose = false;
+
+  dsk_cmdline_init ("test various TLS parsing routines",
+                    "Test TLS parsing functions",
+                    NULL, 0);
+  dsk_cmdline_add_boolean ("verbose", "extra logging", NULL, 0,
+                           &cmdline_verbose);
+  dsk_cmdline_process_args (&argc, &argv);
+
+  for (i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      fprintf (stderr, "Test: %s... ", tests[i].name);
+      tests[i].test ();
+      fprintf (stderr, " done.\n");
+    }
+  dsk_cleanup ();
+  return 0;
+}

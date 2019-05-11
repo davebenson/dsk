@@ -175,6 +175,10 @@ unsigned dsk_buffer_fragment_peek (DskBufferFragment *fragment,
                                    unsigned           offset,
                                    unsigned           length,
                                    void              *buf);
+unsigned dsk_buffer_fragment_read (DskBufferFragment**fragment_inout,
+                                   unsigned          *offset_inout,
+                                   unsigned           length,
+                                   void              *buf);
 dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
                                          unsigned           *offset_inout,
                                          unsigned            skip);

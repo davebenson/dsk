@@ -28,7 +28,9 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-ctoken \
 		tests/test-dsk-ts0 \
 		tests/test-daemonize \
-                tests/test-crypto
+                tests/test-crypto \
+                tests/test-tls-bignum \
+                tests/test-tls-protocol
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
@@ -121,6 +123,8 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-curve25519.o \
           tls/dsk-hmac.o \
           tls/dsk-hkdf.o \
+          tls/dsk-tls-protocol.o \
+          tls/dsk-tls-bignum.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \

@@ -1,3 +1,6 @@
+// HMAC is a system for computing a digest.
+//
+// See RFC 2104. "HMAC: Keyed-Hashing for Message Authentication"
 //
 
 void dsk_hmac_digest (DskChecksumType type,

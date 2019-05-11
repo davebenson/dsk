@@ -1147,8 +1147,8 @@ int main(int argc, char **argv)
 {
   unsigned i;
 
-  dsk_cmdline_init ("test AES routines",
-                    "Test AES (Advanced Encryption Standard) block cipher",
+  dsk_cmdline_init ("test various crypto routines",
+                    "Test Cryptographic functions",
                     NULL, 0);
   dsk_cmdline_add_boolean ("verbose", "extra logging", NULL, 0,
                            &cmdline_verbose);
