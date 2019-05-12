@@ -16,9 +16,11 @@ struct N *random_N(unsigned n_hex_digits)
   struct N *rv = malloc (sizeof (struct N) + n_hex_digits + 1);
   rv->hex = (char *) (rv + 1);
   for (unsigned i = 0; i < n_hex_digits; i++)
-    rv->hex[i] = "0123456789abcdef"[dsk_rand_uint32 (rng) & 15];
+    {
+      rv->hex[i] = "0123456789abcdef"[dsk_rand_uint32 (rng) & 15];
+    }
   while (rv->hex[n_hex_digits-1] == '0')
-    rv->hex[n_hex_digits] = "0123456789abcdef"[dsk_rand_uint32 (rng) & 15];
+    rv->hex[n_hex_digits - 1] = "0123456789abcdef"[dsk_rand_uint32 (rng) & 15];
   rv->hex[n_hex_digits] = 0;
   mpz_init_set_str (&rv->v, rv->hex, 16);
   return rv;

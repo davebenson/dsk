@@ -26,11 +26,6 @@ typedef enum DskTlsConnectionState
 #define DSK_TLS_CONNECTION_STATE_IS_CLIENT(st)   (((st) >> 8) == 1)
 #define DSK_TLS_CONNECTION_STATE_IS_SERVER(st)   (((st) >> 8) == 2)
 
-static DskTlsCipherSuite std_cipher_suite[] = {
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
-};
-
 struct DskTlsConnectionHandshakeInfo
 {
   DskTlsHandshake *first_handshake;

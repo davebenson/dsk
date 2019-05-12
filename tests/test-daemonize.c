@@ -58,7 +58,7 @@ handle_kill_signal  (const char *arg_name,
   // match (case-insensitively) against sys_signame[] elements.
   for (size_t i = 0; i < NSIG; i++)
     {
-      if (dsk_ascii_strcasecmp (sys_signame[i], arg_value) == 0)
+      if (dsk_ascii_strcasecmp (strsignal (i), arg_value) == 0)
         {
           * (int *) callback_data = i;
           return DSK_TRUE;

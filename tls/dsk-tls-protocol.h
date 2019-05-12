@@ -12,6 +12,7 @@ typedef enum
   DSK_TLS_RECORD_CONTENT_TYPE_HANDSHAKE = 22,
   DSK_TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA = 23,
 } DskTlsRecordContentType;
+const char *dsk_tls_record_content_type_name (DskTlsRecordContentType type);
 
 /* If the record's ContentType is HANDSHAKE==22,
  * then the records contains whole or partial 
@@ -31,6 +32,7 @@ typedef enum
   DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE = 24,
   DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,
 } DskTlsHandshakeType;
+const char *dsk_tls_handshake_type_name (DskTlsHandshakeType type);
 
 typedef enum
 {
@@ -40,6 +42,7 @@ typedef enum
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256         = 0x1304,  /*rfc5116*/
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256       = 0x1305,  /*rfc6655*/
 } DskTlsCipherSuite;
+const char *dsk_tls_cipher_suite_name (DskTlsCipherSuite cipher);
 
 typedef enum
 {
@@ -47,6 +50,7 @@ typedef enum
   DSK_TLS_CERTIFICATE_TYPE_OPENPGP = 1,
   DSK_TLS_CERTIFICATE_TYPE_RAW_PUBLIC_KEY = 2
 } DskTlsCertificateType;
+const char *dsk_tls_certificate_type_name (DskTlsCertificateType type);
 
 // Except as noted, these "extensions" originate from the TLS 1.3 specification, RFC 8446.
 typedef enum {
@@ -391,6 +395,7 @@ typedef union {
   DskTlsExtension_MaxFragmentLength max_fragment_length;
   //DskTlsExtension_StatusRequest status_request;
   DskTlsExtension_SupportedGroups supported_groups;
+  DskTlsExtension_SupportedVersions supported_versions;
   DskTlsExtension_SignatureAlgorithms signature_algorithms;
   // TODO: client_certificate_type server_certificate_type
   DskTlsExtension_Padding padding;
@@ -443,8 +448,25 @@ struct DskTlsHandshake
   };
 };
 
+// type==SERVER_HELLO && !is_retry_request
+DSK_INLINE_FUNC bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake);
+
+// type==SERVER_HELLO && is_retry_request
+//
+// However, in the future,
+// this may return true if a new HandshakeType==HELLO_RETRY_REQUEST
+// (which is reserved) is created.
+DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake);
+
 
 /* --- Parsing --- */
+
+// NOTE: may substructures returned by this function point directly
+// into 'data'.  You can track that separately, or you can allocate 'data'
+// from 'pool', which is what we do.
+//
+// In order to do this you'll have to pre-frame the handshake,
+// which is why we take these inputs.
 DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
                                            unsigned            len,
                                            const uint8_t      *data,

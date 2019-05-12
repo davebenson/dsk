@@ -1,5 +1,10 @@
 #include "../dsk.h"
 
+static DskTlsCipherSuite std_cipher_suite[] = {
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
+};
+
 
 static const char *
 dsk_tls_connection_state_name (DskTlsConnectionState state)

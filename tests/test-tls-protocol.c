@@ -1,5 +1,6 @@
 #include "../dsk.h"
 #include <stdio.h>
+#include <string.h>
 
 
 static void
@@ -26,6 +27,9 @@ test_client_hello ()
     dsk_die ("error parsing client-hello: %s", error->message);
   assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO);
   bool has_supported_groups = false;
+  bool has_server_name = false;
+  bool has_supported_versions = false;
+  bool has_key_share = false;
   for (unsigned i = 0; i < shake->client_hello.n_extensions; i++)
     {
       DskTlsExtension *ext = shake->client_hello.extensions[i];
@@ -36,6 +40,7 @@ test_client_hello ()
           {
             DskTlsExtension_SupportedGroups *sg = (DskTlsExtension_SupportedGroups *) ext;
             assert (sg->n_supported_groups == 9);
+            assert(!has_supported_groups);
 
             // ensure x25519 is in the list.
             unsigned j;
@@ -46,18 +51,53 @@ test_client_hello ()
           
             has_supported_groups = true;
             break;
-
-          //TODO: case DSK_TLS_EXTENSION_SERVER_NAME:
-          //TODO: case DSK_TLS_EXTENSION_KEY_SHARE]: payload_len=38
-          //TODO: case DSK_TLS_EXTENSION_SUPPORTED_VERSIONS]: payload_len=3
+          }
+        case DSK_TLS_EXTENSION_TYPE_SERVER_NAME:
+          {
+	    DskTlsExtension_ServerNameList *sn = (DskTlsExtension_ServerNameList *) ext;
+            assert(!has_server_name);
+	    assert(sn->n_entries == 1);
+	    assert(sn->entries[0].type == DSK_TLS_EXTENSION_SERVER_NAME_TYPE_HOSTNAME);
+	    assert(sn->entries[0].name_length == 6);
+	    assert(strcmp (sn->entries[0].name, "server") == 0);
+            has_server_name = true;
+	    break;
+          }
+        case DSK_TLS_EXTENSION_TYPE_KEY_SHARE:
+          {
+            assert(!has_key_share);
+	    DskTlsExtension_KeyShare *ks = (DskTlsExtension_KeyShare *) ext;
+	    assert(ks->n_key_shares == 1);
+dsk_warning("named_group=0x%04x", ks->key_shares[0].named_group);
+	    assert(ks->key_shares[0].named_group == DSK_TLS_NAMED_GROUP_X25519);
+	    assert(ks->key_shares[0].key_exchange_length == 32);
+	    assert(memcmp(ks->key_shares[0].key_exchange_data,
+                          "\x99\x38\x1d\xe5\x60\xe4\xbd\x43"
+                          "\xd2\x3d\x8e\x43\x5a\x7d\xba\xfe"
+                          "\xb3\xc0\x6e\x51\xc1\x3c\xae\x4d"
+                          "\x54\x13\x69\x1e\x52\x9a\xaf\x2c", 32) == 0);
+            has_key_share = true;
+            break;
+          }
+        case DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS:
+          {
+            assert(!has_supported_versions);
+	    DskTlsExtension_SupportedVersions *sv = (DskTlsExtension_SupportedVersions *) ext;
+            assert(sv->n_supported_versions == 1);
+            assert(sv->supported_versions[0] == DSK_TLS_PROTOCOL_VERSION_1_3);
+            has_supported_versions = true;
+            break;
+          }
           //TODO: case DSK_TLS_EXTENSION_SIGNATURE_ALGORITHMS]: payload_len=32
           //TODO: case DSK_TLS_EXTENSION_PSK_KEY_EXCHANGE_MODES]: payload_len=2
           // optional TODO: RECORD_SIZE_LIMIT
 
-          }
         }
     }
   assert(has_supported_groups);
+  assert(has_server_name);
+  assert(has_key_share);
+  assert(has_supported_versions);
 }
 
 static struct 
