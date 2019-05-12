@@ -129,8 +129,15 @@ count_extensions (const uint8_t *at,
   return true;
 }
 
-static inline bool
-is_retry_request(DskTlsHandshake *shake)
+bool
+dsk_tls_handshake_is_server_hello(DskTlsHandshake *shake)
+{
+  return shake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+      && !shake->server_hello.is_retry_request;
+}
+
+bool
+dsk_tls_handshake_is_hello_retry_request(DskTlsHandshake *shake)
 {
   return shake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
       && shake->server_hello.is_retry_request;
@@ -301,7 +308,7 @@ parse_extension (DskTlsHandshake    *under_construction,
         }
       else if (dsk_tls_handshake_is_server_hello (under_construction))
         {
-          ...
+          //...
         }
     break;
 
@@ -322,7 +329,7 @@ parse_extension (DskTlsHandshake    *under_construction,
         //        } ProtocolNameList;
 
         // NOTE: this extension-type was invented for HTTP 2.
-        ...
+        //...
       }
     //TODO:case DSK_TLS_EXTENSION_TYPE_SIGNED_CERTIFICATE_TIMESTAMP:
     //TODO:case DSK_TLS_EXTENSION_TYPE_CLIENT_CERTIFICATE_TYPE:
@@ -398,7 +405,7 @@ parse_extension (DskTlsHandshake    *under_construction,
               at += 4 + len;
             }
         }
-      else if (is_retry_request (under_construction))
+      else if (dsk_tls_handshake_is_hello_retry_request (under_construction))
         {
           if (ext_payload_len != 2)
             {

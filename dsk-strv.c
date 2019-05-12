@@ -126,6 +126,7 @@ char    **dsk_strsplit     (const char *str,
       if (pieces == init_pieces)
         {
           pieces = DSK_NEW_ARRAY (n_pieces + 2, char *);
+          dsk_warning ("n_pieces=%u, pieces=%p", n_pieces, pieces);
           memcpy (pieces, init_pieces, sizeof(char*) * n_pieces);
         }
       else

@@ -19,6 +19,8 @@ void dsk_tls_bignum_multiply (unsigned p_len,
                               const uint32_t *q_words,
                               uint32_t *out);
 
+unsigned dsk_tls_bignum_actual_len (unsigned len, const uint32_t *v);
+
 //
 // Preconditions:
 //

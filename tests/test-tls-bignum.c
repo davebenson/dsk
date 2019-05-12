@@ -80,8 +80,9 @@ test_multiply_full (void)
     const char *b;
     const char *product;
   } tests[] = {
-    { "2", "3", "000000006" },
+    { "2", "3", "6" },
     { "1001", "100001", "100101001"},
+#include "gmp-compare-multiply.generated.c"
   };
 
   for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
@@ -93,12 +94,14 @@ test_multiply_full (void)
       //PR_NUM(A);
       //PR_NUM(B);
       //PR_NUM(product);
-      assert(A->len + B->len == product->len);          // test correctly formed?
+      //assert(A->len + B->len == product->len);          // test correctly formed?
       dsk_tls_bignum_multiply (A->len, A->value, B->len, B->value, result);
+      unsigned len = dsk_tls_bignum_actual_len (A->len + B->len, result);
       //PR_BIGNUM("result 1", A->len + B->len, result);
-      assert(memcmp (product->value, result, 4 * (A->len + B->len)) == 0);
+      assert(memcmp (product->value, result, 4 * len) == 0);
       dsk_tls_bignum_multiply (B->len, B->value, A->len, A->value, result);
-      assert(memcmp (product->value, result, 4 * (A->len + B->len)) == 0);
+      len = dsk_tls_bignum_actual_len (A->len + B->len, result);
+      assert(memcmp (product->value, result, 4 * len) == 0);
       free (A);
       free (B);
       free (product);
