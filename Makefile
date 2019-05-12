@@ -29,6 +29,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dsk-ts0 \
 		tests/test-daemonize \
                 tests/test-crypto \
+                tests/test-strv \
                 tests/test-tls-bignum \
                 tests/test-tls-protocol
 EXAMPLE_PROGRAMS = examples/wikipedia-scanner

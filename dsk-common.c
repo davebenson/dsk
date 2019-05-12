@@ -126,6 +126,7 @@ dsk_memdup (size_t size, const void *ptr)
 char *dsk_strdup_slice (const char *str, const char *end_str)
 {
   unsigned length = end_str - str;
+  dsk_warning ("length=%u [end_str=%p str=%p]",length, end_str, str);
   char *rv = dsk_malloc (length + 1);
   memcpy (rv, str, length);
   rv[length] = '\0';

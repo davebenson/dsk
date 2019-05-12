@@ -1,12 +1,11 @@
-#include <string.h>
 #include "dsk.h"
-#include "dsk-tmp-array-macros.h"
+#include <string.h>
 
 size_t
 dsk_strv_length  (char **strs)
 {
   unsigned i;
-  for (i = 0; strs[i]; i++)
+  for (i = 0; strs[i] != NULL; i++)
     ;
   return i;
 }
@@ -83,23 +82,61 @@ void   dsk_strv_free    (char **strs)
     }
 }
 
+typedef struct OffsetSize OffsetSize;
+struct OffsetSize
+{
+  size_t offset, length;
+};
 char    **dsk_strsplit     (const char *str,
                             const char *sep)
 {
-  DSK_TMP_ARRAY_DECLARE(char *, arr, 128);
+  char *init_pieces[64];
+  char **pieces = init_pieces;
+  unsigned pieces_alloced = DSK_N_ELEMENTS (init_pieces);
+  unsigned n_pieces = 0;
+
+  dsk_warning ("dsk_strsplit: str=%s sep=%s", str,sep);
+
   unsigned sep_len = strlen (sep);
   char *next_sep = strstr (str, sep);
   while (next_sep)
     {
-      char *str = dsk_strdup_slice (str, next_sep);
-      DSK_TMP_ARRAY_APPEND (arr, str);
+      dsk_warning ("str=%s[%p] next_sep=%s[%p]", str,str, next_sep,next_sep);
+      char *substr = dsk_strdup_slice (str, next_sep);
+      dsk_warning ("n_pieces=%u str=%s", n_pieces, str);
+      if (n_pieces == pieces_alloced)
+        {
+          if (pieces == init_pieces)
+            {
+              pieces = DSK_NEW_ARRAY (n_pieces * 2, char *);
+              memcpy (pieces, init_pieces, sizeof (init_pieces));
+            }
+          else
+            {
+              pieces = DSK_RENEW (char *, pieces, n_pieces * 2);
+            }
+          pieces_alloced *= 2;
+        }
+      pieces[n_pieces++] = substr;
       str = next_sep + sep_len;
-      next_sep = strstr (str + sep_len, sep);
+      next_sep = strstr (str, sep);
     }
-  DSK_TMP_ARRAY_APPEND (arr, NULL);
-  char **rv;
-  DSK_TMP_ARRAY_CLEAR_TO_ALLOCATION (arr, rv);
-  return rv;
+  if (n_pieces + 2 > pieces_alloced || pieces == init_pieces)
+    {
+      if (pieces == init_pieces)
+        {
+          pieces = DSK_NEW_ARRAY (n_pieces * 2, char *);
+          memcpy (pieces, init_pieces, sizeof (init_pieces));
+        }
+      else
+        {
+          pieces = DSK_RENEW (char *, pieces, n_pieces + 2);
+        }
+    }
+  pieces[n_pieces++] = dsk_strdup (str);
+  pieces[n_pieces++] = NULL;
+  dsk_warning ("n_pieces=%u length=%u\n", n_pieces, (unsigned) dsk_strv_length (pieces));
+  return pieces;
 }
 
 char **
