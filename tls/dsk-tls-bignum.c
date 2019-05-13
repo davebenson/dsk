@@ -66,6 +66,7 @@ void dsk_tls_bignum_multiply (unsigned p_len,
     }
   assert (carry == 0);
 }
+#if 0
 void dsk_tls_bignum_multiply_samesize (unsigned len,
                               const uint32_t *a_words,
                               const uint32_t *b_words,
@@ -92,6 +93,7 @@ void dsk_tls_bignum_multiply_samesize (unsigned len,
       carry = tmp >> 32;
     }
 }
+#endif
 
 void dsk_tls_bignum_multiply_truncated (unsigned a_len,
                                        const uint32_t *a_words,
@@ -163,6 +165,7 @@ uint32_t dsk_tls_bignum_add_word (unsigned len, uint32_t *v, uint32_t carry)
   return carry;
 }
 
+#if 0
 static uint32_t
 addto (unsigned     len,
        unsigned     inout_extra,
@@ -368,6 +371,179 @@ dsk_tls_bignum_divide  (unsigned x_len,
         }
     }
 }
+#endif
+
+void
+dsk_tls_bignum_divide_1 (unsigned x_len,
+                         const uint32_t *x_words,
+                         uint32_t y,
+                         uint32_t *quotient_out,
+                         uint32_t *remainder_out)
+{
+  uint32_t *remaining = alloca (x_len * 4);
+  memcpy (remaining, x_words, x_len * 4);
+
+  // handle highest digit
+  quotient_out[x_len - 1] = x_words[x_len - 1] / y;
+  remaining[x_len - 1] %= y;
+
+  for (int q_digit = x_len - 2; q_digit >= 0; q_digit--)
+    {
+      uint32_t higher = remaining[q_digit + 1];
+      uint32_t rem = remaining[q_digit];
+      uint64_t v = ((uint64_t) higher << 32) | rem;
+      quotient_out[q_digit] = v / y;
+      remaining[q_digit + 1] = 0;
+      remaining[q_digit] = v % y;
+    }
+  *remainder_out = remaining[0];
+}
+
+static uint32_t
+do_scaled_subtraction (unsigned len,
+                       const uint32_t *sub,
+                       uint32_t *inout,
+                       uint32_t scale)
+{
+  uint32_t borrow = 0;
+  for (unsigned i = 0; i < len; i++)
+    {
+      uint64_t s = (uint64_t)(*sub++) * scale;
+      uint32_t s_lo = s;
+      uint32_t s_hi = s >> 32;
+      uint32_t io = *inout;
+      uint32_t io_m_s_lo = io - s_lo;
+      *inout = io_m_s_lo - borrow;
+      if (*inout > io_m_s_lo)
+        s_hi++;
+      if (io_m_s_lo > io)
+        s_hi++;
+      borrow = s_hi;
+      inout++;
+    }
+  return borrow;
+}
+
+void
+dsk_tls_bignum_divide  (unsigned x_len,
+                        const uint32_t *x_words,
+                        unsigned y_len,
+                        const uint32_t *y_words,
+                        uint32_t *quotient_out,
+                        uint32_t *remainder_out)
+{
+  uint32_t *remaining = alloca (x_len * 4);
+  memcpy (remaining, x_words, x_len * 4);
+
+  // for trial subtractions
+  uint32_t *tmp = alloca (y_len * 4);
+
+  /* Prepare for trial division. */
+  assert(y_len > 0);
+  assert(y_words[y_len - 1] > 0);
+  if (y_len == 1)
+    {
+      dsk_tls_bignum_divide_1 (x_len, x_words, y_words[0], quotient_out, remainder_out);
+      return;
+    }
+
+  //
+  // Compute the high 32-bits of y, not necessarily word-aligned.
+  //
+  // This is used for computing trial divisions to within 1.
+  //
+  uint32_t y_hi = y_words[y_len - 1];
+  uint32_t y_hi_shifted = y_hi;
+  uint32_t shift_in = y_words[y_len - 2];
+  unsigned shift = 0;
+  while ((y_hi_shifted & 0x80000000) == 0)
+    {
+      y_hi_shifted <<= 1;
+      y_hi_shifted |= shift_in >> 31;
+      shift_in <<= 1;
+      shift++;
+    }
+  y_hi_shifted += 1;
+
+  if (x_len == 2 && y_len == 2)
+    {
+      uint64_t X = ((uint64_t)x_words[1] << 32) | x_words[0];
+      uint64_t Y = ((uint64_t)y_words[1] << 32) | y_words[0];
+      uint64_t Q = X / Y;
+      uint64_t R = X % Y;
+      quotient_out[0] = Q;
+      quotient_out[1] = Q >> 32;
+      remainder_out[0] = R;
+      remainder_out[1] = R >> 32;
+      return;
+    }
+
+  int q_digit = x_len - y_len;
+  uint32_t higher = 0;
+  {
+    // handle highest digit
+    uint32_t rem = remaining[q_digit + y_len - 1];
+    if (rem < y_hi)
+      {
+        quotient_out[q_digit] = 0;
+      }
+    else
+      {
+        uint64_t x_shifted = ((uint64_t) rem << shift)
+                           | (remaining[q_digit + y_len - 2] >> (32-shift));
+        uint32_t q = x_shifted / y_hi_shifted;
+        // do scaled subtract from remainder
+        uint32_t borrow = do_scaled_subtraction (y_len, y_words, remaining + (x_len - y_len), q);
+        assert(borrow == 0);
+        // do trial subtraction, use result if borrow not necessary.
+        if (dsk_tls_bignum_subtract_with_borrow (y_len, remaining + (x_len - y_len), y_words, 0, tmp) == 0)
+          {
+            memcpy (remaining + (x_len - y_len), tmp, y_len * 4);
+            q++;
+          }
+        quotient_out[q_digit] = q;
+      }
+  }
+  for (q_digit = x_len - y_len - 1; q_digit >= 0; q_digit--)
+    {
+      uint32_t higher = remaining[q_digit + y_len];
+      uint32_t rem = remaining[q_digit + y_len - 1];
+      if (rem < y_hi && higher == 0)
+        {
+          quotient_out[q_digit] = 0;
+        }
+      else
+        {
+          uint64_t x_shifted = ((uint64_t)higher << (shift+32))
+                             | ((uint64_t) rem << shift)
+                             | ((uint64_t) remaining[q_digit + y_len - 2] >> (32-shift));
+          uint32_t q = x_shifted / y_hi_shifted;
+          // do scaled subtract from remainder
+          uint32_t borrow = do_scaled_subtraction (y_len, y_words, remaining + q_digit, q);
+          assert(borrow <= remaining[q_digit + y_len]);
+          remaining[q_digit + y_len] -= borrow;
+
+          // do trial subtraction, use result if borrow not necessary.
+          int ccc=0;
+          for (;;)
+            {
+            borrow = dsk_tls_bignum_subtract_with_borrow (y_len, remaining + q_digit, y_words, 0, tmp);
+            if (borrow <= remaining[q_digit + y_len])
+              {
+                memcpy (remaining + q_digit, tmp, y_len * 4);
+                assert(remaining[q_digit + y_len] == borrow);
+                remaining[q_digit + y_len] = 0;           // Not necessary
+                q++;
+                ccc++;
+              }
+            else
+              break;
+            }
+          quotient_out[q_digit] = q;
+        }
+    }
+  memcpy (remainder_out, remaining, 4 * y_len);
+}
 
 static void do_shiftleft32(unsigned len,
                            const uint32_t *x,
@@ -490,6 +666,7 @@ do_negate32 (unsigned len, uint32_t *v)
     }
 }
 
+#if 0
 // Compute out = a + scale * b,
 //
 // where out, a, b may be negated,
@@ -528,6 +705,7 @@ add_signed_product (unsigned   len,
       *out_signed = a_signed;   // == b_signed
     }
 }
+#endif
 
 unsigned
 dsk_tls_bignum_actual_len (unsigned len, const uint32_t *v)
@@ -552,7 +730,7 @@ dsk_tls_bignum_negate (unsigned len, const uint32_t *in, uint32_t *out)
   dsk_tls_bignum_add_word (len, out, 1);
 }
 
-void
+bool
 dsk_tls_bignum_modular_inverse (unsigned len,
                                 const uint32_t *x,
                                 const uint32_t *p,
@@ -560,58 +738,71 @@ dsk_tls_bignum_modular_inverse (unsigned len,
 {
   // Let's use the Extended Euclidean Algorithm
   // to compute the inverse of x mod p.
-  uint32_t *r_old = alloca(4 * len), *s_old = alloca(4 * len);
-  uint32_t *r_cur = alloca(4 * len), *s_cur = alloca(4 * len);
+  uint32_t *r_old = alloca(4 * len), *t_old = alloca(4 * len);
+  uint32_t *r_cur = alloca(4 * len), *t_cur = alloca(4 * len);
   uint32_t *quotient = alloca(4 * len), *remainder = alloca(4 * len);
-  uint32_t *s_tmp = alloca(4 * len);
-  bool s_old_is_signed = false, s_cur_is_signed = false, s_tmp_is_signed;
+  uint32_t *t_tmp = alloca(4 * len);
+  bool t_old_is_signed = false, t_cur_is_signed = false, t_tmp_is_signed;
   
-  memcpy (r_old, x, len * 4);
+  memcpy (r_old, p, len * 4);
   unsigned r_old_len = dsk_tls_bignum_actual_len (len, r_old);
-  memcpy (r_cur, p, len * 4);
+  memcpy (r_cur, x, len * 4);
   unsigned r_cur_len = dsk_tls_bignum_actual_len (len, r_cur);
-  memset (s_old, 0, len * 4);
-  memset (s_cur, 0, len * 4);
-  s_old[0] = 1;
+  memset (t_old, 0, len * 4);
+  memset (t_cur, 0, len * 4);
+  t_cur[0] = 1;
 
+unsigned iter = 0;
+      printf("r_0 = ");
+      for (unsigned i = 0; i < r_old_len; i++) printf("%08x ", r_old[i]);
+      printf("\nr_1 = ");
+      for (unsigned i = 0; i < r_cur_len; i++) printf("%08x ", r_cur[i]);
+      printf("\nT_0 = %c", t_old_is_signed);
+      for (unsigned i = 0; i < len; i++) printf("%08x ", t_old[i]);
+      printf("\nT_1 = %c", t_cur_is_signed);
+      for (unsigned i = 0; i < len; i++) printf("%08x ", t_cur[i]);
+      printf("\n\n");
   for (;;)
     {
       unsigned quotient_len = r_old_len - r_cur_len + 1;
       dsk_tls_bignum_divide (r_old_len, r_old, r_cur_len, r_cur, quotient, remainder);
       if (is_zero (r_cur_len, remainder))
         {
-          if (s_cur_is_signed)
+          if (r_cur_len != 1 || r_cur[0] != 1)
+            return false;
+          if (t_cur_is_signed)
             {
-              // x_inv_out = p - s_cur
-              dsk_tls_bignum_subtract_with_borrow (len, p, s_cur, 0, x_inv_out);
+              // x_inv_out = p - t_cur
+              dsk_tls_bignum_subtract_with_borrow (len, p, t_cur, 0, x_inv_out);
             }
           else
-            memcpy (x_inv_out, s_cur, len * 4);
-          return;
+            memcpy (x_inv_out, t_cur, len * 4);
+
+          return true;
         }
 
       //
-      //       s_tmp := s_old - quotient * s_cur
+      //       t_tmp := t_old - quotient * t_cur
       //
-      // First set s_tmp to quotient * s_cur
-      dsk_tls_bignum_multiply_truncated (len, s_cur, quotient_len, quotient, len, s_tmp);
+      // First set t_tmp to quotient * t_cur
+      dsk_tls_bignum_multiply_truncated (len, t_cur, quotient_len, quotient, len, t_tmp);                       // t_tmp has same sign as t_cur
       // Second, perform sign-sensitive subtraction.
-      if (s_old_is_signed == !s_cur_is_signed)
+      if (t_old_is_signed == !t_cur_is_signed)
         {
           // opposite signs, so subtraction becomes addition
-          dsk_tls_bignum_add_with_carry (len, s_tmp, s_old, 0, s_tmp);
-          s_tmp_is_signed = s_old_is_signed;
+          dsk_tls_bignum_add_with_carry (len, t_tmp, t_old, 0, t_tmp);
+          t_tmp_is_signed = t_old_is_signed;
         }
       else
         {
           // same sign, so it's subtraction.
-          // compute s_old - s_tmp; result has opposite sign as s_old
-          s_tmp_is_signed = s_old_is_signed;
-          if (dsk_tls_bignum_subtract_with_borrow (len, s_tmp, s_old, 0, s_tmp))
+          // compute t_old - t_tmp.
+          t_tmp_is_signed = t_old_is_signed;
+          if (dsk_tls_bignum_subtract_with_borrow (len, t_old, t_tmp, 0, t_tmp))
             {
               // result switched signs
-              dsk_tls_bignum_negate (len, s_tmp, s_tmp);
-              s_tmp_is_signed = !s_tmp_is_signed;
+              dsk_tls_bignum_negate (len, t_tmp, t_tmp);
+              t_tmp_is_signed = !t_tmp_is_signed;
             }
         }
 
@@ -625,14 +816,22 @@ dsk_tls_bignum_modular_inverse (unsigned len,
       r_cur = remainder;
       remainder = tmp_ptr;
 
-      // s_old := s_cur
-      // s_cur := s_tmp
-      s_old_is_signed = s_cur_is_signed;
-      s_cur_is_signed = s_tmp_is_signed;
-      tmp_ptr = s_old;
-      s_old = s_cur;
-      s_cur = s_tmp;
-      s_tmp = tmp_ptr;
+      // t_old := t_cur
+      // t_cur := t_tmp
+      t_old_is_signed = t_cur_is_signed;
+      t_cur_is_signed = t_tmp_is_signed;
+      tmp_ptr = t_old;
+      t_old = t_cur;
+      t_cur = t_tmp;
+      t_tmp = tmp_ptr;
+
+      printf("\nq_%u = ", iter+1);
+      for (unsigned i = 0; i < quotient_len; i++) printf("%08x ", quotient[i]);
+      printf("\nr_%u = ", iter+2);
+      for (unsigned i = 0; i < r_cur_len; i++) printf("%08x ", r_cur[i]);
+      printf("\nt_%u = %c", iter+2, t_cur_is_signed?'-':'+');
+      for (unsigned i = 0; i < len; i++) printf("%08x ", t_cur[i]);
+      printf("\n");
     }
 }
 void

@@ -227,6 +227,9 @@ check: all $(TEST_PROGRAMS)
 check-valgrind:
 	$(MAKE) check TEST_RUN_PREFIX='valgrind --show-reachable=yes --leak-check=full --leak-resolution=high'
 
+tests/gen-bignum-test-vectors: tests/gen-bignum-test-vectors.c libdsk.a
+	$(CC) $(CFLAGS) -I$$HOME/brew/include -L$$HOME/brew/lib -L. -o tests/gen-bignum-test-vectors tests/gen-bignum-test-vectors.c -ldsk -lgmp
+
 # HACK
 missing-refs:
 	$(MAKE) all 2>&1 | grep 'undefined reference' | sed -e 's/.*`//;' -e "s/'.*//" | sort -u

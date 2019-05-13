@@ -57,6 +57,54 @@ gen_func__multiply (unsigned n_element, ScheduleElement *elements)
 }
 
 static void
+gen_func__divide (unsigned n_element, ScheduleElement *elements)
+{
+  for (unsigned e = 0; e < n_element; e++)
+    for (unsigned i = 0; i < elements[e].count; i++)
+      {
+        struct N *A = random_N(elements[e].a_len);
+        struct N *B = random_N(elements[e].b_len);
+        __mpz_struct quotient, remainder;
+        mpz_init (&quotient);
+        mpz_init (&remainder);
+        mpz_tdiv_qr (&quotient, &remainder, &A->v, &B->v);
+        printf("{\n  \"");
+        mpz_out_str (stdout, 16, &A->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &B->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &quotient);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &remainder);
+        printf("\"\n},\n");
+      }
+}
+
+static void
+gen_func__inverse (unsigned n_element, ScheduleElement *elements)
+{
+  for (unsigned e = 0; e < n_element; e++)
+    for (unsigned i = 0; i < elements[e].count; i++)
+      {
+      retry:
+        ;
+        struct N *A = random_N(elements[e].a_len);
+        struct N *B = random_N(elements[e].b_len);
+        __mpz_struct inverse;
+        mpz_init (&inverse);
+        if (mpz_invert (&inverse, &A->v, &B->v) == 0)
+          goto retry;
+        printf("{\n  \"");
+        mpz_out_str (stdout, 16, &A->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &B->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &inverse);
+        printf("\"\n},\n");
+      }
+}
+
+static void
 parse_spec (const char *spec,
             unsigned   *n_out,
             ScheduleElement **out)
@@ -83,6 +131,8 @@ static struct {
   GenFunc func;
 } gen_table[] = {
   { "multiply", gen_func__multiply },
+  { "divide", gen_func__divide },
+  { "inverse", gen_func__inverse },
 };
 
 int main(int argc, char **argv)

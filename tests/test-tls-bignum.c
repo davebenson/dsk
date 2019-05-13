@@ -109,6 +109,68 @@ test_multiply_full (void)
     }
 }
 static void
+test_divide_qr (void)
+{
+  struct {
+    const char *a;
+    const char *b;
+    const char *quotient;
+    const char *remainder;
+  } tests[] = {
+    { "7", "3", "2", "1" },
+    { "6", "3", "2", "0" },
+    { "1000", "100", "10", "0" },
+#include "gmp-compare-divide.generated.c"
+  };
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *A = parse_hex (tests[i].a);
+      struct Num *B = parse_hex (tests[i].b);
+      struct Num *quotient = parse_hex (tests[i].quotient);
+      struct Num *remainder = parse_hex (tests[i].remainder);
+      assert(A->len >= B->len);
+      uint32_t *q = malloc(4 * (A->len - B->len + 1));
+      uint32_t *r = malloc(4 * B->len);
+      //PR_NUM(A);
+      //PR_NUM(B);
+      //PR_NUM(quotient);
+      //PR_NUM(remainder);
+      //assert(A->len + B->len == product->len);          // test correctly formed?
+      dsk_tls_bignum_divide (A->len, A->value, B->len, B->value, q, r);
+      unsigned len_q = dsk_tls_bignum_actual_len (A->len - B->len + 1, q);
+      unsigned len_r = dsk_tls_bignum_actual_len (B->len, r);
+      //PR_BIGNUM("result 1", A->len + B->len, result);
+      if (len_q == 0)
+        {
+          assert(quotient->len == 1);
+          assert(quotient->value[0] == 0);
+        }
+      else
+        {
+          assert(len_q == quotient->len);
+          assert(memcmp (quotient->value, q, 4 * len_q) == 0);
+        }
+      if (len_r == 0)
+        {
+          assert(remainder->len == 1);
+          assert(remainder->value[0] == 0);
+        }
+      else
+        {
+          assert(len_r == remainder->len);
+          assert(memcmp (remainder->value, r, 4 * len_r) == 0);
+        }
+      assert(memcmp (quotient->value, q, 4 * len_q) == 0);
+      free (A);
+      free (B);
+      free (quotient);
+      free (remainder);
+      free (q);
+      free (r);
+    }
+}
+
+static void
 test_compare (void)
 {
   struct {
@@ -137,6 +199,64 @@ test_compare (void)
     }
 }
 
+static void
+test_modular_invert (void)
+{
+  struct {
+    const char *x;
+    const char *p;
+    const char *inverse;
+  } tests[] = {
+    { "2", "3" , "2" },
+    { "2", "100000000000000000000001", NULL },
+    { "3", "100000000000000000000001", NULL },
+    { "1", "100000000000000000000001", NULL },
+    { "9999999999999999", "10000000000000000000000000", NULL },
+#include "gmp-compare-inverse.generated.c"
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *X = parse_hex (tests[i].x);
+      struct Num *P = parse_hex (tests[i].p);
+      uint32_t *in = malloc(4 * P->len);
+      memset (in, 0, 4 * P->len);
+      memcpy (in, X->value, 4 * X->len);
+      uint32_t *out = malloc(4 * P->len);
+      PR_BIGNUM("X", P->len, in);
+      PR_NUM(P);
+      if (!dsk_tls_bignum_modular_inverse (P->len, in, P->value, out))
+        assert(false);
+      PR_BIGNUM("inverse", P->len, out);
+
+      if (tests[i].inverse != NULL)
+        {
+          struct Num *INV = parse_hex (tests[i].inverse);
+          unsigned out_len = dsk_tls_bignum_actual_len (P->len, out);
+          PR_NUM(INV);
+          assert (INV->len == out_len);
+          assert (memcmp (INV->value, out, out_len * 4) == 0);
+        }
+
+      uint32_t *xinv = malloc(4 * (P->len + P->len));
+      dsk_tls_bignum_multiply (P->len, in, P->len, out, xinv);
+      PR_BIGNUM("product", P->len * 2, xinv);
+      uint32_t *q = malloc(4 * (P->len + 1));
+      uint32_t *r = malloc(4 * P->len);
+      dsk_tls_bignum_divide (P->len * 2, xinv, P->len, P->value, q, r);
+      assert(r[0] == 1);
+      for (unsigned i = 1; i < P->len; i++)
+        assert(r[i] == 0);
+      free(X);
+      free(P);
+      free(in);
+      free(out);
+      free(xinv);
+      free(q);
+      free(r);
+    }
+}
+
 static struct 
 {
   const char *name;
@@ -145,7 +265,9 @@ static struct
 {
   { "Multiplicative inverse mod 1<<32", test_uint32_inverse },
   { "Bignum Multiply", test_multiply_full },
+  { "Bignum Divide", test_divide_qr },
   { "Bignum Compare", test_compare },
+  { "Bignum Modular Invert", test_modular_invert },
 };
 
 
