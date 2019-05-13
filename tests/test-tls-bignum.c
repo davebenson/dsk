@@ -223,24 +223,19 @@ test_modular_invert (void)
       memset (in, 0, 4 * P->len);
       memcpy (in, X->value, 4 * X->len);
       uint32_t *out = malloc(4 * P->len);
-      PR_BIGNUM("X", P->len, in);
-      PR_NUM(P);
       if (!dsk_tls_bignum_modular_inverse (P->len, in, P->value, out))
         assert(false);
-      PR_BIGNUM("inverse", P->len, out);
 
       if (tests[i].inverse != NULL)
         {
           struct Num *INV = parse_hex (tests[i].inverse);
           unsigned out_len = dsk_tls_bignum_actual_len (P->len, out);
-          PR_NUM(INV);
           assert (INV->len == out_len);
           assert (memcmp (INV->value, out, out_len * 4) == 0);
         }
 
       uint32_t *xinv = malloc(4 * (P->len + P->len));
       dsk_tls_bignum_multiply (P->len, in, P->len, out, xinv);
-      PR_BIGNUM("product", P->len * 2, xinv);
       uint32_t *q = malloc(4 * (P->len + 1));
       uint32_t *r = malloc(4 * P->len);
       dsk_tls_bignum_divide (P->len * 2, xinv, P->len, P->value, q, r);
