@@ -103,17 +103,79 @@ gen_func__inverse (unsigned n_element, ScheduleElement *elements)
         printf("\"\n},\n");
       }
 }
+static void
+gen_func__modular_reduce (unsigned n_element, ScheduleElement *elements)
+{
+  for (unsigned e = 0; e < n_element; e++)
+    for (unsigned i = 0; i < elements[e].count; i++)
+      {
+        struct N *A = random_N(elements[e].a_len);
+        struct N *B = random_N(elements[e].b_len);
+        if (mpz_even_p (&B->v))
+          mpz_add_ui (&B->v, &B->v, 1);
+        for (;;)
+          {
+            if (mpz_probab_prime_p (&B->v, 50))
+              break;
+            mpz_add_ui (&B->v, &B->v, 2);
+          }
+        __mpz_struct AmodB;
+        mpz_init (&AmodB);
+        mpz_mod (&AmodB, &A->v, &B->v);
+        printf("{\n  \"");
+        mpz_out_str (stdout, 16, &A->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &B->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &AmodB);
+        printf("\"\n},\n");
+      }
+}
+static void
+gen_func__modular_multiply (unsigned n_element, ScheduleElement *elements)
+{
+  for (unsigned e = 0; e < n_element; e++)
+    for (unsigned i = 0; i < elements[e].count; i++)
+      {
+        // b_len is unused here
+        struct N *A = random_N(elements[e].a_len);
+        struct N *B = random_N(elements[e].a_len);
+        struct N *P = random_N(elements[e].a_len);
+        if (mpz_even_p (&P->v))
+          mpz_add_ui (&P->v, &P->v, 1);
+        for (;;)
+          {
+            if (mpz_probab_prime_p (&P->v, 50))
+              break;
+            mpz_add_ui (&P->v, &P->v, 2);
+          }
+        mpz_mod (&A->v, &A->v, &P->v);
+        mpz_mod (&B->v, &B->v, &P->v);
+        __mpz_struct ABmodP;
+        mpz_init (&ABmodP);
+        mpz_mul (&ABmodP, &A->v, &B->v);
+        mpz_mod (&ABmodP, &ABmodP, &P->v);
+        printf("{\n  \"");
+        mpz_out_str (stdout, 16, &A->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &B->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &P->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &ABmodP);
+        printf("\"\n},\n");
+      }
+}
 
 static void
 parse_spec (const char *spec,
             unsigned   *n_out,
             ScheduleElement **out)
 {
-  printf("parse_spec: %s\n", spec);
+  printf("// parse_spec: %s\n", spec);
   char **pieces = dsk_strsplit (spec, ",");
   *n_out = dsk_strv_length (pieces);
   *out = DSK_NEW_ARRAY (*n_out, ScheduleElement);
-  printf("parse_spec: n=%u\n",*n_out);
   for (unsigned i = 0; i < *n_out; i++)
     {
       unsigned count, alen, blen;
@@ -133,6 +195,8 @@ static struct {
   { "multiply", gen_func__multiply },
   { "divide", gen_func__divide },
   { "inverse", gen_func__inverse },
+  { "modular_reduce", gen_func__modular_reduce },
+  { "modular_multiply", gen_func__modular_multiply },
 };
 
 int main(int argc, char **argv)

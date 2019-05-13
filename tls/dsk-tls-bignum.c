@@ -806,4 +806,5 @@ void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
   uint32_t *padded = alloca (4 * info->len*2);
   memcpy (padded, in, 4 * info->len);
   memset (padded + 4 * info->len, 0, 4 * info->len);
+  montgomery_reduce (info, padded, out);
 }

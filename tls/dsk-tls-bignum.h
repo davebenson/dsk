@@ -82,6 +82,9 @@ typedef struct {
 } DskTlsMontgomeryInfo;
 
 
+void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
+                                    unsigned len,
+                                    const uint32_t *N);
 void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
                                    const uint32_t       *in,
                                    uint32_t             *out_mont);

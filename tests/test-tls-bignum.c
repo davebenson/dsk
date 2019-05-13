@@ -252,6 +252,82 @@ test_modular_invert (void)
     }
 }
 
+static void
+test_barrett_mu (void)
+{
+  static struct {
+    const char *big;
+    const char *modulus;
+    const char *mod;
+  } tests[] = {
+#include "gmp-compare-modular-reduce.generated.c"
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *big = parse_hex (tests[i].big);
+      struct Num *modulus = parse_hex (tests[i].modulus);
+      struct Num *mod = parse_hex (tests[i].mod);
+      uint32_t *in = malloc(4 * (modulus->len * 2));
+      uint32_t *mu = malloc(4 * (modulus->len + 2));
+      uint32_t *out = malloc(4 * modulus->len);
+      dsk_tls_bignum_compute_barrett_mu (modulus->len, modulus->value, mu);
+      memcpy (in, big->value, big->len * 4);
+      memset (in + big->len, 0, 4 * (modulus->len * 2 - big->len));
+      dsk_tls_bignum_modulus_with_barrett_mu (modulus->len * 2, in,
+                                              modulus->len, modulus->value,
+                                              mu, out);
+      unsigned out_len = dsk_tls_bignum_actual_len (modulus->len, out);
+      assert(out_len == mod->len);
+      assert(memcmp(mod->value, out, out_len * 4) == 0);
+
+      printf("bm: out_len=%u\n", out_len);
+
+      free(big);
+      free(modulus);
+      free(mod);
+      free(in);
+      free(mu);
+      free(out);
+    }
+}
+
+static void
+test_montgomery_multiply (void)
+{
+  static struct {
+    const char *a;
+    const char *b;
+    const char *modulus;
+    const char *product_mod;
+  } tests[] = {
+#include "gmp-compare-modular-multiply.generated.c"
+  };
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *A = parse_hex (tests[i].a);
+      struct Num *B = parse_hex (tests[i].b);
+      struct Num *MOD = parse_hex (tests[i].modulus);
+      struct Num *PM = parse_hex (tests[i].product_mod);
+      uint32_t *Ma = malloc(MOD->len * 4);
+      uint32_t *Mb = malloc(MOD->len * 4);
+      uint32_t *Mout = malloc(MOD->len * 4);
+      DskTlsMontgomeryInfo info;
+      dsk_tls_montgomery_info_init (&info, MOD->len, MOD->value);
+      memcpy (Ma, A->value, A->len * 4);
+      memset (Ma + A->len, 0, (MOD->len - A->len) * 4);
+      dsk_tls_bignum_to_montgomery (&info, Ma, Ma);
+      memcpy (Mb, B->value, B->len * 4);
+      memset (Mb + B->len, 0, (MOD->len - B->len) * 4);
+      dsk_tls_bignum_to_montgomery (&info, Mb, Mb);
+      dsk_tls_bignum_multiply_montgomery (&info, Ma, Mb, Mout);
+      dsk_tls_bignum_from_montgomery (&info, Mout, Mout);
+      unsigned out_len = dsk_tls_bignum_actual_len (MOD->len, Mout);
+      assert(out_len == PM->len);
+      assert(memcmp(Mout, PM->value, PM->len * 4) == 0);
+    }
+}
+
 static struct 
 {
   const char *name;
@@ -263,6 +339,8 @@ static struct
   { "Bignum Divide", test_divide_qr },
   { "Bignum Compare", test_compare },
   { "Bignum Modular Invert", test_modular_invert },
+  { "Barrett's method", test_barrett_mu },
+  { "Montgomery multiplication", test_montgomery_multiply },
 };
 
 
