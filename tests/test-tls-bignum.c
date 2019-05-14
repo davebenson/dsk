@@ -295,6 +295,22 @@ test_barrett_mu (void)
 static void
 test_montgomery_multiply (void)
 {
+  {
+    DskTlsMontgomeryInfo info;
+    uint32_t thirteen = 13;
+    dsk_tls_montgomery_info_init (&info, 1, &thirteen);
+    assert(info.len == 1);
+    assert(info.N[0] == 13);
+    uint32_t tmp[2];
+    tmp[0] = 0;
+    tmp[1] = 12;
+    printf("%08x\n", info.Nprime * 13);
+    uint32_t out[1];
+    dsk_tls_bignum_montgomery_reduce (&info, tmp, out);
+    printf("out[0]=%08x\n",out[0]);
+    assert(out[0] == 12);
+  }
+
   static struct {
     const char *a;
     const char *b;
@@ -312,6 +328,10 @@ test_montgomery_multiply (void)
       uint32_t *Ma = malloc(MOD->len * 4);
       uint32_t *Mb = malloc(MOD->len * 4);
       uint32_t *Mout = malloc(MOD->len * 4);
+      PR_NUM(A);
+      PR_NUM(B);
+      PR_NUM(MOD);
+      PR_NUM(PM);
       DskTlsMontgomeryInfo info;
       dsk_tls_montgomery_info_init (&info, MOD->len, MOD->value);
       memcpy (Ma, A->value, A->len * 4);
@@ -320,8 +340,12 @@ test_montgomery_multiply (void)
       memcpy (Mb, B->value, B->len * 4);
       memset (Mb + B->len, 0, (MOD->len - B->len) * 4);
       dsk_tls_bignum_to_montgomery (&info, Mb, Mb);
+      dsk_tls_bignum_from_montgomery (&info, Ma, Mout);
+      for (unsigned i = 0; i < info.len; i++)
+        printf(" %08x/%08x", A->value[i], Mout[i]);
+        printf("\n");
+
       dsk_tls_bignum_multiply_montgomery (&info, Ma, Mb, Mout);
-      dsk_tls_bignum_from_montgomery (&info, Mout, Mout);
       unsigned out_len = dsk_tls_bignum_actual_len (MOD->len, Mout);
       assert(out_len == PM->len);
       assert(memcmp(Mout, PM->value, PM->len * 4) == 0);

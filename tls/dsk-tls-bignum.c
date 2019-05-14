@@ -271,7 +271,6 @@ dsk_tls_bignum_divide  (unsigned x_len,
     }
 
   int q_digit = x_len - y_len;
-  uint32_t higher = 0;
   {
     // handle highest digit
     uint32_t rem = remaining[q_digit + y_len - 1];
@@ -658,16 +657,13 @@ void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
 
   // Rred < N and Rred == R (mod N).
   // Which is really Rred = R - n.
-  uint32_t *Rred = alloca (4 * len);
-  memset (Rred, 0, 4 * len);
-  dsk_tls_bignum_subtract_with_borrow (len, Rred, N, 0, Rred);
-  uint32_t q;
-  dsk_tls_bignum_divide (len, Rred, len, N, &q, Rred);
+  //uint32_t *Rred = alloca (4 * len);
+  //dsk_tls_bignum_negate (len, N, Rred);
+  //uint32_t q;
+  //dsk_tls_bignum_divide (len, Rred, len, N, &q, Rred);
 
-#if 0
-  info->Rinv = malloc (sizeof (uint32_t) * len);
-  dsk_tls_bignum_modular_inverse (len, Rred, N, (uint32_t *) info->Rinv);
-#endif
+  //info->Rinv = malloc (sizeof (uint32_t) * len);
+  //dsk_tls_bignum_modular_inverse (len, Rred, N, (uint32_t *) info->Rinv);
 
   // Compute multiplicative inverse of -N (mod 2^32)  == N_prime
   uint32_t mNmodb = -N[0];
@@ -753,38 +749,63 @@ void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
   memcpy(q + info->len, in, info->len * 4);
 
   // mod(q) using Barrett's method
-  dsk_tls_bignum_modulus_with_barrett_mu (info->len * 2, q, info->len, info->N, info->barrett_mu, out);
+  dsk_tls_bignum_modulus_with_barrett_mu (info->len * 2, q,
+                                          info->len, info->N,
+                                          info->barrett_mu, out);
 }
+
+// Compute
+//      addto += scale * in
+// returning carry word.
+uint32_t
+dsk_tls_bignum_multiply_word_add (unsigned len,
+                                  const uint32_t *in,
+                                  uint32_t scale,
+                                  uint32_t *addto)
+{
+  uint32_t carry = 0;
+  for (unsigned i = 0; i < len; i++)
+    {
+      uint64_t prod = (uint64_t) scale * *in++ + carry + *addto;
+      carry = prod >> 32;
+      *addto++ = prod;
+    }
+  return carry;
+}
+
 
 // big <= info->N * R = info->N << info->R_log2.
 // out == big * R^{-1} (mod N).
-static void
-montgomery_reduce (DskTlsMontgomeryInfo *info,
-                   uint32_t             *big,
-                   uint32_t             *out)
+void
+dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
+                                  uint32_t             *T,
+                                  uint32_t             *out)
 {
   unsigned A_len = 2 * info->len + 1;
   uint32_t *A = alloca (4 * A_len);
-  memcpy (A, big, 4 * 2 * info->len);
+  memcpy (A, T, 4 * 2 * info->len);
   A[2 * info->len] = 0;
-  uint32_t *um = alloca (4 * (info->len + 1));
   for (unsigned i = 0; i < info->len; i++)
     {
       uint32_t u = A[i] * info->Nprime;
-      dsk_tls_bignum_multiply (1, &u, info->len, info->N, um);
-      if (dsk_tls_bignum_add_with_carry (info->len + 1, A + i, um, 0, A + i))
-        {
-          unsigned carry_start = i + info->len + 1;
-          dsk_tls_bignum_add_word (A_len - carry_start, A + carry_start, 1);
-        }
+      printf("u=%08x A[%u]=%08x Nprime=%08x\n", u, i,A[i], info->Nprime);
+      uint32_t carry = dsk_tls_bignum_multiply_word_add (info->len, info->N, u, A + i);
+      dsk_tls_bignum_add_word (A_len - i - info->len, A + i + info->len, carry);
     }
+
+printf("A =");
+  for (unsigned i = 0; i < A_len; i++)
+    printf(" %08x", A[i]);
+    printf("\n");
 
   A += info->len;
   A_len -= info->len;
   assert (A[A_len - 1] <= 1);
-  if (A[A_len - 1] == 1 || dsk_tls_bignum_compare (info->len, A, info->N) >= 0)
+  if (A[A_len - 1] == 1 || dsk_tls_bignum_compare (info->len, A, info->N) >= 0) {
     dsk_tls_bignum_subtract_with_borrow (info->len, A, info->N, 0, out);
-  else
+    printf("subtracted from A... out =");
+    for(unsigned i =0; i < info->len;i++)printf(" %08x",out[i]);printf("\n");
+  } else
     memcpy (out, A, info->len * 4);
 }
 
@@ -796,7 +817,7 @@ dsk_tls_bignum_multiply_montgomery(DskTlsMontgomeryInfo *info,
 {
   uint32_t *product = alloca (4 * info->len*2);
   dsk_tls_bignum_multiply (info->len, a, info->len, b, product);
-  montgomery_reduce (info, product, out);
+  dsk_tls_bignum_montgomery_reduce (info, product, out);
 }
 
 void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
@@ -806,5 +827,5 @@ void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
   uint32_t *padded = alloca (4 * info->len*2);
   memcpy (padded, in, 4 * info->len);
   memset (padded + 4 * info->len, 0, 4 * info->len);
-  montgomery_reduce (info, padded, out);
+  dsk_tls_bignum_montgomery_reduce (info, padded, out);
 }

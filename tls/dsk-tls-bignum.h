@@ -71,7 +71,7 @@ typedef struct {
   // "R" in the Montgomery reduction, etc, is 1 << (32 * len).
 
   // a number such that Rinv * R == 1 (mod N).
-  const uint32_t *Rinv;
+  //const uint32_t *Rinv;
 
   // a number such that N*Nprime = -1 (mod R)
   uint32_t Nprime;
@@ -102,6 +102,10 @@ void dsk_tls_bignum_from_montgomery
                                    const uint32_t       *in_mont,
                                    uint32_t             *out);
 
+void
+dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
+                                  uint32_t             *T,
+                                  uint32_t             *out);
 //
 // Compute base^exponent (mod info->modulus).
 //
