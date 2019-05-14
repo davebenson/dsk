@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 #include "../dsk.h"
 
 /* dummy server configuration */
@@ -36,11 +37,13 @@ handle_timeout (void *data)
 
 
 static dsk_boolean
-handle_kill_signal  (const char *arg_name,
-                     const char *arg_value,
-                     void       *callback_data,
-                     DskError  **error)
+handle_arg_kill_signal  (const char *arg_name,
+                         const char *arg_value,
+                         void       *callback_data,
+                         DskError  **error)
 {
+  DSK_UNUSED(arg_name);
+
   // is number?
   char *end;
   long v = strtol (arg_value, &end, 0);
@@ -84,7 +87,7 @@ int main(int argc, char **argv)
   dsk_cmdline_add_string ("hello", "what to print", "MESSAGE",
                         0, &cmdline_hello);
   dsk_cmdline_add_func ("kill-signal", "signal to raise prior instead of exiting", "SIGNAL",
-                        0, handle_kill_signal, &cmdline_terminate_signal);
+                        0, handle_arg_kill_signal, &cmdline_terminate_signal);
                         
   dsk_daemon_add_cmdline_args (DSK_TRUE);
   dsk_cmdline_process_args (&argc, &argv);

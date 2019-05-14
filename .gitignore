@@ -5,3 +5,5 @@ mk-codepage
 tests/*.dSYM
 programs/*.dSYM
 examples/generated
+programs/dsk-make-ffdhe-montgomery-info
+

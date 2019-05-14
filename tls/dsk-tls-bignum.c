@@ -245,7 +245,7 @@ dsk_tls_bignum_divide  (unsigned x_len,
   // This is used for computing trial divisions to within 1.
   //
   uint32_t y_hi = y_words[y_len - 1];
-  uint32_t y_hi_shifted = y_hi;
+  uint64_t y_hi_shifted = y_hi;
   uint32_t shift_in = y_words[y_len - 2];
   unsigned shift = 0;
   while ((y_hi_shifted & 0x80000000) == 0)
@@ -255,6 +255,9 @@ dsk_tls_bignum_divide  (unsigned x_len,
       shift_in <<= 1;
       shift++;
     }
+
+  // this +1 can cause y_hi_shifted to overflow into 1<<32,
+  // so y_hi_shifted must be a uint64.
   y_hi_shifted += 1;
 
   if (x_len == 2 && y_len == 2)
@@ -788,24 +791,20 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
   for (unsigned i = 0; i < info->len; i++)
     {
       uint32_t u = A[i] * info->Nprime;
-      printf("u=%08x A[%u]=%08x Nprime=%08x\n", u, i,A[i], info->Nprime);
       uint32_t carry = dsk_tls_bignum_multiply_word_add (info->len, info->N, u, A + i);
+      assert(A[i] == 0);
       dsk_tls_bignum_add_word (A_len - i - info->len, A + i + info->len, carry);
     }
 
-printf("A =");
-  for (unsigned i = 0; i < A_len; i++)
-    printf(" %08x", A[i]);
-    printf("\n");
-
   A += info->len;
   A_len -= info->len;
-  assert (A[A_len - 1] <= 1);
-  if (A[A_len - 1] == 1 || dsk_tls_bignum_compare (info->len, A, info->N) >= 0) {
-    dsk_tls_bignum_subtract_with_borrow (info->len, A, info->N, 0, out);
-    printf("subtracted from A... out =");
-    for(unsigned i =0; i < info->len;i++)printf(" %08x",out[i]);printf("\n");
-  } else
+  assert (A[info->len] <= 1);
+  if (A[info->len] == 1
+   || dsk_tls_bignum_compare (info->len, A, info->N) >= 0)
+    {
+      dsk_tls_bignum_subtract_with_borrow (info->len, A, info->N, 0, out);
+    }
+  else
     memcpy (out, A, info->len * 4);
 }
 
@@ -826,6 +825,6 @@ void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
 {
   uint32_t *padded = alloca (4 * info->len*2);
   memcpy (padded, in, 4 * info->len);
-  memset (padded + 4 * info->len, 0, 4 * info->len);
+  memset (padded + info->len, 0, 4 * info->len);
   dsk_tls_bignum_montgomery_reduce (info, padded, out);
 }

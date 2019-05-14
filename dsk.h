@@ -130,7 +130,9 @@
 #include "tls/dsk-hmac.h"
 #include "tls/dsk-hkdf.h"
 #include "tls/dsk-tls-bignum.h"
+#include "tls/dsk-tls-ffdhe.h"
 #include "tls/dsk-tls-protocol.h"
+#include "tls/dsk-tls-key-share.h"
 #include "tls/dsk-tls-connection.h"
 
 #ifdef DSK_INCLUDE_TS0

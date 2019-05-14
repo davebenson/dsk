@@ -116,6 +116,7 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
 void dsk_tls_bignum_exponent_montgomery
                                   (DskTlsMontgomeryInfo *info,
                                    uint32_t             *base,
+                                   unsigned              exponent_len,
                                    uint32_t             *exponent,
                                    uint32_t             *out);
 

@@ -8,6 +8,13 @@
  * since we care about portability.
  */
 
+/* This code is relatively low-level,
+ * generic key-share implementations should
+ * probably use DskKeyShareMethod to handle
+ * a range of options instead.
+ */
+
+
 DSK_INLINE_FUNC void dsk_curve25519_random_to_private (uint8_t *random_to_private);
 
 void dsk_curve25519_private_to_public (const uint8_t *private_key,

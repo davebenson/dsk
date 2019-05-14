@@ -32,7 +32,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
                 tests/test-strv \
                 tests/test-tls-bignum \
                 tests/test-tls-protocol
-EXAMPLE_PROGRAMS = examples/wikipedia-scanner
+EXAMPLE_PROGRAMS = 
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
            programs/dsk-octet-filter programs/dsk-make-xml-binding \
 	   programs/dsk-ifconfig programs/dsk-make-json-binding \
@@ -55,8 +55,8 @@ build-examples: example-build-dependencies $(EXAMPLE_PROGRAMS)
 EXTRA_PROGRAMS = programs/make-validation-test-data
 extra: $(EXTRA_PROGRAMS)
 
-DEP_CFLAGS := `pkg-config --cflags openssl`
-DEP_LIBS := `pkg-config --libs openssl`
+#DEP_CFLAGS := `pkg-config --cflags openssl`
+#DEP_LIBS := `pkg-config --libs openssl`
 
 full: all extra
 
@@ -127,6 +127,9 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-hkdf.o \
           tls/dsk-tls-protocol.o \
           tls/dsk-tls-bignum.o \
+          tls/dsk-tls-ffdhe.o \
+          tls/dsk-tls-ffdhe-groups.o \
+          tls/dsk-tls-key-share.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \
@@ -183,19 +186,6 @@ codepages: mk-codepage Makefile
 	done
 	rm -rf codepages
 	mv codepages.tmp codepages
-
-tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c: \
-	tests/xml-binding-ns/my.test programs/dsk-make-xml-binding
-	@test -d tests/generated || mkdir tests/generated
-	programs/dsk-make-xml-binding --namespace=my.test \
-		--search-dotted=tests/xml-binding-ns \
-		--output-basename=tests/generated/xml-binding-test
-examples/generated/wikiformats.h examples/generated/wikiformats.c: \
-	examples/wikiformats programs/dsk-make-xml-binding
-	@test -d examples/generated || mkdir examples/generated
-	programs/dsk-make-xml-binding --namespace=wikiformats \
-		--search-dotted=examples \
-		--output-basename=examples/generated/wikiformats
 
 test-build-dependencies: \
 	tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c
