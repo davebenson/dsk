@@ -118,9 +118,6 @@
 #include "dsk-config.h"
 #include "dsk-logger.h"
 
-#include "dsk-table.h"
-#include "dsk-table-file.h"
-
 /* --- crypto --- */
 #include "tls/dsk-aes.h"
 #include "tls/dsk-block-cipher.h"

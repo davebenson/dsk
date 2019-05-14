@@ -22,8 +22,6 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-pattern-0 \
 		tests/test-xml-validation-suite \
 		tests/test-xml-binding-0 \
-		tests/test-table-file-0 \
-		tests/test-table-0 \
 		tests/test-json-0 \
 		tests/test-ctoken \
 		tests/test-dsk-ts0 \
@@ -115,9 +113,6 @@ libdsk.a: dsk-inlines.o \
 	  dsk-daemon.o \
 	  dsk-file-util.o dsk-path.o dsk-pattern.o dsk-dir.o \
 	  dsk-logger.o \
-	  dsk-table-file-trivial.o \
-	  dsk-table-checkpoint-trivial.o \
-	  dsk-table.o \
 	  dsk-ts0.o dsk-ts0-builtins.o \
           tls/dsk-aes.o \
           tls/dsk-aead-gcm.o \
