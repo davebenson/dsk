@@ -53,6 +53,32 @@ dsk_tls_extension_type_name(DskTlsExtensionType type)
     }
 }
 
+const char *dsk_tls_signature_scheme_name (DskTlsSignatureScheme scheme)
+{
+  switch (scheme)
+    {
+#define WRITE_CASE(shortname) case DSK_TLS_SIGNATURE_SCHEME_##shortname: return #shortname
+      WRITE_CASE(RSA_PKCS1_SHA256);
+      WRITE_CASE(RSA_PKCS1_SHA384);
+      WRITE_CASE(RSA_PKCS1_SHA512);
+      WRITE_CASE(ECDSA_SECP256R1_SHA256);
+      WRITE_CASE(ECDSA_SECP384R1_SHA384);
+      WRITE_CASE(ECDSA_SECP521R1_SHA512);
+      WRITE_CASE(RSA_PSS_RSAE_SHA256);
+      WRITE_CASE(RSA_PSS_RSAE_SHA384);
+      WRITE_CASE(RSA_PSS_RSAE_SHA512);
+      WRITE_CASE(ED25519);
+      WRITE_CASE(ED448);
+      WRITE_CASE(RSA_PSS_PSS_SHA256);
+      WRITE_CASE(RSA_PSS_PSS_SHA384);
+      WRITE_CASE(RSA_PSS_PSS_SHA512);
+      WRITE_CASE(RSA_PKCS1_SHA1);
+      WRITE_CASE(ECDSA_SHA1);
+#undef WRITE_CASE
+      default: return "*unknown signature scheme*";
+    }
+}
+
 DskTlsRecordHeaderParseResult
 dsk_tls_parse_record_header (DskBuffer               *buffer)
 {
@@ -313,7 +339,21 @@ parse_extension (DskTlsHandshake    *under_construction,
     break;
 
     //TODO:case DSK_TLS_EXTENSION_TYPE_USE_SRTP:
-    //TODO:case DSK_TLS_EXTENSION_TYPE_HEARTBEAT:
+    case DSK_TLS_EXTENSION_TYPE_HEARTBEAT:
+      {
+        if (ext_payload_len != 1)
+          {
+            *error = dsk_error_new ("missized Heartbeat extension");
+            return NULL;
+          }
+        if (ext_payload[0] != 1 && ext_payload[0] != 2)
+          {
+            *error = dsk_error_new ("malformed Heartbeat extension");
+            return NULL;
+          }
+        ext->heartbeat.mode = ext_payload[0];
+        return ext;
+      }
     case DSK_TLS_EXTENSION_TYPE_APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
       {
         // RFC 7301, Section 3.1.
@@ -329,14 +369,156 @@ parse_extension (DskTlsHandshake    *under_construction,
         //        } ProtocolNameList;
 
         // NOTE: this extension-type was invented for HTTP 2.
-        //...
+        if (ext_payload_len < 4)
+          {
+            *error = dsk_error_new ("too short ALPN extension");
+            return NULL;
+          }
+        unsigned pnl_size = dsk_uint16be_parse (ext_payload);
+        const uint8_t *at = ext_payload + 2;
+        const uint8_t *end = at + pnl_size;
+        unsigned n = 0;
+        while (at < end)
+          {
+            if (at + (unsigned)*at + 1 > end)
+              {
+                *error = dsk_error_new ("malformed ALPN extension");
+                return NULL;
+              }
+            at += (unsigned)*at + 1;
+            n++;
+          }
+        at = ext_payload + 2;
+        DskTlsExtension_ApplicationLayerProtocolNegotiation *alpn = &ext->alpn;
+        alpn->n_protocols = n;
+        alpn->protocols = dsk_mem_pool_alloc (pool, n * sizeof (DskTlsExtension_ProtocolName));
+        for (unsigned i = 0; i < n; i++)
+          {
+            unsigned name_len = *at++;
+            alpn->protocols[i].length = name_len;
+            char *name = dsk_mem_pool_alloc_unaligned (pool, name_len + 1);
+            memcpy (name, at, name_len);
+            name[name_len] = 0;
+            alpn->protocols[i].name = name;
+          }
+        break;
       }
     //TODO:case DSK_TLS_EXTENSION_TYPE_SIGNED_CERTIFICATE_TIMESTAMP:
     //TODO:case DSK_TLS_EXTENSION_TYPE_CLIENT_CERTIFICATE_TYPE:
     //TODO:case DSK_TLS_EXTENSION_TYPE_SERVER_CERTIFICATE_TYPE:
     //TODO:case DSK_TLS_EXTENSION_TYPE_PADDING:
-    //TODO:case DSK_TLS_EXTENSION_TYPE_PRE_SHARED_KEY:
-    //TODO:case DSK_TLS_EXTENSION_TYPE_EARLY_DATA:
+
+
+     // From RFC 8446 4.2.11:
+     //
+     //  struct {
+     //      opaque identity<1..2^16-1>;
+     //      uint32 obfuscated_ticket_age;
+     //  } PskIdentity;
+     //
+     //  opaque PskBinderEntry<32..255>;
+     //
+     //  struct {
+     //      PskIdentity identities<7..2^16-1>;
+     //      PskBinderEntry binders<33..2^16-1>;
+     //  } OfferedPsks;
+     //
+     //  struct {
+     //      select (Handshake.msg_type) {
+     //          case client_hello: OfferedPsks;
+     //          case server_hello: uint16 selected_identity;
+     //      };
+     //  } PreSharedKeyExtension;
+
+    case DSK_TLS_EXTENSION_TYPE_PRE_SHARED_KEY:
+      if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO)
+        {
+          unsigned n_identities = 0, n_binders = 0;
+          const uint8_t *at = ext_payload;
+          const uint8_t *end = at + ext_payload_len;
+          const uint8_t *tmp_end = at + dsk_uint16be_parse (at) + 2;
+          if (tmp_end > end - 2)
+            {
+              *error = dsk_error_new ("malformed PreSharedKey extension");
+              return NULL;
+            }
+          // Scan identities.
+          while (at < tmp_end)
+            {
+              if (at + 2 > tmp_end)
+                {
+                  *error = dsk_error_new ("malformed PreSharedKey extension");
+                  return NULL;
+                }
+              unsigned identity_len = dsk_uint16be_parse (at);
+              if (at + 2 + identity_len + 4 > tmp_end)
+                {
+                  *error = dsk_error_new ("malformed PreSharedKey extension");
+                  return NULL;
+                }
+              at += 2 + identity_len + 4;
+            }
+          assert(at == tmp_end);
+          assert(at + 2 <= end);
+          tmp_end = at + dsk_uint16be_parse (at) + 2;
+          at += 2;
+
+          // scan bindings
+          while (at < tmp_end)
+            {
+              if (at + *at + 1 > tmp_end)
+                {
+                  *error = dsk_error_new ("malformed PreSharedKey extension");
+                  return NULL;
+                }
+              at += *at + 1;
+              n_binders++;
+            }
+
+          // Allocate and parse identities.
+          DskTlsExtension_OfferedPresharedKeys *offered = &ext->pre_shared_key.offered_psks;
+          offered->n_identities = n_identities;
+          at = ext_payload;
+          tmp_end = at + dsk_uint16be_parse (at) + 2;
+          at += 2;
+          offered->identities = dsk_mem_pool_alloc(pool, n_identities*sizeof(DskTlsExtension_PresharedKeyIdentity));
+          for (unsigned i = 0; i < n_identities; i++)
+            {
+              unsigned ilen = dsk_uint16be_parse (at);
+              at += 2;
+              offered->identities[i].identity_length = ilen;
+              offered->identities[i].identity = at;
+              at += ilen;
+              offered->identities[i].obfuscated_ticket_age = dsk_uint32be_parse (at);
+              at += 4;
+            }
+          offered->n_binder_entries = n_binders;
+          offered->binder_entries = dsk_mem_pool_alloc (pool, n_binders * sizeof(DskTlsExtension_PresharedKeyBinderEntry));
+          at += 2;
+          for (unsigned i = 0; i < n_binders; i++)
+            {
+              unsigned blen = *at++;
+              offered->binder_entries[i].length = blen;
+              offered->binder_entries[i].data = at;
+              at += blen;
+            }
+        }
+      else if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO)
+        {
+          if (ext_payload_len != 2)
+            {
+              *error = dsk_error_new ("PreSharedKey extension for server-hello should be a single uint16");
+              return NULL;
+            }
+          ext->pre_shared_key.selected_identity = dsk_uint16be_parse (ext_payload);
+        }
+      else
+        {
+          *error = dsk_error_new ("PreSharedKey extension found with unsupported handshake");
+          return NULL;
+        }
+
+    TODO:case DSK_TLS_EXTENSION_TYPE_EARLY_DATA:
     case DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS:
       if (ext_payload_len < 3)
         {

@@ -95,15 +95,11 @@ char    **dsk_strsplit     (const char *str,
   unsigned pieces_alloced = DSK_N_ELEMENTS (init_pieces);
   unsigned n_pieces = 0;
 
-  dsk_warning ("dsk_strsplit: str=%s sep=%s", str,sep);
-
   unsigned sep_len = strlen (sep);
   char *next_sep = strstr (str, sep);
   while (next_sep)
     {
-      dsk_warning ("str=%s[%p] next_sep=%s[%p]", str,str, next_sep,next_sep);
       char *substr = dsk_strdup_slice (str, next_sep);
-      dsk_warning ("n_pieces=%u str=%s", n_pieces, str);
       if (n_pieces == pieces_alloced)
         {
           if (pieces == init_pieces)
@@ -126,7 +122,6 @@ char    **dsk_strsplit     (const char *str,
       if (pieces == init_pieces)
         {
           pieces = DSK_NEW_ARRAY (n_pieces + 2, char *);
-          dsk_warning ("n_pieces=%u, pieces=%p", n_pieces, pieces);
           memcpy (pieces, init_pieces, sizeof(char*) * n_pieces);
         }
       else
@@ -136,7 +131,6 @@ char    **dsk_strsplit     (const char *str,
     }
   pieces[n_pieces++] = dsk_strdup (str);
   pieces[n_pieces++] = NULL;
-  dsk_warning ("n_pieces=%u length=%u\n", n_pieces, (unsigned) dsk_strv_length (pieces));
   return pieces;
 }
 

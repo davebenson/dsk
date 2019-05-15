@@ -22,6 +22,17 @@ void     dsk_tls_bignum_multiply             (unsigned p_len,
 unsigned dsk_tls_bignum_actual_len           (unsigned len,
                                               const uint32_t *v);
 
+void     dsk_tls_bignum_shiftleft_truncated  (unsigned len,
+                                              const uint32_t *in,
+                                              unsigned amount,
+                                              unsigned out_len,
+                                              uint32_t *out);
+void     dsk_tls_bignum_shiftright_truncated (unsigned len,
+                                              const uint32_t *in,
+                                              unsigned amount,
+                                              unsigned out_len,
+                                              uint32_t *out);
+
 //
 // Preconditions:
 //
@@ -61,6 +72,10 @@ bool     dsk_tls_bignum_modular_inverse      (unsigned len,
                                               const uint32_t *modulus_words,
                                               uint32_t *X_inv_out);
 
+bool     dsk_tls_bignum_modular_sqrt         (unsigned len,
+                                              const uint32_t *X_words,
+                                              const uint32_t *modulus_words,
+                                              uint32_t *X_inv_out);
 
 typedef struct {
   unsigned len;                 // number of 32-bit words in N.
@@ -101,6 +116,8 @@ void dsk_tls_bignum_from_montgomery
                                   (DskTlsMontgomeryInfo *info,
                                    const uint32_t       *in_mont,
                                    uint32_t             *out);
+void dsk_tls_bignum_dump_montgomery(DskTlsMontgomeryInfo *info,
+                                    const char *label);
 
 void
 dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
@@ -134,5 +151,9 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
                                         const uint32_t *modulus,
                                         const uint32_t *barrett_mu,
                                         uint32_t       *mod_value_out);
+
+void
+dsk_tls_bignum_find_prime (unsigned len,
+                           uint32_t *inout);
 
 uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v);

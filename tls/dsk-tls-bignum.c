@@ -4,6 +4,7 @@
 #include "../dsk.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 uint32_t 
 dsk_tls_bignum_subtract_with_borrow (unsigned        len,
@@ -510,13 +511,6 @@ dsk_tls_bignum_actual_len (unsigned len, const uint32_t *v)
 }
 
 void
-dsk_tls_bignum_shiftleft (unsigned in_size,
-                          const uint32_t *in,
-                          unsigned out_size,
-                          const uint32_t *out,
-                          unsigned amount);
-
-void
 dsk_tls_bignum_negate (unsigned len, const uint32_t *in, uint32_t *out)
 {
   for (unsigned i = 0; i < len; i++)
@@ -651,6 +645,91 @@ uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v)
   return t_cur;
 }
 
+
+//
+// https://en.wikipedia.org/wiki/Tonelli-Shanks_algorithm
+//
+// TODO: wiki page suggests the algo can be generalized to any n-th root.
+//
+// NOTE: modulus_words must be prime.
+//
+bool
+dsk_tls_bignum_modular_sqrt         (unsigned len,
+                                     const uint32_t *X_words,
+                                     const uint32_t *modulus_words,
+                                     uint32_t *X_sqrt_out)
+{
+  // modulus must be odd, b/c it must be prime.
+  dsk_assert ((modulus_words[0] & 1) == 1);
+
+  //
+  // The lowest nonzero bit is bit 0, because any large prime is odd.
+  //
+  // The second_lowest_nonzero_bit is the next non-zero bit.
+  //
+  unsigned second_lowest_nonzero_bit = 1;
+  while (second_lowest_nonzero_bit < len*32
+      && ((X_words[second_lowest_nonzero_bit/32] >> (second_lowest_nonzero_bit%32)) & 1) == 0)
+    second_lowest_nonzero_bit += 1;
+  if (second_lowest_nonzero_bit == len*32)
+    {
+      // sqrt(0) == 0.
+      memset (X_sqrt_out, 0, 4*len);
+      return true;
+    }
+
+  //
+  // Compute Q, S as in the wikipedia algorithm description.
+  //
+  unsigned Q_len = len - second_lowest_nonzero_bit/32;
+  uint32_t *Q = alloca(Q_len * 4);
+  dsk_tls_bignum_shiftright_truncated (len, X_words, second_lowest_nonzero_bit, Q_len, Q);
+  assert((Q[0] & 1) == 1);
+  Q_len = dsk_tls_bignum_actual_len (Q_len, Q);
+  unsigned S = second_lowest_nonzero_bit;     // as in Wikipedia's Tonelli-Shank's algo
+
+  //
+  // Find a quadratic non-residue z (a number which does NOT have sqrt mod p).
+  //
+  uint32_t z;
+  for (z = 2; z < (1<<31); z++)
+    if (is_quadratic_nonresidue (...))
+      break;
+  assert (z != (1<<31));
+
+  //
+  // Step 3.  Variable names are again taken from the wiki.
+  //
+  unsigned M = S;
+  uint32_t *c = malloc (Q * 4);
+  ...
+  uint32_t *n = ...;
+  uint32_t *R = ...;
+
+  //
+  // Step 4.  Loop:
+  //
+  for (;;)
+    {
+      // if t=0, return 0.
+      ...
+
+      // if t=1, return R.
+      ...
+
+      // Otherwise, use repeated squaring to find the least i (mod p),
+      // 0 < i < M, such that t^{2^{i}-1} = 1.
+      unsigned i = 0;
+      ...
+
+      // update loop variables (mod p).
+      b := c^{2^{M-i-1}}
+      c := b^2
+      t := t*b^2
+      R := R*b
+    }
+}
+
 void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
                                     unsigned len,
                                     const uint32_t *N)
@@ -658,32 +737,9 @@ void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
   assert (N[len - 1] != 0);
   assert (N[0] % 2 == 1);
 
-  // Rred < N and Rred == R (mod N).
-  // Which is really Rred = R - n.
-  //uint32_t *Rred = alloca (4 * len);
-  //dsk_tls_bignum_negate (len, N, Rred);
-  //uint32_t q;
-  //dsk_tls_bignum_divide (len, Rred, len, N, &q, Rred);
-
-  //info->Rinv = malloc (sizeof (uint32_t) * len);
-  //dsk_tls_bignum_modular_inverse (len, Rred, N, (uint32_t *) info->Rinv);
-
   // Compute multiplicative inverse of -N (mod 2^32)  == N_prime
   uint32_t mNmodb = -N[0];
   info->Nprime = dsk_tls_bignum_invert_mod_wordsize32 (mNmodb);
-
-#if 0
-  uint32_t *Rbig = alloca (4 * (len + 1));
-  uint32_t *minusNbig = alloca (4 * (len + 1));
-  memset (Rbig, 0, 4 * (len + 1));
-  Rbig[len] = 1;
-  uint32_t *Nbig = alloca (4 * (2 * len + 1));
-  memcpy (Nbig, N, 4*len);
-  memset(Nbig+len, 0, 4 * (len + 1));
-  dsk_tls_bignum_subtract_with_borrow (len + 1, Rbig, Nbig, 0, minusNbig);
-  dsk_tls_bignum_modular_inverse (len + 1, minusNbig, Rbig, (uint32_t *) info->Nprime);
-  assert(info->Nprime[len] == 0);
-#endif
 
   info->len = len;
   info->N = malloc (len * 4);
@@ -828,3 +884,54 @@ void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
   memset (padded + info->len, 0, 4 * info->len);
   dsk_tls_bignum_montgomery_reduce (info, padded, out);
 }
+
+void dsk_tls_bignum_dump_montgomery(DskTlsMontgomeryInfo *info,
+                                    const char *label)
+{
+  printf("static const uint32_t %s__N[] = {\n", label);
+  for (unsigned i = 0 ; i < info->len; i++)
+    printf("  0x%08x,\n", info->N[i]);
+  printf("};\n");
+
+  printf("static const uint32_t %s__barrett_mu[] = {\n", label);
+  for (unsigned i = 0 ; i < info->len + 1; i++)
+    printf("  0x%08x,\n", info->barrett_mu[i]);
+  printf("};\n");
+
+  printf("static DskTlsMontgomeryInfo %s__mont = {\n"
+         "  %u,\n"
+         "  %s__N,\n"
+         "  0x%08x,\n"
+         "  %s__barrett_mu\n"
+         "};\n"
+         , label, info->len, label, info->Nprime, label);
+}
+
+uint32_t dsk_tls_bignum_mod_word (unsigned len,
+                                   const uint32_t *value,
+                                   uint32_t modulus)
+{
+  uint32_t pow = (uint32_t) ((1ULL << 32) % modulus);
+  uint32_t rv = 0;
+  for (unsigned i = 0; i < len; i++)
+    rv = ((uint64_t) rv * pow % modulus + value[len - 1 - i]) % modulus;
+  return rv;
+}
+
+void
+dsk_tls_bignum_find_prime (unsigned len,
+                           uint32_t *inout)
+{
+  uint32_t mod30 = dsk_tls_bignum_mod_word (len, inout, 30);
+  for (;;)
+    {
+      if (mod30 % 5 != 0 && mod30 % 2 != 0 && mod30 % 3 != 0)
+        {
+          //... prime test
+        }
+      if (++mod30 == 30)
+        mod30 = 0;
+      dsk_tls_bignum_add_word  (len, inout, 1);
+    }
+}
+

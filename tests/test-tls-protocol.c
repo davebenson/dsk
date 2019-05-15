@@ -88,8 +88,19 @@ dsk_warning("named_group=0x%04x", ks->key_shares[0].named_group);
             has_supported_versions = true;
             break;
           }
-          //TODO: case DSK_TLS_EXTENSION_SIGNATURE_ALGORITHMS]: payload_len=32
-          //TODO: case DSK_TLS_EXTENSION_PSK_KEY_EXCHANGE_MODES]: payload_len=2
+        case DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS:
+          {
+            DskTlsExtension_SignatureAlgorithms *sa = (DskTlsExtension_SignatureAlgorithms *) ext;
+            assert(sa->n_schemes == 15);
+            for (unsigned i = 0; i < 15; i++)
+              printf("sig[%u] = 0x%04x... %s\n", i, sa->schemes[i], dsk_tls_signature_scheme_name (sa->schemes[i]));
+            break;
+          }
+
+        case DSK_TLS_EXTENSION_TYPE_PSK_KEY_EXCHANGE_MODES:
+          ///... TODO
+          break;
+
           // optional TODO: RECORD_SIZE_LIMIT
 
         }

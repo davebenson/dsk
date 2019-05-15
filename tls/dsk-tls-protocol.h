@@ -191,6 +191,7 @@ typedef enum {
   DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA1                 = 0x0201,
   DSK_TLS_SIGNATURE_SCHEME_ECDSA_SHA1                     = 0x0203,
 } DskTlsSignatureScheme;
+const char *dsk_tls_signature_scheme_name (DskTlsSignatureScheme scheme);
 
 typedef struct DskTlsExtension_SignatureAlgorithms DskTlsExtension_SignatureAlgorithms;
 struct DskTlsExtension_SignatureAlgorithms
@@ -271,14 +272,14 @@ typedef struct DskTlsExtension_PresharedKeyIdentity DskTlsExtension_PresharedKey
 struct DskTlsExtension_PresharedKeyIdentity
 {
   unsigned identity_length;
-  uint8_t *identity;
+  const uint8_t *identity;
   uint32_t obfuscated_ticket_age;
 };
 typedef struct DskTlsExtension_PresharedKeyBinderEntry DskTlsExtension_PresharedKeyBinderEntry;
 struct DskTlsExtension_PresharedKeyBinderEntry
 {
   uint8_t length;
-  uint8_t *data;
+  const uint8_t *data;
 };
 typedef struct DskTlsExtension_OfferedPresharedKeys DskTlsExtension_OfferedPresharedKeys;
 struct DskTlsExtension_OfferedPresharedKeys
@@ -397,6 +398,9 @@ typedef union {
   DskTlsExtension_SupportedGroups supported_groups;
   DskTlsExtension_SupportedVersions supported_versions;
   DskTlsExtension_SignatureAlgorithms signature_algorithms;
+  DskTlsExtension_Heartbeat heartbeat;
+  DskTlsExtension_ApplicationLayerProtocolNegotiation alpn;
+  DskTlsExtension_PreSharedKey pre_shared_key;
   // TODO: client_certificate_type server_certificate_type
   DskTlsExtension_Padding padding;
   DskTlsExtension_KeyShare key_share;
