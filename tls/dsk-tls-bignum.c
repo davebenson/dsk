@@ -645,6 +645,53 @@ uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v)
   return t_cur;
 }
 
+//
+// Return whether 'x' is a quadratic residue (ie whether it has a square-root).
+// Uses Euler's criterion, which says that:
+//
+//   x^((p-1)/2) == 1 (mod p)    <===>     x is a quadratic residue.
+//
+// This only works for prime p > 2, and x != 0.
+//
+static bool
+is_quadratic_residue (DskTlsMontgomeryInfo *mont,
+                      uint32_t              x,
+                      uint32_t             *mont_1)
+{
+  uint32_t *x_mont_pow_pow2 = alloca(4 * mont->len);
+  uint32_t *x_mont_pow = alloca(4 * mont->len);
+  x_mont_pow_pow2 = dsk_tls_bignum_word_to_montgomery (mont, x, x_mont_pow_pow2);
+  bool x_mont_pow_inited = false;
+  assert(mont->N[mont->len - 1] != 0);
+  unsigned end_bit = 32 * (mont->len-1) + get_hi_bit(mont->N[mont->len - 1]);
+  for (unsigned i = 1; i < end_bit; i++)
+    {
+      if ((mont->N[i/32] & (1<<(i%32))) != 0)
+        dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
+      dsk_tls_bignum_square_montgomery (mont->len, x_mont_pow_pow2, x_mont_pow_pow2);
+    }
+
+  // highest bit is always 1.
+  dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
+
+  return memcmp (x_mont_pow, mont_1, mont->len * 4) == 0;
+}
+
+static uint32_t
+find_quadratic_nonresidue (DskTlsMontgomeryInfo *mont,
+                      uint32_t             *mont_1)
+ 
+{
+  memset (out, 0, 4 * mont->len);
+  uint32_t rv = 2;
+  while (is_quadratic_residue (mont, rv, mont1))
+    {
+      rv += 1;
+      assert(rv != 0);
+    }
+  return rv;
+}
+
 
 //
 // https://en.wikipedia.org/wiki/Tonelli-Shanks_algorithm
@@ -653,12 +700,15 @@ uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v)
 //
 // NOTE: modulus_words must be prime.
 //
-bool
-dsk_tls_bignum_modular_sqrt         (unsigned len,
+static bool
+dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
                                      const uint32_t *X_words,
                                      const uint32_t *modulus_words,
                                      uint32_t *X_sqrt_out)
 {
+  DskTlsMontgomeryInfo mont;
+  dsk_tls_montgomery_info_init (&mont, len, modulus_words);
+
   // modulus must be odd, b/c it must be prime.
   dsk_assert ((modulus_words[0] & 1) == 1);
 
@@ -688,23 +738,29 @@ dsk_tls_bignum_modular_sqrt         (unsigned len,
   Q_len = dsk_tls_bignum_actual_len (Q_len, Q);
   unsigned S = second_lowest_nonzero_bit;     // as in Wikipedia's Tonelli-Shank's algo
 
+  // Find the montgomery representation of 1, since we commonly need to check if values are 1.
+  uint32_t *mont1 = alloca (4 * mont->len);
+  dsk_tls_bignum_word_to_montgomery (mont, 1, mont1);
+
   //
   // Find a quadratic non-residue z (a number which does NOT have sqrt mod p).
   //
-  uint32_t z;
-  for (z = 2; z < (1<<31); z++)
-    if (is_quadratic_nonresidue (...))
-      break;
-  assert (z != (1<<31));
+  uint32_t z = find_quadratic_nonresidue (&mont, mont1);
+  uint32_t *z_mont = alloca(4 * mont.len);
+  dsk_tls_bignum_word_to_montgomery (&mont, z, z_mont);
 
   //
   // Step 3.  Variable names are again taken from the wiki.
   //
   unsigned M = S;
-  uint32_t *c = malloc (Q * 4);
-  ...
-  uint32_t *n = ...;
-  uint32_t *R = ...;
+  uint32_t *c_mont = alloca (mont.len * 4);
+  dsk_tls_bignum_exponent_montgomery (&mont, z_mont, Q_len, Q, c_mont);
+  uint32_t *X_mont = alloca (mont.len * 4);
+  dsk_tls_bignum_to_montgomery (&mont, X_words, X_mont);
+  uint32_t *t_mont = alloca(mont.len * 4);
+  dsk_tls_bignum_exponent_montgomery (&mont, X_mont, Q_len, Q, t_mont);
+  uint32_t *R_mont = alloca(mont.len * 4);
+  dsk_tls_bignum_exponent_montgomery (&mont, X_mont, Q1_half_len, Q1_half, R_mont);
 
   //
   // Step 4.  Loop:
@@ -712,22 +768,78 @@ dsk_tls_bignum_modular_sqrt         (unsigned len,
   for (;;)
     {
       // if t=0, return 0.
-      ...
+      if (dsk_tls_bignum_is_zero (mont.len, t_mont))
+        {
+          memset (X_sqrt_out, 0, 4 * mont.len);
+          return dsk_tls_bignum_is_zero (mont.len, X_words);   /// ???
+        }
 
       // if t=1, return R.
-      ...
+      if (memcmp (t_mont, mont1, mont.len * 4) == 0)
+        {
+          dsk_tls_bignum_from_montgomery (&mont, R_mont, X_sqrt_out);
+          return true;
+        }
 
       // Otherwise, use repeated squaring to find the least i (mod p),
       // 0 < i < M, such that t^{2^{i}-1} = 1.
       unsigned i = 0;
-      ...
+      memcpy (t_2_i_mont, t_mont, 4 * mont.len);
+      while (i < M)
+        {
+          if (memcmp (t_2_i_mont, mont1, 4 * mont.len) == 0)
+            break;
+          dsk_tls_bignum_square_montgomery (&mont, t_2_i_mont, t_2_i_mont);
+          i++;
+        }
+      if (i == M)
+        return false;
 
-      // update loop variables (mod p).
-      b := c^{2^{M-i-1}}
-      c := b^2
-      t := t*b^2
-      R := R*b
+      //
+      // Update loop variables (mod p).
+      //
+      // Let b := c^{2^{M-i-1}}.
+      memcpy (b_mont, c_mont, 4 * mont.len);
+      for (unsigned j = 0; j < M - i - 1; j++)
+        dsk_tls_bignum_square_montgomery (&mont, b_mont, b_mont);
+      M = i;
+      // c := b^2
+      dsk_tls_bignum_square_montgomery (&mont, b_mont, c_mont);
+
+      // t := t*b^2
+      dsk_tls_bignum_multiply_montgomery (&mont, t_mont, c_mont, t_mont);
+
+      // R := R * b
+      dsk_tls_bignum_multiply_montgomery (&mont, R_mont, b_mont, R_mont);
     }
+}
+
+static bool
+dsk_tls_bignum_modular_sqrt_3mod4   (unsigned len,
+                                     const uint32_t *X_words,
+                                     const uint32_t *modulus_words,
+                                     uint32_t *X_sqrt_out)
+{
+  // Compute r = X^((p+1)/4).
+  ...
+
+  // If r^2 == 1, then r is the sqrt; otherwise, X is not a quadratic residue.
+  ...
+}
+
+
+static bool
+dsk_tls_bignum_modular_sqrt         (unsigned len,
+                                     const uint32_t *X_words,
+                                     const uint32_t *modulus_words,
+                                     uint32_t *X_sqrt_out)
+{
+  assert (len > 0);
+  assert ((X_words[0] & 1) == 1);
+  if (X_words[0] & 2)
+    return dsk_tls_bignum_modular_sqrt_3mod4 (len, X_words, modulus_words, X_sqrt_out);
+  else
+    return dsk_tls_bignum_modular_sqrt_1mod4 (len, X_words, modulus_words, X_sqrt_out);
 }
 
 void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
