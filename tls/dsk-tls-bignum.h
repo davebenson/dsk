@@ -1,3 +1,18 @@
+//
+// These functions are NOT intended to provide
+// an easy big-integer library.
+//
+// Instead they are intended to be used
+// to implement various cryptographic functions:
+//
+// Various operations:
+//    * Diffie-Hellman Finite-Field Key Enchange
+//    * Elliptic Curve Point Addition
+//    * RSA-style key-generation (ie generating primes)
+//
+// Modular Square-Root:
+//    * needed for Elliptic Point decompression
+//    
 
 bool dsk_tls_bignum_is_zero (unsigned len, const uint32_t *v);
 uint32_t dsk_tls_bignum_subtract_with_borrow (unsigned        len,
@@ -140,9 +155,9 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
 //
 void dsk_tls_bignum_exponent_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   uint32_t             *base_mont,
+                                   const uint32_t       *base_mont,
                                    unsigned              exponent_len,
-                                   uint32_t             *exponent,
+                                   const uint32_t       *exponent,
                                    uint32_t             *out_mont);
 
 
@@ -160,8 +175,14 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
                                         const uint32_t *barrett_mu,
                                         uint32_t       *mod_value_out);
 
-void
-dsk_tls_bignum_find_prime (unsigned len,
-                           uint32_t *inout);
 
 uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v);
+
+
+//
+// Primality testing.
+//
+void dsk_tls_bignum_find_probable_prime (unsigned len,
+                                         uint32_t *inout);
+bool dsk_tls_bignum_is_probable_prime (unsigned len,
+                                       const uint32_t *p);

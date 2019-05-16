@@ -349,7 +349,23 @@ dsk_tls_bignum_divide  (unsigned x_len,
           assert(borrow <= remaining[q_digit + y_len]);
           remaining[q_digit + y_len] -= borrow;
 
-          // do trial subtraction, use result if borrow not necessary.
+          //
+          // Do trial subtraction, use result if borrow not necessary.
+          // Usage of the top 32-bits of 'y' but addition 1 to force a lower-bound,
+          // should bound the error from 'y' at 1 part in (1<<31).
+          //
+          // Additional error comes from rounding down,
+          // but I haven't found values that cause the following
+          // loop to run more than twice.
+          // 
+
+          //
+          // XXX: We might be able to tighten up the math
+          //      to get so that at most one subtraction is necessary.
+          //
+          // XXX: I believe at most 2 subtractions are necessary, but a
+          //      proof would be good.
+          //
           int ccc=0;
           for (;;)
             {
@@ -369,33 +385,6 @@ dsk_tls_bignum_divide  (unsigned x_len,
         }
     }
   memcpy (remainder_out, remaining, 4 * y_len);
-}
-
-static void do_shiftleft32(unsigned len,
-                           const uint32_t *x,
-                           unsigned shift,
-                           uint32_t *out)
-{
-  unsigned shift_mod_32 = shift % 32;
-  uint32_t *o = out;
-  for (unsigned i = 0; i < shift / 32; i++)
-    *o++ = 0;
-  if (shift_mod_32 == 0)
-    {
-      memcpy (out, x, (len - shift / 32) * 4);
-    }
-  else
-    {
-      const uint32_t *d = x;
-      // fill in low-order 0s
-      uint32_t last_d = 0;
-      while (o < out + len)
-        {
-          *o++ = (last_d >> (32 - shift_mod_32))
-               | (*d << shift_mod_32);
-          last_d = *d++;
-        }
-    }
 }
 
 void
@@ -528,112 +517,6 @@ dsk_tls_bignum_is_zero (unsigned len, const uint32_t *v)
       return false;
   return true;
 }
-static void
-shiftright32_inplace_1 (unsigned len,
-                       uint32_t *inout)
-{
-  uint32_t carry_bit = 0;
-  for (unsigned i = 0; i < len; i++)
-    {
-      uint32_t next_carry_bit = inout[i] & 1;
-      inout[i] >>= 1;
-      inout[i] |= carry_bit;
-      carry_bit = next_carry_bit;
-    }
-  assert (carry_bit == 0);
-}
-
-void dsk_tls_bignum_divide_samesize   (unsigned len,
-                                       const uint32_t *numer_words,
-                                       const uint32_t *denom_words,
-                                       uint32_t *quotient_words,
-                                       uint32_t *modulus_words)
-{
-
-  uint32_t *cur = alloca (len * 4);
-  memcpy (modulus_words, numer_words, len * 4);
-  memcpy (quotient_words, 0, len * 4);
-
-  // this next function asserts that denom != 0
-  unsigned hi_bit = find_highest_set_bit (len, denom_words);
-
-  // Note that this formula 
-  // Set cur to denom_words << (32*len-1 - hi_bit).
-  unsigned shift = 32 * len - 1 - hi_bit;
-  do_shiftleft32 (len, denom_words, shift, cur);
-  for (int b = shift; b >= 0; b--)
-    {
-      for (unsigned i = 0; i < len; i++)
-        {
-          if (modulus_words[len - 1 - i] > cur[len - 1 - i])
-            break;
-          else if (modulus_words[len - 1 - i] < cur[len - 1 - i])
-            goto done_bit;                      // this bit of output is 0
-        }
-
-      // Insert a bit into the quotient and adjust the modulus.
-      quotient_words[b/32] |= 1 << (b%32);
-      dsk_tls_bignum_subtract_with_borrow (len, modulus_words, cur, 0, modulus_words);
-
-done_bit:
-      // prepare for next bit.
-      shiftright32_inplace_1 (len, cur);
-    }
-}
-
-#if 0
-static void
-do_negate32 (unsigned len, uint32_t *v)
-{
-  for (unsigned i = 0; i < len; i++)
-    v[i] = ~v[i];
-  for (unsigned i = 0; i < len; i++)
-    {
-      v[i] += 1;
-      if (v[i] != 0)
-        break;
-    }
-}
-
-// Compute out = a + scale * b,
-//
-// where out, a, b may be negated,
-// per their "_signed" parameters.
-static void
-add_signed_product (unsigned   len,
-                  bool       a_signed,
-                  uint32_t  *a,
-                  uint32_t  *scale,
-                  bool       b_signed,
-                  uint32_t  *b,
-                  bool      *out_signed,
-                  uint32_t  *out)
-{
-  uint32_t *tmp = alloca (len * 4);
-  dsk_tls_bignum_multiply_samesize (len, scale, b, tmp);
-  if (a_signed != b_signed)
-    {
-      // Compute out = a - tmp, ignoring signs.
-      if (dsk_tls_bignum_subtract_with_borrow (len, a, tmp, 0, out))
-        {
-          // In this case, |a| < |b*scale|
-          // Negate out and copy sign from b.
-          do_negate32 (len, out);
-          *out_signed = b_signed;
-        }
-      else
-        {
-          // |a| >= |b*scale|.   Ideally we'd avoid returning -0, but we don't care or guard against it.
-          *out_signed = a_signed;
-        }
-    }
-  else
-    {
-      dsk_tls_bignum_add_with_carry (len, a, tmp, 0, out);
-      *out_signed = a_signed;   // == b_signed
-    }
-}
-#endif
 
 unsigned
 dsk_tls_bignum_actual_len (unsigned len, const uint32_t *v)
@@ -1208,9 +1091,9 @@ void dsk_tls_bignum_square_montgomery
 
 void dsk_tls_bignum_exponent_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   uint32_t             *base_mont,
+                                   const uint32_t       *base_mont,
                                    unsigned              exponent_len,
-                                   uint32_t             *exponent,
+                                   const uint32_t       *exponent,
                                    uint32_t             *out_mont)
 {
   int hi_bit = find_highest_set_bit (exponent_len, exponent);
@@ -1293,16 +1176,156 @@ uint32_t dsk_tls_bignum_mod_word (unsigned len,
   return rv;
 }
 
+//
+// Returns whether the number is definitely composite.
+//
+static bool
+miller_rabin_test_step_is_composite
+                       (DskTlsMontgomeryInfo *mont,
+                        unsigned              d_len,
+                        const uint32_t       *d,
+                        unsigned              r,
+                        uint32_t              a,
+                        const uint32_t       *mont_1,
+                        const uint32_t       *mont_m1)
+{
+  uint32_t *a_mont = alloca(4 * mont->len);
+  uint32_t *x_mont = alloca(4 * mont->len);
+  dsk_tls_bignum_word_to_montgomery (mont, a, a_mont);
+  dsk_tls_bignum_exponent_montgomery (mont, a_mont, d_len, d, x_mont);
+  if (memcmp (x_mont, mont_1, mont->len * 4) == 0
+   || memcmp (x_mont, mont_m1, mont->len * 4) == 0)
+    {
+      return false;
+    }
+
+  for (unsigned i = 0; i < r - 1; i++)
+    {
+      dsk_tls_bignum_square_montgomery (mont, x_mont, x_mont);
+      if (memcmp (x_mont, mont_m1, mont->len * 4) == 0)
+        {
+          return false;
+        }
+    }
+  return true;
+}
+
+static uint32_t miller_rabin_rounds[] =
+{
+     2,   3,   5,   7,  11,  13,  17,  19,  23,  29,  31,
+    37,  41,  43,  47,  53,  59,  61,  67,  71,  73,  79,
+    83,  89,  97, 101, 103, 107, 109, 113, 127, 131, 137,
+   139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
+   197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257,
+   263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317,
+   331, 337, 347, 349
+};
+
+static bool
+is_probable_prime  (unsigned       len,
+                    const uint32_t *n,
+                    unsigned        rounds)
+{
+  // Ensure the number is 2, or it must be odd.
+  if (len == 1)
+    {
+      if (n[0] == 2)
+        return true;
+    }
+  if ((n[0] & 1) == 0)
+    return false;
+
+  DskTlsMontgomeryInfo info;
+  dsk_tls_montgomery_info_init (&info, len, n);
+  uint32_t *mont_1 = alloca(4 * len);
+  dsk_tls_bignum_word_to_montgomery (&info, 1, mont_1);
+  uint32_t *mont_m1 = alloca(4 * len);
+  dsk_tls_bignum_subtract_with_borrow (len, n, mont_1, 0, mont_m1);
+
+  // Compute d,d_len,r such that n=2^r*d + 1 with d odd.
+  // r is the second-lowest bit position
+  // (the first-lowest bit position is 0 since n is odd)
+  unsigned r = 1;
+  while (r < len*32
+      && ((n[r/32] >> (r%32)) & 1) == 0)
+    r += 1;
+  uint32_t *d = alloca(len * 4);
+  dsk_tls_bignum_shiftright_truncated (len, n, r, len, d);
+  unsigned d_len = dsk_tls_bignum_actual_len (len, d);
+
+  rounds = DSK_MIN (DSK_N_ELEMENTS (miller_rabin_rounds), rounds);
+  for (unsigned i = 0; i < rounds; i++)
+    {
+      // pick a.
+      uint32_t a = miller_rabin_rounds[i];
+      if (miller_rabin_test_step_is_composite (&info,
+                                               d_len, d, r,
+                                               a, mont_1, mont_m1))
+        {
+          dsk_tls_montgomery_info_clear (&info);
+          return false;
+        }
+    }
+  dsk_tls_montgomery_info_clear (&info);
+  return true;
+}
+
+
+//
+// This comes from the Table 7.2 from Understanding Crytography by Christof Paar,
+// which claims that this number of rounds leaves an error probability < 2^{-80}.
+// 
+static inline unsigned
+rounds_from_len_in_words (unsigned len)
+{
+  if (len < 250/32)
+    return 11;
+  else if (len < 300/32)
+    return 9;
+  else if (len < 400/32)
+    return 6;
+  else if (len < 500/32)
+    return 5;
+  else
+    return 3;
+}
+    
+bool
+dsk_tls_bignum_is_probable_prime (unsigned len,
+                                  const uint32_t *p)
+{
+  if (len == 1)
+    {
+      for (unsigned i = 0; i < DSK_N_ELEMENTS (miller_rabin_rounds); i++)
+        if (miller_rabin_rounds[i] == p[0])
+          return true;
+    }
+  unsigned rounds = rounds_from_len_in_words (len);
+  return is_probable_prime (len, p, rounds);
+}
+
 void
-dsk_tls_bignum_find_prime (unsigned len,
-                           uint32_t *inout)
+dsk_tls_bignum_find_probable_prime (unsigned len,
+                                    uint32_t *inout)
 {
   uint32_t mod30 = dsk_tls_bignum_mod_word (len, inout, 30);
+
+  // This function is for finding cryptographic primes,
+  // not general purpose use.
+  assert (len > 1);
+  assert (inout[len-1] != 0);
+
+  //
+  // Add 1 to the number of rounds which even without the +1 
+  // gives a 2^{-80} error rate.
+  //
+  unsigned rounds = rounds_from_len_in_words (len) + 1;
   for (;;)
     {
       if (mod30 % 5 != 0 && mod30 % 2 != 0 && mod30 % 3 != 0)
         {
-          //... prime test
+          if (is_probable_prime (len, inout, rounds))
+            return;
         }
       if (++mod30 == 30)
         mod30 = 0;

@@ -267,6 +267,15 @@ handle_client_hello (DskTlsConnection *conn,
   //
 }
 
+// ServerHello should indicate that the
+// server was able to come up with an agreeable
+// set of parameters, we are ready to
+// validate certs or move on to the application data.
+static bool
+handle_server_hello (DskTlsConnection *conn,
+                     DskTlsHandshake  *shake,
+                     DskError        **error)
+
 static bool
 handle_handshake (DskTlsConnection *conn,
                   DskTlsHandshake  *shake,
@@ -347,7 +356,7 @@ try_parse_record_header:
 
   const uint8_t *parse_at = conn->records_plaintext;
   const uint8_t *end_parse = conn->records_plaintext + conn->records_plaintext_lenth;
-  switch (content_type)
+  switch (header_result.content_type)
     {
     case DSK_TLS_RECORD_CONTENT_TYPE_ALERT:
       {
@@ -364,30 +373,18 @@ try_parse_record_header:
               }
             uint8_t *msgbuf = dsk_mem_pool_alloc (pool, len);
             memcpy (msgbuf, parse_at + 4, len);
-            DskTlsHandshakeParseResult result = dsk_tls_parse_handshake (*parse_at, len, msgbuf);
-            switch (result.code)
+            DskTlsHandshake *handshake = dsk_tls_handshake_parse (*parse_at, len, msgbuf, &pool, &error);
+            if (handshake == NULL)
               {
-              case PARSE_RESULT_CODE_OK:
-                {
-                  DskTlsHandshake *shake = result.handshake;
-                  if (!handle_handshake (conn, shake, &err))
-                    {
-                      dsk_tls_connection_fail (conn, err);
-                      dsk_error_unref (err);
-                      dsk_tls_handshake_unref (shake);
-                      return false;
-                    }
-                  dsk_tls_handshake_unref (shake);
-                  break;
-                }
-              case PARSE_RESULT_CODE_ERROR:
-                {
-                  dsk_tls_connection_fail (conn, result.error);
-                  dsk_error_unref (result.error);
-                  return false;
-                }
-              case PARSE_RESULT_CODE_TOO_SHORT:
-                assert(false);
+                dsk_tls_connection_fail (conn, error);
+                dsk_error_unref (error);
+                return false;
+              }
+            else if (!handle_handshake (conn, handshake, &error))
+              {
+                dsk_tls_connection_fail (conn, err);
+                dsk_error_unref (err);
+                dsk_tls_handshake_unref (shake);
                 return false;
               }
           }
@@ -403,6 +400,19 @@ try_parse_record_header:
       {
         ...
       }
+
+    case DSK_TLS_RECORD_CONTENT_TYPE_HEARTBEAT:
+      {
+        ...
+      }
+      goto try_parse_record_header;
+
+    default:
+      error = dsk_error_new ("unknown ContentType 0x%02x", 
+                             header_result.content_type);
+      dsk_tls_connection_fail (conn, err);
+      dsk_error_unref (err);
+      return false;
     }
 }
 

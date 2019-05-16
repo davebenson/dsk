@@ -31,4 +31,10 @@ void dsk_tls_ec_prime_add (DskTls_ECPrime_Group *group,
                            uint32_t *y_out);
     
 
-
+void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
+                                    const uint32_t *x,
+                                    const uint32_t *y,
+                                    unsigned factor_len,
+                                    const uint32_t *factor,
+                                    uint32_t *x_out,
+                                    uint32_t *y_out);

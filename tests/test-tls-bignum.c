@@ -73,7 +73,7 @@ struct Num *parse_hex(const char *str)
   }while(0)
 
 static void
-test_multiply_full (void)
+test_multiply (void)
 {
   struct {
     const char *a;
@@ -529,6 +529,81 @@ test_modular_sqrt (void)
     }
 }
 
+static void
+test_isprime (void)
+{
+  struct {
+    const char *p;
+    bool is_prime;
+  } tests[] = {
+    { "4", false },
+    { "7", true },
+    { "9", false },
+    { "17", true },
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *p = parse_hex (tests[i].p);
+      PR_NUM(p);
+      printf("is_prime=%d\n",tests[i].is_prime);
+      bool prime = dsk_tls_bignum_is_probable_prime (p->len, p->value);
+      assert (prime == tests[i].is_prime);
+      free (p);
+    }
+}
+
+static void
+test_next_prime (void)
+{
+  struct {
+    const char *p_start;
+    const char *p;
+  } tests[] = {
+    // Generated with a simple brute-force search.
+    { "100000001", "10000000f" },
+    { "1000000001", "100000001f" },
+    { "2000000001", "2000000009" },
+    { "4000000001", "4000000007" },
+    { "8000000001", "8000000017" },
+    { "10000000001", "1000000000f" },
+    { "20000000001", "2000000001b" },
+    { "40000000001", "4000000000f" },
+    { "80000000001", "8000000001d" },
+    { "100000000001", "100000000007" },
+    { "200000000001", "20000000003b" },
+    { "400000000001", "40000000000f" },
+    { "800000000001", "800000000005" },
+    { "1000000000001", "1000000000015" },
+    { "2000000000001", "2000000000045" },
+    { "4000000000001", "4000000000037" },
+    { "8000000000001", "8000000000015" },
+    { "10000000000001", "10000000000015" },
+    { "20000000000001", "20000000000005" },
+    { "40000000000001", "4000000000009f" },
+    { "80000000000001", "80000000000003" },
+    { "100000000000001", "100000000000051" },
+    { "200000000000001", "200000000000009" },
+    { "400000000000001", "400000000000045" },
+    { "800000000000001", "800000000000083" },
+    { "1000000000000001", "1000000000000021" },
+    { "2000000000000001", "200000000000000f" },
+    { "4000000000000001", "4000000000000087" },
+    { "8000000000000001", "800000000000001d" },
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *p_start = parse_hex (tests[i].p_start);
+      struct Num *p = parse_hex (tests[i].p);
+      dsk_tls_bignum_find_probable_prime (p_start->len, p_start->value);
+      assert (p->len == p_start->len);
+      assert (memcmp (p->value, p_start->value, p_start->len * 4) == 0);
+      free (p_start);
+      free (p);
+    }
+}
+
 static struct 
 {
   const char *name;
@@ -536,16 +611,20 @@ static struct
 } tests[] =
 {
   { "Multiplicative inverse mod 1<<32", test_uint32_inverse },
-  { "Bignum Multiply", test_multiply_full },
-  { "Bignum Square", test_square },
-  { "Bignum Divide", test_divide_qr },
-  { "Bignum Compare", test_compare },
-  { "Bignum Shift-Left", test_shiftleft },
-  { "Bignum Shift-Right", test_shiftright },
-  { "Bignum Modular Invert", test_modular_invert },
+  { "Multiply", test_multiply },
+  //TODO: dsk_tls_bignum_divide()
+  { "Square", test_square },
+  { "Divide", test_divide_qr },
+  { "Compare", test_compare },
+  { "Shift-Left", test_shiftleft },
+  { "Shift-Right", test_shiftright },
+  { "Modular Invert", test_modular_invert },
   { "Barrett's method", test_barrett_mu },
   { "Montgomery multiplication", test_montgomery_multiply },
+  //TODO: dsk_tls_bignum_exponent_montgomery()
   { "Modular square-root", test_modular_sqrt },
+  { "Is Prime", test_isprime },
+  { "Next Prime", test_next_prime },
 };
 
 

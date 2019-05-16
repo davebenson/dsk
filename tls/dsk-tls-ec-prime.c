@@ -69,7 +69,7 @@ static const uint32_t secp256r1__barrett_mu[] = {
   0x00000001,
 };
 
-static Params secp256r1_params = {
+static DskTls_ECPrime_Group secp256r1_params = {
   8,
   secp256r1__p,
   secp256r1__barrett_mu
