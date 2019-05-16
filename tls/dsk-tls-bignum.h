@@ -1,4 +1,5 @@
 
+bool dsk_tls_bignum_is_zero (unsigned len, const uint32_t *v);
 uint32_t dsk_tls_bignum_subtract_with_borrow (unsigned        len,
                                               const uint32_t *a,
                                               const uint32_t *b,
@@ -17,6 +18,9 @@ void     dsk_tls_bignum_multiply             (unsigned p_len,
                                               const uint32_t *p_words,
                                               unsigned q_len,
                                               const uint32_t *q_words,
+                                              uint32_t *out);
+void     dsk_tls_bignum_square               (unsigned len,
+                                              const uint32_t *words,
                                               uint32_t *out);
 
 unsigned dsk_tls_bignum_actual_len           (unsigned len,
@@ -100,9 +104,13 @@ typedef struct {
 void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
                                     unsigned len,
                                     const uint32_t *N);
+void dsk_tls_montgomery_info_clear  (DskTlsMontgomeryInfo *info);
 void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
                                    const uint32_t       *in,
                                    uint32_t             *out_mont);
+void dsk_tls_bignum_word_to_montgomery (DskTlsMontgomeryInfo *info,
+                                        uint32_t              word,
+                                        uint32_t             *out);
 void dsk_tls_bignum_multiply_montgomery
                                   (DskTlsMontgomeryInfo *info,
                                    const uint32_t       *a_mont,
@@ -132,10 +140,10 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
 //
 void dsk_tls_bignum_exponent_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   uint32_t             *base,
+                                   uint32_t             *base_mont,
                                    unsigned              exponent_len,
                                    uint32_t             *exponent,
-                                   uint32_t             *out);
+                                   uint32_t             *out_mont);
 
 
 void

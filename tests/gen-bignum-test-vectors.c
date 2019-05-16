@@ -104,6 +104,25 @@ gen_func__inverse (unsigned n_element, ScheduleElement *elements)
       }
 }
 static void
+gen_func__square (unsigned n_element, ScheduleElement *elements)
+{
+  for (unsigned e = 0; e < n_element; e++)
+    for (unsigned i = 0; i < elements[e].count; i++)
+      {
+      retry:
+        ;
+        struct N *A = random_N(elements[e].a_len);
+        __mpz_struct s;
+        mpz_init (&s);
+        mpz_mul (&s, &A->v, &A->v);
+        printf("{\n  \"");
+        mpz_out_str (stdout, 16, &A->v);
+        printf("\",\n  \"");
+        mpz_out_str (stdout, 16, &s);
+        printf("\"\n},\n");
+      }
+}
+static void
 gen_func__modular_reduce (unsigned n_element, ScheduleElement *elements)
 {
   for (unsigned e = 0; e < n_element; e++)
@@ -195,6 +214,7 @@ static struct {
   { "multiply", gen_func__multiply },
   { "divide", gen_func__divide },
   { "inverse", gen_func__inverse },
+  { "square", gen_func__square },
   { "modular_reduce", gen_func__modular_reduce },
   { "modular_multiply", gen_func__modular_multiply },
 };

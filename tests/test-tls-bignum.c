@@ -109,6 +109,37 @@ test_multiply_full (void)
     }
 }
 static void
+test_square (void)
+{
+  struct {
+    const char *a;
+    const char *a_squared;
+  } tests[] = {
+    { "2", "4" },
+    { "100", "10000" },
+#include "gmp-compare-square.generated.c"
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *A = parse_hex (tests[i].a);
+      struct Num *product = parse_hex (tests[i].a_squared);
+      uint32_t *result = malloc(4 * (A->len + A->len));
+      //PR_NUM(A);
+      //PR_NUM(B);
+      //PR_NUM(product);
+      //assert(A->len + B->len == product->len);          // test correctly formed?
+      dsk_tls_bignum_square (A->len, A->value, result);
+      unsigned len = dsk_tls_bignum_actual_len (A->len + A->len, result);
+      //PR_BIGNUM("result 1", len, result);
+      assert(product->len == len);
+      assert(memcmp (product->value, result, 4 * len) == 0);
+      free (A);
+      free (product);
+      free (result);
+    }
+}
+static void
 test_divide_qr (void)
 {
   struct {
@@ -196,6 +227,123 @@ test_compare (void)
       assert(dsk_tls_bignum_compare (A->len, B->value, A->value) == -tests[i].result);
       free (A);
       free (B);
+    }
+}
+
+static void
+test_shiftleft (void)
+{
+  struct {
+    const char *a;
+    unsigned shift;
+    unsigned result_len;
+    const char *b;
+  } tests[] = {
+    { "1", 1, 2, "0000000000000002" },
+    { "0123456789abcdef",  4, 2, "123456789abcdef0" },
+    { "0123456789abcdef",  8, 2, "23456789abcdef00" },
+    { "0123456789abcdef", 12, 2, "3456789abcdef000" },
+    { "0123456789abcdef", 16, 2, "456789abcdef0000" },
+    { "0123456789abcdef", 20, 2, "56789abcdef00000" },
+    { "0123456789abcdef", 24, 2, "6789abcdef000000" },
+    { "0123456789abcdef", 28, 2, "789abcdef0000000" },
+    { "0123456789abcdef", 32, 2, "89abcdef00000000" },
+    { "0123456789abcdef", 36, 2, "9abcdef000000000" },
+    { "0123456789abcdef", 40, 2, "abcdef0000000000" },
+    { "0123456789abcdef", 44, 2, "bcdef00000000000" },
+    { "0123456789abcdef", 48, 2, "cdef000000000000" },
+    { "0123456789abcdef", 52, 2, "def0000000000000" },
+    { "0123456789abcdef", 56, 2, "ef00000000000000" },
+    { "0123456789abcdef", 60, 2, "f000000000000000" },
+    { "0123456789abcdef", 64, 2, "0000000000000000" },
+    { "0123456789abcdef",  4, 1, "9abcdef0" },
+    { "0123456789abcdef",  8, 1, "abcdef00" },
+    { "0123456789abcdef", 12, 1, "bcdef000" },
+    { "0123456789abcdef", 16, 1, "cdef0000" },
+    { "0123456789abcdef", 20, 1, "def00000" },
+    { "0123456789abcdef", 24, 1, "ef000000" },
+    { "0123456789abcdef", 28, 1, "f0000000" },
+    { "0123456789abcdef", 32, 1, "00000000" },
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *A = parse_hex (tests[i].a);
+      struct Num *B = parse_hex (tests[i].b);
+      unsigned *out = malloc(sizeof(uint32_t) * tests[i].result_len);
+      //PR_NUM(A);
+      //printf("shift=%u result_len=%u\n",tests[i].shift, tests[i].result_len);
+      //PR_NUM(B);
+      dsk_tls_bignum_shiftleft_truncated (A->len, A->value, tests[i].shift, tests[i].result_len, out);
+      assert(B->len == tests[i].result_len);
+      assert(memcmp(B->value, out, tests[i].result_len * 4) == 0);
+      free (A);
+      free (B);
+      free(out);
+    }
+}
+
+static void
+test_shiftright (void)
+{
+  struct {
+    const char *a;
+    unsigned shift;
+    unsigned result_len;
+    const char *b;
+  } tests[] = {
+    { "2", 1, 2, "0000000000000001" },
+    { "0123456789abcdef",  4, 2, "00123456789abcde" },
+    { "0123456789abcdef",  8, 2, "000123456789abcd" },
+    { "0123456789abcdef", 12, 2, "0000123456789abc" },
+    { "0123456789abcdef", 16, 2, "00000123456789ab" },
+    { "0123456789abcdef", 20, 2, "000000123456789a" },
+    { "0123456789abcdef", 24, 2, "0000000123456789" },
+    { "0123456789abcdef", 28, 2, "0000000012345678" },
+    { "0123456789abcdef", 32, 2, "0000000001234567" },
+    { "0123456789abcdef", 36, 2, "0000000000123456" },
+    { "0123456789abcdef", 40, 2, "0000000000012345" },
+    { "0123456789abcdef", 44, 2, "0000000000001234" },
+    { "0123456789abcdef", 48, 2, "0000000000000123" },
+    { "0123456789abcdef", 52, 2, "0000000000000012" },
+    { "0123456789abcdef", 56, 2, "0000000000000001" },
+    { "0123456789abcdef", 60, 2, "0000000000000000" },
+    { "0123456789abcdef", 64, 2, "0000000000000000" },
+    { "0123456789abcdef",  4, 1, "789abcde" },
+    { "0123456789abcdef",  8, 1, "6789abcd" },
+    { "0123456789abcdef", 12, 1, "56789abc" },
+    { "0123456789abcdef", 16, 1, "456789ab" },
+    { "0123456789abcdef", 20, 1, "3456789a" },
+    { "0123456789abcdef", 24, 1, "23456789" },
+    { "0123456789abcdef", 28, 1, "12345678" },
+    { "0123456789abcdef", 32, 1, "01234567" },
+    { "0123456789abcdef", 36, 1, "00123456" },
+    { "0123456789abcdef", 40, 1, "00012345" },
+    { "0123456789abcdef", 44, 1, "00001234" },
+    { "0123456789abcdef", 48, 1, "00000123" },
+    { "0123456789abcdef", 52, 1, "00000012" },
+    { "0123456789abcdef", 56, 1, "00000001" },
+    { "0123456789abcdef", 60, 1, "00000000" },
+    { "0123456789abcdef", 64, 1, "00000000" },
+
+
+
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *A = parse_hex (tests[i].a);
+      struct Num *B = parse_hex (tests[i].b);
+      unsigned *out = malloc(sizeof(uint32_t) * tests[i].result_len);
+      //PR_NUM(A);
+      //printf("shift=%u result_len=%u\n",tests[i].shift, tests[i].result_len);
+      //PR_NUM(B);
+      dsk_tls_bignum_shiftright_truncated (A->len, A->value, tests[i].shift, tests[i].result_len, out);
+      assert(B->len == tests[i].result_len);
+      assert(memcmp(B->value, out, tests[i].result_len * 4) == 0);
+      free (A);
+      free (B);
+      free(out);
     }
 }
 
@@ -347,6 +495,40 @@ test_montgomery_multiply (void)
     }
 }
 
+static void
+test_modular_sqrt (void)
+{
+  static struct {
+    const char *p;
+    const char *v;
+    const char *root;
+  } tests[] = {
+#include "mod-sqrt-test.c"
+  };
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (tests); i++)
+    {
+      struct Num *p = parse_hex (tests[i].p);
+      struct Num *v = parse_hex (tests[i].v);
+      struct Num *root = parse_hex (tests[i].root);
+      uint32_t *out = malloc(4 * p->len);
+      //PR_NUM(p);
+      //PR_NUM(v);
+      //PR_NUM(root);
+      if (!dsk_tls_bignum_modular_sqrt (p->len, v->value, p->value, out))
+        assert(false);
+      bool eq = memcmp (out, root->value, p->len * 4) == 0;
+      dsk_tls_bignum_subtract_with_borrow (p->len, p->value, out, 0, out);
+      bool eq_neg = memcmp (out, root->value, p->len * 4) == 0;
+      assert(eq || eq_neg);
+
+      free(p);
+      free(v);
+      free(root);
+      free(out);
+    }
+}
+
 static struct 
 {
   const char *name;
@@ -355,11 +537,15 @@ static struct
 {
   { "Multiplicative inverse mod 1<<32", test_uint32_inverse },
   { "Bignum Multiply", test_multiply_full },
+  { "Bignum Square", test_square },
   { "Bignum Divide", test_divide_qr },
   { "Bignum Compare", test_compare },
+  { "Bignum Shift-Left", test_shiftleft },
+  { "Bignum Shift-Right", test_shiftright },
   { "Bignum Modular Invert", test_modular_invert },
   { "Barrett's method", test_barrett_mu },
   { "Montgomery multiplication", test_montgomery_multiply },
+  { "Modular square-root", test_modular_sqrt },
 };
 
 

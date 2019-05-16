@@ -67,6 +67,37 @@ void dsk_tls_bignum_multiply (unsigned p_len,
     }
   assert (carry == 0);
 }
+void dsk_tls_bignum_square (unsigned len,
+                              const uint32_t *words,
+                              uint32_t *out)
+{
+  uint64_t *scratch = alloca (8 * len * 2);
+  memset (scratch, 0, 8 * len * 2);
+  for (unsigned i = 0; i < len; i++)
+    {
+      for (unsigned j = 0; j < i; j++)
+        {
+          uint64_t prod = (uint64_t) words[i] * words[j];
+          scratch[i+j] += (prod & 0x7fffffff) << 1;
+          scratch[i+j+1] += prod >> 31;
+        }
+      {
+        uint64_t prod = (uint64_t) words[i] * words[i];
+        scratch[i*2] += (prod & 0xffffffff);
+        scratch[i*2+1] += prod >> 32;
+      }
+    }
+
+  uint64_t carry = scratch[0] >> 32;
+  out[0] = scratch[0];
+  for (unsigned i = 1; i < len * 2; i++)
+    {
+      uint64_t tmp = scratch[i] + carry;
+      out[i] = tmp;
+      carry = tmp >> 32;
+    }
+  assert (carry == 0);
+}
 #if 0
 void dsk_tls_bignum_multiply_samesize (unsigned len,
                               const uint32_t *a_words,
@@ -367,11 +398,111 @@ static void do_shiftleft32(unsigned len,
     }
 }
 
+void
+dsk_tls_bignum_shiftright_truncated (unsigned in_len,
+                                     const uint32_t *in,
+                                     unsigned shift,
+                                     unsigned out_len,
+                                     uint32_t *out)
+{
+  // Treat shifts >= 32 by changing in/in_len.
+  if (shift / 32 >= in_len)
+    {
+      memset(out, 0, 4*out_len);
+      return;
+    }
+  in_len -= shift / 32;
+  in += shift / 32;
+  shift %= 32;
 
-static inline unsigned
+  if (shift == 0)
+    {
+      if (in_len >= out_len)
+        {
+          memmove (out, in, out_len * 4);
+        }
+      else
+        {
+          memmove (out, in, in_len * 4);
+          memset (out + in_len, 0, 4 * (out_len - in_len));
+        }
+    }
+  else
+    {
+      unsigned i;
+      for (i = 0; i + 1 < in_len && i < out_len; i++)
+        {
+          out[i] = (in[i] >> shift) | (in[i+1] << (32-shift));
+        }
+      if (i < out_len)
+        {
+          out[i] = in[i] >> shift;
+          i++;
+        }
+      while (i < out_len)
+        out[i++] = 0;
+    }
+}
+void
+dsk_tls_bignum_shiftleft_truncated (unsigned in_len,
+                                    const uint32_t *in,
+                                    unsigned shift,
+                                    unsigned out_len,
+                                    uint32_t *out)
+{
+  // Treat shifts >= 32 by changing in/in_len.
+  if (shift / 32 >= out_len)
+    {
+      memset(out, 0, 4*out_len);
+      return;
+    }
+  memset(out, 0, (shift/32)*4);
+  out_len -= shift / 32;
+  out += shift / 32;
+  shift %= 32;
+  if (shift == 0)
+    {
+      if (in_len >= out_len)
+        {
+          memmove (out, in, out_len * 4);
+        }
+      else
+        {
+          memmove (out, in, in_len * 4);
+          memset (out + in_len, 0, 4 * (out_len - in_len));
+        }
+    }
+  else
+    {
+      int o = out_len - 1;
+      while (o > (int) in_len + 1)
+        {
+          out[o] = 0;
+          o--;
+        }
+
+      //o == in_len+1
+      if (o == (int) in_len)
+        {
+          out[o] = in[o-1] >> (32 - shift);
+          o--;
+        }
+
+      while (o >= 1)
+        {
+          out[o] = (in[o] << shift) | (in[o-1] >> (32 - shift));
+          o--;
+        }
+      if (o == 0)
+        {
+          out[o] = (in[o] << shift);
+        }
+    }
+}
+static inline int
 highest_bit_in_uint32 (uint32_t v)
 {
-  for (int b = 31; b >= 0; b++)
+  for (int b = 31; b >= 0; b--)
     if (v >> b)
       return b;
   assert(false);
@@ -381,14 +512,16 @@ highest_bit_in_uint32 (uint32_t v)
 static unsigned find_highest_set_bit (unsigned len, const uint32_t *v)
 {
   for (int i = len - 1; i >= 0; i--)
-    if (v[i])
-      return highest_bit_in_uint32 (v[i]) + i * 32;
+    {
+      if (v[i])
+        return highest_bit_in_uint32 (v[i]) + i * 32;
+    }
   assert(0);
   return -1;
 }
 
-static bool
-is_zero (unsigned len, const uint32_t *v)
+bool
+dsk_tls_bignum_is_zero (unsigned len, const uint32_t *v)
 {
   for (unsigned i = 0; i < len; i++)
     if (v[i])
@@ -448,6 +581,7 @@ done_bit:
     }
 }
 
+#if 0
 static void
 do_negate32 (unsigned len, uint32_t *v)
 {
@@ -461,7 +595,6 @@ do_negate32 (unsigned len, uint32_t *v)
     }
 }
 
-#if 0
 // Compute out = a + scale * b,
 //
 // where out, a, b may be negated,
@@ -544,7 +677,7 @@ dsk_tls_bignum_modular_inverse (unsigned len,
     {
       unsigned quotient_len = r_old_len - r_cur_len + 1;
       dsk_tls_bignum_divide (r_old_len, r_old, r_cur_len, r_cur, quotient, remainder);
-      if (is_zero (r_cur_len, remainder))
+      if (dsk_tls_bignum_is_zero (r_cur_len, remainder))
         {
           if (r_cur_len != 1 || r_cur[0] != 1)
             return false;
@@ -660,19 +793,33 @@ is_quadratic_residue (DskTlsMontgomeryInfo *mont,
 {
   uint32_t *x_mont_pow_pow2 = alloca(4 * mont->len);
   uint32_t *x_mont_pow = alloca(4 * mont->len);
-  x_mont_pow_pow2 = dsk_tls_bignum_word_to_montgomery (mont, x, x_mont_pow_pow2);
+  dsk_tls_bignum_word_to_montgomery (mont, x, x_mont_pow_pow2);
   bool x_mont_pow_inited = false;
   assert(mont->N[mont->len - 1] != 0);
-  unsigned end_bit = 32 * (mont->len-1) + get_hi_bit(mont->N[mont->len - 1]);
+  unsigned end_bit = 32 * (mont->len-1) + highest_bit_in_uint32(mont->N[mont->len - 1]);
   for (unsigned i = 1; i < end_bit; i++)
     {
       if ((mont->N[i/32] & (1<<(i%32))) != 0)
-        dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
-      dsk_tls_bignum_square_montgomery (mont->len, x_mont_pow_pow2, x_mont_pow_pow2);
+        {
+          if (x_mont_pow_inited)
+            dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
+          else
+            {
+              memcpy (x_mont_pow, x_mont_pow_pow2, 4 * mont->len);
+              x_mont_pow_inited = true;
+            }
+        }
+      dsk_tls_bignum_square_montgomery (mont, x_mont_pow_pow2, x_mont_pow_pow2);
     }
 
   // highest bit is always 1.
-  dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
+  if (x_mont_pow_inited)
+    dsk_tls_bignum_multiply_montgomery (mont, x_mont_pow, x_mont_pow_pow2, x_mont_pow);
+  else
+    {
+      memcpy (x_mont_pow, x_mont_pow_pow2, 4 * mont->len);
+      x_mont_pow_inited = true;
+    }
 
   return memcmp (x_mont_pow, mont_1, mont->len * 4) == 0;
 }
@@ -682,9 +829,8 @@ find_quadratic_nonresidue (DskTlsMontgomeryInfo *mont,
                       uint32_t             *mont_1)
  
 {
-  memset (out, 0, 4 * mont->len);
   uint32_t rv = 2;
-  while (is_quadratic_residue (mont, rv, mont1))
+  while (is_quadratic_residue (mont, rv, mont_1))
     {
       rv += 1;
       assert(rv != 0);
@@ -692,7 +838,17 @@ find_quadratic_nonresidue (DskTlsMontgomeryInfo *mont,
   return rv;
 }
 
-
+#if 0
+static void
+pr_mont(DskTlsMontgomeryInfo *mont, const char *label, const uint32_t *m)
+{
+  uint32_t *mm = alloca(mont->len * 4);
+  dsk_tls_bignum_from_montgomery (mont, m, mm);
+  printf("%s:", label);
+  for (unsigned i =0 ; i < mont->len; i++) printf(" %08x", mm[i]);
+  printf("\n");
+}
+#endif
 //
 // https://en.wikipedia.org/wiki/Tonelli-Shanks_algorithm
 //
@@ -701,16 +857,11 @@ find_quadratic_nonresidue (DskTlsMontgomeryInfo *mont,
 // NOTE: modulus_words must be prime.
 //
 static bool
-dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
+dsk_tls_bignum_modular_sqrt_1mod4   (DskTlsMontgomeryInfo *mont,
                                      const uint32_t *X_words,
-                                     const uint32_t *modulus_words,
                                      uint32_t *X_sqrt_out)
 {
-  DskTlsMontgomeryInfo mont;
-  dsk_tls_montgomery_info_init (&mont, len, modulus_words);
-
-  // modulus must be odd, b/c it must be prime.
-  dsk_assert ((modulus_words[0] & 1) == 1);
+  unsigned len = mont->len;
 
   //
   // The lowest nonzero bit is bit 0, because any large prime is odd.
@@ -719,7 +870,7 @@ dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
   //
   unsigned second_lowest_nonzero_bit = 1;
   while (second_lowest_nonzero_bit < len*32
-      && ((X_words[second_lowest_nonzero_bit/32] >> (second_lowest_nonzero_bit%32)) & 1) == 0)
+      && ((mont->N[second_lowest_nonzero_bit/32] >> (second_lowest_nonzero_bit%32)) & 1) == 0)
     second_lowest_nonzero_bit += 1;
   if (second_lowest_nonzero_bit == len*32)
     {
@@ -733,7 +884,7 @@ dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
   //
   unsigned Q_len = len - second_lowest_nonzero_bit/32;
   uint32_t *Q = alloca(Q_len * 4);
-  dsk_tls_bignum_shiftright_truncated (len, X_words, second_lowest_nonzero_bit, Q_len, Q);
+  dsk_tls_bignum_shiftright_truncated (len, mont->N, second_lowest_nonzero_bit, Q_len, Q);
   assert((Q[0] & 1) == 1);
   Q_len = dsk_tls_bignum_actual_len (Q_len, Q);
   unsigned S = second_lowest_nonzero_bit;     // as in Wikipedia's Tonelli-Shank's algo
@@ -743,53 +894,66 @@ dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
   dsk_tls_bignum_word_to_montgomery (mont, 1, mont1);
 
   //
+  // Compute Q1_half == (Q+1) / 2.
+  //
+  // Note that Q is odd, so this is always an int.
+  //
+  uint32_t *Q1_half = alloca(Q_len * 4);
+  memcpy (Q1_half, Q, Q_len * 4);
+  dsk_tls_bignum_add_word (Q_len, Q1_half, 1);
+  dsk_tls_bignum_shiftright_truncated (Q_len, Q1_half, 1, Q_len, Q1_half);
+  unsigned Q1_half_len = dsk_tls_bignum_actual_len (Q_len, Q1_half);
+
+  //
   // Find a quadratic non-residue z (a number which does NOT have sqrt mod p).
   //
-  uint32_t z = find_quadratic_nonresidue (&mont, mont1);
-  uint32_t *z_mont = alloca(4 * mont.len);
-  dsk_tls_bignum_word_to_montgomery (&mont, z, z_mont);
+  uint32_t z = find_quadratic_nonresidue (mont, mont1);
+  uint32_t *z_mont = alloca(4 * mont->len);
+  dsk_tls_bignum_word_to_montgomery (mont, z, z_mont);
 
   //
   // Step 3.  Variable names are again taken from the wiki.
   //
   unsigned M = S;
-  uint32_t *c_mont = alloca (mont.len * 4);
-  dsk_tls_bignum_exponent_montgomery (&mont, z_mont, Q_len, Q, c_mont);
-  uint32_t *X_mont = alloca (mont.len * 4);
-  dsk_tls_bignum_to_montgomery (&mont, X_words, X_mont);
-  uint32_t *t_mont = alloca(mont.len * 4);
-  dsk_tls_bignum_exponent_montgomery (&mont, X_mont, Q_len, Q, t_mont);
-  uint32_t *R_mont = alloca(mont.len * 4);
-  dsk_tls_bignum_exponent_montgomery (&mont, X_mont, Q1_half_len, Q1_half, R_mont);
+  uint32_t *c_mont = alloca (mont->len * 4);
+  dsk_tls_bignum_exponent_montgomery (mont, z_mont, Q_len, Q, c_mont);
+  uint32_t *X_mont = alloca (mont->len * 4);
+  dsk_tls_bignum_to_montgomery (mont, X_words, X_mont);
+  uint32_t *t_mont = alloca(mont->len * 4);
+  dsk_tls_bignum_exponent_montgomery (mont, X_mont, Q_len, Q, t_mont);
+  uint32_t *R_mont = alloca(mont->len * 4);
+  dsk_tls_bignum_exponent_montgomery (mont, X_mont, Q1_half_len, Q1_half, R_mont);
 
   //
   // Step 4.  Loop:
   //
+  uint32_t *t_2_i_mont = alloca (len * 4);
+  uint32_t *b_mont = alloca (len * 4);
   for (;;)
     {
       // if t=0, return 0.
-      if (dsk_tls_bignum_is_zero (mont.len, t_mont))
+      if (dsk_tls_bignum_is_zero (len, t_mont))
         {
-          memset (X_sqrt_out, 0, 4 * mont.len);
-          return dsk_tls_bignum_is_zero (mont.len, X_words);   /// ???
+          memset (X_sqrt_out, 0, 4 * len);
+          return dsk_tls_bignum_is_zero (mont->len, X_words);   /// ???
         }
 
       // if t=1, return R.
-      if (memcmp (t_mont, mont1, mont.len * 4) == 0)
+      if (memcmp (t_mont, mont1, len * 4) == 0)
         {
-          dsk_tls_bignum_from_montgomery (&mont, R_mont, X_sqrt_out);
+          dsk_tls_bignum_from_montgomery (mont, R_mont, X_sqrt_out);
           return true;
         }
 
       // Otherwise, use repeated squaring to find the least i (mod p),
       // 0 < i < M, such that t^{2^{i}-1} = 1.
       unsigned i = 0;
-      memcpy (t_2_i_mont, t_mont, 4 * mont.len);
+      memcpy (t_2_i_mont, t_mont, 4 * len);
       while (i < M)
         {
-          if (memcmp (t_2_i_mont, mont1, 4 * mont.len) == 0)
+          if (memcmp (t_2_i_mont, mont1, 4 * len) == 0)
             break;
-          dsk_tls_bignum_square_montgomery (&mont, t_2_i_mont, t_2_i_mont);
+          dsk_tls_bignum_square_montgomery (mont, t_2_i_mont, t_2_i_mont);
           i++;
         }
       if (i == M)
@@ -799,47 +963,69 @@ dsk_tls_bignum_modular_sqrt_1mod4   (unsigned len,
       // Update loop variables (mod p).
       //
       // Let b := c^{2^{M-i-1}}.
-      memcpy (b_mont, c_mont, 4 * mont.len);
+      memcpy (b_mont, c_mont, 4 * len);
       for (unsigned j = 0; j < M - i - 1; j++)
-        dsk_tls_bignum_square_montgomery (&mont, b_mont, b_mont);
+        dsk_tls_bignum_square_montgomery (mont, b_mont, b_mont);
       M = i;
       // c := b^2
-      dsk_tls_bignum_square_montgomery (&mont, b_mont, c_mont);
+      dsk_tls_bignum_square_montgomery (mont, b_mont, c_mont);
 
       // t := t*b^2
-      dsk_tls_bignum_multiply_montgomery (&mont, t_mont, c_mont, t_mont);
+      dsk_tls_bignum_multiply_montgomery (mont, t_mont, c_mont, t_mont);
 
       // R := R * b
-      dsk_tls_bignum_multiply_montgomery (&mont, R_mont, b_mont, R_mont);
+      dsk_tls_bignum_multiply_montgomery (mont, R_mont, b_mont, R_mont);
     }
 }
 
 static bool
-dsk_tls_bignum_modular_sqrt_3mod4   (unsigned len,
+dsk_tls_bignum_modular_sqrt_3mod4   (DskTlsMontgomeryInfo *mont,
                                      const uint32_t *X_words,
-                                     const uint32_t *modulus_words,
                                      uint32_t *X_sqrt_out)
 {
   // Compute r = X^((p+1)/4).
-  ...
 
-  // If r^2 == 1, then r is the sqrt; otherwise, X is not a quadratic residue.
-  ...
+  // First, compute (p+1)/4 == floor(p/4)+1, since p%4==3.
+  // The latter expression definitely won't overflow, so use it.
+  uint32_t *p1_over_4 = alloca(mont->len * 4);
+  dsk_tls_bignum_shiftright_truncated (mont->len, mont->N, 2, mont->len, p1_over_4);
+  dsk_tls_bignum_add_word (mont->len, p1_over_4, 1);
+  unsigned p1_over_4_len = dsk_tls_bignum_actual_len (mont->len, p1_over_4);
+
+  uint32_t *X_mont = alloca(mont->len * 4);
+  dsk_tls_bignum_to_montgomery (mont, X_words, X_mont);
+
+  uint32_t *candidate = alloca (4 * mont->len);
+  dsk_tls_bignum_exponent_montgomery (mont, X_mont, p1_over_4_len, p1_over_4, candidate);
+
+  // If r^2 == 2, then r is the sqrt; otherwise, X is not a quadratic residue.
+  dsk_tls_bignum_square_montgomery (mont, candidate, X_sqrt_out);
+  if (memcmp (X_sqrt_out, X_mont, mont->len * 4) == 0)
+    {
+      dsk_tls_bignum_from_montgomery (mont, candidate, X_sqrt_out);
+      return true;
+    }
+  return false;
 }
 
 
-static bool
+bool
 dsk_tls_bignum_modular_sqrt         (unsigned len,
                                      const uint32_t *X_words,
                                      const uint32_t *modulus_words,
                                      uint32_t *X_sqrt_out)
 {
+  DskTlsMontgomeryInfo mont;
+  dsk_tls_montgomery_info_init (&mont, len, modulus_words);
   assert (len > 0);
-  assert ((X_words[0] & 1) == 1);
-  if (X_words[0] & 2)
-    return dsk_tls_bignum_modular_sqrt_3mod4 (len, X_words, modulus_words, X_sqrt_out);
+  assert ((modulus_words[0] & 1) == 1);
+  bool rv;
+  if (modulus_words[0] & 2)
+    rv = dsk_tls_bignum_modular_sqrt_3mod4 (&mont, X_words, X_sqrt_out);
   else
-    return dsk_tls_bignum_modular_sqrt_1mod4 (len, X_words, modulus_words, X_sqrt_out);
+    rv = dsk_tls_bignum_modular_sqrt_1mod4 (&mont, X_words, X_sqrt_out);
+  dsk_tls_montgomery_info_clear (&mont);
+  return rv;
 }
 
 void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
@@ -860,6 +1046,14 @@ void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
   // compute barrett's mu
   info->barrett_mu = malloc ((len + 2) * 4);
   dsk_tls_bignum_compute_barrett_mu (len, N, (uint32_t *) info->barrett_mu);
+}
+
+void dsk_tls_montgomery_info_clear  (DskTlsMontgomeryInfo *info)
+{
+  free ((void *) info->N);
+  free ((void *) info->barrett_mu);
+  info->N = NULL;
+  info->barrett_mu = NULL;
 }
 
 void
@@ -918,6 +1112,21 @@ void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
   uint32_t *q = alloca(info->len * 2 * 4);
   memset(q, 0, 4 * info->len);
   memcpy(q + info->len, in, info->len * 4);
+
+  // mod(q) using Barrett's method
+  dsk_tls_bignum_modulus_with_barrett_mu (info->len * 2, q,
+                                          info->len, info->N,
+                                          info->barrett_mu, out);
+}
+void dsk_tls_bignum_word_to_montgomery (DskTlsMontgomeryInfo *info,
+                                        uint32_t              word,
+                                        uint32_t             *out)
+{
+  // compute q = in * R (which is just shifting it left by len words)
+  uint32_t *q = alloca(info->len * 2 * 4);
+  memset(q, 0, 4 * info->len);
+  q[info->len] = word;
+  memset(q + info->len + 1, 0, 4 * (info->len - 1));
 
   // mod(q) using Barrett's method
   dsk_tls_bignum_modulus_with_barrett_mu (info->len * 2, q,
@@ -986,6 +1195,60 @@ dsk_tls_bignum_multiply_montgomery(DskTlsMontgomeryInfo *info,
   dsk_tls_bignum_multiply (info->len, a, info->len, b, product);
   dsk_tls_bignum_montgomery_reduce (info, product, out);
 }
+
+void dsk_tls_bignum_square_montgomery
+                                  (DskTlsMontgomeryInfo *info,
+                                   const uint32_t       *a_mont,
+                                   uint32_t             *out_mont)
+{
+  uint32_t *product = alloca (4 * info->len*2);
+  dsk_tls_bignum_square (info->len, a_mont, product);
+  dsk_tls_bignum_montgomery_reduce (info, product, out_mont);
+}
+
+void dsk_tls_bignum_exponent_montgomery
+                                  (DskTlsMontgomeryInfo *info,
+                                   uint32_t             *base_mont,
+                                   unsigned              exponent_len,
+                                   uint32_t             *exponent,
+                                   uint32_t             *out_mont)
+{
+  int hi_bit = find_highest_set_bit (exponent_len, exponent);
+  if (hi_bit == -1)
+    {
+      dsk_tls_bignum_word_to_montgomery (info, 1, out_mont);
+      return;
+    }
+  uint32_t *base_2_i = alloca (info->len * 4);
+  bool out_inited = false;
+  memcpy (base_2_i, base_mont, info->len * 4);
+  for (unsigned i = 0; i < (unsigned) hi_bit; i++)
+    {
+      if (((exponent[i/32] >> (i%32)) & 1) == 1)
+        {
+          if (out_inited)
+            dsk_tls_bignum_multiply_montgomery (info, out_mont, base_2_i, out_mont);
+          else
+            {
+              memcpy (out_mont, base_2_i, 4 * info->len);
+              out_inited = true;
+            }
+        }
+
+      dsk_tls_bignum_square_montgomery (info, base_2_i, base_2_i);
+    }
+
+  // Find (highest) bit is always 1.
+  if (out_inited)
+    {
+      dsk_tls_bignum_multiply_montgomery (info, out_mont, base_2_i, out_mont);
+    }
+  else
+    {
+      memcpy (out_mont, base_2_i, 4 * info->len);
+    }
+}
+
 
 void dsk_tls_bignum_from_montgomery(DskTlsMontgomeryInfo *info,
                                     const uint32_t       *in,
