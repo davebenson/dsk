@@ -18,16 +18,10 @@ struct DskTlsKeyShareMethod
   // Callers should refill private_key_inout with random data
   // and re-invoke make_private_key.
   //
-  bool (*make_private_key) (DskTlsKeyShareMethod *method,
-                            uint8_t              *private_key_inout);
-
-
-  //
-  // Take a private key and generate a public key.
-  //
-  void (*make_public_key)  (DskTlsKeyShareMethod *method,
-                            const uint8_t        *private_key,
+  bool (*make_key_pair)    (DskTlsKeyShareMethod *method,
+                            uint8_t              *private_key_inout,
                             uint8_t              *public_key_out);
+
 
   //
   // Take your private key and the other user's public key,

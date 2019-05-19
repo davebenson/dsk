@@ -26,11 +26,39 @@ typedef enum DskTlsConnectionState
 #define DSK_TLS_CONNECTION_STATE_IS_CLIENT(st)   (((st) >> 8) == 1)
 #define DSK_TLS_CONNECTION_STATE_IS_SERVER(st)   (((st) >> 8) == 2)
 
+//
+// Information used only when handshaking.
+//
+// All memory allocated here should come out
+// of DskTlsConnectionHandshakeInfo.mem_pool.
+//
+// The final result of handshaking must be stored
+// in the DskTlsConnection since the entire handshake
+// will be freed once handshaking is complete.
+//
+typedef struct DskTlsPublicPrivateKeyShare DskTlsPublicPrivateKeyShare;
+struct DskTlsPublicPrivateKeyShare
+{
+  DskTlsKeyShareMethod *method;
+  uint8_t *private_key;
+  uint8_t *public_key;
+};
+typedef struct DskTlsConnectionHandshakeInfo DskTlsConnectionHandshakeInfo;
 struct DskTlsConnectionHandshakeInfo
 {
   DskTlsHandshake *first_handshake;
   DskTlsHandshake *last_handshake;
   DskMemPool mem_pool;
+
+  const char *server_hostname;
+
+  //
+  // Only one key-share will be used in server mode;
+  // client may offer multiple key-shares,
+  // but that is probably rare.
+  //
+  unsigned n_key_shares;
+  DskTlsPublicPrivateKeyShare *key_shares;
 };
 
 typedef struct DskTlsContext DskTlsContext;
@@ -45,8 +73,20 @@ struct DskTlsConnection
   DskStream base_instance;
   DskStream *underlying;
   DskTlsContext *context;
+  DskTlsConnectionHandshakeInfo *handshake_info;
   DskTlsConnectionState state;
+  DskTlsProtocolVersion version;
   DskBuffer incoming_raw, outgoing_raw;
   DskBuffer incoming_plaintext, outgoing_plaintext;
+
+  uint8_t *incoming_message;
+  size_t incoming_record_len;
+
+  unsigned shared_key_length;
+  uint8_t *shared_key;
 };
 
+DskTlsConnection *dsk_tls_connection_new (DskStream     *underlying,
+                                          bool           is_server,
+                                          DskTlsContext *context,
+                                          DskError     **error);

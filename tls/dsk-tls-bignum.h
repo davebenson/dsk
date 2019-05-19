@@ -12,28 +12,64 @@
 //
 // Modular Square-Root:
 //    * needed for Elliptic Point decompression
+//
+// Montgomery's method and Barrett's method are implemented
+// for modular multiplication.
+//
+// TODO: in many cases, aliasing is allowed
+// (esp for add,subtract functions), we should document exactly when
+// aliasing is allowed and assert test that in the implementations.
+// Also, add and subtract allow aliasing, but only all-or-nothing
+// aliasing... for example add(len, a+1, a, a+2) is not allowed.
+// OTOH, multiplication currently uses a temp area which allows
+// for almost any aliasing situation.
 //    
 
-bool dsk_tls_bignum_is_zero (unsigned len, const uint32_t *v);
+bool     dsk_tls_bignum_is_zero              (unsigned        len,
+                                              const uint32_t *v);
 uint32_t dsk_tls_bignum_subtract_with_borrow (unsigned        len,
                                               const uint32_t *a,
                                               const uint32_t *b,
                                               uint32_t        borrow,
                                               uint32_t       *out);
+#define dsk_tls_bignum_subtract(len,a,b,out) \
+        dsk_tls_bignum_subtract_with_borrow(len,a,b,0,out)
 uint32_t dsk_tls_bignum_add_with_carry       (unsigned   len,
                                               const uint32_t *a,
                                               const uint32_t *b,
                                               uint32_t carry,
                                               uint32_t *out);
-uint32_t dsk_tls_bignum_add_word             (unsigned len,
+#define dsk_tls_bignum_add(len,a,b,out) \
+        dsk_tls_bignum_add_with_carry(len,a,b,0,out)
+uint32_t dsk_tls_bignum_add_word_inplace     (unsigned len,
                                               uint32_t *v,
                                               uint32_t carry);
+uint32_t dsk_tls_bignum_subtract_word_inplace(unsigned len,
+                                              uint32_t *v,
+                                              uint32_t carry);
+uint32_t dsk_tls_bignum_add_word             (unsigned len,
+                                              const uint32_t *in,
+                                              uint32_t carry,
+                                              uint32_t *out);
+uint32_t dsk_tls_bignum_subtract_word_inplace(unsigned len,
+                                              uint32_t *v,
+                                              uint32_t carry);
+uint32_t dsk_tls_bignum_subtract_word        (unsigned len,
+                                              const uint32_t *in,
+                                              uint32_t carry,
+                                              uint32_t *out);
 
 void     dsk_tls_bignum_multiply             (unsigned p_len,
                                               const uint32_t *p_words,
                                               unsigned q_len,
                                               const uint32_t *q_words,
                                               uint32_t *out);
+void     dsk_tls_bignum_multiply_truncated   (unsigned a_len,
+                                              const uint32_t *a_words,
+                                              unsigned b_len,
+                                              const uint32_t *b_words,
+                                              unsigned out_len,
+                                              uint32_t *product_words_out);
 void     dsk_tls_bignum_square               (unsigned len,
                                               const uint32_t *words,
                                               uint32_t *out);
@@ -84,18 +120,34 @@ void     dsk_tls_bignum_modular_add          (unsigned        len,
 // This routine is only used in computing some compile-time tables
 // for various primes such with Diffie-Hellman Finite-Field Key Exchange.
 //
-// Returns whether an inverse existed.
+// Returns whether an inverse existed (which is true iff X and modulus
+// are relatively prime.
 //
 bool     dsk_tls_bignum_modular_inverse      (unsigned len,
                                               const uint32_t *X_words,
                                               const uint32_t *modulus_words,
                                               uint32_t *X_inv_out);
 
+//
+// This is fairly slow in some cases (modulus==1 % 4),
+// but (log modulus)^2 order.  
+//
+// This routine may return a false negative
+// if modulus_words is non-prime.
+// (modular sqrt is as hard as factorization for composite numbers)
+//
 bool     dsk_tls_bignum_modular_sqrt         (unsigned len,
                                               const uint32_t *X_words,
                                               const uint32_t *modulus_words,
-                                              uint32_t *X_inv_out);
+                                              uint32_t *X_sqrt_out);
 
+//
+// Montgomery Representation mod p.
+//
+// The montgomery representation of n (mod p)
+// is simply (n << (len*32)) % p.
+// (We are using b = 2^32 throughout this code for the base).
+//
 typedef struct {
   unsigned len;                 // number of 32-bit words in N.
 
@@ -182,7 +234,7 @@ uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v);
 //
 // Primality testing.
 //
-void dsk_tls_bignum_find_probable_prime (unsigned len,
+bool dsk_tls_bignum_find_probable_prime (unsigned len,
                                          uint32_t *inout);
 bool dsk_tls_bignum_is_probable_prime (unsigned len,
                                        const uint32_t *p);

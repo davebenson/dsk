@@ -16,6 +16,15 @@ For our purposes,
 </li>
 
 <li>
+  ASN.1 - an old serialization format used by X.509 keys, specified in the
+  fairly easy to understand ITU Rec X.690, old versions of which are available for free.
+  It actually defines three related formats: BER (Basic Encoding Rules),
+  CER (Canonical Encoding Rules), and DER (Distinguished Encoding Rules).
+  The latter is the one used by X509 and generally results in one way to encode each
+  ASN.1 entity.
+</li>
+
+<li>
  <p>
  <b>Block cipher</b>: a way of encrypting data of a fixed size
  using a key known to the encryptor and decryptor.  
@@ -35,9 +44,19 @@ For our purposes,
 </li>
 
 <li>
+ Curve 25519 - a fast algorithm for Key Sharing
+</li>
+
+<li>
  <b>Cryptographic Hash</b>: A function that computes a fixed-length byte-string (the "hash")
  for each input byte-string, where it is hard to generate a partial inverse (ie one
  that finds a byte-string for a given hash).
+</li>
+
+<li>
+ DER: often used as a description of the format of X509 certs,
+ it refers to an encoding of ASN.1.  The competition is the PEM format.
+</li>
 
 <li>
  DES: a series of encryption standards developed by
@@ -64,6 +83,18 @@ For our purposes,
 </li>
 
 <li>
+ <b>Group</b> - a group is a set with an invertible, associative
+ operator.
+ <p>Cryptographic groups tends to be very large, and
+ they rely on the difficulty of "logarithms" on this group's operation.</p>
+ <p>Key-Share (aka Diffie-Hellman) mechansims use
+ the fact that repeatedly applying a group-element to itself is
+ readily optimisable, but computing the number of times given the output
+ is hard.  (This is usually called the "discrete logarithm problem").
+ </p>
+</li>
+
+<li>
  <b>HMAC</b> - Hashed Message Authentication Code.
  Takes a secret key and a message and generates a signature that can be validated
  by someone who has the secret key, using a cryptographic hash-function.
@@ -77,11 +108,22 @@ For our purposes,
 <li>
   Key Exchange.  In TLS, this is the most common way to set up a symmetric key arrangement.
   As a practical matter, it involves three steps:
-      (1) each side computes a public key and private key that match;
-      (2) each side shares its public key
-      (3) the private key + the other side's public key are
+    <ul>
+      <li>each side computes a public key and private key that match (they use a secure
+      random-number-generator to seed the key generation process).
+      Most such algorithms actually have a function to compute
+      the public key from the private key, but this interface
+      generates them simultaneously.</li>
+      <li>each side shares its public key</li>
+      <li>the private key + the other side's public key are
           combined into a shared key (ie the computation will result
-            in the same shared data: shared = A_private+B_public = B_private+A_public
+            in the same shared data: shared = A_private+B_public = B_private+A_publicM
+      </li>
+    </ul>
+</li>
+
+<li>
+  Key Sharing - a synonym for Key Exchange.
 </li>
 
 <li>
@@ -103,10 +145,23 @@ For our purposes,
 </li>
 
 <li>
+  PEM: a format of X509 certificates.
+</li>
+
+<li>
+  PKI - abbreviation of Public Key Infrastructure
+</li>
+<li>
   <b>Plaintext</b>: the unencrypted data: either the input to the encryption
   algorithm, or, equivalently, the output of the decryption algorithm.
 </li>
-
+<li>
+  Pre-Shared Key - a mechanism to save and restore the TLS session state.
+  Can be used to improvement connection times.
+</li>
+<li>
+  <b>Public Key Infrastructure</b> - ...
+</li>
 <li>
   <p>Record Layer: the outermost layer of TLS,
   which is very light, since all encryption occurs under this layer.
@@ -139,4 +194,8 @@ For our purposes,
 
 <li>
   TLS "Transport Layer Security", the modern protocol for securing internet connections.
+</li>
+
+<li>
+  X.509 - a format of signed certificate which is supported by TLS and supports the Public Key Infrastructure.
 </li>

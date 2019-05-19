@@ -7,6 +7,10 @@
 /* Parsing and formatting ints in endian-specific ways. */
 #include "dsk-endian.h"
 
+/* Break down and build up floating point numbers
+ * from their constituent parts. */
+#include "dsk-floating-point.h"
+
 /* File-descriptors and ways to manipulate them. */
 #include "dsk-fd.h"
 
@@ -126,8 +130,12 @@
 #include "tls/dsk-curve25519.h"
 #include "tls/dsk-hmac.h"
 #include "tls/dsk-hkdf.h"
+#include "tls/dsk-asn1.h"
+#include "tls/dsk-tls-cryptorandom.h"
+#include "tls/dsk-tls-enums.h"
 #include "tls/dsk-tls-bignum.h"
 #include "tls/dsk-tls-ffdhe.h"
+#include "tls/dsk-tls-x509.h"
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"
 #include "tls/dsk-tls-connection.h"

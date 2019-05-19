@@ -184,7 +184,7 @@ dsk_tls_bignum_compare (unsigned len,
   return 0;
 }
 
-uint32_t dsk_tls_bignum_add_word (unsigned len, uint32_t *v, uint32_t carry)
+uint32_t dsk_tls_bignum_add_word_inplace (unsigned len, uint32_t *v, uint32_t carry)
 {
   for (unsigned i = 0; i < len; i++)
     {
@@ -531,7 +531,7 @@ dsk_tls_bignum_negate (unsigned len, const uint32_t *in, uint32_t *out)
 {
   for (unsigned i = 0; i < len; i++)
     out[i] = ~in[i];
-  dsk_tls_bignum_add_word (len, out, 1);
+  dsk_tls_bignum_add_word_inplace (len, out, 1);
 }
 
 bool
@@ -783,7 +783,7 @@ dsk_tls_bignum_modular_sqrt_1mod4   (DskTlsMontgomeryInfo *mont,
   //
   uint32_t *Q1_half = alloca(Q_len * 4);
   memcpy (Q1_half, Q, Q_len * 4);
-  dsk_tls_bignum_add_word (Q_len, Q1_half, 1);
+  dsk_tls_bignum_add_word_inplace (Q_len, Q1_half, 1);
   dsk_tls_bignum_shiftright_truncated (Q_len, Q1_half, 1, Q_len, Q1_half);
   unsigned Q1_half_len = dsk_tls_bignum_actual_len (Q_len, Q1_half);
 
@@ -872,7 +872,7 @@ dsk_tls_bignum_modular_sqrt_3mod4   (DskTlsMontgomeryInfo *mont,
   // The latter expression definitely won't overflow, so use it.
   uint32_t *p1_over_4 = alloca(mont->len * 4);
   dsk_tls_bignum_shiftright_truncated (mont->len, mont->N, 2, mont->len, p1_over_4);
-  dsk_tls_bignum_add_word (mont->len, p1_over_4, 1);
+  dsk_tls_bignum_add_word_inplace (mont->len, p1_over_4, 1);
   unsigned p1_over_4_len = dsk_tls_bignum_actual_len (mont->len, p1_over_4);
 
   uint32_t *X_mont = alloca(mont->len * 4);
@@ -1053,7 +1053,7 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
       uint32_t u = A[i] * info->Nprime;
       uint32_t carry = dsk_tls_bignum_multiply_word_add (info->len, info->N, u, A + i);
       assert(A[i] == 0);
-      dsk_tls_bignum_add_word (A_len - i - info->len, A + i + info->len, carry);
+      dsk_tls_bignum_add_word_inplace (A_len - i - info->len, A + i + info->len, carry);
     }
 
   A += info->len;
@@ -1304,7 +1304,7 @@ dsk_tls_bignum_is_probable_prime (unsigned len,
   return is_probable_prime (len, p, rounds);
 }
 
-void
+bool
 dsk_tls_bignum_find_probable_prime (unsigned len,
                                     uint32_t *inout)
 {
@@ -1325,11 +1325,13 @@ dsk_tls_bignum_find_probable_prime (unsigned len,
       if (mod30 % 5 != 0 && mod30 % 2 != 0 && mod30 % 3 != 0)
         {
           if (is_probable_prime (len, inout, rounds))
-            return;
+            return true;
         }
       if (++mod30 == 30)
         mod30 = 0;
-      dsk_tls_bignum_add_word  (len, inout, 1);
+      if (dsk_tls_bignum_add_word_inplace  (len, inout, 1))
+        // failed to find prime before wrapping.
+        return false;
     }
 }
 

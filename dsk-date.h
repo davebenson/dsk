@@ -60,9 +60,10 @@ void        dsk_date_print_iso8601 (DskDate *date, /* unimplemented */
    Behavior of dsk_unixtime_to_date() is defined for any time
    whose year fits in an unsigned integer. (therefore, no B.C. dates)
  */
+bool    dsk_date_is_valid (const DskDate *date);
 
 /* dsk_unixtime_to_date() always sets the date_out->zone_offset to 0 (ie GMT) */
-dsk_time_t  dsk_date_to_unixtime (const DskDate *date);
+int64_t     dsk_date_to_unixtime (const DskDate *date);
 void        dsk_unixtime_to_date (dsk_time_t unixtime,
                                   DskDate *date_out);
 

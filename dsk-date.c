@@ -309,6 +309,33 @@ static const unsigned month_starts_in_days[12]
                                    334,       /* dec has 31 */
                                    /*365*/ };
 
+static inline bool
+is_leap_year (unsigned y)
+{
+  return y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
+}
+
+bool    dsk_date_is_valid (const DskDate *date)
+{
+  // We permit a 60th second, just to help operations
+  // when leap-seconds are enabled.  The validity of second 60 is situation dependent,
+  // but posix timestamps don't support is so it's identical to the start of the next minute.
+  if (date->hour > 23 || date->minute > 59 || date->second > 60)
+    return false;
+
+  if (date->year == 0 || date->month == 0 || date->month > 12)
+    return false;
+
+  static const uint8_t dpm[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+  unsigned days_per_month = dpm[date->month - 1];
+  if (date->month == 2 && is_leap_year (date->year))
+    days_per_month += 1;
+  if (date->day == 0 || date->day > days_per_month)
+    return false;
+
+  return true;
+}
+
 /* 'unixtime' here is seconds since epoch.
    If the date is before the epoch (Jan 1, 1970 00:00 GMT),
    then it is negative. */
