@@ -3,6 +3,98 @@
 #include <stdlib.h>
 #include <math.h>
 
+const char * dsk_asn1_type_name (DskASN1Type type)
+{
+  switch (type)
+    {
+#define WRITE_CASE(shortname) case DSK_ASN1_TYPE_##shortname: return #shortname
+    WRITE_CASE(BOOLEAN);
+    WRITE_CASE(INTEGER);
+    WRITE_CASE(BIT_STRING);
+    WRITE_CASE(OCTET_STRING);
+    WRITE_CASE(NULL);
+    WRITE_CASE(OBJECT_IDENTIFIER);
+    WRITE_CASE(OBJECT_DESCRIPTOR);
+    WRITE_CASE(EXTERNAL);
+    WRITE_CASE(REAL);
+    WRITE_CASE(ENUMERATED);
+    WRITE_CASE(ENUMERATED_PDV);
+    WRITE_CASE(UTF8_STRING);
+    WRITE_CASE(RELATIVE_OID);
+    WRITE_CASE(SEQUENCE);
+    WRITE_CASE(SET);
+    WRITE_CASE(NUMERIC_STRING);
+    WRITE_CASE(PRINTABLE_STRING);
+    WRITE_CASE(TELETEX_STRING);
+    WRITE_CASE(VIDEOTEXT_STRING);
+    WRITE_CASE(ASCII_STRING);
+    WRITE_CASE(UTC_TIME);
+    WRITE_CASE(GENERALIZED_TIME);
+    WRITE_CASE(GRAPHIC_STRING);
+    WRITE_CASE(VISIBLE_STRING);
+    WRITE_CASE(GENERAL_STRING);
+    WRITE_CASE(UNIVERSAL_STRING);
+    WRITE_CASE(CHARACTER_STRING);
+    WRITE_CASE(BMP_STRING);
+#undef WRITE_CASE
+    default: return "*unknown-asn1-type*";
+    }
+}
+
+const char * dsk_asn1_type_name_lowercase (DskASN1Type type)
+{
+  switch (type)
+    {
+#define WRITE_CASE(shortname, str) case DSK_ASN1_TYPE_##shortname: return str
+    WRITE_CASE(BOOLEAN, "boolean");
+    WRITE_CASE(INTEGER, "integer");
+    WRITE_CASE(BIT_STRING, "bit-string");
+    WRITE_CASE(OCTET_STRING, "octet-string");
+    WRITE_CASE(NULL, "null");
+    WRITE_CASE(OBJECT_IDENTIFIER, "object-identifier");
+    WRITE_CASE(OBJECT_DESCRIPTOR, "object-descriptor");
+    WRITE_CASE(EXTERNAL, "external");
+    WRITE_CASE(REAL, "real");
+    WRITE_CASE(ENUMERATED, "enumerated");
+    WRITE_CASE(ENUMERATED_PDV, "enumerated-pdv");
+    WRITE_CASE(UTF8_STRING, "utf8-string");
+    WRITE_CASE(RELATIVE_OID, "relative-oid");
+    WRITE_CASE(SEQUENCE, "sequence");
+    WRITE_CASE(SET, "set");
+    WRITE_CASE(NUMERIC_STRING, "numeric-string");
+    WRITE_CASE(PRINTABLE_STRING, "printable-string");
+    WRITE_CASE(TELETEX_STRING, "teletex-string");
+    WRITE_CASE(VIDEOTEXT_STRING, "videotext-string");
+    WRITE_CASE(ASCII_STRING, "ascii-string");
+    WRITE_CASE(UTC_TIME, "utc-time");
+    WRITE_CASE(GENERALIZED_TIME, "generalized-time");
+    WRITE_CASE(GRAPHIC_STRING, "graphic-string");
+    WRITE_CASE(VISIBLE_STRING, "visible-string");
+    WRITE_CASE(GENERAL_STRING, "general-string");
+    WRITE_CASE(UNIVERSAL_STRING, "universal-string");
+    WRITE_CASE(CHARACTER_STRING, "character-string");
+    WRITE_CASE(BMP_STRING, "bmp-string");
+#undef WRITE_CASE
+    default: return "*unknown-asn1-type*";
+    }
+}
+
+const char *dsk_asn1_tag_class_name (uint8_t v)
+{
+  switch (v)
+    {
+    case DSK_ASN1_TAG_CLASS_UNIVERSAL: return "UNIVERSAL";
+    case DSK_ASN1_TAG_CLASS_APPLICATION: return "APPLICATION";
+    case DSK_ASN1_TAG_CLASS_PRIVATE: return "PRIVATE";
+    case DSK_ASN1_TAG_CLASS_CONTEXT_SPECIFIC: return "CONTEXT_SPECIFIC";
+    default: return "*unknown-tag-class*";
+    }
+}
+
+//
+// Compute v_real.double_value and v_real.overflowed based
+// on sign, base, exponent, binary_scaling_factor, mantissa.
+// 
 static bool
 compute_real_parts (DskASN1Value *value,
                     DskError    **error)
@@ -32,7 +124,9 @@ compute_real_parts (DskASN1Value *value,
   x = value->v_real.num_start + (n_leading_zeros+1) / 8;
   uint8_t mask = 128 >> ((n_leading_zeros+1) % 8);
 
-  // pull next 52 bits for mantissa
+  // pull next 52 bits for mantissa;
+  // we do it bit-by-bit, even though we could
+  // probably do it byte-by-byte.
   unsigned shift = 52;
   uint64_t mant = 0;
   while (shift != 0 && x < value->value_end)
@@ -48,7 +142,9 @@ compute_real_parts (DskASN1Value *value,
         }
     }
 
+  //
   // if exponent is more than 1<<16 return overflow
+  //
   int32_t stated_exp;
   switch (value->v_real.num_start - value->v_real.exp_start)
     {
@@ -132,14 +228,15 @@ dsk_asn1_value_parse_der (size_t         length,
   rv = dsk_mem_pool_alloc (pool, sizeof(DskASN1Value));
   rv->tag_class = data[0] >> 6;
   rv->is_constructed = (data[0] >> 5) & 1;
-  rv->type = data[0] & 0x1f;
+  rv->type = data[0] & 0xdf;            // remove "constructed" bit
 
-  if (rv->is_constructed)
+  bool length_is_definite = data[1] != 0x80;
+  if (!rv->is_constructed && !length_is_definite)
     {
-      //... assemble pieces into a large slab in a mem-pool
-      assert (false);                   // is constructed allowed in DER anyways?
+      *error = dsk_error_new ("definite length required with primitive value");
+      return NULL;
     }
-  else
+  if (length_is_definite)
     {
       if ((data[1] & 0x80) == 0)
         {
@@ -148,22 +245,25 @@ dsk_asn1_value_parse_der (size_t         length,
           if (rv->value_end > data + length)
             {
               *error = dsk_error_new ("data too short after 1-byte length");
+              return false;
             }
         }
       else
         {
-          size_t value_len = data[1] & 0x7f;
+          size_t value_len_len = data[1] & 0x7f;
           const uint8_t *at = data + 2;
-          while (at < data + 6 && at < data + length)
+          if (2 + value_len_len > length)
             {
-              value_len <<= 7;
-              value_len |= *at & 0x7f;
-              if ((*at++ & 0x80) == 0)
-                goto primitive_got_long_length;
+              *error = dsk_error_new ("too short in definite length");
+              return false;
             }
-          *error = dsk_error_new ("too short parsing length");
-          return false;
-primitive_got_long_length:
+          size_t value_len = 0;
+          at = data + 2;
+          for (unsigned i = 0; i < value_len_len; i++)
+            {
+              value_len <<= 8;
+              value_len |= *at++;
+            }
           rv->value_start = at;
           rv->value_end = rv->value_start + value_len;
           if (rv->value_end > data + length)
@@ -173,6 +273,23 @@ primitive_got_long_length:
             }
         }
       *used_out = rv->value_end - data;
+    }
+  else
+    {
+      rv->value_start = data + 2;
+      rv->value_end = memchr (data + 2, 0, length - 2);
+      if (rv->value_end == NULL)
+        {
+          *error = dsk_error_new ("no NUL in indefinite value encoding");
+          return false;
+        }
+      *used_out = rv->value_end + 1 - data;
+    }
+
+  if (rv->tag_class != DSK_ASN1_TAG_CLASS_UNIVERSAL)
+    {
+      rv->v_tagged.subvalue = NULL;
+      return rv;
     }
 
   switch (rv->type)
@@ -231,6 +348,7 @@ primitive_got_long_length:
           *error = dsk_error_new ("NULL value must be empty");
           return NULL;
         }
+      break;
 
     case DSK_ASN1_TYPE_OBJECT_IDENTIFIER:
       {
@@ -586,6 +704,228 @@ primitive_got_long_length:
       *error = dsk_error_new ("unhandled value tag");
       return NULL;
     }
-success:
   return rv;
+}
+
+static void
+dump_hex (DskBuffer     *buffer,
+          unsigned       indent,
+          size_t         length,
+          const uint8_t *data)
+{
+  for (unsigned i = 0; i < length; i++)
+    {
+      if (i % 16 == 0)
+        dsk_buffer_append_repeated_byte (buffer, indent, ' ');
+      dsk_buffer_printf (buffer, "%02x%c", data[i], (i == length - 1 || i % 16 == 15) ? '\n' : ' ');
+    }
+  if (length == 0)
+    dsk_buffer_printf (buffer, "%.*s[empty]\n", (int) length, "");
+}
+
+static void
+dump_hex_oneline (DskBuffer *buffer, const uint8_t *start, const uint8_t *end)
+{
+  for (const uint8_t *at = start; at < end; at++)
+    dsk_buffer_printf (buffer, "%02x", *at);
+}
+
+static bool
+is_ascii_printable (size_t len, const uint8_t *data)
+{
+  for (size_t i = 0; i < len; i++)
+    if (data[i] < 32 || data[i] > 126)
+      return false;
+  return true;
+}
+
+void
+dump_to_buffer (const DskASN1Value *value,
+                DskBuffer *buffer,
+                unsigned indent)
+{
+  if (value->tag_class != DSK_ASN1_TAG_CLASS_UNIVERSAL)
+    {
+      dsk_buffer_printf (buffer, "%*sTag Class: %s    Tag: 0x%02x\n",
+                         indent, "",
+                         dsk_asn1_tag_class_name (value->tag_class),
+                         value->type);
+      dump_hex (buffer, indent + 4,
+                value->value_end - value->value_start,
+                value->value_start);
+      return;
+    }
+
+  switch (value->type)
+    {
+    case DSK_ASN1_TYPE_BOOLEAN:
+      dsk_buffer_printf (buffer, "%*sboolean: %s\n",
+                         indent, "",
+                         value->v_boolean ? "true" : "false");
+      return;
+    case DSK_ASN1_TYPE_INTEGER:
+      dsk_buffer_printf (buffer, "%*sinteger: %llu\n",
+                         indent, "",
+                         value->v_integer);
+      dump_hex (buffer, indent + 4,
+                value->value_end - value->value_start,
+                value->value_start);
+      return;
+    case DSK_ASN1_TYPE_BIT_STRING:
+      dsk_buffer_printf (buffer, "%*sbit-string: length=%u\n",
+                         indent, "",
+                         (unsigned) value->v_bit_string.length);
+      dump_hex (buffer, indent + 4,
+                (value->v_bit_string.length + 7) / 8,
+                value->v_bit_string.bits);
+      return;
+    case DSK_ASN1_TYPE_NULL:
+      dsk_buffer_printf (buffer, "%*snull\n",
+                         indent, "");
+      break;
+    case DSK_ASN1_TYPE_OBJECT_IDENTIFIER:
+      dsk_buffer_printf (buffer, "%*sobject-identifier: ", indent, "");
+      for (unsigned i = 0; i < value->v_object_identifier.n_subidentifiers; i++)
+        dsk_buffer_printf(buffer, "%u%c", value->v_object_identifier.subidentifiers[i],
+                    i + 1 < value->v_object_identifier.n_subidentifiers ? '.' : '\n');
+      break;
+    case DSK_ASN1_TYPE_RELATIVE_OID:
+      dsk_buffer_printf (buffer, "%*srelative-object-identifier:", indent, "");
+      for (unsigned i = 0; i < value->v_relative_oid.n_subidentifiers; i++)
+        {
+          dsk_buffer_printf(buffer, "%c%u", i == 0 ? ' ' : '.', value->v_relative_oid.subidentifiers[i]);
+        }
+      dsk_buffer_append_byte (buffer, '\n');
+      break;
+    case DSK_ASN1_TYPE_OBJECT_DESCRIPTOR:
+      break;
+    case DSK_ASN1_TYPE_EXTERNAL:
+      assert(false);
+      break;
+    case DSK_ASN1_TYPE_REAL:
+      switch (value->v_real.real_type)
+        {
+        case DSK_ASN1_REAL_ZERO:
+          dsk_buffer_printf (buffer, "%*sreal: zero\n", indent, "");
+          break;
+        case DSK_ASN1_REAL_INFINITY:
+          dsk_buffer_printf (buffer, "%*sreal: %c%s\n",
+                             indent, "", value->v_real.is_signed ? '-' : '+',
+                             DSK_HTML_ENTITY_UTF8_infin);
+          break;
+        case DSK_ASN1_REAL_BINARY:
+          if (value->v_real.overflowed)
+            dsk_buffer_printf (buffer, "%*s: real: binary: overflowed\n", 
+                               indent, "");
+          else
+            dsk_buffer_printf (buffer, "%*s: real: binary: double-value=%.22g\n", 
+                               indent, "", value->v_real.double_value);
+          dsk_buffer_printf (buffer, "%*s sign=%c base_log2=%u base=%u binary_scaling_factor=%u\n",
+                             indent + 4, "",
+                             value->v_real.is_signed ? '-' : '+',
+                             value->v_real.log2_base,
+                             1 << value->v_real.log2_base,
+                             value->v_real.binary_scaling_factor);
+          dsk_buffer_printf (buffer, "%*s exp=",
+                             indent + 4, "");
+          dump_hex_oneline (buffer, value->v_real.exp_start, value->v_real.num_start);
+          dsk_buffer_printf (buffer, "\"\n%*s num=",
+                             indent + 4, "");
+          dump_hex_oneline (buffer, value->v_real.num_start, value->value_end);
+          dsk_buffer_append_string (buffer, "\"\n");
+          break;
+              
+        case DSK_ASN1_REAL_DECIMAL:
+          dsk_buffer_printf (buffer, "%*s: real: decimal: double-value=%.22g\n", 
+                             indent, "", value->v_real.double_value);
+          dsk_buffer_printf (buffer, "%*s\"%s\"\n", 
+                             indent + 4, "", value->v_real.as_string);
+          break;
+        }
+      break;
+    case DSK_ASN1_TYPE_ENUMERATED:
+      dsk_buffer_printf (buffer, "%*s: enumerated: value=%lld [0x%llx]\n",
+                         indent, "", value->v_enumerated, value->v_enumerated);
+      break;
+    case DSK_ASN1_TYPE_ENUMERATED_PDV:
+      assert(false);   //TODO
+      break;
+
+    case DSK_ASN1_TYPE_SEQUENCE:
+      dsk_buffer_printf (buffer, "%*ssequence: length=%u\n",
+                         indent, "", (unsigned) value->v_sequence.n_children);
+      for (unsigned i = 0; i < value->v_sequence.n_children; i++)
+        dump_to_buffer (value->v_sequence.children[i], buffer, indent + 2);
+      break;
+    case DSK_ASN1_TYPE_SET:
+      dsk_buffer_printf (buffer, "%*sset: length=%u\n",
+                         indent, "", (unsigned) value->v_set.n_children);
+      for (unsigned i = 0; i < value->v_set.n_children; i++)
+        dump_to_buffer (value->v_set.children[i], buffer, indent + 2);
+      break;
+        
+    case DSK_ASN1_TYPE_UTF8_STRING:
+    case DSK_ASN1_TYPE_OCTET_STRING:
+    case DSK_ASN1_TYPE_NUMERIC_STRING:
+    case DSK_ASN1_TYPE_PRINTABLE_STRING:
+    case DSK_ASN1_TYPE_TELETEX_STRING:
+    case DSK_ASN1_TYPE_VIDEOTEXT_STRING:
+    case DSK_ASN1_TYPE_ASCII_STRING:
+    case DSK_ASN1_TYPE_UTC_TIME:
+    case DSK_ASN1_TYPE_GENERALIZED_TIME:
+    case DSK_ASN1_TYPE_GRAPHIC_STRING:
+    case DSK_ASN1_TYPE_VISIBLE_STRING:
+    case DSK_ASN1_TYPE_GENERAL_STRING:
+    case DSK_ASN1_TYPE_UNIVERSAL_STRING:
+    case DSK_ASN1_TYPE_CHARACTER_STRING:
+    case DSK_ASN1_TYPE_BMP_STRING:
+      {
+        unsigned len = value->value_end - value->value_start;
+        dsk_buffer_printf (buffer, "%*s%s:\n", indent, "", dsk_asn1_type_name_lowercase (value->type));
+        if (is_ascii_printable (len, value->value_start))
+          {
+            for (unsigned i = 0; i < len; i++)
+              {
+                if (i % 32 == 0)
+                  dsk_buffer_printf (buffer, "%*s %c", indent, "", i == 0 ? '[' : ' ');
+                dsk_buffer_append_byte (buffer, value->value_start[i]);
+                if (i + 1 == len)
+                  dsk_buffer_append_byte (buffer, ']');
+                if (i % 32 == 31 || i + 1 == len)
+                  dsk_buffer_append_byte(buffer, '\n');
+              }
+          }
+        else
+          {
+            unsigned i = 0;
+            while (i < len)
+              {
+                unsigned n = len - i;
+                if (n > 8)
+                  n = 8;
+
+                dsk_buffer_printf (buffer, "%*s %8x:", indent, "", i);
+                for (unsigned j = 0; j < n; j++)
+                  dsk_buffer_printf (buffer, "  %02x ", value->value_start[i+j]);
+                dsk_buffer_printf (buffer, "\n%*s %8x:", indent, "", i);
+                for (unsigned j = 0; j < n; j++)
+                  dsk_buffer_printf (buffer, " %s", dsk_ascii_fixed4_byte_name (value->value_start[i+j]));
+                dsk_buffer_append_byte (buffer, '\n');
+                i += n;
+                if (i < len)
+                  dsk_buffer_append_byte (buffer, '\n');
+              }
+          }
+      }
+      break;
+    default:
+      break;
+    }
+}
+
+void
+dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
+                               DskBuffer *buffer)
+{
+  dump_to_buffer (value, buffer, 0);
 }

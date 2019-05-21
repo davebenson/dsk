@@ -66,16 +66,18 @@ struct DskTlsX509Certificate
 {
   unsigned version;             // 1 is v1, etc
   uint8_t serial_number[20];
-  DskTlsSignatureScheme signature;
+  DskTlsSignatureScheme signature_scheme;
   DskTlsX509Name issuer;
   DskTlsX509Validity validity;
   DskTlsX509Name subject;
-  DskTlsX509SubjectPublicKeyInfo subjectPublicKeyInfo;
+  DskTlsX509SubjectPublicKeyInfo subject_public_key_info;
   unsigned n_extensions;
   // TODO extensions not handled yet
 
   bool is_signed;
-  DskTlsSignatureScheme signature_algorithm;
   size_t signature_length;
   uint8_t *signature_data;
 };
+
+void dsk_tls_x509_certificate_free (DskTlsX509Certificate *cert);
+

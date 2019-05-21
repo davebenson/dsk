@@ -24,12 +24,22 @@
 
 
 
-#define DSK_ASN1_TYPE__TAG_CLASS__UNIVERSAL            0x00
-#define DSK_ASN1_TYPE__TAG_CLASS__APPLICATION          0x40
-#define DSK_ASN1_TYPE__TAG_CLASS__PRIVATE              0x80
-#define DSK_ASN1_TYPE__TAG_CLASS__CONTEXT_SPECIFIC     0xc0
+#define DSK_ASN1_TAG_CLASS_UNIVERSAL            0x00
+#define DSK_ASN1_TAG_CLASS_APPLICATION          0x40
+#define DSK_ASN1_TAG_CLASS_PRIVATE              0x80
+#define DSK_ASN1_TAG_CLASS_CONTEXT_SPECIFIC     0xc0
 typedef uint8_t DskASN1TagClass;
+const char *dsk_asn1_tag_class_name (DskASN1TagClass tc);
 
+#define _DSK_ASN1_TYPE_ENUM_DEFINITION(prefix, start_value) \
+  prefix##_0 = (start_value), prefix##_1, prefix##_2, prefix##_3, \
+  prefix##_4, prefix##_5, prefix##_6, prefix##_7, \
+  prefix##_8, prefix##_9, prefix##_10, prefix##_11, \
+  prefix##_12, prefix##_13, prefix##_14, prefix##_15, \
+  prefix##_16, prefix##_17, prefix##_18, prefix##_19, \
+  prefix##_20, prefix##_21, prefix##_22, prefix##_23, \
+  prefix##_24, prefix##_25, prefix##_26, prefix##_27, \
+  prefix##_28, prefix##_29, prefix##_30, prefix##_31
 typedef enum
 {
   DSK_ASN1_TYPE_BOOLEAN            =  1,
@@ -59,8 +69,18 @@ typedef enum
   DSK_ASN1_TYPE_GENERAL_STRING     = 27,
   DSK_ASN1_TYPE_UNIVERSAL_STRING   = 28,
   DSK_ASN1_TYPE_CHARACTER_STRING   = 29,
-  DSK_ASN1_TYPE_BMP_STRING         = 30
+  DSK_ASN1_TYPE_BMP_STRING         = 30,
+
+  // Define 96 more enum values for each tag type.
+  _DSK_ASN1_TYPE_ENUM_DEFINITION(DSK_ASN1_TYPE_CONTEXT_SPECIFIC,
+                                 DSK_ASN1_TAG_CLASS_CONTEXT_SPECIFIC),
+  _DSK_ASN1_TYPE_ENUM_DEFINITION(DSK_ASN1_TYPE_PRIVATE,
+                                 DSK_ASN1_TAG_CLASS_PRIVATE),
+  _DSK_ASN1_TYPE_ENUM_DEFINITION(DSK_ASN1_TYPE_APPLICATION,
+                                 DSK_ASN1_TAG_CLASS_APPLICATION)
 } DskASN1Type;                                   
+const char * dsk_asn1_type_name (DskASN1Type type);
+const char * dsk_asn1_type_name_lowercase (DskASN1Type type);
 
 typedef enum
 {
@@ -87,10 +107,8 @@ struct DskASN1Value
       const uint8_t *bits;
     } v_bit_string;
 
-    struct {
-      size_t n_subidentifiers;
-      unsigned *subidentifiers;
-    } v_object_identifier, v_relative_oid;
+    DskOID *v_object_identifier;
+    DskOID *v_relative_oid;
 
     struct {
       DskASN1RealType real_type;
@@ -132,6 +150,16 @@ struct DskASN1Value
       unsigned n_children;
       DskASN1Value **children;
     } v_sequence, v_set;
+
+    // For anything whose tag-class is not universal,
+    // it could be an implicit or explicit tag.
+    //
+    // Use dsk_asn1_value_expand_tag() to parse it
+    // into the given subtag.
+    struct {
+      bool is_explicit;
+      DskASN1Value *subvalue;
+    } v_tagged;
   };
 };
 
@@ -140,4 +168,11 @@ DskASN1Value * dsk_asn1_value_parse_der (size_t length,
                                          size_t *used_out,
                                          DskMemPool *pool,
                                          DskError **error);
+bool           dsk_asn1_value_expand_tag(DskASN1Value   *value,
+                                         DskMemPool     *tmp_pool,
+                                         uint8_t         type,
+                                         bool            is_explicit,
+                                         DskError      **error);
 
+void dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
+                                    DskBuffer *buffer);

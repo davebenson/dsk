@@ -29,6 +29,19 @@ const char *dsk_ascii_byte_name(unsigned char byte)
 {
   return byte_name_str + (byte_name_offsets[byte]);
 }
+const char *dsk_ascii_short_byte_name(unsigned char byte)
+{
+  if (byte == '\r')
+    return "\\r";
+  if (byte == '\n')
+    return "\\n";
+  if (byte == ' ')
+    return "SP";
+  return byte_name_str + (byte_name_offsets[byte]);
+}
+const char *dsk_ascii_fixed4_byte_name(unsigned char byte)
+{
+}
 
 int dsk_ascii_strcasecmp  (const char *a, const char *b)
 {

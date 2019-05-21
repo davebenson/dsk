@@ -5,7 +5,8 @@
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
 		dsk-base64-char-table.inc dsk-base64-value-table.inc \
-		dsk-pattern-char-classes.inc dsk-html-entities.h
+		dsk-pattern-char-classes.inc dsk-html-entities.h \
+                tls/dsk-oid-ids.h tls/dsk-oid-ids.c
 TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dispatch \
 		tests/test-endian \
@@ -33,8 +34,8 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
                 tests/test-tls-protocol
 EXAMPLE_PROGRAMS = 
 PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
-           programs/dsk-octet-filter programs/dsk-make-xml-binding \
-	   programs/dsk-ifconfig programs/dsk-make-json-binding \
+           programs/dsk-octet-filter \
+	   programs/dsk-ifconfig programs/dsk-asn1-dump \
 	   programs/dsk-grep programs/svg-to-cocoa \
 	   programs/dsk-dump-html-entities \
            programs/dsk-make-ffdhe-montgomery-info 
@@ -122,6 +123,8 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-hmac.o \
           tls/dsk-hkdf.o \
           tls/dsk-asn1.o \
+          tls/dsk-oid-ids.o \
+          tls/dsk-tls-x509.o \
           tls/dsk-tls-protocol.o \
           tls/dsk-tls-bignum.o \
           tls/dsk-tls-ffdhe.o \
@@ -161,6 +164,10 @@ dsk-pattern-char-classes.inc: mk-pattern-char-classes.pl
 	./$^ > $@
 dsk-html-entities.h: mk-html-entities.pl html-entities.tsv
 	./$^ > $@
+tls/dsk-oid-ids.h: mk-oids.pl
+	./$^ h > $@
+tls/dsk-oid-ids.c: mk-oids.pl
+	./$^ c > $@
 
 mk-codepage: mk-codepage.c
 	gcc $(CC_FLAGS) -o $@ $^ 

@@ -38,6 +38,12 @@ static inline char dsk_ascii_toupper (int c)
 }
 const char *dsk_ascii_byte_name(unsigned char byte);
 
+#define DSK_ASCII_MAX_SHORT_BYTE_NAME   4
+const char *dsk_ascii_short_byte_name(unsigned char byte);
+
+// returns a string that is exactly 4 chars for each byte.
+const char *dsk_ascii_fixed4_byte_name(unsigned char byte);
+
 int dsk_ascii_strcasecmp  (const char *a, const char *b);
 int dsk_ascii_strncasecmp (const char *a, const char *b, size_t max_len);
 void dsk_ascii_strchomp (char *chomp);

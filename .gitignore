@@ -6,6 +6,8 @@ tests/*.dSYM
 programs/*.dSYM
 examples/generated
 programs/dsk-make-ffdhe-montgomery-info
+programs/dsk-grep
+programs/dsk-asn1-dump
 tests/test-crypto
 tests/test-hook-0
 tests/test-tls-bignum

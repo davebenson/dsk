@@ -117,11 +117,12 @@ typedef enum {
   DSK_TLS_SIGNATURE_SCHEME_ED448                          = 0x0808,
   
   /* RSASSA-PSS algorithms with public key OID RSASSA-PSS */
-  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA256             = 0x0809,
-  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA384             = 0x080A,
-  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_PSS_SHA512             = 0x080B,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA256             = 0x0809,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA384             = 0x080A,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA512             = 0x080B,
   
   /* Legacy algorithms */
   DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA1                 = 0x0201,
   DSK_TLS_SIGNATURE_SCHEME_ECDSA_SHA1                     = 0x0203,
 } DskTlsSignatureScheme;
+

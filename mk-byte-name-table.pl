@@ -38,3 +38,19 @@ for ($i = 0; $i < 256; $i++)
     print "  /* " . ($i-9) . ".. $i */\n" if ($i % 10 == 9);
   }
 print "};\n";
+
+$table[ord(' ')] = 'SP';
+$table[ord('\n')] = 'NL';
+$table[ord('\r')] = 'CR';
+
+print "static const char fourchar_byte_names[] =\n";
+for ($i = 0; $i < 256; $i++)
+  {
+
+    print '"';
+    print " " if (length($table[$i]) < 3);
+    print escape($table[$i]);
+    print " " if (length($table[$i]) < 4);
+    print "\\0\"\n";
+  }
+print ";\n";
