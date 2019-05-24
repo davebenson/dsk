@@ -130,10 +130,9 @@
 #include "tls/dsk-curve25519.h"
 #include "tls/dsk-hmac.h"
 #include "tls/dsk-hkdf.h"
-#include "tls/dsk-oid.h"
-#include "tls/dsk-oid-ids.h"
+#include "tls/dsk-tls-object-id.h"
+#include "tls/dsk-tls-object-ids.h"
 #include "tls/dsk-asn1.h"
-#include "tls/dsk-tls-oid-mappings.h"
 #include "tls/dsk-tls-cryptorandom.h"
 #include "tls/dsk-tls-enums.h"
 #include "tls/dsk-tls-x509.h"
@@ -142,6 +141,7 @@
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"
 #include "tls/dsk-tls-connection.h"
+#include "tls/dsk-tls-oid-mappings.h"
 
 #ifdef DSK_INCLUDE_TS0
 #include "dsk-ts0.h"

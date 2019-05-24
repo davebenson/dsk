@@ -18,9 +18,10 @@ For our purposes,
 <li>
   ASN.1 - an old serialization format used by X.509 keys, specified in the
   fairly easy to understand ITU Rec X.690, old versions of which are available for free.
-  It actually defines three related formats: BER (Basic Encoding Rules),
+  It actually defines three very similar formats: BER (Basic Encoding Rules),
   CER (Canonical Encoding Rules), and DER (Distinguished Encoding Rules).
-  The latter is the one used by X509 and generally results in one way to encode each
+  BER is the most lenient (in terms of allowing multiple encodings for values).
+  DER is the one used by X509 and generally results in exactly one way to encode each
   ASN.1 entity.
 </li>
 
@@ -28,8 +29,7 @@ For our purposes,
  <p>
  <b>Block cipher</b>: a way of encrypting data of a fixed size
  using a key known to the encryptor and decryptor.  
- They involve a routine pre-compute for a key ("Key Expansion"),
- then an optimized routine to do the block-decryption/encryption.
+ The encrypted and decrypted data is of the same length, usually 16 bytes.
  </p>
 
  <p>
@@ -44,7 +44,8 @@ For our purposes,
 </li>
 
 <li>
- Curve 25519 - a fast algorithm for Key Sharing
+ Curve 25519 - a fast algorithm for Key Sharing designed and developed by Daniel Bernstein
+ for key-sharing and 
 </li>
 
 <li>
@@ -55,7 +56,7 @@ For our purposes,
 
 <li>
  DER: often used as a description of the format of X509 certs,
- it refers to an encoding of ASN.1.  The competition is the PEM format.
+ it refers to an encoding of ASN.1.
 </li>
 
 <li>
@@ -107,6 +108,9 @@ For our purposes,
 
 <li>
   Key Exchange.  In TLS, this is the most common way to set up a symmetric key arrangement.
+  <br>
+  As of TLS 1.3 it is done by the KeyShare extension.
+  <br>
   As a practical matter, it involves three steps:
     <ul>
       <li>each side computes a public key and private key that match (they use a secure
@@ -120,10 +124,43 @@ For our purposes,
             in the same shared data: shared = A_private+B_public = B_private+A_publicM
       </li>
     </ul>
+  </p>
+  <p>Key Exchange takes advantage of mathematical problem that is believed
+  to be difficult.  Older algorithms (Diffie-Hellman) use the difficulty of
+  computing the "modular logarithm".
+  (Even older strategies exist that use the difficulty of factor the product of large primes.
+  the product of large primes.)
+  </p>
+  <p>
+  By taking advantage of every known trick, and inventing a bunch more,
+  Daniel J Bernstein submitted curve-25519 to various standard organizations,
+  and it is so much more efficient than the alternatives that nobody really
+  uses other key-share algorithms in practice.
+  (Furthermore, his technique is deliberately designed to avoid many subtle attacks)
+  </p>
+</li>
+
+<li>
+  <small>
+    Key-Expansion - 
+      Implementation detail of Block Ciphers,
+      where a larger state is filled up a smaller key
+      by slightly scrambling.
+  </small>
 </li>
 
 <li>
   Key Sharing - a synonym for Key Exchange.
+</li>
+
+<li>
+  <small>
+    Key-Whitening - 
+      Hokey technique of XOR-ing fixed block-sized data to
+      a the inputs and outputs of a block-cipher, to slightly
+      scramble it if you can pre-share a key.  This is similar
+      to salting a password hash.
+  </small>
 </li>
 
 <li>
@@ -133,7 +170,9 @@ For our purposes,
 </li>
 
 <li>
- MD5 - a venerable, but deprecated, cryptographic hash.  Still widely used.
+ MD5 - a venerable, but deprecated, cryptographic hash.  A number
+ of technique for finding collisions have found, and it is considered weak
+ for cryptographic purposes.  Still widely used.
 </li>
 
 <li>
@@ -145,7 +184,8 @@ For our purposes,
 </li>
 
 <li>
-  PEM: a format of X509 certificates.
+  PEM: a format of X509 certificates (and key pairs).
+  It is the Base-64 encoding of ASN.1's DER form.
 </li>
 
 <li>
@@ -163,7 +203,10 @@ For our purposes,
   Can be used to improvement connection times.
 </li>
 <li>
-  <b>Public Key Infrastructure</b> - ...
+  <b>Public Key Infrastructure</b> - A means of validating a certificate-chain
+  against a list of trusted certification-authorities.  Certificates of length 1
+  usually are called Self-Signed Certificates, and don't provide any authentication security.
+  Most of the time, certificate chains are length 2: the issuer and the issuee.
 </li>
 <li>
   <p>Record Layer: the outermost layer of TLS,
@@ -187,21 +230,34 @@ For our purposes,
 </li>
 
 <li>
-  SHA224, SHA256, SHA384, SHA512 - a family of cryptographic hash functions, collectively
-  standardized as SHA2.
-  The number gives the number of bits of output.
+  <b>SHA-2</b>: SHA224, SHA256, SHA384, SHA512, SHA512/224, SHA512/256, SHA512/384 - a family of cryptographic hash functions.  The first two are based on a 32-bit word operation; and the last 4 are based
+  on 64-bit operations.  There's only two real hash functions, with
+  SHA224 being a truncation of SHA256, and SHA384, SHA512/224 and SHA512/384 are
+  truncations of SHA512.
+  <p>In all cases, the final number gives the number of bits of output.</p>
+</li>
+
+<li>
+  <small>
+  SHA-3 - another hash algo, made by a NIST competition in 2006, designed to be very different
+  from the mechanisms of MD5, SHA1 and SHA2 (which are similar).  (Not used in current cryptographic
+  standards)
+  </small>
 </li>
 
 <li>
   SSL "Secure Socket Layer", the predecessor to TLS.  Although the protocol has been
   replaced by TLS, people still refer to SSL as the secure protocol, even though actual
-  SSL connections are rarely seen in the wild. [as of 2019]
+  SSL connections are rarely seen in the wild. [as of 2019]  (Of course, back-compatility
+  hasn't been broken too much, and TLS 1.1 is similar to SSL 3.1)
 </li>
 
 <li>
   TLS "Transport Layer Security", the modern protocol for securing internet connections.
+  TLS 1.1 was quite similar (and compatible with SSL 3.?).
 </li>
 
 <li>
-  X.509 - a format of signed certificate which is supported by TLS and supports the Public Key Infrastructure.
+  X.509 - a format of signed certificate which is supported by TLS and supports the Public Key Infrastructure.  The data structures handled by this formats are specified in ASN.1.
+This format itself can be encoded as DER (raw binary) or PEM (base64).
 </li>

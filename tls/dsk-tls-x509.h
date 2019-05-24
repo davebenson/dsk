@@ -16,10 +16,11 @@ typedef enum
   DSK_TLS_X509_DN_INITIALS,
   DSK_TLS_X509_DN_GENERATION_QUALIFIER,
   DSK_TLS_X509_DN_COMMON_NAME,
-  DSK_TLS_X509_DN_LOCALITY_NAME,
-  DSK_TLS_X509_DN_STATE_OR_PROVINCE_NAME,
+  DSK_TLS_X509_DN_LOCALITY,
+  DSK_TLS_X509_DN_STATE_OR_PROVINCE,
   DSK_TLS_X509_DN_ORGANIZATION_NAME,
-  DSK_TLS_X509_DN_ORGANIZATIONAL_UNIT_NAME,
+  DSK_TLS_X509_DN_ORGANIZATIONAL_UNIT,
+  DSK_TLS_X509_DN_STREET_ADDRESS,
   DSK_TLS_X509_DN_TITLE,
   DSK_TLS_X509_DN_QUALIFIER,
   DSK_TLS_X509_DN_COUNTRY,
@@ -27,6 +28,7 @@ typedef enum
   DSK_TLS_X509_DN_PSEUDONAME,
   DSK_TLS_X509_DN_DOMAIN_COMPONENT,
   DSK_TLS_X509_DN_EMAIL_ADDRESS,
+  DSK_TLS_X509_DN_USER_ID,
 } DskTlsX509DistinguishedNameType;
 
 typedef struct DskTlsX509DistinguishedName
@@ -71,13 +73,31 @@ struct DskTlsX509Certificate
   DskTlsX509Validity validity;
   DskTlsX509Name subject;
   DskTlsX509SubjectPublicKeyInfo subject_public_key_info;
+
+  bool has_issuer_unique_id;
+  size_t issuer_unique_id_len;
+  uint32_t *issuer_unique_id;
+
+  bool has_subject_unique_id;
+  size_t subject_unique_id_len;
+  uint32_t *subject_unique_id;
+
   unsigned n_extensions;
   // TODO extensions not handled yet
+
 
   bool is_signed;
   size_t signature_length;
   uint8_t *signature_data;
 };
+DskTlsX509Certificate *
+dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
+                                             DskMemPool   *tmp_pool,
+                                             DskError    **error);
+DskTlsX509Certificate *
+dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
+                                    DskMemPool   *tmp_pool,
+                                    DskError    **error);
 
 void dsk_tls_x509_certificate_free (DskTlsX509Certificate *cert);
 

@@ -5,9 +5,19 @@ typedef enum
 {
   DSK_CHECKSUM_MD5,
   DSK_CHECKSUM_SHA1,
+
+  // SHA-2 32-bit hashes.
+  // SHA224 is just a truncated version of SHA256.
+  DSK_CHECKSUM_SHA224,
   DSK_CHECKSUM_SHA256,
+
+  // SHA-2 64-bit hashes.
+  // The next four hashes are all SHA512 truncated to different lengths.
   DSK_CHECKSUM_SHA384,
   DSK_CHECKSUM_SHA512,
+  DSK_CHECKSUM_SHA512_224,
+  DSK_CHECKSUM_SHA512_256,
+
   DSK_CHECKSUM_CRC32_BIG_ENDIAN,
   DSK_CHECKSUM_CRC32_LITTLE_ENDIAN,
 } DskChecksumType;

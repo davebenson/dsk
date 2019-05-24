@@ -25,12 +25,21 @@ int main(int argc, char **argv)
     dsk_die ("error reading input file: %s", error->message);
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   size_t used;
-  DskASN1Value *value = dsk_asn1_value_parse_der (asn1_size, asn1_data, &used, &pool, &error);
-  if (value == NULL)
-    dsk_die ("error parsing ASN.1 from %s: %s", input_filename, error->message);
-    
-  DskBuffer buffer = DSK_BUFFER_INIT;
-  dsk_asn1_value_dump_to_buffer (value, &buffer);
-  dsk_buffer_writev (&buffer, STDOUT_FILENO);
+  while (asn1_size > 0)
+    {
+      DskASN1Value *value = dsk_asn1_value_parse_der (asn1_size, asn1_data, &used, &pool, &error);
+      if (value == NULL)
+        dsk_die ("error parsing ASN.1 from %s: %s", input_filename, error->message);
+        
+      DskBuffer buffer = DSK_BUFFER_INIT;
+      dsk_asn1_value_dump_to_buffer (value, &buffer);
+      dsk_buffer_writev (&buffer, STDOUT_FILENO);
+
+      asn1_size -= used;
+      asn1_data += used;
+      printf("asn1_size = %u\n",(unsigned)asn1_size);
+      if (asn1_size > 0)
+        printf("\n-------------------------\n\n");
+    }
   return 0;
 }

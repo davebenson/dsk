@@ -362,8 +362,10 @@ dsk_asn1_value_parse_der (size_t         length,
             return NULL;
           }
         n_subids++;             // first two IDs are actually combined.
-        rv->v_object_identifier.n_subidentifiers = n_subids;
-        rv->v_object_identifier.subidentifiers = dsk_mem_pool_alloc (pool, sizeof(unsigned) * n_subids);
+        size_t oid_size = dsk_oid_size_by_n_subids (n_subids);
+        DskOID *oid = dsk_mem_pool_alloc (pool, oid_size);
+        rv->v_object_identifier = oid;
+        oid->n_subids = n_subids;
         unsigned s_index = 0;
         unsigned under_construction = 0;
         for (const uint8_t *at = rv->value_start; at < rv->value_end; at++)
@@ -378,11 +380,11 @@ dsk_asn1_value_parse_der (size_t         length,
                     if (first > 2)
                       first = 2;
                     under_construction -= first * 40;
-                    rv->v_object_identifier.subidentifiers[s_index++] = first;
-                    rv->v_object_identifier.subidentifiers[s_index++] = under_construction;
+                    oid->subids[s_index++] = first;
+                    oid->subids[s_index++] = under_construction;
                   }
                 else
-                  rv->v_object_identifier.subidentifiers[s_index++] = under_construction;
+                  oid->subids[s_index++] = under_construction;
                 under_construction = 0;
               }
           }
@@ -394,8 +396,10 @@ dsk_asn1_value_parse_der (size_t         length,
         for (const uint8_t *at = rv->value_start; at < rv->value_end; at++)
           if ((*at & 0x80) == 0)
             n_subids++;
-        rv->v_object_identifier.n_subidentifiers = n_subids;
-        rv->v_object_identifier.subidentifiers = dsk_mem_pool_alloc (pool, sizeof(unsigned) * n_subids);
+        size_t oid_size = dsk_oid_size_by_n_subids (n_subids);
+        DskOID *oid = dsk_mem_pool_alloc (pool, oid_size);
+        rv->v_object_identifier = oid;
+        oid->n_subids = n_subids;
         unsigned s_index = 0;
         unsigned under_construction = 0;
         for (const uint8_t *at = rv->value_start; at < rv->value_end; at++)
@@ -404,7 +408,7 @@ dsk_asn1_value_parse_der (size_t         length,
             under_construction |= *at & 0x7f;
             if ((*at & 0x80) == 0)
               {
-                rv->v_object_identifier.subidentifiers[s_index++] = under_construction;
+                oid->subids[s_index++] = under_construction;
                 under_construction = 0;
               }
           }
@@ -784,18 +788,24 @@ dump_to_buffer (const DskASN1Value *value,
                          indent, "");
       break;
     case DSK_ASN1_TYPE_OBJECT_IDENTIFIER:
-      dsk_buffer_printf (buffer, "%*sobject-identifier: ", indent, "");
-      for (unsigned i = 0; i < value->v_object_identifier.n_subidentifiers; i++)
-        dsk_buffer_printf(buffer, "%u%c", value->v_object_identifier.subidentifiers[i],
-                    i + 1 < value->v_object_identifier.n_subidentifiers ? '.' : '\n');
+      {
+        const DskOID *oid = value->v_object_identifier;
+        dsk_buffer_printf (buffer, "%*sobject-identifier: ", indent, "");
+        for (unsigned i = 0; i < oid->n_subids; i++)
+          dsk_buffer_printf(buffer,
+                            "%u%c",
+                            oid->subids[i],
+                            i + 1 < oid->n_subids ? '.' : '\n');
+      }
       break;
     case DSK_ASN1_TYPE_RELATIVE_OID:
-      dsk_buffer_printf (buffer, "%*srelative-object-identifier:", indent, "");
-      for (unsigned i = 0; i < value->v_relative_oid.n_subidentifiers; i++)
-        {
-          dsk_buffer_printf(buffer, "%c%u", i == 0 ? ' ' : '.', value->v_relative_oid.subidentifiers[i]);
-        }
-      dsk_buffer_append_byte (buffer, '\n');
+      {
+        const DskOID *oid = value->v_relative_oid;
+        dsk_buffer_printf (buffer, "%*srelative-object-identifier:", indent, "");
+        for (unsigned i = 0; i < oid->n_subids; i++)
+          dsk_buffer_printf(buffer, "%c%u", i == 0 ? ' ' : '.', oid->subids[i]);
+        dsk_buffer_append_byte (buffer, '\n');
+      }
       break;
     case DSK_ASN1_TYPE_OBJECT_DESCRIPTOR:
       break;
@@ -929,3 +939,53 @@ dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
 {
   dump_to_buffer (value, buffer, 0);
 }
+
+char *
+dsk_asn1_primitive_value_to_string (const DskASN1Value *value)
+{
+  switch (value->type)
+    {
+      case DSK_ASN1_TYPE_BOOLEAN:
+        return dsk_strdup (value->v_boolean ? "true" : "false");
+
+      case DSK_ASN1_TYPE_ENUMERATED:
+      case DSK_ASN1_TYPE_ENUMERATED_PDV:
+      case DSK_ASN1_TYPE_INTEGER:
+        /// XXX
+        return dsk_strdup_printf ("%lld", (long long) value->v_integer);
+
+
+      case DSK_ASN1_TYPE_NULL:
+        return dsk_strdup ("NULL");
+
+      //case DSK_ASN1_TYPE_BIT_STRING:
+      //case DSK_ASN1_TYPE_OBJECT_IDENTIFIER:
+      //case DSK_ASN1_TYPE_OBJECT_DESCRIPTOR:
+      //case DSK_ASN1_TYPE_EXTERNAL:
+      //case DSK_ASN1_TYPE_RELATIVE_OID:
+
+      case DSK_ASN1_TYPE_REAL:
+        return dsk_strdup_printf ("%.18g", value->v_real.double_value);
+      case DSK_ASN1_TYPE_OCTET_STRING:
+      case DSK_ASN1_TYPE_UTF8_STRING:
+      case DSK_ASN1_TYPE_NUMERIC_STRING:
+      case DSK_ASN1_TYPE_PRINTABLE_STRING:
+      case DSK_ASN1_TYPE_TELETEX_STRING:
+      case DSK_ASN1_TYPE_VIDEOTEXT_STRING:
+      case DSK_ASN1_TYPE_ASCII_STRING:
+      case DSK_ASN1_TYPE_UTC_TIME:
+      case DSK_ASN1_TYPE_GENERALIZED_TIME:
+      case DSK_ASN1_TYPE_GRAPHIC_STRING:
+      case DSK_ASN1_TYPE_VISIBLE_STRING:
+      case DSK_ASN1_TYPE_GENERAL_STRING:
+      case DSK_ASN1_TYPE_UNIVERSAL_STRING:
+      case DSK_ASN1_TYPE_CHARACTER_STRING:
+      case DSK_ASN1_TYPE_BMP_STRING:
+        // TODO: UTF-8 conversion (should be done along with string validation on parse)
+        return dsk_strndup (value->value_end - value->value_start, (char*) value->value_start);
+      default:
+        assert(false);
+        return NULL;
+    }
+}
+    

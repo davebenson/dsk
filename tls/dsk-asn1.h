@@ -107,8 +107,8 @@ struct DskASN1Value
       const uint8_t *bits;
     } v_bit_string;
 
-    DskOID *v_object_identifier;
-    DskOID *v_relative_oid;
+    DskTlsObjectID *v_object_identifier;
+    DskTlsObjectID *v_relative_oid;
 
     struct {
       DskASN1RealType real_type;
@@ -176,3 +176,6 @@ bool           dsk_asn1_value_expand_tag(DskASN1Value   *value,
 
 void dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
                                     DskBuffer *buffer);
+
+
+char * dsk_asn1_primitive_value_to_string (const DskASN1Value *value);
