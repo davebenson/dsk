@@ -3,50 +3,38 @@
 #include <string.h>
 #include <stdio.h>                      /* TMP: debugging */
 #include <alloca.h>
+#include "dsk.h"
 #include "dsk-rbtree-macros.h"
-#include "dsk-common.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-dns-protocol.h"
 
 #define MAX_PIECES              64
 
 /* TODO: provide citation */
 #define MAX_DOMAIN_NAME_LENGTH  1024
 
+#define SIZEOF_DNS_MESSAGE_HEADER 12
+#if 0
 /* Used for binary packing/unpacking */
 typedef struct _DskDnsHeader DskDnsHeader;
 struct _DskDnsHeader
 {
-  unsigned qid:16;
+  uint16_t qid;
 
-#if BYTE_ORDER == BIG_ENDIAN
-  unsigned qr:1;
-  unsigned opcode:4;
-  unsigned aa:1;
-  unsigned tc:1;
-  unsigned rd:1;
+  uint16_t qr:1;
+  uint16_t opcode:4;
+  uint16_t aa:1;
+  uint16_t tc:1;
+  uint16_t rd:1;
 
-  unsigned ra:1;
-  unsigned unused:3;
-  unsigned rcode:4;
-#else
-  unsigned rd:1;
-  unsigned tc:1;
-  unsigned aa:1;
-  unsigned opcode:4;
-  unsigned qr:1;
+  uint16_t ra:1;
+  uint16_t unused:3;
+  uint16_t rcode:4;
 
-  unsigned rcode:4;
-  unsigned unused:3;
-  unsigned ra:1;
-#endif
-
-  unsigned qdcount:16;
-  unsigned ancount:16;
-  unsigned nscount:16;
-  unsigned arcount:16;
+  uint16_t qdcount;
+  uint16_t ancount;
+  uint16_t nscount;
+  uint16_t arcount;
 };
+#endif
 
 
 /* === parsing a binary message === */
@@ -438,7 +426,7 @@ dsk_dns_message_parse (unsigned       length,
                        const uint8_t *data,
                        DskError     **error)
 {
-  DskDnsHeader header;
+  uint16_t header[6];
   unsigned i;
   unsigned total_rr;
   unsigned str_space = 0;
@@ -455,18 +443,30 @@ dsk_dns_message_parse (unsigned       length,
   memcpy (&header, data, 12);
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-  header.qid = htons (header.qid);
-  header.qdcount = htons (header.qdcount);
-  header.ancount = htons (header.ancount);
-  header.nscount = htons (header.nscount);
-  header.arcount = htons (header.arcount);
+  for (i = 0; i < 6; i++)
+    header[i] = htons (header[i]);
 #endif
-  if (!validate_rcode (header.rcode))
+  uint16_t id = header[0];
+  uint16_t control = header[1];
+  uint16_t qr = header[1] >> 15;
+  uint16_t question_count = header[2];
+  uint16_t answer_count = header[3];
+  uint16_t auth_count = header[4];
+  uint16_t addl_count = header[5];
+  uint16_t resp_code = control & 0x0f;
+  uint16_t op_code = (control >> 11) & 0xf;
+  uint16_t is_authoritative = (control >> 10) & 1;
+  uint16_t is_truncated = (control >> 9) & 1;
+  uint16_t recursion_desired = (control >> 8) & 1;
+  uint16_t recursion_available = (control >> 7) & 1;
+  //uint16_t auth_data = (control >> 5) & 1;		// used by DNSSEC
+  //uint16_t checking_disabled = (control >> 4) & 1;		// used by DNSSEC
+  if (!validate_rcode (resp_code))
     {
       dsk_set_error (error, "dns message had invalid 'rcode'");
       return NULL;
     }
-  if (!validate_opcode (header.opcode))
+  if (!validate_opcode (op_code))
     {
       dsk_set_error (error, "dns message had invalid 'opcode'");
       return NULL;
@@ -478,7 +478,7 @@ dsk_dns_message_parse (unsigned       length,
      b/c strings can only appear in places we recognize.
      distinguish the offset that are used from those that aren't. */
   used = 12;
-  for (i = 0; i < header.qdcount; i++)
+  for (i = 0; i < question_count; i++)
     {
       unsigned sublen;
       if (!gather_name_length (length, data, &used, &sublen, error))
@@ -486,7 +486,7 @@ dsk_dns_message_parse (unsigned       length,
       str_space += sublen;
       used += 4;
     }
-  total_rr = header.ancount + header.nscount + header.arcount;
+  total_rr = answer_count + auth_count + addl_count;
   for (i = 0; i < total_rr; i++)
     {
       if (!gather_name_length_resource_record (length, data,
@@ -496,31 +496,31 @@ dsk_dns_message_parse (unsigned       length,
 
   /* allocate space for the message */
   message = dsk_malloc (sizeof (DskDnsMessage)
-                        + sizeof (DskDnsQuestion) * header.qdcount
+                        + sizeof (DskDnsQuestion) * question_count
                         + sizeof (DskDnsResourceRecord) * total_rr
                         + str_space);
-  message->id = header.qid;
-  message->is_query = header.qr ^ 1;
-  message->is_authoritative = header.aa;
-  message->is_truncated = header.tc;
-  message->recursion_desired = header.rd;
-  message->recursion_available = header.ra;
-  message->n_questions = header.qdcount;
+  message->id = id;
+  message->is_query = qr ^ 1;
+  message->is_authoritative = is_authoritative;
+  message->is_truncated = is_truncated;
+  message->recursion_desired = recursion_desired;
+  message->recursion_available = recursion_available;
+  message->n_questions = question_count;
   message->questions = (DskDnsQuestion *) (message + 1);
-  message->n_answer_rr = header.ancount;
+  message->n_answer_rr = answer_count;
   message->answer_rr = (DskDnsResourceRecord *) (message->questions + message->n_questions);
-  message->n_authority_rr = header.nscount;
-  message->authority_rr = message->answer_rr + message->n_answer_rr;
-  message->n_additional_rr = header.arcount;
-  message->additional_rr = message->authority_rr + message->n_authority_rr;
-  message->rcode = header.rcode;
-  message->opcode = header.opcode;
+  message->n_authority_rr = auth_count;
+  message->authority_rr = message->answer_rr + answer_count;
+  message->n_additional_rr = addl_count;
+  message->additional_rr = message->authority_rr + auth_count;
+  message->rcode = resp_code;
+  message->opcode = op_code;
 
   str_heap_at = (char*) (message->additional_rr + message->n_additional_rr);
 
   /* parse the four sections */
   used = 12;
-  for (i = 0; i < header.qdcount; i++)
+  for (i = 0; i < question_count; i++)
     if (!parse_question (length, data, &used,
                          &message->questions[i],
                          &str_heap_at,
@@ -825,22 +825,19 @@ static void
 pack_message_header (DskDnsMessage *message,
                      uint8_t       *out)
 {
-  DskDnsHeader header;
-  header.qid = htons (message->id);
-  header.qr = 1 ^ message->is_query;
-  header.opcode = message->opcode;
-  header.aa = message->is_authoritative;
-  header.tc = 0;        //message->is_truncated;
-  header.rd = message->recursion_desired;
-  header.ra = message->recursion_available;
-  header.unused = 0;
-  header.rcode = message->rcode;
-  header.qdcount = htons (message->n_questions);
-  header.ancount = htons (message->n_answer_rr);
-  header.nscount = htons (message->n_authority_rr);
-  header.arcount = htons (message->n_additional_rr);
-  dsk_assert (sizeof (DskDnsHeader) == 12);
-  memcpy (out, &header, 12);
+  uint16_t header[6];
+  header[0] = htons (message->id);
+  header[1] = (1 ^ message->is_query) << 15
+            | (message->opcode << 11)
+            | (message->recursion_desired << 8)
+            | (message->recursion_available << 7)
+            | message->rcode;
+  header[2] = message->n_questions;
+  header[3] = message->n_answer_rr;
+  header[4] = message->n_authority_rr;
+  header[5] = message->n_additional_rr;
+  for (unsigned i = 0; i < 6; i++)
+    dsk_uint16be_pack (header[i], out + 2*i);
 }
 static void
 write_pointer (uint8_t **data_inout,
@@ -1106,7 +1103,7 @@ dsk_dns_message_serialize (DskDnsMessage *message,
   rv = dsk_malloc (size);
   at = rv;
   pack_message_header (message, at);
-  at += sizeof (DskDnsHeader);
+  at += SIZEOF_DNS_MESSAGE_HEADER;
   for (i = 0; i < message->n_questions; i++)
     pack_question (message->questions + i, rv, &at, top);
   for (i = 0; i < message->n_answer_rr; i++)

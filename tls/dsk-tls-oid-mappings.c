@@ -1,4 +1,5 @@
 #include "../dsk.h"
+#include <stdio.h>
 //
 // See https://www.cryptosys.net/pki/manpki/pki_distnames.html
 //
@@ -6,6 +7,7 @@ bool
 dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
                                              DskTlsX509DistinguishedNameType *out)
 {
+  printf("dsk_tls_oid_to_x509_distinguished_name_type: oid=%p\n",oid);
   if (oid->n_subids == 4)
     {
       if (oid->subids[0] == 2
@@ -50,7 +52,7 @@ dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
             }
         }
     }
-  else if (oid->n_subids == 6)
+  else if (oid->n_subids == 7)
     {
       if (dsk_tls_object_ids_equal (dsk_tls_object_id__dn_email_address, oid))
         {
@@ -174,7 +176,7 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
           return false;
         }
       DskASN1Value *hash_algo = children[i]->v_tagged.subvalue;
-      if (hash_algo->v_sequence.n_children < 0
+      if (hash_algo->v_sequence.n_children < 1
        || hash_algo->v_sequence.n_children > 2
        || hash_algo->v_sequence.children[0]->type != DSK_ASN1_TYPE_OBJECT_IDENTIFIER)
         {
@@ -258,13 +260,13 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
   switch (hash)
     {
     case DSK_CHECKSUM_SHA256:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA256;
+      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256;
       return true;
     case DSK_CHECKSUM_SHA384:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA384;
+      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384;
       return true;
     case DSK_CHECKSUM_SHA512:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_SHA512;
+      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512;
       return true;
     default:
       *error = dsk_error_new ("checksum type not allowed for RSASSA_PSS");
@@ -320,7 +322,9 @@ dsk_tls_oid_to_signature_scheme (const DskTlsObjectID *oid,
 //  [ "signature_ecdsa_with_sha384", "1.2.840.10045.4.3.3"    ],
 //  [ "signature_ecdsa_with_sha512", "1.2.840.10045.4.3.4"    ],
 //  [ "signature_ed25519",           "1.3.101.112"            ],
-  *error = dsk_error_new ("unknown signature ObjectID");
+  char *oid_str = dsk_tls_object_id_to_string(oid);
+  *error = dsk_error_new ("unknown signature ObjectID: %s", oid_str);
+  dsk_free (oid_str);
   return false;
 }
 const DskTlsObjectID *

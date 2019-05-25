@@ -1709,7 +1709,7 @@ sha2_ctx_final (SHA2_CTX *ctx,
     ctx->block[120 + i] = bp >> (56 - 8*i);
   sha2_hashblock(ctx);
 
-  for (size_t i = 0; i < 64; i++)
+  for (size_t i = 0; i < 8; i++)
     dsk_uint64be_pack (ctx->state[i], out + 8*i);
 }
 

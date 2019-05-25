@@ -70,13 +70,13 @@ parse_name (DskASN1Value    *value,
           goto failed;
         }
       const DskTlsObjectID *oid = name->v_sequence.children[0]->v_object_identifier;
-      printf("oid=%s\n", dsk_tls_object_id_to_string(oid));
+      printf("oid=%s [%p]\n", dsk_tls_object_id_to_string(oid), oid);
       DskASN1Value *name_value = name->v_sequence.children[1];
       if (!dsk_tls_oid_to_x509_distinguished_name_type (oid, &dn[i].type))
         {
-          char *oid = dsk_tls_object_id_to_string (oid);
-          *error = dsk_error_new ("distinguished-name type has unrecognized OID: %s", oid);
-          dsk_free (oid);
+          char *oid_str = dsk_tls_object_id_to_string (oid);
+          *error = dsk_error_new ("distinguished-name type has unrecognized OID: %s", oid_str);
+          dsk_free (oid_str);
           goto failed;
         }
 
@@ -118,15 +118,16 @@ parse_validity (DskASN1Value        *value,
                 DskError           **error)
 {
   if (value->type != DSK_ASN1_TYPE_SEQUENCE
-   || value->v_sequence.n_children != 0
-   || value->v_sequence.children[0]->type != DSK_ASN1_TYPE_INTEGER
-   || value->v_sequence.children[1]->type != DSK_ASN1_TYPE_INTEGER)
+   || value->v_sequence.n_children != 2
+   || value->v_sequence.children[0]->type != DSK_ASN1_TYPE_UTC_TIME
+   || value->v_sequence.children[1]->type != DSK_ASN1_TYPE_UTC_TIME)
     {
+dump_asn1(value);
       *error = dsk_error_new ("Validity portion of x509 cert invalid");
       return false;
     }
-  validity_out->not_before = value->v_sequence.children[0]->v_integer;
-  validity_out->not_after = value->v_sequence.children[1]->v_integer;
+  validity_out->not_before = value->v_sequence.children[0]->v_time.unixtime;
+  validity_out->not_after = value->v_sequence.children[1]->v_time.unixtime;
   return true;
 }
 #define dsk_tls_x509_validity_clear(v)
