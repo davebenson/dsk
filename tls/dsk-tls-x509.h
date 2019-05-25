@@ -55,6 +55,9 @@ typedef struct DskTlsX509Name
   DskTlsX509DistinguishedName *distinguished_names;
 } DskTlsX509Name;
 
+const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
+                                             DskTlsX509DistinguishedNameType t);
+
 //
 // Unix-Timestamps for the range with
 // the certificate is valid.

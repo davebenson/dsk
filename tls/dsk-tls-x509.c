@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#if 0
 static void
 dump_asn1(const DskASN1Value *v)
 {
@@ -10,6 +11,7 @@ dump_asn1(const DskASN1Value *v)
   dsk_buffer_writev (&buf, 1);
   dsk_buffer_clear (&buf);
 }
+#endif
 
 static bool
 parse_algo_id (DskASN1Value *algorithm_id,
@@ -53,7 +55,6 @@ parse_name (DskASN1Value    *value,
   for (i = 0; i < n_names; i++)
     {
       DskASN1Value *name = names[i];
-      printf("parsing 1 name:\n"); dump_asn1(name);
       if (name->type != DSK_ASN1_TYPE_SET
        || name->v_set.n_children != 1)
         {
@@ -90,7 +91,6 @@ parse_name (DskASN1Value    *value,
           goto failed;
         }
       dn[i].name = dsk_asn1_primitive_value_to_string (name_value);
-      printf("successfully parsed name!\n");
     }
   name_out->n_distinguished_names = n_names;
   name_out->distinguished_names = dn;
@@ -101,6 +101,14 @@ failed:
     dsk_free (dn[j].name);
   dsk_free (dn);
   return false;
+}
+const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
+                                             DskTlsX509DistinguishedNameType t)
+{
+  for (unsigned i = 0; i < name->n_distinguished_names; i++)
+    if (name->distinguished_names[i].type == t)
+      return name->distinguished_names[i].name;
+  return NULL;
 }
 
 static void
@@ -121,7 +129,6 @@ parse_validity (DskASN1Value        *value,
    || value->v_sequence.children[0]->type != DSK_ASN1_TYPE_UTC_TIME
    || value->v_sequence.children[1]->type != DSK_ASN1_TYPE_UTC_TIME)
     {
-dump_asn1(value);
       *error = dsk_error_new ("Validity portion of x509 cert invalid");
       return false;
     }

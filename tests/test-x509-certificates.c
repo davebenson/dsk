@@ -51,15 +51,41 @@ test_cert (void)
   v = dsk_asn1_value_parse_der (sizeof(t1), t1, &used, &pool, &err);
   assert(used == sizeof(t1));
 
+#if 0
   DskBuffer buf = DSK_BUFFER_INIT;
   dsk_asn1_value_dump_to_buffer (v, &buf);
   dsk_buffer_writev (&buf, 1);
   dsk_buffer_clear (&buf);
-
+#endif
 
   DskTlsX509Certificate *cert = dsk_tls_x509_certificate_from_asn1 (v, &pool, &err);
   if (cert == NULL)
     dsk_die ("error parsing X509 Cert: %s", err->message);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_COUNTRY), "JP") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_STATE_OR_PROVINCE), "Tokyo") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_LOCALITY), "Chuo-ku") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_ORGANIZATION_NAME), "Frank4DD") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_ORGANIZATIONAL_UNIT), "WebCert Support") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_COMMON_NAME), "Frank4DD Web CA") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->issuer, DSK_TLS_X509_DN_EMAIL_ADDRESS), "support@frank4dd.com") == 0);
+
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->subject, DSK_TLS_X509_DN_COUNTRY), "JP") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->subject, DSK_TLS_X509_DN_STATE_OR_PROVINCE), "Tokyo") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->subject, DSK_TLS_X509_DN_ORGANIZATION_NAME), "Frank4DD") == 0);
+  assert (strcmp (dsk_tls_x509_name_get_component (&cert->subject, DSK_TLS_X509_DN_COMMON_NAME), "www.example.com") == 0);
+
+  assert (cert->subject_public_key_info.algorithm == DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS);
+  assert (cert->subject_public_key_info.public_key_length == 592 / 8);
+  // NOTE Just test the start of the public_key.
+  assert (memcmp (cert->subject_public_key_info.public_key,
+                  "\x30\x48\x02\x41\x00\x9b\xfc\x66\x90\x79\x84",
+		  10) == 0);
+  assert (cert->is_signed);
+  assert (cert->signature_length == 1024/8);
+  // NOTE Just test the start of the signature.
+  assert (memcmp (cert->signature_data,
+             "\x14\xb6\x4c\xbb\x81\x79\x33\xe6\x71\xa4\xda\x51\x6f\xcb\x08\x1d",
+                  16) == 0);
 
   dsk_mem_pool_clear (&pool);
   dsk_tls_x509_certificate_free (cert);

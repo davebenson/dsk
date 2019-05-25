@@ -7,7 +7,6 @@ bool
 dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
                                              DskTlsX509DistinguishedNameType *out)
 {
-  printf("dsk_tls_oid_to_x509_distinguished_name_type: oid=%p\n",oid);
   if (oid->n_subids == 4)
     {
       if (oid->subids[0] == 2
