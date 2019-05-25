@@ -1,8 +1,19 @@
 #include "../dsk.h"
 #include <string.h>
+#include <stdio.h>
+
+static void
+dump_asn1(const DskASN1Value *v)
+{
+  DskBuffer buf = DSK_BUFFER_INIT;
+  dsk_asn1_value_dump_to_buffer (v, &buf);
+  dsk_buffer_writev (&buf, 1);
+  dsk_buffer_clear (&buf);
+}
 
 static bool
 parse_algo_id (DskASN1Value *algorithm_id,
+               DskMemPool *pool,
                DskTlsSignatureScheme *scheme_out,
                DskError  **error)
 {
@@ -17,9 +28,9 @@ parse_algo_id (DskASN1Value *algorithm_id,
 
   const DskTlsObjectID *oid = algorithm_id->v_sequence.children[0]->v_object_identifier;
   const DskASN1Value *algo_params = algorithm_id->v_sequence.children[1];
-  if (!dsk_tls_oid_to_signature_scheme (oid, algo_params, scheme_out))
+  if (!dsk_tls_oid_to_signature_scheme (oid, pool, algo_params, scheme_out, error))
     {
-      *error = dsk_error_new ("signature-scheme not known for OID");
+      //*error = dsk_error_new ("signature-scheme not known for OID");
       return false;
     }
   return true;
@@ -41,18 +52,31 @@ parse_name (DskASN1Value    *value,
   unsigned i;
   for (i = 0; i < n_names; i++)
     {
-      if (names[i]->type != DSK_ASN1_TYPE_SEQUENCE
-       || names[i]->v_sequence.n_children != 2
-       || names[i]->v_sequence.children[0]->type != DSK_ASN1_TYPE_OBJECT_IDENTIFIER)
+      DskASN1Value *name = names[i];
+      printf("parsing 1 name:\n"); dump_asn1(name);
+      if (name->type != DSK_ASN1_TYPE_SET
+       || name->v_set.n_children != 1)
+        {
+          *error = dsk_error_new ("each distinguished-name must encased in a singleton");
+          goto failed;
+        }
+      name = name->v_set.children[0];
+      
+      if (name->type != DSK_ASN1_TYPE_SEQUENCE
+       || name->v_sequence.n_children != 2
+       || name->v_sequence.children[0]->type != DSK_ASN1_TYPE_OBJECT_IDENTIFIER)
         {
           *error = dsk_error_new ("each distinguished-name must a sequence of OID and Name");
           goto failed;
         }
-      const DskTlsObjectID *oid = names[i]->v_sequence.children[0]->v_object_identifier;
-      DskASN1Value *name_value = names[i]->v_sequence.children[1];
+      const DskTlsObjectID *oid = name->v_sequence.children[0]->v_object_identifier;
+      printf("oid=%s\n", dsk_tls_object_id_to_string(oid));
+      DskASN1Value *name_value = name->v_sequence.children[1];
       if (!dsk_tls_oid_to_x509_distinguished_name_type (oid, &dn[i].type))
         {
-          *error = dsk_error_new ("distinguished-name type has unrecognied OID");
+          char *oid = dsk_tls_object_id_to_string (oid);
+          *error = dsk_error_new ("distinguished-name type has unrecognized OID: %s", oid);
+          dsk_free (oid);
           goto failed;
         }
 
@@ -67,6 +91,7 @@ parse_name (DskASN1Value    *value,
           goto failed;
         }
       dn[i].name = dsk_asn1_primitive_value_to_string (name_value);
+      printf("successfully parsed name!\n");
     }
   name_out->n_distinguished_names = n_names;
   name_out->distinguished_names = dn;
@@ -109,6 +134,7 @@ parse_validity (DskASN1Value        *value,
 
 static bool
 parse_subject_public_key_info (DskASN1Value        *value,
+                               DskMemPool          *pool,
                                DskTlsX509SubjectPublicKeyInfo  *spki_out,
                                DskError           **error)
 {
@@ -118,7 +144,7 @@ parse_subject_public_key_info (DskASN1Value        *value,
       *error = dsk_error_new ("SubjectPublicKeyInfo must be a sequence of length 2");
       return false;
     }
-  if (!parse_algo_id (value->v_sequence.children[0], &spki_out->algorithm, error))
+  if (!parse_algo_id (value->v_sequence.children[0], pool, &spki_out->algorithm, error))
     return false;
   if (value->v_sequence.children[1]->type != DSK_ASN1_TYPE_BIT_STRING
    || value->v_sequence.children[1]->v_bit_string.length % 8 != 0)
@@ -141,7 +167,7 @@ dsk_tls_x509_subject_public_key_info_clear (DskTlsX509SubjectPublicKeyInfo *spki
 
 DskTlsX509Certificate *
 dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
-                                             DskMemPool   *tmp_pool,
+                                             DskMemPool   *pool,
                                              DskError    **error)
 {
   if (value->type != DSK_ASN1_TYPE_SEQUENCE)
@@ -155,7 +181,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
    && value->v_sequence.children[0]->type == DSK_ASN1_TYPE_CONTEXT_SPECIFIC_0)
     {
       DskASN1Value *version_tag = value->v_sequence.children[0];
-      if (!dsk_asn1_value_expand_tag (version_tag, tmp_pool,
+      if (!dsk_asn1_value_expand_tag (version_tag, pool,
                                       DSK_ASN1_TYPE_INTEGER, true,
                                       error))
         {
@@ -192,7 +218,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
   memcpy (rv->serial_number + sn_pad, serial_number->value_start, sn_len);
 
   DskASN1Value *algorithm_id = value->v_sequence.children[tbs_at++];
-  if (!parse_algo_id (algorithm_id, &rv->signature_scheme, error))
+  if (!parse_algo_id (algorithm_id, pool, &rv->signature_scheme, error))
     {
       dsk_tls_x509_certificate_free (rv);
       return NULL;
@@ -216,7 +242,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
       return NULL;
     }
   DskASN1Value *subpki_value = value->v_sequence.children[tbs_at++];
-  if (!parse_subject_public_key_info (subpki_value, &rv->subject_public_key_info, error))
+  if (!parse_subject_public_key_info (subpki_value, pool, &rv->subject_public_key_info, error))
     {
       dsk_tls_x509_certificate_free (rv);
       return false;
@@ -225,7 +251,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
   DskASN1Value *tmp = tbs_at < value->v_sequence.n_children ? value->v_sequence.children[tbs_at] : NULL;
   if (tmp != NULL && tmp->type == DSK_ASN1_TYPE_CONTEXT_SPECIFIC_1)
     {
-      if (!dsk_asn1_value_expand_tag (tmp, tmp_pool,
+      if (!dsk_asn1_value_expand_tag (tmp, pool,
                                       DSK_ASN1_TYPE_BIT_STRING, false,
                                       error))
         {
@@ -243,7 +269,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
 
   if (tmp != NULL && tmp->type == DSK_ASN1_TYPE_CONTEXT_SPECIFIC_2)
     {
-      if (!dsk_asn1_value_expand_tag (tmp, tmp_pool,
+      if (!dsk_asn1_value_expand_tag (tmp, pool,
                                       DSK_ASN1_TYPE_BIT_STRING, false,
                                       error))
         {
@@ -260,7 +286,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
     }
   if (tmp != NULL && tmp->type == DSK_ASN1_TYPE_CONTEXT_SPECIFIC_3)
     {
-      if (!dsk_asn1_value_expand_tag (tmp, tmp_pool,
+      if (!dsk_asn1_value_expand_tag (tmp, pool,
                                       DSK_ASN1_TYPE_SEQUENCE, false,
                                       error))
         {
@@ -291,7 +317,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
 }
 DskTlsX509Certificate *
 dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
-                                    DskMemPool   *tmp_pool,
+                                    DskMemPool   *pool,
                                     DskError    **error)
 {
   if (value->type != DSK_ASN1_TYPE_SEQUENCE)
@@ -307,11 +333,11 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
   DskASN1Value *tbs_cert = value->v_sequence.children[0];
   DskASN1Value *cert_sig_algo = value->v_sequence.children[1];
   DskASN1Value *sig = value->v_sequence.children[2];
-  DskTlsX509Certificate *rv = dsk_tls_x509_unsigned_certificate_from_asn1 (tbs_cert, tmp_pool, error);
+  DskTlsX509Certificate *rv = dsk_tls_x509_unsigned_certificate_from_asn1 (tbs_cert, pool, error);
   if (rv == NULL)
     return NULL;
   DskTlsSignatureScheme scheme;
-  if (!parse_algo_id (cert_sig_algo, &scheme, error))
+  if (!parse_algo_id (cert_sig_algo, pool, &scheme, error))
     {
       dsk_tls_x509_certificate_free (rv);
       return NULL;
