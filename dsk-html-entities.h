@@ -6950,142 +6950,140 @@ macro(permil) macro(pertenk) macro(prime) macro(Prime) macro(tprime) \
 macro(bprime) macro(lsaquo) macro(rsaquo) macro(oline) macro(caret) \
 macro(hybull) macro(frasl) macro(bsemi) macro(qprime) \
 macro(MediumSpace) macro(NoBreak) macro(ApplyFunction) \
-macro(InvisibleTimes) macro(InvisibleComma) macro(euro) \
-macro(tdot) macro(DotDot) macro(Copf) macro(incare) macro(gscr) \
-macro(hamilt) macro(Hfr) macro(quaternions) macro(planckh) \
-macro(planck) macro(Iscr) macro(image) macro(Lscr) macro(ell) \
-macro(Nopf) macro(numero) macro(copysr) macro(weierp) macro(Popf) \
-macro(rationals) macro(Rscr) macro(real) macro(reals) macro(rx) \
-macro(trade) macro(integers) macro(ohm) macro(mho) macro(Zfr) \
-macro(iiota) macro(angst) macro(bernou) macro(Cfr) macro(escr) \
-macro(Escr) macro(Fscr) macro(phmmat) macro(order) macro(alefsym) \
-macro(beth) macro(gimel) macro(daleth) macro(CapitalDifferentialD) \
-macro(DifferentialD) macro(ExponentialE) macro(ImaginaryI) \
-macro(frac13) macro(frac23) macro(frac15) macro(frac25) macro(frac35) \
-macro(frac45) macro(frac16) macro(frac56) macro(frac18) macro(frac38) \
-macro(frac58) macro(frac78) macro(larr) macro(uarr) macro(rarr) \
-macro(darr) macro(harr) macro(varr) macro(nwarr) macro(nearr) \
-macro(searr) macro(swarr) macro(nlarr) macro(nrarr) macro(rarrw) \
-macro(Larr) macro(Uarr) macro(Rarr) macro(Darr) macro(larrtl) \
-macro(rarrtl) macro(LeftTeeArrow) macro(UpTeeArrow) macro(map) \
-macro(DownTeeArrow) macro(larrhk) macro(rarrhk) macro(larrlp) \
-macro(rarrlp) macro(harrw) macro(nharr) macro(lsh) macro(rsh) \
-macro(ldsh) macro(rdsh) macro(crarr) macro(cularr) macro(curarr) \
-macro(olarr) macro(orarr) macro(lharu) macro(lhard) macro(uharr) \
-macro(uharl) macro(rharu) macro(rhard) macro(dharr) macro(dharl) \
-macro(rlarr) macro(udarr) macro(lrarr) macro(llarr) macro(uuarr) \
-macro(rrarr) macro(ddarr) macro(lrhar) macro(rlhar) macro(nlArr) \
-macro(nhArr) macro(nrArr) macro(lArr) macro(uArr) macro(rArr) \
-macro(dArr) macro(hArr) macro(vArr) macro(nwArr) macro(neArr) \
-macro(seArr) macro(swArr) macro(lAarr) macro(rAarr) macro(zigrarr) \
-macro(larrb) macro(rarrb) macro(duarr) macro(loarr) macro(roarr) \
-macro(hoarr) macro(forall) macro(comp) macro(part) macro(exist) \
-macro(nexist) macro(empty) macro(nabla) macro(isin) macro(notin) \
-macro(niv) macro(notni) macro(prod) macro(coprod) macro(sum) \
-macro(minus) macro(mnplus) macro(plusdo) macro(setmn) macro(lowast) \
-macro(compfn) macro(radic) macro(prop) macro(infin) macro(angrt) \
-macro(ang) macro(angmsd) macro(angsph) macro(mid) macro(nmid) \
-macro(par) macro(npar) macro(and) macro(or) macro(cap) macro(cup) \
-macro(int) macro(Int) macro(tint) macro(conint) macro(Conint) \
-macro(Cconint) macro(cwint) macro(cwconint) macro(awconint) \
-macro(there4) macro(becaus) macro(ratio) macro(Colon) macro(minusd) \
-macro(mDDot) macro(homtht) macro(sim) macro(bsim) macro(ac) \
-macro(acd) macro(wreath) macro(nsim) macro(esim) macro(sime) \
-macro(nsime) macro(cong) macro(simne) macro(ncong) macro(asymp) \
-macro(nap) macro(ape) macro(apid) macro(bcong) macro(asympeq) \
-macro(bump) macro(bumpe) macro(esdot) macro(eDot) macro(efDot) \
-macro(erDot) macro(colone) macro(ecolon) macro(ecir) macro(cire) \
-macro(wedgeq) macro(veeeq) macro(trie) macro(equest) macro(ne) \
-macro(equiv) macro(nequiv) macro(le) macro(ge) macro(lE) \
-macro(gE) macro(lnE) macro(gnE) macro(Lt) macro(Gt) macro(twixt) \
-macro(NotCupCap) macro(nlt) macro(ngt) macro(nle) macro(nge) \
-macro(lsim) macro(gsim) macro(nlsim) macro(ngsim) macro(lg) macro(gl) \
-macro(ntlg) macro(ntgl) macro(pr) macro(sc) macro(prcue) macro(sccue) \
-macro(prsim) macro(scsim) macro(npr) macro(nsc) macro(sub) macro(sup) \
-macro(nsub) macro(nsup) macro(sube) macro(supe) macro(nsube) \
-macro(nsupe) macro(subne) macro(supne) macro(cupdot) macro(uplus) \
-macro(sqsub) macro(sqsup) macro(sqsube) macro(sqsupe) macro(sqcap) \
-macro(sqcup) macro(oplus) macro(ominus) macro(otimes) macro(osol) \
-macro(odot) macro(ocir) macro(oast) macro(odash) macro(plusb) \
-macro(minusb) macro(timesb) macro(sdotb) macro(vdash) macro(dashv) \
-macro(top) macro(bottom) macro(models) macro(vDash) macro(Vdash) \
-macro(Vvdash) macro(VDash) macro(nvdash) macro(nvDash) macro(nVdash) \
-macro(nVDash) macro(prurel) macro(vltri) macro(vrtri) macro(ltrie) \
-macro(rtrie) macro(origof) macro(imof) macro(mumap) macro(hercon) \
-macro(intcal) macro(veebar) macro(barvee) macro(angrtvb) \
+macro(InvisibleTimes) macro(InvisibleComma) macro(euro) macro(tdot) \
+macro(DotDot) macro(Copf) macro(incare) macro(gscr) macro(hamilt) \
+macro(Hfr) macro(quaternions) macro(planckh) macro(planck) macro(Iscr) \
+macro(image) macro(Lscr) macro(ell) macro(Nopf) macro(numero) \
+macro(copysr) macro(weierp) macro(Popf) macro(rationals) macro(Rscr) \
+macro(real) macro(reals) macro(rx) macro(trade) macro(integers) \
+macro(ohm) macro(mho) macro(Zfr) macro(iiota) macro(angst) \
+macro(bernou) macro(Cfr) macro(escr) macro(Escr) macro(Fscr) \
+macro(phmmat) macro(order) macro(alefsym) macro(beth) macro(gimel) \
+macro(daleth) macro(CapitalDifferentialD) macro(DifferentialD) \
+macro(ExponentialE) macro(ImaginaryI) macro(frac13) macro(frac23) \
+macro(frac15) macro(frac25) macro(frac35) macro(frac45) macro(frac16) \
+macro(frac56) macro(frac18) macro(frac38) macro(frac58) macro(frac78) \
+macro(larr) macro(uarr) macro(rarr) macro(darr) macro(harr) \
+macro(varr) macro(nwarr) macro(nearr) macro(searr) macro(swarr) \
+macro(nlarr) macro(nrarr) macro(rarrw) macro(Larr) macro(Uarr) \
+macro(Rarr) macro(Darr) macro(larrtl) macro(rarrtl) \
+macro(LeftTeeArrow) macro(UpTeeArrow) macro(map) macro(DownTeeArrow) \
+macro(larrhk) macro(rarrhk) macro(larrlp) macro(rarrlp) macro(harrw) \
+macro(nharr) macro(lsh) macro(rsh) macro(ldsh) macro(rdsh) \
+macro(crarr) macro(cularr) macro(curarr) macro(olarr) macro(orarr) \
+macro(lharu) macro(lhard) macro(uharr) macro(uharl) macro(rharu) \
+macro(rhard) macro(dharr) macro(dharl) macro(rlarr) macro(udarr) \
+macro(lrarr) macro(llarr) macro(uuarr) macro(rrarr) macro(ddarr) \
+macro(lrhar) macro(rlhar) macro(nlArr) macro(nhArr) macro(nrArr) \
+macro(lArr) macro(uArr) macro(rArr) macro(dArr) macro(hArr) \
+macro(vArr) macro(nwArr) macro(neArr) macro(seArr) macro(swArr) \
+macro(lAarr) macro(rAarr) macro(zigrarr) macro(larrb) macro(rarrb) \
+macro(duarr) macro(loarr) macro(roarr) macro(hoarr) macro(forall) \
+macro(comp) macro(part) macro(exist) macro(nexist) macro(empty) \
+macro(nabla) macro(isin) macro(notin) macro(niv) macro(notni) \
+macro(prod) macro(coprod) macro(sum) macro(minus) macro(mnplus) \
+macro(plusdo) macro(setmn) macro(lowast) macro(compfn) macro(radic) \
+macro(prop) macro(infin) macro(angrt) macro(ang) macro(angmsd) \
+macro(angsph) macro(mid) macro(nmid) macro(par) macro(npar) macro(and) \
+macro(or) macro(cap) macro(cup) macro(int) macro(Int) macro(tint) \
+macro(conint) macro(Conint) macro(Cconint) macro(cwint) \
+macro(cwconint) macro(awconint) macro(there4) macro(becaus) \
+macro(ratio) macro(Colon) macro(minusd) macro(mDDot) macro(homtht) \
+macro(sim) macro(bsim) macro(ac) macro(acd) macro(wreath) macro(nsim) \
+macro(esim) macro(sime) macro(nsime) macro(cong) macro(simne) \
+macro(ncong) macro(asymp) macro(nap) macro(ape) macro(apid) \
+macro(bcong) macro(asympeq) macro(bump) macro(bumpe) macro(esdot) \
+macro(eDot) macro(efDot) macro(erDot) macro(colone) macro(ecolon) \
+macro(ecir) macro(cire) macro(wedgeq) macro(veeeq) macro(trie) \
+macro(equest) macro(ne) macro(equiv) macro(nequiv) macro(le) macro(ge) \
+macro(lE) macro(gE) macro(lnE) macro(gnE) macro(Lt) macro(Gt) \
+macro(twixt) macro(NotCupCap) macro(nlt) macro(ngt) macro(nle) \
+macro(nge) macro(lsim) macro(gsim) macro(nlsim) macro(ngsim) macro(lg) \
+macro(gl) macro(ntlg) macro(ntgl) macro(pr) macro(sc) macro(prcue) \
+macro(sccue) macro(prsim) macro(scsim) macro(npr) macro(nsc) \
+macro(sub) macro(sup) macro(nsub) macro(nsup) macro(sube) macro(supe) \
+macro(nsube) macro(nsupe) macro(subne) macro(supne) macro(cupdot) \
+macro(uplus) macro(sqsub) macro(sqsup) macro(sqsube) macro(sqsupe) \
+macro(sqcap) macro(sqcup) macro(oplus) macro(ominus) macro(otimes) \
+macro(osol) macro(odot) macro(ocir) macro(oast) macro(odash) \
+macro(plusb) macro(minusb) macro(timesb) macro(sdotb) macro(vdash) \
+macro(dashv) macro(top) macro(bottom) macro(models) macro(vDash) \
+macro(Vdash) macro(Vvdash) macro(VDash) macro(nvdash) macro(nvDash) \
+macro(nVdash) macro(nVDash) macro(prurel) macro(vltri) macro(vrtri) \
+macro(ltrie) macro(rtrie) macro(origof) macro(imof) macro(mumap) \
+macro(hercon) macro(intcal) macro(veebar) macro(barvee) macro(angrtvb) \
 macro(lrtri) macro(xwedge) macro(xvee) macro(xcap) macro(xcup) \
 macro(diam) macro(sdot) macro(sstarf) macro(divonx) macro(bowtie) \
 macro(ltimes) macro(rtimes) macro(lthree) macro(rthree) macro(bsime) \
-macro(cuvee) macro(cuwed) macro(Sub) macro(Sup) macro(Cap) \
-macro(Cup) macro(fork) macro(epar) macro(ltdot) macro(gtdot) \
-macro(Ll) macro(Gg) macro(leg) macro(gel) macro(cuepr) macro(cuesc) \
-macro(nprcue) macro(nsccue) macro(nsqsube) macro(nsqsupe) \
-macro(lnsim) macro(gnsim) macro(prnsim) macro(scnsim) macro(nltri) \
-macro(nrtri) macro(nltrie) macro(nrtrie) macro(vellip) macro(ctdot) \
-macro(utdot) macro(dtdot) macro(disin) macro(isinsv) macro(isins) \
-macro(isindot) macro(notinvc) macro(notinvb) macro(isinE) \
-macro(nisd) macro(xnis) macro(nis) macro(notnivc) macro(notnivb) \
-macro(barwed) macro(Barwed) macro(lceil) macro(rceil) macro(lfloor) \
-macro(rfloor) macro(drcrop) macro(dlcrop) macro(urcrop) macro(ulcrop) \
-macro(bnot) macro(profline) macro(profsurf) macro(telrec) \
-macro(target) macro(ulcorn) macro(urcorn) macro(dlcorn) macro(drcorn) \
-macro(frown) macro(smile) macro(cylcty) macro(profalar) macro(topbot) \
-macro(ovbar) macro(solbar) macro(angzarr) macro(lmoust) macro(rmoust) \
-macro(tbrk) macro(bbrk) macro(bbrktbrk) macro(OverParenthesis) \
-macro(UnderParenthesis) macro(OverBrace) macro(UnderBrace) \
-macro(trpezium) macro(elinters) macro(blank) macro(oS) \
-macro(boxh) macro(boxv) macro(boxdr) macro(boxdl) macro(boxur) \
-macro(boxul) macro(boxvr) macro(boxvl) macro(boxhd) macro(boxhu) \
-macro(boxvh) macro(boxH) macro(boxV) macro(boxdR) macro(boxDr) \
-macro(boxDR) macro(boxdL) macro(boxDl) macro(boxDL) macro(boxuR) \
-macro(boxUr) macro(boxUR) macro(boxuL) macro(boxUl) macro(boxUL) \
-macro(boxvR) macro(boxVr) macro(boxVR) macro(boxvL) macro(boxVl) \
-macro(boxVL) macro(boxHd) macro(boxhD) macro(boxHD) macro(boxHu) \
-macro(boxhU) macro(boxHU) macro(boxvH) macro(boxVh) macro(boxVH) \
-macro(uhblk) macro(lhblk) macro(block) macro(blk14) macro(blk12) \
-macro(blk34) macro(squ) macro(squf) macro(EmptyVerySmallSquare) \
-macro(rect) macro(marker) macro(fltns) macro(xutri) macro(utrif) \
-macro(utri) macro(rtrif) macro(rtri) macro(xdtri) macro(dtrif) \
-macro(dtri) macro(ltrif) macro(ltri) macro(loz) macro(cir) \
-macro(tridot) macro(xcirc) macro(ultri) macro(urtri) macro(lltri) \
-macro(EmptySmallSquare) macro(FilledSmallSquare) macro(starf) \
-macro(star) macro(phone) macro(female) macro(male) macro(spades) \
-macro(clubs) macro(hearts) macro(diams) macro(sung) macro(flat) \
-macro(natur) macro(sharp) macro(check) macro(cross) macro(malt) \
-macro(sext) macro(VerticalSeparator) macro(lbbrk) macro(rbbrk) \
-macro(lobrk) macro(robrk) macro(lang) macro(rang) macro(Lang) \
-macro(Rang) macro(loang) macro(roang) macro(xlarr) macro(xrarr) \
-macro(xharr) macro(xlArr) macro(xrArr) macro(xhArr) macro(xmap) \
-macro(dzigrarr) macro(nvlArr) macro(nvrArr) macro(nvHarr) \
-macro(Map) macro(lbarr) macro(rbarr) macro(lBarr) macro(rBarr) \
-macro(RBarr) macro(DDotrahd) macro(UpArrowBar) macro(DownArrowBar) \
-macro(Rarrtl) macro(latail) macro(ratail) macro(lAtail) macro(rAtail) \
-macro(larrfs) macro(rarrfs) macro(larrbfs) macro(rarrbfs) \
-macro(nwarhk) macro(nearhk) macro(searhk) macro(swarhk) macro(nwnear) \
-macro(nesear) macro(seswar) macro(swnwar) macro(rarrc) macro(cudarrr) \
-macro(ldca) macro(rdca) macro(cudarrl) macro(larrpl) macro(curarrm) \
-macro(cularrp) macro(rarrpl) macro(harrcir) macro(Uarrocir) \
-macro(lurdshar) macro(ldrushar) macro(LeftRightVector) \
-macro(RightUpDownVector) macro(DownLeftRightVector) \
-macro(LeftUpDownVector) macro(LeftVectorBar) macro(RightVectorBar) \
-macro(RightUpVectorBar) macro(RightDownVectorBar) \
-macro(DownLeftVectorBar) macro(DownRightVectorBar) \
-macro(LeftUpVectorBar) macro(LeftDownVectorBar) \
-macro(LeftTeeVector) macro(RightTeeVector) macro(RightUpTeeVector) \
-macro(RightDownTeeVector) macro(DownLeftTeeVector) \
-macro(DownRightTeeVector) macro(LeftUpTeeVector) \
-macro(LeftDownTeeVector) macro(lHar) macro(uHar) macro(rHar) \
-macro(dHar) macro(luruhar) macro(ldrdhar) macro(ruluhar) \
-macro(rdldhar) macro(lharul) macro(llhard) macro(rharul) \
-macro(lrhard) macro(udhar) macro(duhar) macro(RoundImplies) \
-macro(erarr) macro(simrarr) macro(larrsim) macro(rarrsim) \
-macro(rarrap) macro(ltlarr) macro(gtrarr) macro(subrarr) \
-macro(suplarr) macro(lfisht) macro(rfisht) macro(ufisht) \
-macro(dfisht) macro(lopar) macro(ropar) macro(lbrke) macro(rbrke) \
-macro(lbrkslu) macro(rbrksld) macro(lbrksld) macro(rbrkslu) \
-macro(langd) macro(rangd) macro(lparlt) macro(rpargt) macro(gtlPar) \
-macro(ltrPar) macro(vzigzag) macro(vangrt) macro(angrtvbd) \
-macro(ange) macro(range) macro(dwangle) macro(uwangle) \
+macro(cuvee) macro(cuwed) macro(Sub) macro(Sup) macro(Cap) macro(Cup) \
+macro(fork) macro(epar) macro(ltdot) macro(gtdot) macro(Ll) macro(Gg) \
+macro(leg) macro(gel) macro(cuepr) macro(cuesc) macro(nprcue) \
+macro(nsccue) macro(nsqsube) macro(nsqsupe) macro(lnsim) macro(gnsim) \
+macro(prnsim) macro(scnsim) macro(nltri) macro(nrtri) macro(nltrie) \
+macro(nrtrie) macro(vellip) macro(ctdot) macro(utdot) macro(dtdot) \
+macro(disin) macro(isinsv) macro(isins) macro(isindot) macro(notinvc) \
+macro(notinvb) macro(isinE) macro(nisd) macro(xnis) macro(nis) \
+macro(notnivc) macro(notnivb) macro(barwed) macro(Barwed) macro(lceil) \
+macro(rceil) macro(lfloor) macro(rfloor) macro(drcrop) macro(dlcrop) \
+macro(urcrop) macro(ulcrop) macro(bnot) macro(profline) \
+macro(profsurf) macro(telrec) macro(target) macro(ulcorn) \
+macro(urcorn) macro(dlcorn) macro(drcorn) macro(frown) macro(smile) \
+macro(cylcty) macro(profalar) macro(topbot) macro(ovbar) macro(solbar) \
+macro(angzarr) macro(lmoust) macro(rmoust) macro(tbrk) macro(bbrk) \
+macro(bbrktbrk) macro(OverParenthesis) macro(UnderParenthesis) \
+macro(OverBrace) macro(UnderBrace) macro(trpezium) macro(elinters) \
+macro(blank) macro(oS) macro(boxh) macro(boxv) macro(boxdr) \
+macro(boxdl) macro(boxur) macro(boxul) macro(boxvr) macro(boxvl) \
+macro(boxhd) macro(boxhu) macro(boxvh) macro(boxH) macro(boxV) \
+macro(boxdR) macro(boxDr) macro(boxDR) macro(boxdL) macro(boxDl) \
+macro(boxDL) macro(boxuR) macro(boxUr) macro(boxUR) macro(boxuL) \
+macro(boxUl) macro(boxUL) macro(boxvR) macro(boxVr) macro(boxVR) \
+macro(boxvL) macro(boxVl) macro(boxVL) macro(boxHd) macro(boxhD) \
+macro(boxHD) macro(boxHu) macro(boxhU) macro(boxHU) macro(boxvH) \
+macro(boxVh) macro(boxVH) macro(uhblk) macro(lhblk) macro(block) \
+macro(blk14) macro(blk12) macro(blk34) macro(squ) macro(squf) \
+macro(EmptyVerySmallSquare) macro(rect) macro(marker) macro(fltns) \
+macro(xutri) macro(utrif) macro(utri) macro(rtrif) macro(rtri) \
+macro(xdtri) macro(dtrif) macro(dtri) macro(ltrif) macro(ltri) \
+macro(loz) macro(cir) macro(tridot) macro(xcirc) macro(ultri) \
+macro(urtri) macro(lltri) macro(EmptySmallSquare) \
+macro(FilledSmallSquare) macro(starf) macro(star) macro(phone) \
+macro(female) macro(male) macro(spades) macro(clubs) macro(hearts) \
+macro(diams) macro(sung) macro(flat) macro(natur) macro(sharp) \
+macro(check) macro(cross) macro(malt) macro(sext) \
+macro(VerticalSeparator) macro(lbbrk) macro(rbbrk) macro(lobrk) \
+macro(robrk) macro(lang) macro(rang) macro(Lang) macro(Rang) \
+macro(loang) macro(roang) macro(xlarr) macro(xrarr) macro(xharr) \
+macro(xlArr) macro(xrArr) macro(xhArr) macro(xmap) macro(dzigrarr) \
+macro(nvlArr) macro(nvrArr) macro(nvHarr) macro(Map) macro(lbarr) \
+macro(rbarr) macro(lBarr) macro(rBarr) macro(RBarr) macro(DDotrahd) \
+macro(UpArrowBar) macro(DownArrowBar) macro(Rarrtl) macro(latail) \
+macro(ratail) macro(lAtail) macro(rAtail) macro(larrfs) macro(rarrfs) \
+macro(larrbfs) macro(rarrbfs) macro(nwarhk) macro(nearhk) \
+macro(searhk) macro(swarhk) macro(nwnear) macro(nesear) macro(seswar) \
+macro(swnwar) macro(rarrc) macro(cudarrr) macro(ldca) macro(rdca) \
+macro(cudarrl) macro(larrpl) macro(curarrm) macro(cularrp) \
+macro(rarrpl) macro(harrcir) macro(Uarrocir) macro(lurdshar) \
+macro(ldrushar) macro(LeftRightVector) macro(RightUpDownVector) \
+macro(DownLeftRightVector) macro(LeftUpDownVector) \
+macro(LeftVectorBar) macro(RightVectorBar) macro(RightUpVectorBar) \
+macro(RightDownVectorBar) macro(DownLeftVectorBar) \
+macro(DownRightVectorBar) macro(LeftUpVectorBar) \
+macro(LeftDownVectorBar) macro(LeftTeeVector) macro(RightTeeVector) \
+macro(RightUpTeeVector) macro(RightDownTeeVector) \
+macro(DownLeftTeeVector) macro(DownRightTeeVector) \
+macro(LeftUpTeeVector) macro(LeftDownTeeVector) macro(lHar) \
+macro(uHar) macro(rHar) macro(dHar) macro(luruhar) macro(ldrdhar) \
+macro(ruluhar) macro(rdldhar) macro(lharul) macro(llhard) \
+macro(rharul) macro(lrhard) macro(udhar) macro(duhar) \
+macro(RoundImplies) macro(erarr) macro(simrarr) macro(larrsim) \
+macro(rarrsim) macro(rarrap) macro(ltlarr) macro(gtrarr) \
+macro(subrarr) macro(suplarr) macro(lfisht) macro(rfisht) \
+macro(ufisht) macro(dfisht) macro(lopar) macro(ropar) macro(lbrke) \
+macro(rbrke) macro(lbrkslu) macro(rbrksld) macro(lbrksld) \
+macro(rbrkslu) macro(langd) macro(rangd) macro(lparlt) macro(rpargt) \
+macro(gtlPar) macro(ltrPar) macro(vzigzag) macro(vangrt) \
+macro(angrtvbd) macro(ange) macro(range) macro(dwangle) macro(uwangle) \
 macro(angmsdaa) macro(angmsdab) macro(angmsdac) macro(angmsdad) \
 macro(angmsdae) macro(angmsdaf) macro(angmsdag) macro(angmsdah) \
 macro(bemptyv) macro(demptyv) macro(cemptyv) macro(raemptyv) \
@@ -7101,65 +7099,65 @@ macro(cirfnint) macro(awint) macro(rppolint) macro(scpolint) \
 macro(npolint) macro(pointint) macro(quatint) macro(intlarhk) \
 macro(pluscir) macro(plusacir) macro(simplus) macro(plusdu) \
 macro(plussim) macro(plustwo) macro(mcomma) macro(minusdu) \
-macro(loplus) macro(roplus) macro(Cross) macro(timesd) \
-macro(timesbar) macro(smashp) macro(lotimes) macro(rotimes) \
-macro(otimesas) macro(Otimes) macro(odiv) macro(triplus) \
-macro(triminus) macro(tritime) macro(iprod) macro(amalg) \
-macro(capdot) macro(ncup) macro(ncap) macro(capand) macro(cupor) \
-macro(cupcap) macro(capcup) macro(cupbrcap) macro(capbrcup) \
-macro(cupcup) macro(capcap) macro(ccups) macro(ccaps) \
-macro(ccupssm) macro(And) macro(Or) macro(andand) macro(oror) \
-macro(orslope) macro(andslope) macro(andv) macro(orv) macro(andd) \
-macro(ord) macro(wedbar) macro(sdote) macro(simdot) macro(congdot) \
-macro(easter) macro(apacir) macro(apE) macro(eplus) macro(pluse) \
-macro(Esim) macro(Colone) macro(Equal) macro(eDDot) macro(equivDD) \
-macro(ltcir) macro(gtcir) macro(ltquest) macro(gtquest) macro(les) \
-macro(ges) macro(lesdot) macro(gesdot) macro(lesdoto) macro(gesdoto) \
-macro(lesdotor) macro(gesdotol) macro(lap) macro(gap) macro(lne) \
-macro(gne) macro(lnap) macro(gnap) macro(lEg) macro(gEl) macro(lsime) \
-macro(gsime) macro(lsimg) macro(gsiml) macro(lgE) macro(glE) \
-macro(lesges) macro(gesles) macro(els) macro(egs) macro(elsdot) \
-macro(egsdot) macro(el) macro(eg) macro(siml) macro(simg) \
-macro(simlE) macro(simgE) macro(LessLess) macro(GreaterGreater) \
-macro(glj) macro(gla) macro(ltcc) macro(gtcc) macro(lescc) \
-macro(gescc) macro(smt) macro(lat) macro(smte) macro(late) \
-macro(bumpE) macro(pre) macro(sce) macro(prE) macro(scE) macro(prnE) \
-macro(scnE) macro(prap) macro(scap) macro(prnap) macro(scnap) \
-macro(Pr) macro(Sc) macro(subdot) macro(supdot) macro(subplus) \
-macro(supplus) macro(submult) macro(supmult) macro(subedot) \
-macro(supedot) macro(subE) macro(supE) macro(subsim) macro(supsim) \
-macro(subnE) macro(supnE) macro(csub) macro(csup) macro(csube) \
-macro(csupe) macro(subsup) macro(supsub) macro(subsub) macro(supsup) \
-macro(suphsub) macro(supdsub) macro(forkv) macro(topfork) macro(mlcp) \
-macro(Dashv) macro(Vdashl) macro(Barv) macro(vBar) macro(vBarv) \
-macro(Vbar) macro(Not) macro(bNot) macro(rnmid) macro(cirmid) \
-macro(midcir) macro(topcir) macro(nhpar) macro(parsim) macro(parsl) \
-macro(fflig) macro(filig) macro(fllig) macro(ffilig) macro(ffllig) \
-macro(Ascr) macro(Cscr) macro(Dscr) macro(Gscr) macro(Jscr) \
-macro(Kscr) macro(Nscr) macro(Oscr) macro(Pscr) macro(Qscr) \
-macro(Sscr) macro(Tscr) macro(Uscr) macro(Vscr) macro(Wscr) \
-macro(Xscr) macro(Yscr) macro(Zscr) macro(ascr) macro(bscr) \
-macro(cscr) macro(dscr) macro(fscr) macro(hscr) macro(iscr) \
-macro(jscr) macro(kscr) macro(lscr) macro(mscr) macro(nscr) \
-macro(pscr) macro(qscr) macro(rscr) macro(sscr) macro(tscr) \
-macro(uscr) macro(vscr) macro(wscr) macro(xscr) macro(yscr) \
-macro(zscr) macro(Afr) macro(Bfr) macro(Dfr) macro(Efr) macro(Ffr) \
-macro(Gfr) macro(Jfr) macro(Kfr) macro(Lfr) macro(Mfr) macro(Nfr) \
-macro(Ofr) macro(Pfr) macro(Qfr) macro(Sfr) macro(Tfr) macro(Ufr) \
-macro(Vfr) macro(Wfr) macro(Xfr) macro(Yfr) macro(afr) macro(bfr) \
-macro(cfr) macro(dfr) macro(efr) macro(ffr) macro(gfr) macro(hfr) \
-macro(ifr) macro(jfr) macro(kfr) macro(lfr) macro(mfr) macro(nfr) \
-macro(ofr) macro(pfr) macro(qfr) macro(rfr) macro(sfr) macro(tfr) \
-macro(ufr) macro(vfr) macro(wfr) macro(xfr) macro(yfr) macro(zfr) \
-macro(Aopf) macro(Bopf) macro(Dopf) macro(Eopf) macro(Fopf) \
-macro(Gopf) macro(Iopf) macro(Jopf) macro(Kopf) macro(Lopf) \
-macro(Mopf) macro(Oopf) macro(Sopf) macro(Topf) macro(Uopf) \
-macro(Vopf) macro(Wopf) macro(Xopf) macro(Yopf) macro(aopf) \
-macro(bopf) macro(copf) macro(dopf) macro(eopf) macro(fopf) \
-macro(gopf) macro(hopf) macro(iopf) macro(jopf) macro(kopf) \
-macro(lopf) macro(mopf) macro(nopf) macro(oopf) macro(popf) \
-macro(qopf) macro(ropf) macro(sopf) macro(topf) macro(uopf) \
-macro(vopf) macro(wopf) macro(xopf) macro(yopf) macro(zopf) \
+macro(loplus) macro(roplus) macro(Cross) macro(timesd) macro(timesbar) \
+macro(smashp) macro(lotimes) macro(rotimes) macro(otimesas) \
+macro(Otimes) macro(odiv) macro(triplus) macro(triminus) \
+macro(tritime) macro(iprod) macro(amalg) macro(capdot) macro(ncup) \
+macro(ncap) macro(capand) macro(cupor) macro(cupcap) macro(capcup) \
+macro(cupbrcap) macro(capbrcup) macro(cupcup) macro(capcap) \
+macro(ccups) macro(ccaps) macro(ccupssm) macro(And) macro(Or) \
+macro(andand) macro(oror) macro(orslope) macro(andslope) macro(andv) \
+macro(orv) macro(andd) macro(ord) macro(wedbar) macro(sdote) \
+macro(simdot) macro(congdot) macro(easter) macro(apacir) macro(apE) \
+macro(eplus) macro(pluse) macro(Esim) macro(Colone) macro(Equal) \
+macro(eDDot) macro(equivDD) macro(ltcir) macro(gtcir) macro(ltquest) \
+macro(gtquest) macro(les) macro(ges) macro(lesdot) macro(gesdot) \
+macro(lesdoto) macro(gesdoto) macro(lesdotor) macro(gesdotol) \
+macro(lap) macro(gap) macro(lne) macro(gne) macro(lnap) macro(gnap) \
+macro(lEg) macro(gEl) macro(lsime) macro(gsime) macro(lsimg) \
+macro(gsiml) macro(lgE) macro(glE) macro(lesges) macro(gesles) \
+macro(els) macro(egs) macro(elsdot) macro(egsdot) macro(el) macro(eg) \
+macro(siml) macro(simg) macro(simlE) macro(simgE) macro(LessLess) \
+macro(GreaterGreater) macro(glj) macro(gla) macro(ltcc) macro(gtcc) \
+macro(lescc) macro(gescc) macro(smt) macro(lat) macro(smte) \
+macro(late) macro(bumpE) macro(pre) macro(sce) macro(prE) macro(scE) \
+macro(prnE) macro(scnE) macro(prap) macro(scap) macro(prnap) \
+macro(scnap) macro(Pr) macro(Sc) macro(subdot) macro(supdot) \
+macro(subplus) macro(supplus) macro(submult) macro(supmult) \
+macro(subedot) macro(supedot) macro(subE) macro(supE) macro(subsim) \
+macro(supsim) macro(subnE) macro(supnE) macro(csub) macro(csup) \
+macro(csube) macro(csupe) macro(subsup) macro(supsub) macro(subsub) \
+macro(supsup) macro(suphsub) macro(supdsub) macro(forkv) \
+macro(topfork) macro(mlcp) macro(Dashv) macro(Vdashl) macro(Barv) \
+macro(vBar) macro(vBarv) macro(Vbar) macro(Not) macro(bNot) \
+macro(rnmid) macro(cirmid) macro(midcir) macro(topcir) macro(nhpar) \
+macro(parsim) macro(parsl) macro(fflig) macro(filig) macro(fllig) \
+macro(ffilig) macro(ffllig) macro(Ascr) macro(Cscr) macro(Dscr) \
+macro(Gscr) macro(Jscr) macro(Kscr) macro(Nscr) macro(Oscr) \
+macro(Pscr) macro(Qscr) macro(Sscr) macro(Tscr) macro(Uscr) \
+macro(Vscr) macro(Wscr) macro(Xscr) macro(Yscr) macro(Zscr) \
+macro(ascr) macro(bscr) macro(cscr) macro(dscr) macro(fscr) \
+macro(hscr) macro(iscr) macro(jscr) macro(kscr) macro(lscr) \
+macro(mscr) macro(nscr) macro(pscr) macro(qscr) macro(rscr) \
+macro(sscr) macro(tscr) macro(uscr) macro(vscr) macro(wscr) \
+macro(xscr) macro(yscr) macro(zscr) macro(Afr) macro(Bfr) macro(Dfr) \
+macro(Efr) macro(Ffr) macro(Gfr) macro(Jfr) macro(Kfr) macro(Lfr) \
+macro(Mfr) macro(Nfr) macro(Ofr) macro(Pfr) macro(Qfr) macro(Sfr) \
+macro(Tfr) macro(Ufr) macro(Vfr) macro(Wfr) macro(Xfr) macro(Yfr) \
+macro(afr) macro(bfr) macro(cfr) macro(dfr) macro(efr) macro(ffr) \
+macro(gfr) macro(hfr) macro(ifr) macro(jfr) macro(kfr) macro(lfr) \
+macro(mfr) macro(nfr) macro(ofr) macro(pfr) macro(qfr) macro(rfr) \
+macro(sfr) macro(tfr) macro(ufr) macro(vfr) macro(wfr) macro(xfr) \
+macro(yfr) macro(zfr) macro(Aopf) macro(Bopf) macro(Dopf) macro(Eopf) \
+macro(Fopf) macro(Gopf) macro(Iopf) macro(Jopf) macro(Kopf) \
+macro(Lopf) macro(Mopf) macro(Oopf) macro(Sopf) macro(Topf) \
+macro(Uopf) macro(Vopf) macro(Wopf) macro(Xopf) macro(Yopf) \
+macro(aopf) macro(bopf) macro(copf) macro(dopf) macro(eopf) \
+macro(fopf) macro(gopf) macro(hopf) macro(iopf) macro(jopf) \
+macro(kopf) macro(lopf) macro(mopf) macro(nopf) macro(oopf) \
+macro(popf) macro(qopf) macro(ropf) macro(sopf) macro(topf) \
+macro(uopf) macro(vopf) macro(wopf) macro(xopf) macro(yopf) \
+macro(zopf) \
 /* done FOREACH implementation */
 
 /* vim: set fileencoding=utf-8 */
