@@ -199,7 +199,7 @@ int main()
         {
           printf ("  0x%08x,\n", m.N[j]);
         }
-      printf("};\n\nstatic const uint32_t tls_%s_barrett_mu = {\n", ffdhe_values[i].name);
+      printf("};\n\nstatic const uint32_t tls_%s_barrett_mu[] = {\n", ffdhe_values[i].name);
       for (unsigned j = 0; j < rv->len + 1; j++)
         {
           printf ("  0x%08x,\n", m.barrett_mu[j]);

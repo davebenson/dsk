@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <alloca.h>
 
 uint32_t 
 dsk_tls_bignum_subtract_with_borrow (unsigned        len,

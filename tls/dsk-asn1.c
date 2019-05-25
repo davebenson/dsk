@@ -325,7 +325,7 @@ parse_asn1_value_body (DskASN1Value *rv,
         for (const uint8_t *at = rv->value_start; at < rv->value_end; at++)
           if ((*at & 0x80) == 0)
             n_subids++;
-        size_t oid_size = dsk_oid_size_by_n_subids (n_subids);
+        size_t oid_size = dsk_tls_object_id_size_by_n_subids (n_subids);
         DskTlsObjectID *oid = dsk_mem_pool_alloc (pool, oid_size);
         rv->v_object_identifier = oid;
         oid->n_subids = n_subids;

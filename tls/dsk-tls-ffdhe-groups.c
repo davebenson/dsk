@@ -75,7 +75,7 @@ static const uint32_t tls_ffdhe2048_value[] = {
   0xffffffff,
 };
 
-static const uint32_t tls_ffdhe2048_barrett_mu = {
+static const uint32_t tls_ffdhe2048_barrett_mu[] = {
   0xd38a4fa1,
   0x187be36b,
   0x253e1750,
@@ -253,7 +253,7 @@ static const uint32_t tls_ffdhe3072_value[] = {
   0xffffffff,
 };
 
-static const uint32_t tls_ffdhe3072_barrett_mu = {
+static const uint32_t tls_ffdhe3072_barrett_mu[] = {
   0x14ba1560,
   0xfa1861ec,
   0xd88833dc,
@@ -495,7 +495,7 @@ static const uint32_t tls_ffdhe4096_value[] = {
   0xffffffff,
 };
 
-static const uint32_t tls_ffdhe4096_barrett_mu = {
+static const uint32_t tls_ffdhe4096_barrett_mu[] = {
   0xcfb2cc2d,
   0xa7c622b7,
   0xc4f61acf,
@@ -833,7 +833,7 @@ static const uint32_t tls_ffdhe6144_value[] = {
   0xffffffff,
 };
 
-static const uint32_t tls_ffdhe6144_barrett_mu = {
+static const uint32_t tls_ffdhe6144_barrett_mu[] = {
   0x4a5c0ef7,
   0x3fa9b7ff,
   0x489059ac,
@@ -1299,7 +1299,7 @@ static const uint32_t tls_ffdhe8192_value[] = {
   0xffffffff,
 };
 
-static const uint32_t tls_ffdhe8192_barrett_mu = {
+static const uint32_t tls_ffdhe8192_barrett_mu[] = {
   0xbb7a1708,
   0x87e50bba,
   0xc3ab607c,
