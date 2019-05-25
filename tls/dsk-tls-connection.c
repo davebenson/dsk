@@ -257,7 +257,7 @@ do_certificate_negotiation (DskTlsConnection *conn,
       // Look for a supported scheme that matches this cert.
       //
       for (size_t j = 0; j < n_sig_schemes; j++)
-        if (scheme_valid_for_key (sig_schemes[j], certs[i].private_key))
+        if (scheme_valid_for_certificate (sig_schemes[j], certs[i]))
           {
             res.success.certificate = certs[i];
             res.success.scheme = sig_schemes[j];
