@@ -158,7 +158,7 @@ dsk_tls_oid_to_checksum_type (const DskTlsObjectID *oid,
 static bool
 parse_rsapss_parameters (const DskASN1Value *algo_params,
                          DskMemPool *tmp_pool,
-                         DskTlsSignatureScheme *out,
+                         DskTlsX509SignatureAlgorithm *out,
                          DskError **error)
 {
   DskChecksumType hash = DSK_CHECKSUM_SHA1;
@@ -260,13 +260,13 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
   switch (hash)
     {
     case DSK_CHECKSUM_SHA256:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256;
+      *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA256;
       return true;
     case DSK_CHECKSUM_SHA384:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384;
+      *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA384;
       return true;
     case DSK_CHECKSUM_SHA512:
-      *out = DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512;
+      *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA512;
       return true;
     default:
       *error = dsk_error_new ("checksum type not allowed for RSASSA_PSS");
@@ -275,11 +275,11 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
 }
 
 bool
-dsk_tls_oid_to_signature_scheme (const DskTlsObjectID *oid, 
-                                 DskMemPool *tmp_pool,
-                                 const DskASN1Value   *algo_params,
-                                 DskTlsSignatureScheme *out,
-                                 DskError **error)
+dsk_tls_oid_to_x509_signature_algorithm (const DskTlsObjectID *oid, 
+                                         DskMemPool *tmp_pool,
+                                         const DskASN1Value   *algo_params,
+                                         DskTlsX509SignatureAlgorithm *out,
+                                         DskError **error)
 {
   if (oid->n_subids == 7)
     {
@@ -294,17 +294,20 @@ dsk_tls_oid_to_signature_scheme (const DskTlsObjectID *oid,
               switch (oid->subids[6])
                 {
                 //case 4:
+		case 1:			// "rsaEncryption"
+                  *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS;
+		  return true;
                 case 5:
-                  *out = DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA1;
+                  *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA1;
                   return true;
                 case 11:
-                  *out = DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256;
+                  *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA256;
                   return true;
                 case 12:
-                  *out = DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384;
+                  *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA384;
                   return true;
                 case 13:
-                  *out = DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512;
+                  *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA512;
                   return true;
                 case 10:
                   /* RSAPSS depends on the Parameters field */

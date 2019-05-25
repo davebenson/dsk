@@ -14,7 +14,7 @@ dump_asn1(const DskASN1Value *v)
 static bool
 parse_algo_id (DskASN1Value *algorithm_id,
                DskMemPool *pool,
-               DskTlsSignatureScheme *scheme_out,
+               DskTlsX509SignatureAlgorithm *algo_out,
                DskError  **error)
 {
   if (algorithm_id->type != DSK_ASN1_TYPE_SEQUENCE
@@ -28,7 +28,7 @@ parse_algo_id (DskASN1Value *algorithm_id,
 
   const DskTlsObjectID *oid = algorithm_id->v_sequence.children[0]->v_object_identifier;
   const DskASN1Value *algo_params = algorithm_id->v_sequence.children[1];
-  if (!dsk_tls_oid_to_signature_scheme (oid, pool, algo_params, scheme_out, error))
+  if (!dsk_tls_oid_to_x509_signature_algorithm (oid, pool, algo_params, algo_out, error))
     {
       //*error = dsk_error_new ("signature-scheme not known for OID");
       return false;
@@ -70,7 +70,6 @@ parse_name (DskASN1Value    *value,
           goto failed;
         }
       const DskTlsObjectID *oid = name->v_sequence.children[0]->v_object_identifier;
-      printf("oid=%s [%p]\n", dsk_tls_object_id_to_string(oid), oid);
       DskASN1Value *name_value = name->v_sequence.children[1];
       if (!dsk_tls_oid_to_x509_distinguished_name_type (oid, &dn[i].type))
         {
@@ -217,9 +216,10 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
   unsigned sn_pad = 20 - sn_len;
   memset (rv->serial_number, 0, sn_pad);
   memcpy (rv->serial_number + sn_pad, serial_number->value_start, sn_len);
+  rv->version = version_number;
 
   DskASN1Value *algorithm_id = value->v_sequence.children[tbs_at++];
-  if (!parse_algo_id (algorithm_id, pool, &rv->signature_scheme, error))
+  if (!parse_algo_id (algorithm_id, pool, &rv->signature_algorithm, error))
     {
       dsk_tls_x509_certificate_free (rv);
       return NULL;
@@ -337,13 +337,13 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
   DskTlsX509Certificate *rv = dsk_tls_x509_unsigned_certificate_from_asn1 (tbs_cert, pool, error);
   if (rv == NULL)
     return NULL;
-  DskTlsSignatureScheme scheme;
-  if (!parse_algo_id (cert_sig_algo, pool, &scheme, error))
+  DskTlsX509SignatureAlgorithm algo;
+  if (!parse_algo_id (cert_sig_algo, pool, &algo, error))
     {
       dsk_tls_x509_certificate_free (rv);
       return NULL;
     }
-  if (scheme != rv->signature_scheme)
+  if (algo != rv->signature_algorithm)
     {
       *error = dsk_error_new ("signature algorithms not consisent in certificate");
       dsk_tls_x509_certificate_free (rv);

@@ -41,6 +41,7 @@ const char *dsk_ascii_short_byte_name(unsigned char byte)
 }
 const char *dsk_ascii_fixed4_byte_name(unsigned char byte)
 {
+  return fourchar_byte_names + (unsigned) byte * 5;
 }
 
 int dsk_ascii_strcasecmp  (const char *a, const char *b)

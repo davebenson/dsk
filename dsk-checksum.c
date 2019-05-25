@@ -1252,7 +1252,7 @@ sha256_done (DskChecksum *checksum)
 #undef GET_UINT32
 
 static void
-_dsk_checksum_sha256_init (DskChecksum *checksum)
+_dsk_checksum_sha256_init (DskChecksum *checksum, size_t hash_size)
 {
   ChecksumSHA256 *rv = (ChecksumSHA256 *) checksum;
   rv->total[0] = 0;
@@ -1267,7 +1267,7 @@ _dsk_checksum_sha256_init (DskChecksum *checksum)
   rv->state[6] = 0x1F83D9AB;
   rv->state[7] = 0x5BE0CD19;
 
-  checksum->size = 32;
+  checksum->size = hash_size;
   checksum->feed = sha256_feed;
   checksum->done = sha256_done;
   checksum->flags = 0;
@@ -1766,7 +1766,18 @@ dsk_checksum_init  (void *instance,
     {
     case DSK_CHECKSUM_MD5: _dsk_checksum_md5_init (instance); return;
     case DSK_CHECKSUM_SHA1: _dsk_checksum_sha1_init (instance); return;
-    case DSK_CHECKSUM_SHA256: _dsk_checksum_sha256_init (instance); return;
+    case DSK_CHECKSUM_SHA224:
+       _dsk_checksum_sha256_init (instance, 28);
+       return;
+    case DSK_CHECKSUM_SHA256:
+       _dsk_checksum_sha256_init (instance, 32);
+       return;
+    case DSK_CHECKSUM_SHA512_224:
+      _dsk_checksum_sha2_init (instance, 28);
+      return;
+    case DSK_CHECKSUM_SHA512_256:
+      _dsk_checksum_sha2_init (instance, 32);
+      return;
     case DSK_CHECKSUM_SHA384:
       _dsk_checksum_sha2_init (instance, 48);
       return;
@@ -1788,7 +1799,10 @@ dsk_checksum_type_get_size(DskChecksumType  checksum)
     {
     case DSK_CHECKSUM_MD5: return 16;
     case DSK_CHECKSUM_SHA1: return 20;
+    case DSK_CHECKSUM_SHA224: return 28;
     case DSK_CHECKSUM_SHA256: return 32;
+    case DSK_CHECKSUM_SHA512_224: return 28;
+    case DSK_CHECKSUM_SHA512_256: return 32;
     case DSK_CHECKSUM_SHA384: return 48;
     case DSK_CHECKSUM_SHA512: return 64;
     case DSK_CHECKSUM_CRC32_BIG_ENDIAN:
@@ -1810,8 +1824,11 @@ unsigned       dsk_checksum_type_get_block_size (DskChecksumType type)
     {
     case DSK_CHECKSUM_MD5:
     case DSK_CHECKSUM_SHA1:
+    case DSK_CHECKSUM_SHA224:
     case DSK_CHECKSUM_SHA256:
       return 64;
+    case DSK_CHECKSUM_SHA512_224:
+    case DSK_CHECKSUM_SHA512_256:
     case DSK_CHECKSUM_SHA384:
     case DSK_CHECKSUM_SHA512:
       return 128;

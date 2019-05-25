@@ -4,6 +4,18 @@
 
 typedef struct DskTlsX509Certificate DskTlsX509Certificate;
 
+typedef enum
+{
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA1,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA256,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA384,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA512,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA256,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA384,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA512,
+  DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS,		// hash algo unspecified
+} DskTlsX509SignatureAlgorithm;
+
 
 //
 // Everyone's favorite concept from LDAP, the DistinguishedName.
@@ -55,11 +67,10 @@ typedef struct DskTlsX509Validity
 
 typedef struct DskTlsX509SubjectPublicKeyInfo
 {
-  DskTlsSignatureScheme algorithm;
+  DskTlsX509SignatureAlgorithm algorithm;
   size_t public_key_length;
   uint8_t *public_key;
 } DskTlsX509SubjectPublicKeyInfo;
-
 
 //
 // Handles unsigned ("TBS") and signed Certificates.
@@ -68,7 +79,7 @@ struct DskTlsX509Certificate
 {
   unsigned version;             // 1 is v1, etc
   uint8_t serial_number[20];
-  DskTlsSignatureScheme signature_scheme;
+  DskTlsX509SignatureAlgorithm signature_algorithm;
   DskTlsX509Name issuer;
   DskTlsX509Validity validity;
   DskTlsX509Name subject;
