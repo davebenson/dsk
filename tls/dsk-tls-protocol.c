@@ -155,19 +155,6 @@ count_extensions (const uint8_t *at,
   return true;
 }
 
-bool
-dsk_tls_handshake_is_server_hello(DskTlsHandshake *shake)
-{
-  return shake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
-      && !shake->server_hello.is_retry_request;
-}
-
-bool
-dsk_tls_handshake_is_hello_retry_request(DskTlsHandshake *shake)
-{
-  return shake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
-      && shake->server_hello.is_retry_request;
-}
 
 static DskTlsExtension *
 parse_extension (DskTlsHandshake    *under_construction,

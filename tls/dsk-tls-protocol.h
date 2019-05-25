@@ -410,3 +410,16 @@ DskTlsRecordHeaderParseResult dsk_tls_parse_record_header (DskBuffer *buffer);
 /* --- Serializing --- */
 void dsk_tls_handshake_to_buffer (const DskTlsHandshake *handshake,
                                   DskBuffer *out);
+
+
+DSK_INLINE_FUNC bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake)
+{
+  return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+      && !handshake->server_hello.is_retry_request;
+}
+
+DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake)
+{
+  return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+      && handshake->server_hello.is_retry_request;
+}

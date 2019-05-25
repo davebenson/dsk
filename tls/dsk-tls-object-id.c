@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <alloca.h>
 
 char *dsk_tls_object_id_to_string(const DskTlsObjectID *oid)
 {

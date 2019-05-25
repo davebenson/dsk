@@ -50,17 +50,18 @@ test_cert (void)
   dsk_mem_pool_init (&pool);
   v = dsk_asn1_value_parse_der (sizeof(t1), t1, &used, &pool, &err);
   assert(used == sizeof(t1));
-  dsk_mem_pool_clear (&pool);
 
   DskBuffer buf = DSK_BUFFER_INIT;
   dsk_asn1_value_dump_to_buffer (v, &buf);
   dsk_buffer_writev (&buf, 1);
   dsk_buffer_clear (&buf);
 
+
   DskTlsX509Certificate *cert = dsk_tls_x509_certificate_from_asn1 (v, &pool, &err);
   if (cert == NULL)
     dsk_die ("error parsing X509 Cert: %s", err->message);
 
+  dsk_mem_pool_clear (&pool);
   dsk_tls_x509_certificate_free (cert);
 }
 
