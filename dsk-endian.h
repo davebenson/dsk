@@ -54,7 +54,6 @@ DSK_INLINE_FUNC void     dsk_int64le_pack   (int64_t        value,
 
 
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC uint16_t dsk_uint16be_parse (const uint8_t *rep)
 {
   return (((uint16_t)rep[0]) << 8)
@@ -286,4 +285,3 @@ DSK_INLINE_FUNC void     dsk_int64le_pack   (int64_t        value,
   dsk_uint64le_pack (value, rep);
 }
 
-#endif

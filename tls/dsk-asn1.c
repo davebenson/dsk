@@ -210,82 +210,11 @@ parse_4digit (const uint8_t *x)
   return a * 1000 + b * 100 + c * 10 + d;
 }
 
-DskASN1Value *
-dsk_asn1_value_parse_der (size_t         length,
-                          const uint8_t *data,
-                          size_t        *used_out,
-                          DskMemPool    *pool,
-                          DskError     **error)
+static DskASN1Value *
+parse_asn1_value_body (DskASN1Value *rv,
+                       DskMemPool   *pool,
+                       DskError    **error)
 {
-  DskASN1Value *rv;
-
-  if (length < 2)
-    {
-      *error = dsk_error_new ("value must be at least 2 bytes");
-      return NULL;
-    }
-     
-  rv = dsk_mem_pool_alloc (pool, sizeof(DskASN1Value));
-  rv->tag_class = data[0] >> 6;
-  rv->is_constructed = (data[0] >> 5) & 1;
-  rv->type = data[0] & 0xdf;            // remove "constructed" bit
-
-  bool length_is_definite = data[1] != 0x80;
-  if (!rv->is_constructed && !length_is_definite)
-    {
-      *error = dsk_error_new ("definite length required with primitive value");
-      return NULL;
-    }
-  if (length_is_definite)
-    {
-      if ((data[1] & 0x80) == 0)
-        {
-          rv->value_start = data + 2;
-          rv->value_end = rv->value_start + data[1];
-          if (rv->value_end > data + length)
-            {
-              *error = dsk_error_new ("data too short after 1-byte length");
-              return false;
-            }
-        }
-      else
-        {
-          size_t value_len_len = data[1] & 0x7f;
-          const uint8_t *at = data + 2;
-          if (2 + value_len_len > length)
-            {
-              *error = dsk_error_new ("too short in definite length");
-              return false;
-            }
-          size_t value_len = 0;
-          at = data + 2;
-          for (unsigned i = 0; i < value_len_len; i++)
-            {
-              value_len <<= 8;
-              value_len |= *at++;
-            }
-          rv->value_start = at;
-          rv->value_end = rv->value_start + value_len;
-          if (rv->value_end > data + length)
-            {
-              *error = dsk_error_new ("too short after multibyte length");
-              return false;
-            }
-        }
-      *used_out = rv->value_end - data;
-    }
-  else
-    {
-      rv->value_start = data + 2;
-      rv->value_end = memchr (data + 2, 0, length - 2);
-      if (rv->value_end == NULL)
-        {
-          *error = dsk_error_new ("no NUL in indefinite value encoding");
-          return false;
-        }
-      *used_out = rv->value_end + 1 - data;
-    }
-
   if (rv->tag_class != DSK_ASN1_TAG_CLASS_UNIVERSAL)
     {
       rv->v_tagged.subvalue = NULL;
@@ -362,8 +291,8 @@ dsk_asn1_value_parse_der (size_t         length,
             return NULL;
           }
         n_subids++;             // first two IDs are actually combined.
-        size_t oid_size = dsk_oid_size_by_n_subids (n_subids);
-        DskOID *oid = dsk_mem_pool_alloc (pool, oid_size);
+        size_t oid_size = dsk_tls_object_id_size_by_n_subids (n_subids);
+        DskTlsObjectID *oid = dsk_mem_pool_alloc (pool, oid_size);
         rv->v_object_identifier = oid;
         oid->n_subids = n_subids;
         unsigned s_index = 0;
@@ -397,7 +326,7 @@ dsk_asn1_value_parse_der (size_t         length,
           if ((*at & 0x80) == 0)
             n_subids++;
         size_t oid_size = dsk_oid_size_by_n_subids (n_subids);
-        DskOID *oid = dsk_mem_pool_alloc (pool, oid_size);
+        DskTlsObjectID *oid = dsk_mem_pool_alloc (pool, oid_size);
         rv->v_object_identifier = oid;
         oid->n_subids = n_subids;
         unsigned s_index = 0;
@@ -711,6 +640,124 @@ dsk_asn1_value_parse_der (size_t         length,
   return rv;
 }
 
+DskASN1Value *
+dsk_asn1_value_parse_der (size_t         length,
+                          const uint8_t *data,
+                          size_t        *used_out,
+                          DskMemPool    *pool,
+                          DskError     **error)
+{
+  DskASN1Value *rv;
+
+  if (length < 2)
+    {
+      *error = dsk_error_new ("value must be at least 2 bytes");
+      return NULL;
+    }
+     
+  rv = dsk_mem_pool_alloc (pool, sizeof(DskASN1Value));
+  rv->tag_class = data[0] >> 6;
+  rv->is_constructed = (data[0] >> 5) & 1;
+  rv->type = data[0] & 0xdf;            // remove "constructed" bit
+
+  bool length_is_definite = data[1] != 0x80;
+  if (!rv->is_constructed && !length_is_definite)
+    {
+      *error = dsk_error_new ("definite length required with primitive value");
+      return NULL;
+    }
+  if (length_is_definite)
+    {
+      if ((data[1] & 0x80) == 0)
+        {
+          rv->value_start = data + 2;
+          rv->value_end = rv->value_start + data[1];
+          if (rv->value_end > data + length)
+            {
+              *error = dsk_error_new ("data too short after 1-byte length");
+              return false;
+            }
+        }
+      else
+        {
+          size_t value_len_len = data[1] & 0x7f;
+          const uint8_t *at = data + 2;
+          if (2 + value_len_len > length)
+            {
+              *error = dsk_error_new ("too short in definite length");
+              return false;
+            }
+          size_t value_len = 0;
+          at = data + 2;
+          for (unsigned i = 0; i < value_len_len; i++)
+            {
+              value_len <<= 8;
+              value_len |= *at++;
+            }
+          rv->value_start = at;
+          rv->value_end = rv->value_start + value_len;
+          if (rv->value_end > data + length)
+            {
+              *error = dsk_error_new ("too short after multibyte length");
+              return false;
+            }
+        }
+      *used_out = rv->value_end - data;
+    }
+  else
+    {
+      rv->value_start = data + 2;
+      rv->value_end = memchr (data + 2, 0, length - 2);
+      if (rv->value_end == NULL)
+        {
+          *error = dsk_error_new ("no NUL in indefinite value encoding");
+          return false;
+        }
+      *used_out = rv->value_end + 1 - data;
+    }
+
+  return parse_asn1_value_body (rv, pool, error);
+                                
+}
+
+bool
+dsk_asn1_value_expand_tag (DskASN1Value   *value,
+                           DskMemPool     *pool,
+                           uint8_t         type,
+                           bool            is_explicit,
+                           DskError      **error)
+{
+  DskASN1Value *sub;
+  if (is_explicit)
+    {
+      size_t used;
+      sub = dsk_asn1_value_parse_der (value->value_end - value->value_start,
+                                      value->value_start,
+                                      &used,
+                                      pool,
+                                      error);
+    }
+  else
+    {
+      sub = dsk_mem_pool_alloc (pool, sizeof (DskASN1Value));
+      sub->type = type;
+      sub->tag_class = type & 0xc0;
+      sub->is_constructed = value->is_constructed;
+      sub->value_start = value->value_start;
+      sub->value_end = value->value_end;
+      sub = parse_asn1_value_body (sub, pool, error);
+    }
+  if (sub == NULL)
+    return false;
+  if (sub->type != type)
+    {
+      *error = dsk_error_new ("type mismatch in tagged value");
+      return false;
+    }
+  value->v_tagged.subvalue = sub;
+  return true;
+}
+
 static void
 dump_hex (DskBuffer     *buffer,
           unsigned       indent,
@@ -789,7 +836,7 @@ dump_to_buffer (const DskASN1Value *value,
       break;
     case DSK_ASN1_TYPE_OBJECT_IDENTIFIER:
       {
-        const DskOID *oid = value->v_object_identifier;
+        const DskTlsObjectID *oid = value->v_object_identifier;
         dsk_buffer_printf (buffer, "%*sobject-identifier: ", indent, "");
         for (unsigned i = 0; i < oid->n_subids; i++)
           dsk_buffer_printf(buffer,
@@ -800,7 +847,7 @@ dump_to_buffer (const DskASN1Value *value,
       break;
     case DSK_ASN1_TYPE_RELATIVE_OID:
       {
-        const DskOID *oid = value->v_relative_oid;
+        const DskTlsObjectID *oid = value->v_relative_oid;
         dsk_buffer_printf (buffer, "%*srelative-object-identifier:", indent, "");
         for (unsigned i = 0; i < oid->n_subids; i++)
           dsk_buffer_printf(buffer, "%c%u", i == 0 ? ' ' : '.', oid->subids[i]);
@@ -988,4 +1035,3 @@ dsk_asn1_primitive_value_to_string (const DskASN1Value *value)
         return NULL;
     }
 }
-    

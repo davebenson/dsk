@@ -66,8 +66,12 @@ typedef enum
 #define dsk_assert_not_reached()   \
   dsk_error("should not get here: %s:%u", __FILE__, __LINE__)
 
-#define DSK_CAN_INLINE  1
-#define DSK_INLINE_FUNC static inline
+// C99 inline handling
+#if DSK_IMPLEMENT_INLINES
+#  define DSK_INLINE_FUNC extern inline
+#else
+#  define DSK_INLINE_FUNC inline
+#endif
 #define _dsk_inline_assert(condition)  dsk_assert(condition)
 
 /* DSK_GNUC_PRINTF(format_idx,arg_idx): Advise the compiler

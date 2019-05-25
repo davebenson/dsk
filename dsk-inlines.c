@@ -1,2 +1,2 @@
-#define DSK_IMPLEMENT_INLINES
+#define DSK_IMPLEMENT_INLINES 1
 #include "dsk.h"

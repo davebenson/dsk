@@ -37,10 +37,7 @@ DskUtf8ValidationResult
 
 
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
-
 DSK_INLINE_FUNC int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte)
 {
   return DSK_UTF8_LENGTH_FROM_INIT_BYTE_DIV_8_STR[initial_byte/8];
 }
-#endif

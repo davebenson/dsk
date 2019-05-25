@@ -18,12 +18,14 @@ DSK_INLINE_FUNC bool dsk_tls_object_ids_equal (const DskTlsObjectID *a,
 
 
 #if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
-DSK_INLINE_FUNC size_t dsk_oid_size_by_n_subids (unsigned n_subidentifiers)
+DSK_INLINE_FUNC size_t
+dsk_tls_object_id_size_by_n_subids (unsigned n_subidentifiers)
 {
   return sizeof(DskTlsObjectID) + sizeof(uint32_t) * n_subidentifiers;
 }
-DSK_INLINE_FUNC bool dsk_tls_object_ids_equal (const DskTlsObjectID *a, 
-                                               const DskTlsObjectID *b)
+DSK_INLINE_FUNC bool
+dsk_tls_object_ids_equal (const DskTlsObjectID *a, 
+                          const DskTlsObjectID *b)
 {
   if (a->n_subids != b->n_subids)
     return false;

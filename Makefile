@@ -65,7 +65,7 @@ full: all extra
 #CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
 
 # For standard initial size:
-CC_FLAGS =  -W -Wall -g -O0 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
+CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
 LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS) $(DEP_LIBS)
 
 tests/%: tests/%.c libdsk.a

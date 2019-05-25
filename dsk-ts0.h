@@ -292,7 +292,6 @@ void _dsk_ts0_namespace_destroy (DskTs0Namespace *ns);
 
 
 /* --- inlines --- */
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC DskTs0Function *
 dsk_ts0_function_ref   (DskTs0Function *function)
 {
@@ -341,4 +340,3 @@ dsk_ts0_namespace_ref (DskTs0Namespace *ns)
   ns->ref_count += 1;
   return ns;
 }
-#endif

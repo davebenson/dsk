@@ -132,7 +132,6 @@ void          dsk_pipe_new (unsigned       pipe_buffer_size,
 extern const DskStreamClass dsk_stream_class;
 extern const DskStreamConnectionClass dsk_stream_connection_class;
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC DskIOResult dsk_stream_read (void         *stream,
                                            unsigned      max_len,
                                            void         *data_out,
@@ -192,4 +191,3 @@ DSK_INLINE_FUNC bool dsk_stream_is_writable       (void           *stream)
   return !dsk_hook_is_cleared (&DSK_STREAM (stream)->writable_hook);
 }
 DSK_INLINE_FUNC bool dsk_stream_is_writable       (void           *stream);
-#endif

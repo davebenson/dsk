@@ -195,7 +195,10 @@ void dsk_buffer_maybe_remove_empty_fragment (DskBuffer *buffer);
 void dsk_buffer_fragment_free (DskBufferFragment *fragment);
 
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
+//
+// Inline Functions
+//
+
 DSK_INLINE_FUNC void dsk_buffer_append_small(DskBuffer    *buffer, 
                                          unsigned      length,
                                          const void   *data)
@@ -231,4 +234,3 @@ DSK_INLINE_FUNC void dsk_buffer_append_byte(DskBuffer    *buffer,
     dsk_buffer_append (buffer, 1, &byte);
 }
 
-#endif

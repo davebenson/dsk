@@ -127,7 +127,6 @@ void _dsk_object_class_first_instance (const DskObjectClass *c);
 /* truly private (use dsk_cleanup() instead) */
 void _dsk_object_cleanup_classes (void);
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC  void      *dsk_object_new   (const void *object_class)
 {
   const DskObjectClass *c = object_class;
@@ -168,6 +167,5 @@ DSK_INLINE_FUNC  void      *dsk_object_ref   (void *object)
   o->ref_count += 1;
   return o;
 }
-#endif
 
 extern DskObjectClass dsk_object_class;

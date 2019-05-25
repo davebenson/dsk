@@ -8,7 +8,6 @@ DSK_INLINE_FUNC void dsk_utf16_to_surrogate_pair (uint32_t  unicode,
                                                   uint16_t *pair_out);
 
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC void
 dsk_utf16_to_surrogate_pair (uint32_t  unicode,
                              uint16_t *pair_out)
@@ -31,4 +30,3 @@ dsk_utf16_surrogate_pair_to_codepoint (uint16_t surrogate_a,
   return ((uint32_t)(surrogate_a - DSK_UTF16_HI_SURROGATE_START) << 10)
        + (uint32_t)(surrogate_b - DSK_UTF16_LO_SURROGATE_START) + 0x10000;
 }
-#endif

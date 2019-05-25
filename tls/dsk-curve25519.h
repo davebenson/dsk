@@ -24,7 +24,6 @@ void dsk_curve25519_private_to_shared (const uint8_t *private_key,
                                        uint8_t       *shared_key_out);
 
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC void
 dsk_curve25519_random_to_private (uint8_t *random_to_private)
 {
@@ -32,4 +31,3 @@ dsk_curve25519_random_to_private (uint8_t *random_to_private)
   random_to_private[31] &= 127;
   random_to_private[31] |= 64;
 }
-#endif

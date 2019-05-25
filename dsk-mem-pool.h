@@ -75,7 +75,6 @@ void * dsk_mem_pool_must_alloc (DskMemPool *pool,
 #define _DSK_MEM_POOL_SLAB_GET_NEXT_PTR(slab) \
   (* (void **) (slab))
 
-#if defined(DSK_CAN_INLINE) || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC void     dsk_mem_pool_init    (DskMemPool     *pool)
 {
   pool->all_chunk_list = NULL;
@@ -149,6 +148,3 @@ DSK_INLINE_FUNC void     dsk_mem_pool_fixed_init_buf
   pool->piece_size = elt_size;
   pool->free_list = NULL;
 }
-
-#endif /* DSK_CAN_INLINE */
-

@@ -243,7 +243,6 @@ extern const DskOctetStreamClass dsk_octet_stream_class;
 extern const DskOctetConnectionClass dsk_octet_connection_class;
 extern const DskSyncFilterClass dsk_sync_filter_class;
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC DskIOResult dsk_octet_source_read (void         *octet_source,
                                            unsigned      max_len,
                                            void         *data_out,
@@ -333,5 +332,3 @@ DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
     return DSK_TRUE;
   return c->finish (filter, out, error);
 }
-
-#endif

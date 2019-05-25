@@ -76,7 +76,6 @@ uint8_t    *dsk_filter_to_data    (unsigned length,
                                    unsigned  *output_string_length_out,
                                    DskError **error);
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
@@ -96,5 +95,3 @@ DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
     return DSK_TRUE;
   return c->finish (filter, out, error);
 }
-
-#endif

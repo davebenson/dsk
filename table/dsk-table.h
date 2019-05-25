@@ -144,7 +144,6 @@ DskTableReader *dsk_table_reader_new_merge2 (DskTable       *table,
                                              DskTableReader *b,
                                              DskError      **error);
 
-#if DSK_CAN_INLINE || defined(DSK_IMPLEMENT_INLINES)
 DSK_INLINE_FUNC uint8_t *
 dsk_table_buffer_set_size (DskTableBuffer *buffer,
                            unsigned        length)
@@ -160,4 +159,3 @@ dsk_table_buffer_set_size (DskTableBuffer *buffer,
   buffer->length = length;
   return buffer->data;
 }
-#endif

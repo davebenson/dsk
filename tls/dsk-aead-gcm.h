@@ -5,8 +5,6 @@
  * which will be fully encrypted, there's also associated data that will
  * be signed but not encrypted.
  */
-typedef void (*DskBlockCipherInplaceFunc) (void *cipher_object,
-                                           uint8_t *inout);
 
 // key-dependent pre-computations.
 typedef struct {

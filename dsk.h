@@ -143,9 +143,8 @@
 #include "tls/dsk-tls-connection.h"
 #include "tls/dsk-tls-oid-mappings.h"
 
-#ifdef DSK_INCLUDE_TS0
+// TODO: remove!
 #include "dsk-ts0.h"
-#endif
 
 
 #undef _dsk_inline_assert
