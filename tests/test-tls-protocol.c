@@ -33,7 +33,6 @@ test_client_hello ()
   for (unsigned i = 0; i < shake->client_hello.n_extensions; i++)
     {
       DskTlsExtension *ext = shake->client_hello.extensions[i];
-      fprintf(stderr, "ext %u: %04x\n", i, ext->type);
       switch (ext->type)
         {
         case DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS:
@@ -68,7 +67,6 @@ test_client_hello ()
             assert(!has_key_share);
 	    DskTlsExtension_KeyShare *ks = (DskTlsExtension_KeyShare *) ext;
 	    assert(ks->n_key_shares == 1);
-dsk_warning("named_group=0x%04x", ks->key_shares[0].named_group);
 	    assert(ks->key_shares[0].named_group == DSK_TLS_NAMED_GROUP_X25519);
 	    assert(ks->key_shares[0].key_exchange_length == 32);
 	    assert(memcmp(ks->key_shares[0].key_exchange_data,
@@ -92,8 +90,8 @@ dsk_warning("named_group=0x%04x", ks->key_shares[0].named_group);
           {
             DskTlsExtension_SignatureAlgorithms *sa = (DskTlsExtension_SignatureAlgorithms *) ext;
             assert(sa->n_schemes == 15);
-            for (unsigned i = 0; i < 15; i++)
-              printf("sig[%u] = 0x%04x... %s\n", i, sa->schemes[i], dsk_tls_signature_scheme_name (sa->schemes[i]));
+            //for (unsigned i = 0; i < 15; i++)
+              //printf("sig[%u] = 0x%04x... %s\n", i, sa->schemes[i], dsk_tls_signature_scheme_name (sa->schemes[i]));
             break;
           }
 

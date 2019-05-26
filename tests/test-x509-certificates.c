@@ -81,6 +81,7 @@ test_cert (void)
                   "\x30\x48\x02\x41\x00\x9b\xfc\x66\x90\x79\x84",
 		  10) == 0);
   assert (cert->is_signed);
+  assert (cert->signature_algorithm == DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PKCS1_SHA1);
   assert (cert->signature_length == 1024/8);
   // NOTE Just test the start of the signature.
   assert (memcmp (cert->signature_data,

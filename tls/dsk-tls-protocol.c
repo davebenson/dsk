@@ -295,8 +295,8 @@ parse_extension (DskTlsHandshake    *under_construction,
       ext->supported_groups.supported_groups = dsk_mem_pool_alloc (pool, group_length);
       for (unsigned i = 0; i < ext->supported_groups.n_supported_groups; i++)
         ext->supported_groups.supported_groups[i] = dsk_uint16be_parse (ext_payload + 2 * i + 2);
-      for (unsigned i = 0; i < ext->supported_groups.n_supported_groups; i++)
-        fprintf(stderr, "supported-group[%u] = %04x", i, ext->supported_groups.supported_groups[i]);
+      //for (unsigned i = 0; i < ext->supported_groups.n_supported_groups; i++)
+      //  fprintf(stderr, "supported-group[%u] = %04x", i, ext->supported_groups.supported_groups[i]);
       return ext;
 
     case DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS:
@@ -640,14 +640,11 @@ parse_length_prefixed_extensions (DskTlsHandshake *under_construction,
     }
   *n_extensions_out = n_extensions;
   *extensions_out = dsk_mem_pool_alloc (pool, sizeof (DskTlsExtension*) * n_extensions);
-  fprintf(stderr, "n_extensions=%u; atinout=%p end=%p\n",n_extensions,*at_inout,end);
   for (unsigned i = 0; i < n_extensions; i++)
     {
-      fprintf(stderr, "ext[%u]\n",i);
       assert (*at_inout + 4 <= end);
       unsigned ext_type = dsk_uint16be_parse (*at_inout);
       unsigned ext_payload_len = dsk_uint16be_parse (*at_inout + 2);
-      fprintf(stderr, "extension[%i]: type=%x [%s]: payload_len=%u\n", i, ext_type, dsk_tls_extension_type_name(ext_type), ext_payload_len);
       *at_inout += 4;
       assert (*at_inout + ext_payload_len <= end);
       DskTlsExtension *ext = parse_extension (under_construction, ext_type, ext_payload_len, *at_inout, pool, error);
