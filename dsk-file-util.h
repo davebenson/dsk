@@ -13,13 +13,13 @@ dsk_boolean dsk_file_set_contents (const char    *filename,
 
 dsk_boolean dsk_file_test_exists  (const char    *filename);
 
-dsk_boolean dsk_mkdir_recursive (const char *dir,
-                                 unsigned    permissions,
-                                 DskError  **error);
-dsk_boolean dsk_mkdir_recursive_at (int         at_file,
-                                    const char *dir,
-                                    unsigned    permissions,
-                                    DskError  **error);
+dsk_boolean dsk_mkdir_recursive   (const char *dir,
+                                   unsigned    permissions,
+                                   DskError  **error);
+dsk_boolean dsk_mkdir_recursive_at(int         at_file,
+                                   const char *dir,
+                                   unsigned    permissions,
+                                   DskError  **error);
 
 const char *dsk_get_tmp_dir (void);
 
