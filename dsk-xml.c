@@ -111,7 +111,7 @@ static DskXml *condense_text_nodes (unsigned n, DskXml **xml)
 DskXml *dsk_xml_new_empty   (const char *name)
 {
   return _dsk_xml_new_elt_parse (0, strlen (name) + 1, name,
-                                 0, NULL, DSK_FALSE);
+                                 0, NULL, false);
 }
 
 DskXml *
@@ -126,7 +126,7 @@ DskXml *dsk_xml_new_take_1   (const char *name,
 {
   return _dsk_xml_new_elt_parse (0, strlen (name) + 1, name,
                                  1, &child,
-                                 DSK_FALSE);
+                                 false);
 }
 
 DskXml *dsk_xml_new_take_n   (const char *name,
@@ -135,7 +135,7 @@ DskXml *dsk_xml_new_take_n   (const char *name,
 {
   return _dsk_xml_new_elt_parse (0, strlen (name) + 1, name,
                                  n_children, children,
-                                 DSK_TRUE);
+                                 true);
 }
 DskXml *dsk_xml_new_take_list (const char *name,
                                DskXml     *first_or_null,
@@ -166,7 +166,7 @@ DskXml *_dsk_xml_new_elt_parse (unsigned n_attrs,
                                 const char *name_and_attrs,
                                 unsigned n_children,
                                 DskXml **children,
-                                dsk_boolean condense_text)
+                                bool condense_text)
 {
   DskXml *rv;
   unsigned i;
@@ -270,17 +270,17 @@ char *dsk_xml_get_all_text (const DskXml *xml)
   return rv;
 }
 
-dsk_boolean
+bool
 dsk_xml_is_element (const DskXml *xml, const char *name)
 {
   return xml->type == DSK_XML_ELEMENT && strcmp (xml->str, name) == 0;
 }
-dsk_boolean
+bool
 dsk_xml_is_whitespace (const DskXml *xml)
 {
   const char *at;
   if (xml->type != DSK_XML_TEXT)
-    return DSK_TRUE;
+    return true;
   at = xml->str;
   dsk_utf8_skip_whitespace (&at);
   return (*at == 0);

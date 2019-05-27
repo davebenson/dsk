@@ -36,7 +36,7 @@ struct _DskMemorySink
   DskStream base_instance;
   DskBuffer buffer;
   DskHook buffer_nonempty;
-  dsk_boolean got_shutdown;
+  bool got_shutdown;
   unsigned max_buffer_size;
 };
 

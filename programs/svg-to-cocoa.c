@@ -19,7 +19,7 @@ main(int argc, char **argv)
   };
   char *svg_string = "svg";
 
-  dsk_cmdline_permit_extra_arguments(DSK_TRUE);
+  dsk_cmdline_permit_extra_arguments(true);
   dsk_cmdline_add_string ("svg-function", "name of function to generate",
                           "FCTNAME", 0, &function_name);
   dsk_cmdline_process_args(&argc, &argv);

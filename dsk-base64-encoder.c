@@ -56,7 +56,7 @@ emit_block (DskBase64Encoder *enc,
     }
 }
 
-static dsk_boolean
+static bool
 dsk_base64_encoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -69,7 +69,7 @@ dsk_base64_encoder_process (DskSyncFilter *filter,
     {
       memcpy (enc->partial + enc->state, in_data, in_length);
       enc->state += in_length;
-      return DSK_TRUE;
+      return true;
     }
   memcpy (enc->partial + enc->state, in_data, 3 - enc->state);
   emit_block (enc, enc->partial, out);
@@ -83,9 +83,9 @@ dsk_base64_encoder_process (DskSyncFilter *filter,
     }
   memcpy (enc->partial, in_data, in_length);
   enc->state = in_length;
-  return DSK_TRUE;
+  return true;
 }
-static dsk_boolean
+static bool
 dsk_base64_encoder_finish(DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
@@ -109,13 +109,13 @@ dsk_base64_encoder_finish(DskSyncFilter *filter,
         dsk_buffer_append (out, 3, output);
     }
   dsk_buffer_append_byte (out, '=');
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskBase64Encoder, dsk_base64_encoder);
 
 
-DskSyncFilter *dsk_base64_encoder_new             (dsk_boolean break_lines)
+DskSyncFilter *dsk_base64_encoder_new             (bool break_lines)
 {
   DskBase64Encoder *rv = dsk_object_new (&dsk_base64_encoder_class);
   rv->length_remaining = break_lines ? BASE64_LINE_LENGTH : -1;

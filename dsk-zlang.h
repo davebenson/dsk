@@ -99,11 +99,11 @@ void dsk_zlang_stack_pop      (DskZLangStack     *stack,
                                unsigned           count);
 
 DskZLangContext *dsk_zlang_context_new        (void);
-dsk_boolean      dsk_zlang_context_parse_file (DskZLangContext *context,
+bool      dsk_zlang_context_parse_file (DskZLangContext *context,
                                                const char      *filename,
                                                DskZLangInsn   **main_out,
                                                DskError       **error);
-dsk_boolean      dsk_zlang_context_register   (DskZLangContext *context,
+bool      dsk_zlang_context_register   (DskZLangContext *context,
                                                const char      *name,
                                                DskZLangFunction *function,
                                                DskError       **error);

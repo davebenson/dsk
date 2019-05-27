@@ -12,7 +12,7 @@ typedef enum
 
 struct _DskTableFileWriter
 {
-  dsk_boolean (*write)  (DskTableFileWriter *writer,
+  bool (*write)  (DskTableFileWriter *writer,
                          unsigned            key_length,
                          const uint8_t      *key_data,
                          unsigned            value_length,
@@ -21,7 +21,7 @@ struct _DskTableFileWriter
   DskTableFileWriterFinish (*finish) 
                         (DskTableFileWriter *writer,
                          DskError          **error);
-  dsk_boolean (*close)  (DskTableFileWriter *writer,
+  bool (*close)  (DskTableFileWriter *writer,
                          DskError          **error);
   void        (*destroy)(DskTableFileWriter *writer);
 };
@@ -43,7 +43,7 @@ typedef enum
 
 struct _DskTableFileSeeker
 {
-  dsk_boolean (*find)      (DskTableFileSeeker    *seeker,
+  bool (*find)      (DskTableFileSeeker    *seeker,
                             DskTableSeekerFindFunc func,
                             void                  *func_data,
                             DskTableFileFindMode   mode,
@@ -60,7 +60,7 @@ struct _DskTableFileSeeker
                             void                  *func_data,
                             DskError             **error);
  
-  dsk_boolean (*index)     (DskTableFileSeeker    *seeker,
+  bool (*index)     (DskTableFileSeeker    *seeker,
                             uint64_t               index,
                             unsigned              *key_len_out,
                             const void           **key_data_out,
@@ -93,7 +93,7 @@ struct _DskTableFileInterface
                                      DskDir                  *dir,
                                      const char              *base_filename,
                                      DskError               **error);
-  dsk_boolean         (*delete_file)(DskTableFileInterface   *iface,
+  bool         (*delete_file)(DskTableFileInterface   *iface,
                                      DskDir                  *dir,
                                      const char              *base_filename,
                                      DskError               **error);
@@ -124,14 +124,14 @@ struct _DskTableFileNewOptions
      if two consecutive records have a common prefix,
      only store the length of that prefix.  a big win for
      long URLs and the like. */
-  dsk_boolean prefix_compress;
+  bool prefix_compress;
 };
 #define DSK_TABLE_FILE_NEW_OPTIONS_INIT              \
 {                                                       \
   &dsk_table_file_compressor_gzip[3],                   \
   64,                           /* n_compress */        \
   256,                          /* index_ratio */       \
-  DSK_TRUE                      /* prefix_compress */   \
+  true                      /* prefix_compress */   \
 }
 
 DskTableFileInterface *dsk_table_file_interface_new (DskTableFileNewOptions *options);
@@ -141,14 +141,14 @@ extern DskTableFileInterface dsk_table_file_interface_trivial;
 struct _DskTableFileCompressor
 {
   /* Fails iff the output buffer is too short. */
-  dsk_boolean (*compress)   (DskTableFileCompressor *compressor,
+  bool (*compress)   (DskTableFileCompressor *compressor,
                              unsigned                in_len,
                              const uint8_t          *in_data,
                              unsigned               *out_len_inout,
                              uint8_t                *out_data);
 
   /* Fails on corrupt data, or if the output buffer is too small. */
-  dsk_boolean (*decompress) (DskTableFileCompressor *compressor,
+  bool (*decompress) (DskTableFileCompressor *compressor,
                              unsigned                in_len,
                              const uint8_t          *in_data,
                              unsigned               *out_len_inout,

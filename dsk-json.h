@@ -28,7 +28,7 @@ typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
 struct _DskJsonValueBoolean
 {
   DskJsonValueBase base;
-  dsk_boolean value;
+  bool value;
 };
 struct _DskJsonValueObject
 {
@@ -74,12 +74,12 @@ struct _DskJsonMember
 
 /* --- parser --- */
 DskJsonParser *dsk_json_parser_new      (void);
-dsk_boolean    dsk_json_parser_feed     (DskJsonParser *parser,
+bool    dsk_json_parser_feed     (DskJsonParser *parser,
                                          size_t         len,
                                          const uint8_t *data,
                                          DskError     **error);
 DskJsonValue * dsk_json_parser_pop      (DskJsonParser *parser);
-dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
+bool    dsk_json_parser_finish   (DskJsonParser *parser,
                                          DskError     **error);
 void           dsk_json_parser_destroy  (DskJsonParser *parser);
 
@@ -91,7 +91,7 @@ DskJsonValue * dsk_json_parse_file      (const char    *filename,
 
 /* --- values --- */
 DskJsonValue *dsk_json_value_new_null   (void);
-DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value);
+DskJsonValue *dsk_json_value_new_boolean(bool    value);
 /* takes ownership of subvalues, but not of the members array */
 DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
                                          DskJsonMember *members);

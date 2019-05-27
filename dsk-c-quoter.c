@@ -80,7 +80,7 @@ scan_unquoted_matter__trigraph (unsigned length, const uint8_t *data)
 }
 
 
-static dsk_boolean
+static bool
 dsk_sync_filter_c_quoter_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
@@ -97,7 +97,7 @@ dsk_sync_filter_c_quoter_process (DskSyncFilter *filter,
       cquoter->needs_initial_quote = 0;
     }
   if (in_length == 0)
-    return DSK_TRUE;
+    return true;
   switch (state)
     {
     case STATE_DEFAULT:
@@ -210,10 +210,10 @@ dsk_sync_filter_c_quoter_process (DskSyncFilter *filter,
 return_true:
   cquoter->state = state;
   cquoter->last_char = last_char;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_sync_filter_c_quoter_finish  (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    DskError      **error)
@@ -228,14 +228,14 @@ dsk_sync_filter_c_quoter_finish  (DskSyncFilter *filter,
         dsk_buffer_append_byte (out, '"');
       dsk_buffer_append_byte (out, '"');
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCQuoter, dsk_sync_filter_c_quoter);
 
 DskSyncFilter *
-dsk_c_quoter_new (dsk_boolean add_quotes,
-                  dsk_boolean protect_trigraphs)
+dsk_c_quoter_new (bool add_quotes,
+                  bool protect_trigraphs)
 {
   DskSyncFilterCQuoter *cq = dsk_object_new (&dsk_sync_filter_c_quoter_class);
   if (add_quotes)

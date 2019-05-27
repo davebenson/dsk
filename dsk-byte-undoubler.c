@@ -19,7 +19,7 @@ struct _DskByteUndoubler
 #define dsk_byte_undoubler_init NULL
 #define dsk_byte_undoubler_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_byte_undoubler_process  (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
@@ -27,7 +27,7 @@ dsk_byte_undoubler_process  (DskSyncFilter *filter,
                              DskError      **error)
 {
   uint8_t byte = ((DskByteUndoubler *)filter)->byte;
-  dsk_boolean ignore_errors = ((DskByteUndoubler *)filter)->ignore_errors;
+  bool ignore_errors = ((DskByteUndoubler *)filter)->ignore_errors;
   if (in_length > 0 && ((DskByteUndoubler*)filter)->has_one_byte)
     {
       if (*in_data == byte)
@@ -45,16 +45,16 @@ dsk_byte_undoubler_process  (DskSyncFilter *filter,
       if (end == NULL)
 	{
 	  dsk_buffer_append (out, in_length, in_data);
-	  return DSK_TRUE;
+	  return true;
 	}
       dsk_buffer_append (out, end - in_data, in_data);
       in_length -= (end - in_data);
       in_data = end;
       if (in_length == 1)
         {
-          ((DskByteUndoubler*)filter)->has_one_byte = DSK_TRUE;
+          ((DskByteUndoubler*)filter)->has_one_byte = true;
           dsk_buffer_append_byte (out, byte);
-          return DSK_TRUE;
+          return true;
         }
       if (in_data[1] == byte)
         {
@@ -71,13 +71,13 @@ dsk_byte_undoubler_process  (DskSyncFilter *filter,
       else
         goto ERROR;
     }
-  return DSK_TRUE;
+  return true;
 
 ERROR:
   dsk_set_error (error, "undoubled byte %s detected", dsk_ascii_byte_name (byte));
-  return DSK_FALSE;
+  return false;
 }
-static dsk_boolean
+static bool
 dsk_byte_undoubler_finish (DskSyncFilter *filter,
                            DskBuffer *out,
                            DskError **error)
@@ -88,16 +88,16 @@ dsk_byte_undoubler_finish (DskSyncFilter *filter,
     {
       dsk_set_error (error, "terminated with unmatched byte %s",
                      dsk_ascii_byte_name (((DskByteUndoubler*)filter)->byte));
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskByteUndoubler, dsk_byte_undoubler);
 
 DskSyncFilter *
 dsk_byte_undoubler_new (uint8_t byte,
-                        dsk_boolean ignore_errors)
+                        bool ignore_errors)
 {
   DskByteUndoubler *d = dsk_object_new (&dsk_byte_undoubler_class);
   d->byte = byte;

@@ -34,7 +34,7 @@ handle_bad_char (DskUtf8Fixer *fixer,
     }
 }
 
-static dsk_boolean
+static bool
 dsk_utf8_fixer_process  (DskSyncFilter *filter,
                          DskBuffer      *out,
                          unsigned        in_length,
@@ -92,13 +92,13 @@ retry_spare:
         {
         case DSK_UTF8_VALIDATION_SUCCESS:
           dsk_buffer_append (out, used, in_data);
-          return DSK_TRUE;
+          return true;
         case DSK_UTF8_VALIDATION_PARTIAL:
           dsk_assert (in_length - used <= 6);
           dsk_buffer_append (out, used, in_data);
           fixer->spare_len = in_length - used;
           memcpy (fixer->spare, in_data, fixer->spare_len);
-          return DSK_TRUE;
+          return true;
         case DSK_UTF8_VALIDATION_INVALID:
           if (used > 0)
             {
@@ -114,10 +114,10 @@ retry_spare:
           break;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_utf8_fixer_finish  (DskSyncFilter *filter,
                         DskBuffer      *out,
                         DskError      **error)
@@ -127,7 +127,7 @@ dsk_utf8_fixer_finish  (DskSyncFilter *filter,
   DSK_UNUSED (error);
   for (i = 0; i < fixer->spare_len; i++)
     handle_bad_char (fixer, out, fixer->spare[i]);
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_utf8_fixer_init NULL

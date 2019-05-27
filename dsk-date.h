@@ -38,7 +38,7 @@ struct _DskDate
  * or ANSI C dates (Sun Nov  6 08:49:37 1994)
  * or ISO 8601 dates (2009-02-12 T 14:32:61.1+01:00) (see RFC 3339)
  */
-dsk_boolean dsk_date_parse   (const char *str,
+bool dsk_date_parse   (const char *str,
                               char      **end,
                               DskDate    *out,
                               DskError  **error);
@@ -73,7 +73,7 @@ void        dsk_unixtime_to_date (dsk_time_t unixtime,
    The return value is the number of minutes you must add to Greenwich time
    to get the time in the timezone's area.
    (ie a negative number west of Greenwich) */
-dsk_boolean dsk_date_parse_timezone (const char *at,
+bool dsk_date_parse_timezone (const char *at,
                                      char **end,
 				     int *zone_offset_out);
 
@@ -92,7 +92,7 @@ unsigned dsk_date_get_day_of_year (const DskDate *date);
    including the terminating NUL. */
 int  dsk_strftime_max_length      (const char *format);
 
-dsk_boolean  dsk_date_strftime    (const DskDate *date,
+bool  dsk_date_strftime    (const DskDate *date,
                                    const char *format,
                                    unsigned    max_out,
                                    char       *out);
@@ -103,7 +103,7 @@ dsk_boolean  dsk_date_strftime    (const DskDate *date,
    Which is too much work for a feature we basically don't need. */
 DskTimezone *dsk_timezone_get  (const char *name,
                                 DskError  **error);
-dsk_boolean dsk_timezone_query (DskTimezone *timezone,
+bool dsk_timezone_query (DskTimezone *timezone,
                                 dsk_time_t   unixtime,
                                 int         *minutes_offset_out,
                                 const char **timezone_name_out,

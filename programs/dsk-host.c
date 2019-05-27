@@ -2,9 +2,9 @@
 #include "../dsk.h"
 
 static const char *hostname;
-static dsk_boolean is_ipv6 = DSK_FALSE;
-static dsk_boolean cname = DSK_FALSE;
-static dsk_boolean use_searchpath = DSK_TRUE;
+static bool is_ipv6 = false;
+static bool cname = false;
+static bool use_searchpath = true;
 
 static void
 handle_cache_entry (DskDnsCacheEntry *entry,
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
                            NULL,
                            0,
                            &cname);
-  dsk_cmdline_permit_extra_arguments (DSK_TRUE);
+  dsk_cmdline_permit_extra_arguments (true);
   dsk_cmdline_process_args (&argc, &argv);
   if (argc > 2)
     dsk_die ("too many arguments");

@@ -15,7 +15,7 @@ struct _DskQuotePrintable
 #define IS_PASSTHROUGH(c)   \
       ((33 <= (c) && (c) <= 60) || (62 <= (c) && (c) <= 126))
 #define MAX_LINE_LENGTH 76
-static dsk_boolean
+static bool
 dsk_quote_printable_process (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
@@ -54,11 +54,11 @@ dsk_quote_printable_process (DskSyncFilter *filter,
         }
     }
   qp->cur_line_length = cur_len;
-  return DSK_TRUE;
+  return true;
 }
 
 /* TODO: if we never need this, simple #define dsk_quote_printable_finish to NULL */
-static dsk_boolean
+static bool
 dsk_quote_printable_finish  (DskSyncFilter *filter,
                              DskBuffer      *out,
                              DskError      **error)
@@ -66,7 +66,7 @@ dsk_quote_printable_finish  (DskSyncFilter *filter,
   DSK_UNUSED (filter);
   DSK_UNUSED (out);
   DSK_UNUSED (error);
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_quote_printable_init NULL
 #define dsk_quote_printable_finalize NULL

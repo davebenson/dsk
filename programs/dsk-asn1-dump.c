@@ -4,7 +4,7 @@
 #include "../dsk.h"
 
 /* configuration */
-static dsk_boolean verbose = DSK_FALSE;
+static bool verbose = false;
 static const char *input_filename = NULL;
 
 int main(int argc, char **argv)
@@ -13,7 +13,7 @@ int main(int argc, char **argv)
                     "Dump ASN1 to stdout.\n",
                     NULL,
                     0);
-  dsk_cmdline_permit_extra_arguments (DSK_TRUE);
+  dsk_cmdline_permit_extra_arguments (true);
   dsk_cmdline_add_string ("input", "Input ASN.1 file", "FILENAME", DSK_CMDLINE_MANDATORY, &input_filename);
   dsk_cmdline_add_boolean ("verbose", "Print extra messages", NULL, 0, &verbose);
   dsk_cmdline_process_args (&argc, &argv);

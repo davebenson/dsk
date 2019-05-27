@@ -49,7 +49,7 @@ dsk_rand_xorshift1024_seed(DskRand *rand, size_t N, const uint32_t *seed)
 {
   DskRandXorshift1024 *xs = (DskRandXorshift1024 *) rand;
   xs->p = 0;
-  xs->has_extra = DSK_FALSE;
+  xs->has_extra = false;
   dsk_rand_protected_seed_array (N, seed, 32, (uint32_t *) xs->s);
 }
 

@@ -75,7 +75,7 @@ DskUdpSocketClass dsk_udp_socket_class =
 };
 
 DskUdpSocket *
-dsk_udp_socket_new     (dsk_boolean  is_ipv6,
+dsk_udp_socket_new     (bool  is_ipv6,
                         DskError   **error)
 {
   DskFileDescriptor fd;
@@ -232,7 +232,7 @@ dsk_udp_socket_send_to (DskUdpSocket  *socket,
   return DSK_IO_RESULT_ERROR;
 }
 
-dsk_boolean
+bool
 dsk_udp_socket_bind    (DskUdpSocket  *socket,
                         DskIpAddress *bind_addr,
                         unsigned       port,
@@ -249,10 +249,10 @@ dsk_udp_socket_bind    (DskUdpSocket  *socket,
   if (bind (socket->fd, (struct sockaddr *) &addr, addr_len) < 0)
     {
       dsk_set_error (error, "error binding: %s", strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   socket->is_bound = 1;
-  return DSK_TRUE;
+  return true;
 }
 
 DskIOResult

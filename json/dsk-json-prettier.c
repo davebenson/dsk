@@ -37,7 +37,7 @@ static void flush_parser (DskJsonParser *parser,
     }
 }
 
-static dsk_boolean
+static bool
 dsk_json_prettier_process  (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -46,20 +46,20 @@ dsk_json_prettier_process  (DskSyncFilter *filter,
 {
   DskJsonPrettier *prettier = (DskJsonPrettier *) filter;
   if (!dsk_json_parser_feed (prettier->parser, in_length, in_data, error))
-    return DSK_FALSE;
+    return false;
   flush_parser (prettier->parser, out);
-  return DSK_TRUE;
+  return true;
 }
-static dsk_boolean
+static bool
 dsk_json_prettier_finish(DskSyncFilter *filter,
                          DskBuffer      *out,
                          DskError      **error)
 {
   DskJsonPrettier *prettier = (DskJsonPrettier *) filter;
   if (!dsk_json_parser_finish (prettier->parser, error))
-    return DSK_FALSE;
+    return false;
   flush_parser (prettier->parser, out);
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskJsonPrettier, dsk_json_prettier);

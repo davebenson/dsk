@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "../dsk.h"
-static dsk_boolean
+static bool
 xml_equal (DskXml *a, DskXml *b)
 {
   if (a->type != b->type)
-    return DSK_FALSE;
+    return false;
   if (strcmp (a->str, b->str) != 0)
-    return DSK_FALSE;
+    return false;
   if (a->type == DSK_XML_ELEMENT)
     {
       unsigned i;
@@ -16,24 +16,24 @@ xml_equal (DskXml *a, DskXml *b)
           if (a->attrs[i] == NULL && b->attrs[i] == NULL)
             break;
           if (a->attrs[i] == NULL || b->attrs[i] == NULL)
-            return DSK_FALSE;
+            return false;
           if (strcmp (a->attrs[i], b->attrs[i]) != 0)
-            return DSK_FALSE;
+            return false;
         }
       if (a->n_children != b->n_children)
-        return DSK_FALSE;
+        return false;
       for (i = 0; i < a->n_children; i++)
         if (!xml_equal (a->children[i], b->children[i]))
-          return DSK_FALSE;
+          return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean is_element (DskXml *xml, const char *name)
+static bool is_element (DskXml *xml, const char *name)
 {
   return xml->type == DSK_XML_ELEMENT && strcmp (xml->str, name) == 0;
 }
-static dsk_boolean is_text (DskXml *xml, const char *name)
+static bool is_text (DskXml *xml, const char *name)
 {
   return xml->type == DSK_XML_TEXT && strcmp (xml->str, name) == 0;
 }

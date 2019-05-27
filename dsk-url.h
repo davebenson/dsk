@@ -10,7 +10,7 @@ typedef enum
   DSK_URL_SCHEME_MAILTO
   /* NOTE: we may add more schemes later */
 } DskUrlScheme;
-dsk_boolean dsk_url_scheme_parse (const char   *url,
+bool dsk_url_scheme_parse (const char   *url,
                                   unsigned     *scheme_length_out,
                                   DskUrlScheme *scheme_out,
                                   DskError    **error);
@@ -30,7 +30,7 @@ struct _DskUrlScanned
   const char *fragment_start, *fragment_end;
 };
 
-dsk_boolean  dsk_url_scan  (const char     *url_string,
+bool  dsk_url_scan  (const char     *url_string,
                             DskUrlScanned  *out,
                             DskError      **error);
 

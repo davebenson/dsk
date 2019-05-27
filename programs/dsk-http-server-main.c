@@ -1,6 +1,6 @@
 #include "../dsk.h"
 
-static dsk_boolean did_bind = DSK_FALSE;
+static bool did_bind = false;
 static DskHttpServer *server = NULL;
 
 static void
@@ -17,10 +17,10 @@ static DSK_CMDLINE_CALLBACK_DECLARE(handle_config_file)
 {
   DskJsonValue *value = dsk_json_parse_file (arg_value, error);
   if (value == NULL)
-    return DSK_FALSE;
+    return false;
   parse_config (value);
   dsk_json_value_free (value);
-  return DSK_TRUE;
+  return true;
 }
 
 int main(int argc, char **argv)

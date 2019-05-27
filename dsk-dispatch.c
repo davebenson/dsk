@@ -73,7 +73,7 @@ struct _FDMapNode
 {
   DskFileDescriptor fd;
   FDMapNode *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
   FDMap map;
 };
 #endif
@@ -92,7 +92,7 @@ struct _RealDispatch
 #else
   FDMapNode *fd_map_tree;       /* map indexed by fd */
 #endif
-  dsk_boolean dispatching;
+  bool dispatching;
 
   DskDispatchTimer *timer_tree;
   DskDispatchTimer *recycled_timeouts;
@@ -251,11 +251,11 @@ DskDispatch *dsk_dispatch_new (void)
 #endif
   rv->timer_tree = NULL;
   rv->first_idle = rv->last_idle = NULL;
-  rv->base.has_idle = DSK_FALSE;
-  rv->base.has_timeout = DSK_FALSE;
+  rv->base.has_idle = false;
+  rv->base.has_timeout = false;
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
-  rv->dispatching = DSK_FALSE;
+  rv->dispatching = false;
 
   /* need to handle SIGPIPE more gracefully than default */
   signal (SIGPIPE, SIG_IGN);
@@ -632,7 +632,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
     if (fd_max < (unsigned) notifies[i].fd)
       fd_max = notifies[i].fd;
   dsk_assert (!d->dispatching);
-  d->dispatching = DSK_TRUE;
+  d->dispatching = true;
   ensure_fd_map_big_enough (d, fd_max);
   for (i = 0; i < n_notifies; i++)
     d->fd_map[notifies[i].fd].closed_since_notify_started = 0;
@@ -668,7 +668,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
       idle->next = d->recycled_idles;
       d->recycled_idles = idle;
     }
-  d->base.has_idle = DSK_FALSE;
+  d->base.has_idle = false;
 
   /* handle timers */
   DskDispatchTimer *expired = NULL;
@@ -682,7 +682,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
         {
           DSK_RBTREE_REMOVE (GET_TIMER_TREE (d), min_timer);
           min_timer->left = expired;
-          min_timer->expired = DSK_TRUE;
+          min_timer->expired = true;
           expired = min_timer;
         }
       else
@@ -703,7 +703,7 @@ dsk_dispatch_dispatch (DskDispatch             *dispatch,
     }
   if (d->timer_tree == NULL)
     d->base.has_timeout = 0;
-  d->dispatching = DSK_FALSE;
+  d->dispatching = false;
 }
 
 void
@@ -906,7 +906,7 @@ dsk_dispatch_add_timer(DskDispatch *dispatch,
   rv->func = func;
   rv->func_data = func_data;
   rv->dispatch = d;
-  rv->expired = DSK_FALSE;
+  rv->expired = false;
   DSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
   (void) conflict;              /* suppress warnings */
   
@@ -946,13 +946,13 @@ void  dsk_dispatch_adjust_timer    (DskDispatchTimer *timer,
 {
   DskDispatchTimer *conflict;
   RealDispatch *d = timer->dispatch;
-  dsk_boolean was_first = DSK_FALSE;
+  bool was_first = false;
   if (d->first_idle == NULL)
     {
       DskDispatchTimer *first;
       DSK_RBTREE_FIRST (GET_TIMER_TREE (d), first);
       if (first == timer)
-        was_first = DSK_TRUE;
+        was_first = true;
     }
   dsk_assert (timer->func != NULL);
   DSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
@@ -990,7 +990,7 @@ void  dsk_dispatch_adjust_timer_millis (DskDispatchTimer *timer,
 
 void  dsk_dispatch_remove_timer (DskDispatchTimer *timer)
 {
-  dsk_boolean may_be_first;
+  bool may_be_first;
   RealDispatch *d = timer->dispatch;
 
   if (timer->expired)
@@ -1039,7 +1039,7 @@ dsk_dispatch_add_idle (DskDispatch        *dispatch,
   rv->func_data = func_data;
   rv->dispatch = d;
 
-  d->base.has_idle = DSK_TRUE;
+  d->base.has_idle = true;
 
   return rv;
 }
@@ -1054,7 +1054,7 @@ dsk_dispatch_remove_idle (DskDispatchIdle *idle)
       idle->next = d->recycled_idles;
       d->recycled_idles = idle;
       if (d->first_idle == NULL)
-        d->base.has_idle = DSK_FALSE;
+        d->base.has_idle = false;
     }
 }
 
@@ -1241,15 +1241,15 @@ do_waitpid_repeatedly (void *data)
           child_info.process_id = pid;
           if (WIFSIGNALED (status))
             {
-              child_info.killed = DSK_TRUE;
+              child_info.killed = true;
               child_info.value = WTERMSIG (status);
             }
           else
             {
-              child_info.killed = DSK_FALSE;
+              child_info.killed = false;
               child_info.value = WEXITSTATUS (status);
             }
-          child->is_notifying = DSK_TRUE;
+          child->is_notifying = true;
           child->func (&child_info, child->func_data);
           dsk_free (child);
         }
@@ -1289,7 +1289,7 @@ dsk_dispatch_add_child    (DskDispatch       *dispatch,
   child->process_id = process_id;
   child->func = func;
   child->func_data = func_data;
-  child->is_notifying = DSK_FALSE;
+  child->is_notifying = false;
   DSK_RBTREE_INSERT (GET_CHILD_TREE (d), child, conflict);
   dsk_return_val_if_fail (conflict == NULL, "process-id trapped twice", NULL);
   return child;

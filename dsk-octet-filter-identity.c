@@ -10,7 +10,7 @@ struct _DskSyncFilterIdentity
 {
   DskSyncFilter base_instance;
 };
-static dsk_boolean
+static bool
 dsk_sync_filter_identity_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
@@ -20,7 +20,7 @@ dsk_sync_filter_identity_process (DskSyncFilter *filter,
   DSK_UNUSED (filter);
   DSK_UNUSED (error);
   dsk_buffer_append (out, in_length, in_data);
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_sync_filter_identity_init NULL
 #define dsk_sync_filter_identity_finalize NULL

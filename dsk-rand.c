@@ -20,7 +20,7 @@ dsk_rand_seed (DskRand *rand)
 {
   uint32_t seed[4];
   struct timeval now;
-  static dsk_boolean dev_urandom_exists = DSK_TRUE;
+  static bool dev_urandom_exists = true;
 
   if (dev_urandom_exists)
     {
@@ -46,12 +46,12 @@ dsk_rand_seed (DskRand *rand)
 	  while (errno == EINTR);
 
 	  if (r != 1)
-	    dev_urandom_exists = DSK_FALSE;
+	    dev_urandom_exists = false;
 
 	  fclose (dev_urandom);
 	}	
       else
-	dev_urandom_exists = DSK_FALSE;
+	dev_urandom_exists = false;
     }
 
   if (!dev_urandom_exists)

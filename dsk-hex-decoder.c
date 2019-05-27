@@ -18,7 +18,7 @@ struct _DskHexDecoder
 #define dsk_hex_decoder_init NULL
 #define dsk_hex_decoder_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_hex_decoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -36,12 +36,12 @@ dsk_hex_decoder_process (DskSyncFilter *filter,
               dsk_buffer_append_byte (out,
                                       (hexdec->nibble << 4)
                                       | dsk_ascii_xdigit_value (*in_data));
-              hexdec->has_nibble = DSK_FALSE;
+              hexdec->has_nibble = false;
             }
           else
             {
               hexdec->nibble = dsk_ascii_xdigit_value (*in_data);
-              hexdec->has_nibble = DSK_TRUE;
+              hexdec->has_nibble = true;
             }
           in_data++;
           in_length--;
@@ -55,12 +55,12 @@ dsk_hex_decoder_process (DskSyncFilter *filter,
         {
           dsk_set_error (error, "bad character %s in hex-data",
                          dsk_ascii_byte_name (*in_data));
-          return DSK_FALSE;
+          return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
-static dsk_boolean
+static bool
 dsk_hex_decoder_finish(DskSyncFilter *filter,
                        DskBuffer      *out,
                        DskError      **error)
@@ -70,9 +70,9 @@ dsk_hex_decoder_finish(DskSyncFilter *filter,
   if (dec->has_nibble)
     {
       dsk_set_error (error, "stray nibble encountered- incomplete byte in hex-data");
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskHexDecoder, dsk_hex_decoder);

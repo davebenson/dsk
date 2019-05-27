@@ -27,7 +27,7 @@ struct _DskSocketStreamListener
 typedef struct _DskSocketStreamListenerOptions DskSocketStreamListenerOptions;
 struct _DskSocketStreamListenerOptions
 {
-  dsk_boolean is_local;
+  bool is_local;
   const char *local_path;
   DskIpAddress bind_address;
   int bind_port;

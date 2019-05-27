@@ -64,7 +64,7 @@ struct _TrivialTableCheckpoint
 #define UINT32_FROM_LE(val)  UINT32_TO_LE(val)
 
 
-static dsk_boolean
+static bool
 resize_mmap (TrivialTableCheckpoint *cp,
              unsigned                min_needed,
              DskError              **error)
@@ -79,7 +79,7 @@ resize_mmap (TrivialTableCheckpoint *cp,
     {
       dsk_set_error (error, "error expanding file to %u bytes: %s",
                      new_size, strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   mmapped = mmap (NULL, new_size, PROT_READ|PROT_WRITE,
                   MAP_SHARED, cp->fd, 0);
@@ -87,14 +87,14 @@ resize_mmap (TrivialTableCheckpoint *cp,
     {
       dsk_set_error (error, "mmap of %u bytes failed: %s",
                      new_size, strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   cp->mmapped = mmapped;
   cp->mmapped_size = new_size;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 table_checkpoint_trivial__add  (DskTableCheckpoint *checkpoint,
                                 unsigned            key_length,
                                 const uint8_t      *key_data,
@@ -109,7 +109,7 @@ table_checkpoint_trivial__add  (DskTableCheckpoint *checkpoint,
     {
       /* must grow mmap area */
       if (!resize_mmap (cp, cp->cur_size + to_add + 4, error))
-        return DSK_FALSE;
+        return false;
     }
 
   /* write value length */
@@ -137,27 +137,27 @@ table_checkpoint_trivial__add  (DskTableCheckpoint *checkpoint,
 
   /* update in-memory info for next add */
   cp->cur_size += to_add;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 table_checkpoint_trivial__sync (DskTableCheckpoint *checkpoint,
 		                DskError          **error)
 {
   /* no sync implementation yet */
   DSK_UNUSED (checkpoint);
   DSK_UNUSED (error);
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 table_checkpoint_trivial__close(DskTableCheckpoint *checkpoint,
 		                DskError          **error)
 {
   //TrivialTableCheckpoint *cp = (TrivialTableCheckpoint *) checkpoint;
   DSK_UNUSED (checkpoint);
   DSK_UNUSED (error);
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -235,7 +235,7 @@ table_checkpoint_trivial__create (DskTableCheckpointInterface *iface,
     {
       dsk_set_error (error, "mmap of %u bytes failed: %s",
                      mmapped_size, strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
 
   rv = DSK_NEW (TrivialTableCheckpoint);

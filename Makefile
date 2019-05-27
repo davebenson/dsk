@@ -22,7 +22,6 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-xml-parser-0 \
 		tests/test-pattern-0 \
 		tests/test-xml-validation-suite \
-		tests/test-xml-binding-0 \
 		tests/test-json-0 \
 		tests/test-ctoken \
 		tests/test-dsk-ts0 \
@@ -50,8 +49,8 @@ install: all
 	install -m 644 libdsk.a "$(PREFIX)/lib"
 	install -m 755 $(PROGRAMS) "$(PREFIX)/bin"
 
-build-tests: test-build-dependencies $(TEST_PROGRAMS)
-build-examples: example-build-dependencies $(EXAMPLE_PROGRAMS)
+build-tests: $(TEST_PROGRAMS)
+build-examples: $(EXAMPLE_PROGRAMS)
 
 EXTRA_PROGRAMS = programs/make-validation-test-data
 extra: $(EXTRA_PROGRAMS)
@@ -92,8 +91,6 @@ libdsk.a: dsk-inlines.o \
 	  dsk-cgi.o \
 	  dsk-date.o \
 	  dsk-xml-parser.o dsk-xml.o \
-	  dsk-xml-binding.o \
-	  dsk-xml-binding-parser.o \
 	  json/dsk-json.o json/dsk-json-parser.o json/dsk-json-output.o \
 	  dsk-ctoken.o \
 	  dsk-zlib.o \
@@ -194,12 +191,12 @@ codepages: mk-codepage Makefile
 	rm -rf codepages
 	mv codepages.tmp codepages
 
-test-build-dependencies: \
-	tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c
-
-example-build-dependencies: \
-	examples/generated/wikiformats.h examples/generated/wikiformats.c
-
+#test-build-dependencies: \
+#	tests/generated/xml-binding-test.h tests/generated/xml-binding-test.c
+#
+#example-build-dependencies: \
+#	examples/generated/wikiformats.h examples/generated/wikiformats.c
+#
 clean:
 	rm -f *.o libdsk.a
 	rm -f $(TEST_PROGRAMS)

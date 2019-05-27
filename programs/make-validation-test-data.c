@@ -76,7 +76,7 @@ int main(int argc, char **argv)
           if (entities)
             dsk_warning ("entities: %s", entities);
           text = dsk_xml_get_all_text (xml);
-          dsk_boolean good;
+          bool good;
           good = (strcmp (type, "valid") == 0);
           if (!good)
             {
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
           DskBuffer buffer = DSK_BUFFER_INIT;
           load_file_to_buffer (uri, &buffer);
           dsk_print_set_uint (print, "in_size", buffer.size);
-          dsk_print_set_filtered_buffer (print, "in", &buffer, dsk_c_quoter_new (DSK_TRUE, DSK_TRUE));
+          dsk_print_set_filtered_buffer (print, "in", &buffer, dsk_c_quoter_new (true, true));
           dsk_buffer_clear (&buffer);
           if (out == NULL)
             {
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
             {
               load_file_to_buffer (out, &buffer);
               dsk_print_set_uint (print, "out_size", buffer.size);
-              dsk_print_set_filtered_buffer (print, "out", &buffer, dsk_c_quoter_new (DSK_TRUE, DSK_TRUE));
+              dsk_print_set_filtered_buffer (print, "out", &buffer, dsk_c_quoter_new (true, true));
               dsk_buffer_clear (&buffer);
             }
           dsk_print_set_string (print, "uri", uri);
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
                                          text,
                                          dsk_octet_filter_chain_new_take_list (
                                            dsk_whitespace_trimmer_new (),
-                                           dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                                           dsk_c_quoter_new (true, true),
                                            NULL
                                          ));
           dsk_free (text);

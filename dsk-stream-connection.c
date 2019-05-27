@@ -4,10 +4,10 @@
 static DskStreamConnectionOptions default_options = DSK_OCTET_CONNECTION_OPTIONS_INIT;
 
 #if DSK_ENABLE_DEBUGGING
-dsk_boolean dsk_debug_connections;
+bool dsk_debug_connections;
 #endif
 
-static dsk_boolean
+static bool
 handle_source_readable (void       *object,
                         void       *callback_data)
 {
@@ -21,7 +21,7 @@ handle_source_readable (void       *object,
     case DSK_IO_RESULT_SUCCESS:
       break;
     case DSK_IO_RESULT_AGAIN:
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_EOF:            /* only for read operations */
       goto done_reading;
     case DSK_IO_RESULT_ERROR:
@@ -36,7 +36,7 @@ handle_source_readable (void       *object,
     dsk_hook_trap_unblock (conn->write_trap);
   if (conn->buffer.size >= conn->max_buffer)
     dsk_hook_trap_block (conn->read_trap);
-  return DSK_TRUE;
+  return true;
 
 done_reading:
   {
@@ -60,9 +60,9 @@ done_reading:
       }
     dsk_hook_trap_destroy (read_trap);
   }
-  return DSK_FALSE;
+  return false;
 }
-static dsk_boolean
+static bool
 handle_sink_writable (void *object, void *callback_data)
 {
   DskStreamConnection *conn = callback_data;
@@ -87,7 +87,7 @@ handle_sink_writable (void *object, void *callback_data)
    && conn->read_trap->block_count > 0
    && conn->buffer.size < conn->max_buffer)
     dsk_hook_trap_unblock (conn->read_trap);
-  return DSK_TRUE;
+  return true;
 
 got_error:
   if (conn->shutdown_on_write_error)
@@ -110,7 +110,7 @@ got_error:
     }
   conn->sink = NULL;
   dsk_object_unref (sink);
-  return DSK_FALSE;
+  return false;
 }
 
 static void

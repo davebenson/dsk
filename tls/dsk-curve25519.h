@@ -13,6 +13,7 @@
  * probably use DskKeyShareMethod to handle
  * a range of options instead.
  */
+/* inputs and outputs all have length 32 (bytes) */
 
 
 DSK_INLINE_FUNC void dsk_curve25519_random_to_private (uint8_t *random_to_private);

@@ -32,7 +32,7 @@ pr_quoted_string (unsigned              len,
 {
   /* if we get invalid UTF-8, alert the user,
      but only once per string... */
-  dsk_boolean warned = DSK_FALSE;
+  bool warned = false;
 
   char tmp_buf[64];
 
@@ -101,7 +101,7 @@ pr_quoted_string (unsigned              len,
               if (!warned)
                 {
                   dsk_warning ("invalid UTF-8");
-                  warned = DSK_TRUE;
+                  warned = true;
                 }
               str++;
               len--;

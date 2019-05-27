@@ -14,8 +14,8 @@
 static const char *dsk_daemon_log_template = NULL;
 static unsigned    dsk_daemon_log_interval = 3600;
 static const char *dsk_daemon_pid_filename = NULL;
-static dsk_boolean dsk_daemon_watchdog     = DSK_FALSE;
-static dsk_boolean dsk_daemon_do_fork      = DSK_FALSE;
+static bool dsk_daemon_watchdog     = false;
+static bool dsk_daemon_do_fork      = false;
 static int         dsk_daemon_tzoffset     = 0;
 
 static const char *dsk_daemon_alert_script = 0;
@@ -35,7 +35,7 @@ static DSK_CMDLINE_CALLBACK_DECLARE(handle_dsk_log_template)
 
   /* TODO: verify it's a valid format string,
      and verify that log_interval is short enough. */
-  return DSK_TRUE;
+  return true;
 }
 
 static DSK_CMDLINE_CALLBACK_DECLARE(handle_dsk_log_timezone)
@@ -46,10 +46,10 @@ static DSK_CMDLINE_CALLBACK_DECLARE(handle_dsk_log_timezone)
     {
       dsk_set_error (error, "bad timezone argument '%s' to --%s",
                      arg_value, arg_name);
-      return DSK_FALSE;
+      return false;
     }
   dsk_daemon_tzoffset *= 60;
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -66,7 +66,7 @@ maybe_redirect_stdouterr (void)
   strftime (buf, sizeof (buf), dsk_daemon_log_template, &tm);
 
   int fd;
-  dsk_boolean made_dir = DSK_FALSE;
+  bool made_dir = false;
 retry_open:
   fd = open (buf, O_WRONLY|O_APPEND|O_CREAT, 0666);
   if (fd < 0)
@@ -85,7 +85,7 @@ retry_open:
                 dsk_die ("error making directory %s: %s", dir, error->message);
               dsk_free (dir);
             }
-          made_dir = DSK_TRUE;
+          made_dir = true;
           goto retry_open;
         }
       dsk_die ("error creating %s: %s", buf, strerror (errno));
@@ -123,7 +123,7 @@ make_time_str (char *out)
   strftime (out, TIME_STR_LENGTH, "%Y-%m-%d %H:%M:%S", &tm);
 }
 
-void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix)
+void dsk_daemon_add_cmdline_args (bool with_dsk_prefix)
 {
   unsigned skip = with_dsk_prefix ? 0 : strlen ("dsk-");
 
@@ -212,8 +212,8 @@ void dsk_daemon_maybe_fork (void)
   int pid_file_fd = -1;
   if (dsk_daemon_pid_filename)
     {
-      dsk_boolean must_truncate = DSK_FALSE;
-      dsk_boolean made_dir = DSK_FALSE;
+      bool must_truncate = false;
+      bool made_dir = false;
 
 retry_outer_pid_file_open:
       if ((pid_file_fd=open (dsk_daemon_pid_filename, O_CREAT|O_EXCL|O_WRONLY, 0666)) < 0)
@@ -231,7 +231,7 @@ retry_inner_pid_file_open:
                   dsk_die ("daemonize: error opening lock file %s: %s", dsk_daemon_pid_filename,
                            strerror (errno));
                 }
-              must_truncate = DSK_TRUE;
+              must_truncate = true;
             }
           else if (errno == ENOENT && !made_dir)
             {
@@ -244,7 +244,7 @@ retry_inner_pid_file_open:
               if (!dsk_mkdir_recursive (dir, 0777, &error))
                 dsk_die ("error making directory %s: %s", dir, error->message);
               dsk_free (dir);
-              made_dir = DSK_TRUE;
+              made_dir = true;
               goto retry_outer_pid_file_open;
             }
           else

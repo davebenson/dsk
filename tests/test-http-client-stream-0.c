@@ -10,16 +10,16 @@ struct _RequestData
   DskHttpResponse *response_header;
   DskError *error;
   DskWebsocket *websocket;
-  dsk_boolean content_complete;
+  bool content_complete;
   DskBuffer content;
-  dsk_boolean destroyed;
+  bool destroyed;
 };
-static dsk_boolean cmdline_verbose = DSK_FALSE;
-static dsk_boolean cmdline_print_error_messages = DSK_FALSE;
+static bool cmdline_verbose = false;
+static bool cmdline_print_error_messages = false;
 #define REQUEST_DATA_DEFAULT { NULL, NULL, NULL, NULL, NULL,    \
-                               DSK_FALSE,       /* content_complete */ \
+                               false,       /* content_complete */ \
                                DSK_BUFFER_INIT, \
-                               DSK_FALSE,       /* destroyed */ \
+                               false,       /* destroyed */ \
                              }
 
 static void
@@ -34,7 +34,7 @@ request_data__handle_content_complete (DskHttpClientStreamTransfer *xfer)
   RequestData *rd = xfer->user_data;
   if (xfer->content != NULL)
     dsk_buffer_drain (&rd->content, &xfer->content->buffer);
-  rd->content_complete = DSK_TRUE;
+  rd->content_complete = true;
 }
 static void
 request_data__handle_error (DskHttpClientStreamTransfer *xfer)
@@ -47,7 +47,7 @@ static void
 request_data__destroy (DskHttpClientStreamTransfer *xfer)
 {
   RequestData *rd = xfer->user_data;
-  rd->destroyed = DSK_TRUE;
+  rd->destroyed = true;
 }
 
 static void
@@ -72,7 +72,7 @@ request_data_clear (RequestData *rd)
   dsk_buffer_reset (&rd->content);
 }
 
-static dsk_boolean
+static bool
 is_http_request_complete (DskBuffer *buf,
                           unsigned  *length_out)
 {
@@ -87,7 +87,7 @@ is_http_request_complete (DskBuffer *buf,
   if (a == NULL && b == NULL)
     {
       dsk_free (slab);
-      return DSK_FALSE;
+      return false;
     }
   if (length_out)
     {
@@ -102,11 +102,11 @@ is_http_request_complete (DskBuffer *buf,
     }
 
   dsk_free (slab);
-  return DSK_TRUE;
+  return true;
 }
 
 static void
-test_simple (dsk_boolean byte_by_byte)
+test_simple (bool byte_by_byte)
 {
   static const char *response_content_versions[] =  {
                                 "HTTP/1.1 200 OK\r\n"
@@ -226,8 +226,8 @@ test_simple (dsk_boolean byte_by_byte)
     }
 }
 
-static void test_simple_bigwrite() { test_simple(DSK_FALSE); }
-static void test_simple_bytebybyte() { test_simple(DSK_TRUE); }
+static void test_simple_bigwrite() { test_simple(false); }
+static void test_simple_bytebybyte() { test_simple(true); }
 
 static void
 test_transfer_encoding_chunked (void)
@@ -627,7 +627,7 @@ test_transfer_encoding_chunked_post (void)
 
 /* test keepalive under a variety of request and response types */
 static void
-test_keepalive_full (dsk_boolean add_postcontent_newlines)
+test_keepalive_full (bool add_postcontent_newlines)
 {
   static const char *patterns[] = 
     /* Legend:  Query, get
@@ -643,7 +643,7 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
   RequestData request_data_array[100]; /* max length of pattern string ! */
   DskHttpClientStreamFuncs request_funcs_0;
   unsigned iter;
-  dsk_boolean debug = DSK_FALSE;
+  bool debug = false;
   memset (&request_funcs_0, 0, sizeof (request_funcs_0));
   request_funcs_0.handle_response = request_data__handle_response;
   request_funcs_0.handle_content_complete = request_data__handle_content_complete;
@@ -673,8 +673,8 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
       while (*at)
         {
           RequestData *rd;
-          dsk_boolean is_query = (*at == 'Q' || *at == 'P' || *at == 'T');
-          dsk_boolean is_response = (*at == 'R' || *at == 'C');
+          bool is_query = (*at == 'Q' || *at == 'P' || *at == 'T');
+          bool is_response = (*at == 'R' || *at == 'C');
           dsk_assert (is_query || is_response);
           if (debug)
             fprintf(stderr, "%c", *at);
@@ -841,12 +841,12 @@ test_keepalive_full (dsk_boolean add_postcontent_newlines)
 static void
 test_keepalive (void)
 {
-  test_keepalive_full (DSK_FALSE);
+  test_keepalive_full (false);
 }
 static void
 test_keepalive_old_broken_clients (void)
 {
-  test_keepalive_full (DSK_TRUE);
+  test_keepalive_full (true);
 }
 
 static DskError *
@@ -867,7 +867,7 @@ test_bad_response (const char *response)
   request_data.source = dsk_memory_source_new ();
   request_data.sink = dsk_memory_sink_new ();
   request_data.sink->max_buffer_size = 100000000;
-  options.print_warnings = DSK_FALSE;
+  options.print_warnings = false;
   stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                        DSK_OCTET_SOURCE (request_data.source),
                                        &options);
@@ -933,7 +933,7 @@ test_bad_responses (void)
 static void
 test_gzip_download (void)
 {
-  dsk_boolean byte_by_byte;
+  bool byte_by_byte;
   static const char response0[] =
       "HTTP/1.1 200 OK\r\n"
       "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
@@ -1140,7 +1140,7 @@ test_pre_gzipped_post_data_0 (void)
   cr_options.user_data = &request_data;
   cr_options.post_data_length = gzipped_post_len;
   cr_options.post_data_slab = (void*) this_is_post_data__gzipped;
-  cr_options.post_data_is_gzipped = DSK_TRUE;
+  cr_options.post_data_is_gzipped = true;
   xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
   if (xfer == NULL)
     dsk_die ("dsk_http_client_stream_request failed: %s", error->message);
@@ -1237,7 +1237,7 @@ test_pre_gzipped_post_data_1 (void)
   cr_options.user_data = &request_data;
   post_data = dsk_memory_source_new ();
   cr_options.post_data = DSK_OCTET_SOURCE (post_data);
-  cr_options.post_data_is_gzipped = DSK_TRUE;
+  cr_options.post_data_is_gzipped = true;
   xfer = dsk_http_client_stream_request (stream, &cr_options, &error);
   if (xfer == NULL)
     dsk_die ("dsk_http_client_stream_request failed: %s", error->message);
@@ -1338,7 +1338,7 @@ test_pre_gzipped_post_data_1 (void)
 static void
 test_bad_gzip (void)
 {
-  dsk_boolean byte_by_byte;
+  bool byte_by_byte;
   static const char response0[] =
       "HTTP/1.1 200 OK\r\n"
       "Date: Mon, 17 May 2010 22:50:08 GMT\r\n"
@@ -1439,7 +1439,7 @@ test_bad_gzip (void)
           request_data.source = dsk_memory_source_new ();
           request_data.sink = dsk_memory_sink_new ();
           request_data.sink->max_buffer_size = 100000000;
-          options.print_warnings = DSK_FALSE;
+          options.print_warnings = false;
           stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                                DSK_OCTET_SOURCE (request_data.source),
                                                &options);
@@ -1550,7 +1550,7 @@ test_transport_errors_reading (void)
       request_data.source = dsk_memory_source_new ();
       request_data.sink = dsk_memory_sink_new ();
       request_data.sink->max_buffer_size = 100000000;
-      options.print_warnings = DSK_FALSE;
+      options.print_warnings = false;
       stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                            DSK_OCTET_SOURCE (request_data.source),
                                            &options);
@@ -1614,7 +1614,7 @@ test_random_response (void)
       request_data.source = dsk_memory_source_new ();
       request_data.sink = dsk_memory_sink_new ();
       request_data.sink->max_buffer_size = 100000000;
-      options.print_warnings = DSK_FALSE;
+      options.print_warnings = false;
       stream = dsk_http_client_stream_new (DSK_OCTET_SINK (request_data.sink),
                                            DSK_OCTET_SOURCE (request_data.source),
                                            &options);
@@ -1649,7 +1649,7 @@ test_random_response (void)
 /* === HEAD request tests === */
 
 static void
-test_head_simple (dsk_boolean byte_by_byte)
+test_head_simple (bool byte_by_byte)
 {
   static const char *response_content_versions[] =  {
                                 "HTTP/1.1 200 OK\r\n"
@@ -1759,8 +1759,8 @@ test_head_simple (dsk_boolean byte_by_byte)
     }
 }
 
-static void test_head_simple_bigwrite() { test_head_simple(DSK_FALSE); }
-static void test_head_simple_bytebybyte() { test_head_simple(DSK_TRUE); }
+static void test_head_simple_bigwrite() { test_head_simple(false); }
+static void test_head_simple_bytebybyte() { test_head_simple(true); }
 
 static void
 test_head_transfer_encoding_chunked (void)
@@ -1912,7 +1912,7 @@ test_simple_websocket (void)
       req_options.full_path = "/hello.txt";
       cr_options.request_options = &req_options;
       cr_options.funcs = &request_funcs_websocket;
-      cr_options.is_websocket_request = DSK_TRUE;
+      cr_options.is_websocket_request = true;
       cr_options.websocket_protocols = "myproto";
 
       /* write response */

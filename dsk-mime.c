@@ -6,7 +6,7 @@
 
 #define SKIP_WS(ptr) while (dsk_ascii_isspace (*ptr)) ptr++
 
-dsk_boolean dsk_mime_key_values_scan (const char *str,
+bool dsk_mime_key_values_scan (const char *str,
                                       unsigned    max_kv,
                                       DskMimeKeyValueInplace *kv,
                                       unsigned   *n_kv_out,
@@ -47,7 +47,7 @@ dsk_boolean dsk_mime_key_values_scan (const char *str,
                     {
                       /* error: no matching quote */
                       dsk_set_error (error, "no matching '\"'");
-                      return DSK_FALSE;
+                      return false;
                     }
                   kv[n].value_end = str;
                   n++;
@@ -94,14 +94,14 @@ dsk_boolean dsk_mime_key_values_scan (const char *str,
               /* syntax error */
               dsk_set_error (error, "unexpected char %s in MIME header",
                              dsk_ascii_byte_name (*str));
-              return DSK_FALSE;
+              return false;
             }
         }
       else
         {
           dsk_set_error (error, "unexpected char %s in MIME header",
                          dsk_ascii_byte_name (*str));
-          return DSK_FALSE;
+          return false;
         }
     }
 return_true:
@@ -118,10 +118,10 @@ return_true:
   }
 #endif
   *n_kv_out = n;
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_parse_mime_content_disposition_header (const char *line,
+bool dsk_parse_mime_content_disposition_header (const char *line,
                                                        DskMimeContentDisposition *out,
                                                        DskError **error)
 {
@@ -131,17 +131,17 @@ dsk_boolean dsk_parse_mime_content_disposition_header (const char *line,
   memset (out, 0, sizeof (DskMimeContentDisposition));
   if (dsk_ascii_strncasecmp (line, "inline", 6) == 0)
     {
-      out->is_inline = DSK_TRUE;
+      out->is_inline = true;
       line += 6;
     }
   else if (dsk_ascii_strncasecmp (line, "attachment", 10) == 0)
     {
-      out->is_inline = DSK_FALSE;
+      out->is_inline = false;
       line += 10;
     }
   else
     {
-      out->is_inline = DSK_FALSE;   /* form-data is another dispos */
+      out->is_inline = false;   /* form-data is another dispos */
       while (dsk_ascii_istoken (*line))
         line++;
     }
@@ -152,7 +152,7 @@ dsk_boolean dsk_parse_mime_content_disposition_header (const char *line,
       SKIP_WS (line);
     }
   if (!dsk_mime_key_values_scan (line, DSK_N_ELEMENTS (kvs), kvs, &n, error))
-    return DSK_FALSE;
+    return false;
 #define KEY_IS(kv, str) ((kv).key_end - (kv).key_start == strlen (str) \
                      && dsk_ascii_strncasecmp (str, (kv).key_start, \
                                                (kv).key_end - (kv).key_start) == 0)
@@ -167,5 +167,5 @@ dsk_boolean dsk_parse_mime_content_disposition_header (const char *line,
         out->filename_start = kvs[i].value_start;
         out->filename_end = kvs[i].value_end;
       }
-  return DSK_TRUE;
+  return true;
 }

@@ -47,7 +47,7 @@ struct _DskUnquotePrintable
     uint8_t equal_hex;   /* value of the first nibble */
   } info;
 };
-static dsk_boolean
+static bool
 dsk_unquote_printable_process (DskSyncFilter *filter,
                                DskBuffer      *out,
                                unsigned        in_length,
@@ -58,7 +58,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
   const uint8_t *at = in_data;
   unsigned rem = in_length;
   if (rem == 0)
-    return DSK_TRUE;
+    return true;
   switch (qp->state)            /* assert: rem != 0 at beginning of cases */
     {
     state__NORMAL:
@@ -72,7 +72,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
             at++;
             rem--;
             if (rem == 0)
-              return DSK_TRUE;
+              return true;
             goto state__SPACES;
           }
         else if (*at == '=')
@@ -81,7 +81,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
             at++;
             rem--;
             if (rem == 0)
-              return DSK_TRUE;
+              return true;
             goto state__EQUALS;
           }
         else if (*at == '\r')
@@ -89,7 +89,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
             at++;
             rem--;
             if (rem == 0)
-              return DSK_TRUE;
+              return true;
             goto state__CR;
           }
           /* note that '\n' does not need special handling */
@@ -99,7 +99,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
             at++;
             rem--;
             if (rem == 0)
-              return DSK_TRUE;
+              return true;
             goto state__NORMAL;
           }
       }
@@ -114,20 +114,20 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
               dsk_set_error (error,
                              "unquote-printable: more than %u spaces consecutively",
                              MAX_SPACES);
-              return DSK_FALSE;
+              return false;
             }
           at++;
           rem--;
         }
       if (rem == 0)
-        return DSK_TRUE;
+        return true;
       if (*at == '\r')
         {
           qp->state = STATE_CR;
           at++;
           rem--;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__CR;
         }
       else if (*at == '\n')
@@ -149,7 +149,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
           rem--;
           qp->state = STATE_NORMAL;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__NORMAL;
         }
       else if (*at == '\r')
@@ -158,7 +158,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
           rem--;
           qp->state = STATE_EQ_CR;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__EQ_CR;
         }
       if (rem == 1)
@@ -167,7 +167,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
             goto expected_hex_error;
           qp->state = STATE_EQUALS_HEX;
           qp->info.equal_hex = dsk_ascii_xdigit_value (at[0]);
-          return DSK_TRUE;
+          return true;
         }
       else if (!dsk_ascii_isxdigit (at[0]) || !dsk_ascii_isxdigit (at[1]))
         goto expected_hex_error;
@@ -179,7 +179,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
           at += 2;
           qp->state = STATE_NORMAL;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__NORMAL;
         }
 
@@ -192,7 +192,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
       at++;
       qp->state = STATE_NORMAL;
       if (rem == 0)
-        return DSK_TRUE;
+        return true;
       goto state__NORMAL;
 
     state__CR:
@@ -204,7 +204,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
           at++;
           qp->state = STATE_NORMAL;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__NORMAL;
         }
       else
@@ -218,7 +218,7 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
           at++;
           qp->state = STATE_NORMAL;
           if (rem == 0)
-            return DSK_TRUE;
+            return true;
           goto state__NORMAL;
         }
       else
@@ -228,13 +228,13 @@ dsk_unquote_printable_process (DskSyncFilter *filter,
 
 expected_hex_error:
   dsk_set_error (error, "expecting hex-digits after '='");
-  return DSK_FALSE;
+  return false;
 unexpected_cr:
   dsk_set_error (error, "got CR without newline");
-  return DSK_FALSE;
+  return false;
 }
 
-static dsk_boolean
+static bool
 dsk_unquote_printable_finish  (DskSyncFilter *filter,
                                DskBuffer      *out,
                                DskError      **error)
@@ -245,18 +245,18 @@ dsk_unquote_printable_finish  (DskSyncFilter *filter,
     {
     case STATE_NORMAL:
     case STATE_SPACES:
-      return DSK_TRUE;
+      return true;
     case STATE_EQUALS:
     case STATE_EQUALS_HEX:
     case STATE_EQ_CR:
       dsk_set_error (error, "unexpected termination after '='");
-      return DSK_FALSE;
+      return false;
     case STATE_CR:
       dsk_set_error (error, "unexpected termination after CR");
-      return DSK_FALSE;
+      return false;
     }
   dsk_assert_not_reached ();
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_unquote_printable_init NULL

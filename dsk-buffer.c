@@ -184,7 +184,7 @@ dsk_buffer_init(DskBuffer *buffer)
 }
 
 #if defined(DSK_DEBUG) || DSK_DEBUG_BUFFER_ALLOCATIONS
-static inline dsk_boolean
+static inline bool
 verify_buffer (const DskBuffer *buffer)
 {
   const DskBufferFragment *fragment;
@@ -192,7 +192,7 @@ verify_buffer (const DskBuffer *buffer)
   for (fragment = buffer->first_frag; fragment != NULL; fragment = fragment->next)
     {
       if (fragment->buf_length == 0)
-        return DSK_FALSE;
+        return false;
       total += fragment->buf_length;
     }
   return total == buffer->size;
@@ -677,7 +677,7 @@ dsk_buffer_writev_len (DskBuffer *read_from,
   return rv;
 }
 
-dsk_boolean
+bool
 dsk_buffer_write_all_to_fd (DskBuffer       *read_from,
 		            int              fd,
                             DskError       **error)
@@ -688,10 +688,10 @@ dsk_buffer_write_all_to_fd (DskBuffer       *read_from,
         {
           dsk_set_error (error, "error writing to fd %d: %s",
                          fd, strerror (errno));
-          return DSK_FALSE;
+          return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
 /**
@@ -1040,7 +1040,7 @@ void dsk_buffer_append_foreign (DskBuffer        *buffer,
 /* Test to see if a sequence of buffer fragments
  * starts with a particular NUL-terminated string.
  */
-static dsk_boolean
+static bool
 fragment_n_str(DskBufferFragment   *fragment,
                unsigned                frag_index,
                const char          *string)
@@ -1055,19 +1055,19 @@ fragment_n_str(DskBufferFragment   *fragment,
       if (memcmp (string,
                   dsk_buffer_fragment_start (fragment) + frag_index,
                   test_len) != 0)
-        return DSK_FALSE;
+        return false;
 
       length -= test_len;
       string += test_len;
 
       if (length <= 0)
-        return DSK_TRUE;
+        return true;
       frag_index += test_len;
       if (frag_index >= fragment->buf_length)
         {
           fragment = fragment->next;
           if (fragment == NULL)
-            return DSK_FALSE;
+            return false;
         }
     }
 }
@@ -1549,7 +1549,7 @@ dsk_buffer_fragment_peek (DskBufferFragment *fragment,
   return rv;
 }
 
-dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
+bool dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
                                          unsigned           *offset_inout,
                                          unsigned            skip)
 {
@@ -1557,7 +1557,7 @@ dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
   if (fragment->buf_length >= *offset_inout + skip)
     {
       *offset_inout += skip;
-      return DSK_TRUE;
+      return true;
     }
   skip -= (fragment->buf_length - *offset_inout);
   while (skip > 0 && fragment != NULL)
@@ -1571,10 +1571,10 @@ dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
         {
           *offset_inout = skip;
           *frag_inout = fragment;
-          return DSK_TRUE;
+          return true;
         }
     }
-  return DSK_FALSE;
+  return false;
 }
 
 void
@@ -1686,7 +1686,7 @@ char *dsk_buffer_empty_to_string (DskBuffer *buffer)
   return rv;
 }
 
-dsk_boolean dsk_buffer_dump (DskBuffer          *buffer,
+bool dsk_buffer_dump (DskBuffer          *buffer,
                              const char         *filename,
                              DskBufferDumpFlags  flags,
                              DskError          **error)
@@ -1759,10 +1759,10 @@ retry_writev:
   close (fd);
   if (flags & DSK_BUFFER_DUMP_DRAIN)
     dsk_buffer_discard (buffer, buffer->size);
-  return DSK_TRUE;
+  return true;
 
 error:
   if (flags & DSK_BUFFER_DUMP_FATAL_ERRORS)
     dsk_error ("error writing to %s: %s", filename, fatal_error_buf->message);
-  return DSK_FALSE;
+  return false;
 }

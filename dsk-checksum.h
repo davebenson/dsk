@@ -45,6 +45,10 @@ size_t         dsk_checksum_sizeof_instance (DskChecksumType type);
 void           dsk_checksum_init       (void           *checksum_instance,
                                         DskChecksumType type);
 
+void           dsk_checksum            (DskChecksumType type,
+                                        size_t          len,
+                                        const void     *data,
+                                        uint8_t        *checksum_out);
 
 /* Size of blocks (in bytes) in which this algorithm operates.
  *

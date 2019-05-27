@@ -14,7 +14,7 @@ struct _DskUrlEncoder
 #define dsk_url_encoder_init NULL
 #define dsk_url_encoder_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_url_encoder_process    (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -35,7 +35,7 @@ dsk_url_encoder_process    (DskSyncFilter *filter,
           in_data += unquoted_len;
           in_length -= unquoted_len;
           if (in_length == 0)
-            return DSK_TRUE;
+            return true;
         }
 
       /* handle special bytes */
@@ -51,7 +51,7 @@ dsk_url_encoder_process    (DskSyncFilter *filter,
       in_data++;
       in_length--;
     }
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_url_encoder_finish NULL
 

@@ -140,9 +140,9 @@ dsk_bzero_pointers (void *ptrs,
     *at++ = NULL;
 }
 
-dsk_boolean
+bool
 dsk_parse_boolean (const char *str,
-                   dsk_boolean *out)
+                   bool *out)
 {
   switch (str[0])
     {
@@ -156,14 +156,14 @@ dsk_parse_boolean (const char *str,
     case 't': if (strcmp (str, "true") == 0) goto is_true; break;
     case 'F': if (strcmp (str, "FALSE") == 0) goto is_false; break;
     case 'T': if (strcmp (str, "TRUE") == 0) goto is_true; break;
-    default: return DSK_FALSE;
+    default: return false;
     }
 is_true:
-  *out = DSK_TRUE;
-  return DSK_TRUE;
+  *out = true;
+  return true;
 is_false:
-  *out = DSK_FALSE;
-  return DSK_TRUE;
+  *out = false;
+  return true;
 }
 char *dsk_stpcpy (char *dst, const char *src)
 {

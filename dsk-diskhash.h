@@ -78,7 +78,7 @@ struct _DskDiskheapConfig
 {
   DskDiskhashHeapStrategy key_heap_strategy;
   unsigned n_key_heap_sizes;
-  dsk_boolean key_heap_use_existing_strategy;
+  bool key_heap_use_existing_strategy;
 };
 
 #define DSK_DISKHEAP_HANDLE_NULL {{0ULL,0ULL}}

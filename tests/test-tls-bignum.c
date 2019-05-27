@@ -629,7 +629,7 @@ static struct
 int main(int argc, char **argv)
 {
   unsigned i;
-  dsk_boolean cmdline_verbose = false;
+  bool cmdline_verbose = false;
 
   dsk_cmdline_init ("test various large number handling functions for TLS",
                     "Test TLS bignum functions",

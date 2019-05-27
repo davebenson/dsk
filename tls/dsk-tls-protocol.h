@@ -423,3 +423,12 @@ DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *
   return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
       && handshake->server_hello.is_retry_request;
 }
+
+// RFC 8446, 7.1 Key Schedule gives this function as Derive-Secret.
+void
+dsk_tls_derive_secret (DskChecksumType type,
+                       const uint8_t  *secret,
+                       size_t          label_len,
+                       const uint8_t  *label,
+                       const uint8_t  *transcript_hash,
+                       uint8_t        *out);

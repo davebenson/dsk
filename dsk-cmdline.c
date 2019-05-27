@@ -27,9 +27,9 @@ struct _DskCmdlineMode
   const char *short_desc;
   const char *long_desc;
   const char *non_option_arg_desc;
-  dsk_boolean permit_unknown_options;
-  dsk_boolean permit_extra_arguments;
-  dsk_boolean permit_help;
+  bool permit_unknown_options;
+  bool permit_extra_arguments;
+  bool permit_help;
   DskCmdlineArgumentHandler argument_handler;
 
   unsigned n_aliases;
@@ -50,14 +50,14 @@ struct _DskCmdlineMode
 };
 
 static DskCmdlineMode toplevel_mode = {
-  .permit_help = DSK_TRUE
+  .permit_help = true
 };
 
 static DskCmdlineMode *configuring = &toplevel_mode;
 
 void *dsk_cmdline_mode_user_data = NULL;        /* public */
 
-static dsk_boolean swallow_arguments = DSK_TRUE;
+static bool swallow_arguments = true;
 
 #define _DSK_CMDLINE_OPTION_USED                (1<<31)
 
@@ -70,13 +70,13 @@ struct _DskCmdlineArg
   DskCmdlineFlags flags;
   void *value_ptr;
   DskCmdlineCallback callback;
-  dsk_boolean (*func)(DskCmdlineArg *arg,
+  bool (*func)(DskCmdlineArg *arg,
                       const char    *str,
                       DskError     **error);
 
 
   DskCmdlineArg *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
 };
 
 #define COMPARE_STR_TO_ARG_NODE(a,b, rv)  rv = strcmp(a, b->option_name)
@@ -110,7 +110,7 @@ compare_equal_terminated_str (const char *option,
 /* For mutually-exclusive argument handling */
 struct _ExclNode
 {
-  dsk_boolean one_required;
+  bool one_required;
   unsigned n_args;
   DskCmdlineArg **args;
   ExclNode *next;
@@ -126,9 +126,9 @@ void dsk_cmdline_init        (const char     *short_desc,
   configuring->long_desc = long_desc;
   configuring->non_option_arg_desc = non_option_arg_desc;
   if (flags & DSK_CMDLINE_PERMIT_ARGUMENTS)
-    configuring->permit_extra_arguments = DSK_TRUE;
+    configuring->permit_extra_arguments = true;
   if (flags & DSK_CMDLINE_PERMIT_UNKNOWN_OPTIONS)
-    configuring->permit_unknown_options = DSK_TRUE;
+    configuring->permit_unknown_options = true;
 
   /* By default, modify argc/argv */
   swallow_arguments = (flags & DSK_CMDLINE_DO_NOT_MODIFY_ARGV) == 0;
@@ -163,7 +163,7 @@ add_option (const char *option_name)
   return rv;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_int (DskCmdlineArg *arg,
                     const char    *str,
                     DskError     **error)
@@ -173,15 +173,15 @@ cmdline_handle_int (DskCmdlineArg *arg,
   if (str == end)
     {
       dsk_set_error (error, "error parsing integer");
-      return DSK_FALSE;
+      return false;
     }
   if (*end != '\0')
     {
       dsk_set_error (error, "garbage at end of integer");
-      return DSK_FALSE;
+      return false;
     }
   * (int *) arg->value_ptr = v;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_int     (const char     *option_name,
@@ -201,7 +201,7 @@ void dsk_cmdline_add_int     (const char     *option_name,
   arg->func = cmdline_handle_int;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_uint (DskCmdlineArg *arg,
                     const char    *str,
                     DskError     **error)
@@ -211,15 +211,15 @@ cmdline_handle_uint (DskCmdlineArg *arg,
   if (str == end)
     {
       dsk_set_error (error, "error parsing unsigned integer");
-      return DSK_FALSE;
+      return false;
     }
   if (*end != '\0')
     {
       dsk_set_error (error, "garbage at end of unsigned integer");
-      return DSK_FALSE;
+      return false;
     }
   * (int *) arg->value_ptr = v;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_uint    (const char     *option_name,
@@ -239,7 +239,7 @@ void dsk_cmdline_add_uint    (const char     *option_name,
   arg->func = cmdline_handle_uint;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_int64 (DskCmdlineArg *arg,
                       const char    *str,
                       DskError     **error)
@@ -250,15 +250,15 @@ cmdline_handle_int64 (DskCmdlineArg *arg,
   if (str == end)
     {
       dsk_set_error (error, "error parsing integer");
-      return DSK_FALSE;
+      return false;
     }
   if (*end != '\0')
     {
       dsk_set_error (error, "garbage at end of integer");
-      return DSK_FALSE;
+      return false;
     }
   * (int *) arg->value_ptr = v;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_int64   (const char     *option_name,
@@ -278,7 +278,7 @@ void dsk_cmdline_add_int64   (const char     *option_name,
   arg->func = cmdline_handle_int64;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_uint64 (DskCmdlineArg *arg,
                        const char    *str,
                        DskError     **error)
@@ -289,15 +289,15 @@ cmdline_handle_uint64 (DskCmdlineArg *arg,
   if (str == end)
     {
       dsk_set_error (error, "error parsing unsigned integer");
-      return DSK_FALSE;
+      return false;
     }
   if (*end != '\0')
     {
       dsk_set_error (error, "garbage at end of unsigned integer");
-      return DSK_FALSE;
+      return false;
     }
   * (int *) arg->value_ptr = v;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_uint64  (const char     *option_name,
@@ -318,7 +318,7 @@ void dsk_cmdline_add_uint64  (const char     *option_name,
 }
 
 
-static dsk_boolean
+static bool
 cmdline_handle_double (DskCmdlineArg *arg,
                        const char    *str,
                        DskError     **error)
@@ -328,15 +328,15 @@ cmdline_handle_double (DskCmdlineArg *arg,
   if (str == end)
     {
       dsk_set_error (error, "error parsing floating-point number");
-      return DSK_FALSE;
+      return false;
     }
   if (*end != '\0')
     {
       dsk_set_error (error, "garbage at end of floating-point number");
-      return DSK_FALSE;
+      return false;
     }
   * (int *) arg->value_ptr = v;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_double  (const char     *option_name,
@@ -356,33 +356,33 @@ void dsk_cmdline_add_double  (const char     *option_name,
   arg->func = cmdline_handle_double;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_boolean (DskCmdlineArg *arg,
                         const char    *str,
                         DskError     **error)
 {
   if (str == NULL)
     {
-      * (dsk_boolean *) arg->value_ptr = DSK_TRUE;
+      * (bool *) arg->value_ptr = true;
     }
   else
     {
       if (!dsk_parse_boolean (str, arg->value_ptr))
         {
           dsk_set_error (error, "error parsing boolean from string");
-          return DSK_FALSE;
+          return false;
         }
     }
   if (arg->flags & DSK_CMDLINE_REVERSED)
-    * (dsk_boolean *) arg->value_ptr = ! (* (dsk_boolean *) arg->value_ptr);
-  return DSK_TRUE;
+    * (bool *) arg->value_ptr = ! (* (bool *) arg->value_ptr);
+  return true;
 }
 
 void dsk_cmdline_add_boolean (const char     *option_name,
                               const char     *description,
                               const char     *arg_description,
                               DskCmdlineFlags flags,
-                              dsk_boolean    *value_out)
+                              bool    *value_out)
 {
   DskCmdlineArg *arg = add_option (option_name);
   dsk_assert (description != NULL);
@@ -397,14 +397,14 @@ void dsk_cmdline_add_boolean (const char     *option_name,
   arg->func = cmdline_handle_boolean;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_string (DskCmdlineArg *arg,
                        const char    *str,
                        DskError     **error)
 {
   DSK_UNUSED (error);
   * (const char **) arg->value_ptr = str;
-  return DSK_TRUE;
+  return true;
 }
 
 void dsk_cmdline_add_string  (const char     *option_name,
@@ -424,7 +424,7 @@ void dsk_cmdline_add_string  (const char     *option_name,
   arg->func = cmdline_handle_string;
 }
 
-static dsk_boolean
+static bool
 cmdline_handle_callback (DskCmdlineArg *arg,
                         const char    *str,
                         DskError     **error)
@@ -465,7 +465,7 @@ void dsk_cmdline_add_shortcut(char            shortcut,
   configuring->args_single_char[shortcut - FIRST_SINGLE_CHAR_CMDLINE_ARG] = arg;
 }
 
-void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
+void dsk_cmdline_mutually_exclusive (bool     one_required,
                                      const char     *arg_1,
                                      ...)
 {
@@ -488,7 +488,7 @@ void dsk_cmdline_mutually_exclusive (dsk_boolean     one_required,
   dsk_cmdline_mutually_exclusive_v (one_required, n, arg_array);
 }
 
-void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
+void dsk_cmdline_mutually_exclusive_v (bool     one_required,
                                        unsigned        n_excl,
                                        char          **excl)
 {
@@ -510,11 +510,11 @@ void dsk_cmdline_mutually_exclusive_v (dsk_boolean     one_required,
   configuring->last_excl_node = node;
 }
 
-void dsk_cmdline_permit_unknown_options (dsk_boolean permit)
+void dsk_cmdline_permit_unknown_options (bool permit)
 {
   configuring->permit_unknown_options = permit;
 }
-void dsk_cmdline_permit_extra_arguments (dsk_boolean permit)
+void dsk_cmdline_permit_extra_arguments (bool permit)
 {
   configuring->permit_extra_arguments = permit;
 }
@@ -549,20 +549,20 @@ skip_or_swallow (int *argc_inout,
     *i_inout += n;
 }
 
-static dsk_boolean
+static bool
 check_mandatory_args_recursive (DskCmdlineArg *node,
                                 DskError     **error)
 {
   if ((node->flags & (DSK_CMDLINE_MANDATORY|_DSK_CMDLINE_OPTION_USED)) == DSK_CMDLINE_MANDATORY)
     {
       dsk_set_error (error, "mandatory option --%s not supplied", node->option_name);
-      return DSK_FALSE;
+      return false;
     }
   return (node->left == NULL || check_mandatory_args_recursive (node->left, error))
       && (node->right == NULL || check_mandatory_args_recursive (node->right, error));
 }
 
-static dsk_boolean
+static bool
 check_mutually_exclusive_args (DskCmdlineMode *mode,
                                DskError **error)
 {
@@ -578,7 +578,7 @@ check_mutually_exclusive_args (DskCmdlineMode *mode,
               {
                 dsk_set_error (error, "'--%s' and '--%s' are mutually exclusive",
                                got_arg_name, at->args[i]->option_name);
-                return DSK_FALSE;
+                return false;
               }
             got_arg_name = at->args[i]->option_name;
           }
@@ -594,10 +594,10 @@ check_mutually_exclusive_args (DskCmdlineMode *mode,
           dsk_set_error (error, "one of the following options is required:%s",
                          str);
           dsk_free (str);
-          return DSK_FALSE;
+          return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -673,7 +673,7 @@ find_child_mode (DskCmdlineMode *parent,
   return NULL;
 }
 
-dsk_boolean
+bool
 dsk_cmdline_try_process_args (int *argc_inout,
                               char ***argv_inout,
                               DskError **error)
@@ -706,7 +706,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                       exit (1);
                     }
                   dsk_set_error (error, "bad option --%s", opt);
-                  return DSK_FALSE;
+                  return false;
                 }
               else
                 {
@@ -718,12 +718,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
                       if (i + 1 == *argc_inout)
                         {
                           dsk_set_error (error, "option --%s requires argument", opt);
-                          return DSK_FALSE;
+                          return false;
                         }
                       if (!arg->func (arg, argv[i+1], error))
                         {
                           dsk_add_error_prefix (error, "processing --%s", opt);
-                          return DSK_FALSE;
+                          return false;
                         }
                       arg->flags |= _DSK_CMDLINE_OPTION_USED;
                       skip_or_swallow (argc_inout, argv_inout, &i, 2);
@@ -732,12 +732,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
                   if (eq != NULL && !(arg->flags & DSK_CMDLINE_TAKES_ARGUMENT))
                     {
                       dsk_set_error (error, "option --%s has argument: not allowed", opt);
-                      return DSK_FALSE;
+                      return false;
                     }
                   if (!arg->func (arg, eq ? (eq + 1) : NULL, error))
                     {
                       dsk_add_error_prefix (error, "processing --%s", opt);
-                      return DSK_FALSE;
+                      return false;
                     }
                   skip_or_swallow (argc_inout, argv_inout, &i, 1);
                   arg->flags |= _DSK_CMDLINE_OPTION_USED;
@@ -749,7 +749,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
               if (!mode->permit_extra_arguments)
                 {
                   dsk_set_error (error, "got '-', but non-options are forbidding");
-                  return DSK_FALSE;
+                  return false;
                 }
               skip_or_swallow (argc_inout, argv_inout, &i, 1);
               break;
@@ -765,25 +765,25 @@ dsk_cmdline_try_process_args (int *argc_inout,
                    || (uint8_t)argv[i][1] > LAST_SINGLE_CHAR_CMDLINE_ARG)
                     {
                       dsk_set_error (error, "invalid single-char option '%c'", argv[i][1]);
-                      return DSK_FALSE;
+                      return false;
                     }
                   arg = mode->args_single_char[argv[i][1] - FIRST_SINGLE_CHAR_CMDLINE_ARG];
                   if (arg == NULL)
                     {
                       dsk_set_error (error, "invalid single-char option '%c'", argv[i][1]);
-                      return DSK_FALSE;
+                      return false;
                     }
                   if (arg->flags & DSK_CMDLINE_TAKES_ARGUMENT)
                     {
                       if (i + 1 == *argc_inout)
                         {
                           dsk_set_error (error, "option %s takes argument", argv[i]);
-                          return DSK_FALSE;
+                          return false;
                         }
                       if (!arg->func (arg, argv[i+1], error))
                         {
                           dsk_add_error_prefix (error, "parsing argument to %s", argv[i]);
-                          return DSK_FALSE;
+                          return false;
                         }
                       skip_or_swallow (argc_inout, argv_inout, &i, 2);
                       arg->flags |= _DSK_CMDLINE_OPTION_USED;
@@ -793,7 +793,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                       if (!arg->func (arg, NULL, error))
                         {
                           dsk_add_error_prefix (error, "parsing argument to %s", argv[i]);
-                          return DSK_FALSE;
+                          return false;
                         }
                       skip_or_swallow (argc_inout, argv_inout, &i, 1);
                       arg->flags |= _DSK_CMDLINE_OPTION_USED;
@@ -810,12 +810,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
                        || mode->args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG] == NULL)
                         {
                           dsk_set_error (error, "invalid single-char option '%c'", argv[i][ci]);
-                          return DSK_FALSE;
+                          return false;
                         }
                       if (mode->args_single_char[argv[i][ci] - FIRST_SINGLE_CHAR_CMDLINE_ARG]->flags & DSK_CMDLINE_TAKES_ARGUMENT)
                         {
                           dsk_set_error (error, "multiple short-options combined, but '%c' take argument", argv[i][ci]);
-                          return DSK_FALSE;
+                          return false;
                         }
                     }
                   for (ci = 1; argv[i][ci] != 0; ci++)
@@ -824,7 +824,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
                       if (!arg->func (arg, NULL, error))
                         {
                           dsk_add_error_prefix (error, "processing -%c", argv[i][ci]);
-                          return DSK_FALSE;
+                          return false;
                         }
                       arg->flags |= _DSK_CMDLINE_OPTION_USED;
                     }
@@ -843,7 +843,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
       else if (mode->argument_handler)
         {
           if (!mode->argument_handler (argv[i], error))
-            return DSK_FALSE;
+            return false;
           skip_or_swallow (argc_inout, argv_inout, &i, 1);
         }
       else if (mode->permit_extra_arguments)
@@ -853,7 +853,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
       else
         {
           dsk_set_error (error, "unexpected command-line argument '%s'", argv[i]);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -862,12 +862,12 @@ dsk_cmdline_try_process_args (int *argc_inout,
     {
       if (submode->arg_tree != NULL
        && !check_mandatory_args_recursive (submode->arg_tree, error))
-        return DSK_FALSE;
+        return false;
       if (!check_mutually_exclusive_args (submode, error))
-        return DSK_FALSE;
+        return false;
     }
 
-  return DSK_TRUE;
+  return true;
 }
 
 static void

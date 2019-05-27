@@ -43,7 +43,7 @@
 #define mem_fill(addr,data,size)	memset(addr,data,size)
 
 
-#if DSK_IS_LITTLE_ENDIAN == 0
+#if DSK_IS_LITTLE_ENDIAN
 #define ECP_CONFIG_LITTLE_ENDIAN
 #else
 #define ECP_CONFIG_BIG_ENDIAN
@@ -171,6 +171,25 @@ typedef struct {
     U_WORD t[K_WORDS];  /* xy/z */
 } Ext_POINT;
 
+#if 0
+void pr_ext_point(const Ext_POINT *p)
+{
+  printf("x:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->x[i]);
+  printf("\ny:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->y[i]);
+  printf("\nz:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->z[i]);
+  printf("\nt:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->t[i]);
+  printf("\n");
+}
+#endif
+
 /* pre-computed, extended point */
 typedef struct
 {
@@ -187,6 +206,21 @@ typedef struct
     U_WORD YmX[K_WORDS];        /* Y-X */
     U_WORD T2d[K_WORDS];        /* 2d*T */
 } PA_POINT;
+#if 0
+void pr_pa_point(const PA_POINT *p)
+{
+  printf("yPx:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->YpX[i]);
+  printf("\nYmX:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->YmX[i]);
+  printf("\nT2d:");
+  for (unsigned i = 0; i < K_WORDS; i++)
+    printf(" %llx", (unsigned long long)p->T2d[i]);
+  printf("\n");
+}
+#endif
 
 typedef struct {
     U_WORD bl[K_WORDS];
@@ -2639,6 +2673,7 @@ static void x25519_BasePointMultiply(OUT U8 *r, IN const U8 *sk)
 
     ecp_BytesToWords(t, sk);
     edp_BasePointMult(&S, t, edp_custom_blinding.zr);
+
 
     /* Convert ed25519 point to x25519 point */
 

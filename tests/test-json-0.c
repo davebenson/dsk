@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 DskJsonValue *parse_value (const char *str)
 {
@@ -66,22 +66,22 @@ int main(int argc, char **argv)
 
   v = parse_value ("true");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_boolean.value == DSK_TRUE);
+  dsk_assert (v->v_boolean.value == true);
   dsk_json_value_free (v);
 
   v = parse_value ("true ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_boolean.value == DSK_TRUE);
+  dsk_assert (v->v_boolean.value == true);
   dsk_json_value_free (v);
 
   v = parse_value ("false");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_boolean.value == DSK_FALSE);
+  dsk_assert (v->v_boolean.value == false);
   dsk_json_value_free (v);
 
   v = parse_value ("false ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_boolean.value == DSK_FALSE);
+  dsk_assert (v->v_boolean.value == false);
   dsk_json_value_free (v);
 
   v = parse_value ("null");
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
   dsk_assert (v->v_object.members[0].value->v_number.value == 1.0);
   dsk_assert (strcmp (v->v_object.members[1].name, "bbb") == 0);
   dsk_assert (v->v_object.members[1].value->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_object.members[1].value->v_boolean.value == DSK_FALSE);
+  dsk_assert (v->v_object.members[1].value->v_boolean.value == false);
   dsk_json_value_free (v);
 
   v = parse_value ("[]");
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
   dsk_assert (v->v_array.values[0]->v_string.length == 1);
   dsk_assert (strcmp (v->v_array.values[0]->v_string.str, "a") == 0);
   dsk_assert (v->v_array.values[1]->type == DSK_JSON_VALUE_BOOLEAN);
-  dsk_assert (v->v_array.values[1]->v_boolean.value == DSK_FALSE);
+  dsk_assert (v->v_array.values[1]->v_boolean.value == false);
   dsk_assert (v->v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_array.values[2]->v_number.value == 666);
   dsk_json_value_free (v);

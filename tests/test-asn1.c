@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 #define TRAILER_5       "\1\2\3\4\5"
 

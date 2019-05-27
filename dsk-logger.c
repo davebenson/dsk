@@ -15,12 +15,12 @@ struct _DskLogger
   DskBuffer buffer;
   unsigned max_buffer;
   DskDir *dir;
-  dsk_boolean autonewline;
+  bool autonewline;
 
   unsigned next_rotate_time;
 };
 
-static dsk_boolean
+static bool
 logger_open_fd (DskLogger *logger,
                 DskError **error)
 {
@@ -35,13 +35,13 @@ logger_open_fd (DskLogger *logger,
   if (fd < 0)
     {
       dsk_add_error_prefix (error, "logger");
-      return DSK_FALSE;
+      return false;
     }
 
   if (logger->fd >= 0)
     close (logger->fd);
   logger->fd = fd;
-  return DSK_TRUE;
+  return true;
 }
 
 

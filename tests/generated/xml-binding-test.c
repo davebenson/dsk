@@ -46,10 +46,10 @@ static const unsigned my__test__c__foo__members_sorted_by_name[] =
 static const DskXmlBindingTypeStruct my__test__c__foo__descriptor =
 {
   {
-    DSK_FALSE,    /* !is_fundamental */
-    DSK_TRUE,     /* is_static */
-    DSK_TRUE,    /* is_struct */
-    DSK_FALSE,     /* is_union */
+    false,    /* !is_fundamental */
+    true,     /* is_static */
+    true,    /* is_struct */
+    false,     /* is_union */
     0,            /* ref_count */
     sizeof (My__Test__C__foo),
     offsetof (struct My__Test__C__foo__AlignmentTest, b),
@@ -104,12 +104,12 @@ static const DskXmlBindingUnionCase my__test__b__cases[] =
 {
   {
     "foo",
-    DSK_FALSE,
+    false,
     dsk_xml_binding__int__type
   },
   {
     "bar",
-    DSK_FALSE,
+    false,
     dsk_xml_binding__string__type
   },
 };
@@ -117,7 +117,7 @@ static const DskXmlBindingUnionCase my__test__c__cases[] =
 {
   {
     "foo",
-    DSK_TRUE,
+    true,
     my__test__c__foo__type
   },
 };
@@ -138,10 +138,10 @@ const unsigned my__test__a__members_sorted_by_name[] =
 const DskXmlBindingTypeStruct my__test__a__descriptor =
 {
   {
-    DSK_FALSE,    /* !is_fundamental */
-    DSK_TRUE,     /* is_static */
-    DSK_TRUE,    /* is_struct */
-    DSK_FALSE,     /* is_union */
+    false,    /* !is_fundamental */
+    true,     /* is_static */
+    true,    /* is_struct */
+    false,     /* is_union */
     0,            /* ref_count */
     sizeof (My__Test__A),
     offsetof (struct My__Test__A__AlignmentTest, b),
@@ -169,10 +169,10 @@ const unsigned my__test__b__cases_sorted_by_name[] =
 const DskXmlBindingTypeUnion my__test__b__descriptor =
 {
   {
-    DSK_FALSE,    /* !is_fundamental */
-    DSK_TRUE,     /* is_static */
-    DSK_FALSE,    /* is_struct */
-    DSK_TRUE,     /* is_union */
+    false,    /* !is_fundamental */
+    true,     /* is_static */
+    false,    /* is_struct */
+    true,     /* is_union */
     0,            /* ref_count */
     sizeof (My__Test__B),
     offsetof (struct My__Test__B__AlignmentTest, b),
@@ -200,10 +200,10 @@ const unsigned my__test__c__cases_sorted_by_name[] =
 const DskXmlBindingTypeUnion my__test__c__descriptor =
 {
   {
-    DSK_FALSE,    /* !is_fundamental */
-    DSK_TRUE,     /* is_static */
-    DSK_FALSE,    /* is_struct */
-    DSK_TRUE,     /* is_union */
+    false,    /* !is_fundamental */
+    true,     /* is_static */
+    false,    /* is_struct */
+    true,     /* is_union */
     0,            /* ref_count */
     sizeof (My__Test__C),
     offsetof (struct My__Test__C__AlignmentTest, b),
@@ -232,7 +232,7 @@ static const DskXmlBindingType *my__test__type_array[] =
 
 const DskXmlBindingNamespace my__test__descriptor =
 {
-  DSK_TRUE,              /* is_static */
+  true,              /* is_static */
   "my.test",
   3,               /* n_types */
   (DskXmlBindingType **) my__test__type_array,
@@ -245,7 +245,7 @@ DskXml    * my__test__a__to_xml
 {
   return dsk_xml_binding_struct_to_xml (my__test__a__type, source, error);
 }
-dsk_boolean my__test__a__parse
+bool my__test__a__parse
                       (DskXml *source,
                        My__Test__A *dest,
                        DskError **error)
@@ -262,7 +262,7 @@ DskXml    * my__test__b__to_xml
 {
   return dsk_xml_binding_union_to_xml (my__test__b__type, source, error);
 }
-dsk_boolean my__test__b__parse
+bool my__test__b__parse
                       (DskXml *source,
                        My__Test__B *dest,
                        DskError **error)
@@ -279,7 +279,7 @@ DskXml    * my__test__c__to_xml
 {
   return dsk_xml_binding_union_to_xml (my__test__c__type, source, error);
 }
-dsk_boolean my__test__c__parse
+bool my__test__c__parse
                       (DskXml *source,
                        My__Test__C *dest,
                        DskError **error)

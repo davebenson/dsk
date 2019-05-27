@@ -82,7 +82,7 @@ listener_handle_fd_readable (DskFileDescriptor   fd,
 
 static void
 dsk_socket_stream_listener_set_poll (DskSocketStreamListener *listener_socket,
-                                    dsk_boolean             poll)
+                                    bool             poll)
 {
   if (listener_socket->listening_fd < 0)
     return;
@@ -140,7 +140,7 @@ const DskSocketStreamListenerClass dsk_socket_stream_listener_class =
     dsk_socket_stream_listener_shutdown
 } };
 
-static dsk_boolean
+static bool
 maybe_delete_stale_socket (const char *path,
                            unsigned addr_len,
                            struct sockaddr *addr,
@@ -149,29 +149,29 @@ maybe_delete_stale_socket (const char *path,
   int fd;
   struct stat statbuf;
   if (stat (path, &statbuf) < 0)
-    return DSK_TRUE;
+    return true;
   if (!S_ISSOCK (statbuf.st_mode))
     {
       dsk_set_error (error, "%s existed but was not a socket\n", path);
-      return DSK_FALSE;
+      return false;
     }
 
   fd = socket (PF_UNIX, SOCK_STREAM, 0);
   if (fd < 0)
-    return DSK_TRUE;
+    return true;
   dsk_fd_set_nonblocking (fd);
   if (connect (fd, addr, addr_len) < 0)
     {
       if (errno == EINPROGRESS)
         {
           close (fd);
-          return DSK_TRUE;
+          return true;
         }
     }
   else
     {
       close (fd);
-      return DSK_TRUE;
+      return true;
     }
 
   /* ok, we should delete the stale socket */
@@ -179,9 +179,9 @@ maybe_delete_stale_socket (const char *path,
   if (unlink (path) < 0)
     {
       dsk_set_error (error, "unable to delete %s: %s", path, strerror(errno));
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 

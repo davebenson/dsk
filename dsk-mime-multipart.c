@@ -123,7 +123,7 @@ state_to_string (guint state)
 #define YELL(decoder) dsk_message ("at line %u, state=%s [buf-size=%u]",__LINE__,state_to_string ((decoder)->state), (decoder)->buffer.size)
 #endif
 
-static dsk_boolean
+static bool
 process_header_line (DskMimeMultipartDecoder *decoder,
                      const char              *line,
                      DskError               **error)
@@ -145,7 +145,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
       if (slash == NULL)
 	{
 	  dsk_set_error (error, "content-type expected to contain a '/'");
-	  return DSK_FALSE;
+	  return false;
 	}
 
       {
@@ -179,7 +179,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
 	  if (*equals != '=')
 	    {
 	      dsk_set_error (error, "expected '=' in key-value pairs on content-type");
-	      return DSK_FALSE;
+	      return false;
 	    }
           key_end = equals;
 	  value_start = equals + 1;
@@ -190,7 +190,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
 	      if (value_end == NULL)
 		{
 		  dsk_set_error (error, "missing terminal '\"' in key/value pair in content-type");
-		  return DSK_FALSE;
+		  return false;
 		}
 
               at = value_end + 1;
@@ -274,7 +274,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
           dsk_set_error (error,
                          "unknown transfer encoding '%s' making decoder stream",
                          encoding);
-          return DSK_FALSE;
+          return false;
         }
     }
   else if (dsk_ascii_strncasecmp (line, "content-description:", 20) == 0)
@@ -292,7 +292,7 @@ process_header_line (DskMimeMultipartDecoder *decoder,
       DskMimeContentDisposition dispos;
       line += 20;
       if (!dsk_parse_mime_content_disposition_header (line, &dispos, error))
-        return DSK_FALSE;
+        return false;
       if (dispos.name_start)
         cur->key = dsk_mem_pool_strcut (&decoder->header_storage,
                                         dispos.name_start,
@@ -304,22 +304,22 @@ process_header_line (DskMimeMultipartDecoder *decoder,
       dsk_set_error (error,
                      "could not parse multipart_decoder message line: '%s'",
                      line);
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 done_with_header (DskMimeMultipartDecoder *decoder,
                   DskError               **error)
 {
   DSK_UNUSED (error);
   if (decoder->transfer_decoder == NULL)
     decoder->transfer_decoder = dsk_sync_filter_identity_new ();
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 done_with_content_body (DskMimeMultipartDecoder *decoder,
                         DskError               **error)
 {
@@ -331,7 +331,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
                                 error))
     {
       dsk_add_error_prefix (error, "in mime-multipart decoding");
-      return DSK_FALSE;
+      return false;
     }
 
   /* consolidate string pieces into a single allocation */
@@ -355,7 +355,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
          }                                                          \
        else                                                         \
          cur.field = NULL;             } while(0)
-  cur.is_get = DSK_FALSE;
+  cur.is_get = false;
   MAYBE_SETUP (key);
   cur.value = out;
   cur.value_length = decoder->cur_buffer.size;
@@ -388,7 +388,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
   dsk_mem_pool_init_buf (&decoder->header_storage,
                          DSK_MIME_MULTIPART_DECODER_INIT_HEADER_SPACE,
                          decoder->header_pad);
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -401,7 +401,7 @@ done_with_content_body (DskMimeMultipartDecoder *decoder,
    or we may done (depending on whether the boundary-mark
    ends with an extra "--").
  */
-dsk_boolean
+bool
 dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
                                   size_t                   length,
                                   const uint8_t           *data,
@@ -480,21 +480,21 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
            it terminates the header */
         if (line_buf[0] == '\0')
           {
-            dsk_boolean rv = done_with_header (decoder, error);
+            bool rv = done_with_header (decoder, error);
             if (line_buf != tmp_buf)
               dsk_free (line_buf);
             if (!rv)
-              return DSK_FALSE;
+              return false;
             decoder->state = STATE_CONTENT_LINE_START;
             goto state__CONTENT;
           }
         else
           {
-            dsk_boolean rv = process_header_line (decoder, line_buf, error);
+            bool rv = process_header_line (decoder, line_buf, error);
             if (line_buf != tmp_buf)
               dsk_free (line_buf);
             if (!rv)
-              return DSK_FALSE;
+              return false;
             goto state__READING_HEADER;
           }
       }
@@ -506,7 +506,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
       {
         int nl = dsk_buffer_index_of (&decoder->incoming, '\n');
         unsigned amount;
-        dsk_boolean crlf_pending = DSK_FALSE;
+        bool crlf_pending = false;
         if (decoder->state != STATE_CONTENT_MIDLINE)
           {
             if (nl < 0
@@ -543,7 +543,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
                         dsk_buffer_discard (&decoder->incoming, discard);
 
                         if (!done_with_content_body (decoder, error))
-                          return DSK_FALSE;
+                          return false;
 
                         decoder->state = STATE_ENDED;
 
@@ -557,7 +557,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
                         dsk_buffer_discard (&decoder->incoming, discard);
 
                         if (!done_with_content_body (decoder, error))
-                          return DSK_FALSE;
+                          return false;
 
                         decoder->state = STATE_READING_HEADER;
                         goto state__READING_HEADER;
@@ -575,7 +575,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
                                            &decoder->cur_buffer,
                                            2, (uint8_t*) "\r\n",
                                            error))
-              return DSK_FALSE;
+              return false;
           }
         if (nl < 0)
           {
@@ -589,7 +589,7 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
             if (nl > 0
              && dsk_buffer_get_byte_at (&decoder->incoming, nl - 1) == '\r')
               {
-                crlf_pending = DSK_TRUE;
+                crlf_pending = true;
                 amount = nl - 1;
               }
             else
@@ -599,11 +599,11 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
                                               &decoder->cur_buffer,
                                               amount,
                                               &decoder->incoming,
-                                              DSK_TRUE,  /* discard from incoming */
+                                              true,  /* discard from incoming */
                                               error))
           {
             dsk_add_error_prefix (error, "in mime-multipart decoding");
-            return DSK_FALSE;
+            return false;
           }
         if (nl < 0)
           {
@@ -622,15 +622,15 @@ dsk_mime_multipart_decoder_feed  (DskMimeMultipartDecoder *decoder,
       }
     case STATE_ENDED:
       dsk_set_error (error, "got data after final terminator");
-      return DSK_FALSE;
+      return false;
     }
 
 return_true:
   if (n_parts_ready_out)
     *n_parts_ready_out = decoder->n_pieces;
-  return DSK_TRUE;
+  return true;
 }
-dsk_boolean
+bool
 dsk_mime_multipart_decoder_done  (DskMimeMultipartDecoder *decoder,
                                   size_t                  *n_parts_ready_out,
                                   DskError               **error)
@@ -638,11 +638,11 @@ dsk_mime_multipart_decoder_done  (DskMimeMultipartDecoder *decoder,
   if (decoder->state != STATE_ENDED)
     {
       dsk_set_error (error, "MIME multipart message ended without terminal boundary");
-      return DSK_FALSE;
+      return false;
     }
   if (n_parts_ready_out)
     *n_parts_ready_out = decoder->n_pieces;
-  return DSK_TRUE;
+  return true;
 }
 
 void

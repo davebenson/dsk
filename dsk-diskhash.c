@@ -73,13 +73,13 @@ struct _DskDiskhash
   FixedLengthFileset values;
 
   /* While resizing */
-  dsk_boolean resizing;
+  bool resizing;
   unsigned resize_bucket_at;  /* index in starting size array */
   DskDiskhashFile *resize_table;
   FixedLengthFileset resize_keys;
 
   /* While backing up */
-  dsk_boolean backing_up;
+  bool backing_up;
   unsigned backup_bucket_at;
   FixedLengthFileset backup_keys;
   FixedLengthFileset backup_values;
@@ -112,14 +112,14 @@ begin_transaction (DskDiskhash *diskhash)
 {
   dsk_assert (diskhash->n_transaction == 0);
   dsk_assert (!diskhash->in_transaction);
-  diskhash->in_transaction = DSK_TRUE;
+  diskhash->in_transaction = true;
 }
 
 static void
 abort_transaction (DskDiskhash *hash)
 {
   dsk_assert (hash->in_transaction);
-  hash->in_transaction = DSK_FALSE;
+  hash->in_transaction = false;
   dsk_mem_pool_reset (&hash->transaction_pool);
   hash->n_transaction = 0;
 }
@@ -156,14 +156,14 @@ add_transaction (DskDiskhash *diskhash,
 
 
 /* --- Fixed-Length-Filesets --- */
-static inline dsk_boolean
+static inline bool
 find_fixed_size (unsigned n_fixed_sizes,
                  const unsigned *fixed_sizes,
 		 unsigned size,
 		 unsigned *index_out)
 {
   if (size > fixed_sizes[n_fixed_sizes-1])
-    return DSK_FALSE;
+    return false;
   unsigned min = 0, count = n_fixed_sizes;
   while (count > 1)
     {
@@ -176,7 +176,7 @@ find_fixed_size (unsigned n_fixed_sizes,
 	}
     }
   *index_out = min;
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -193,7 +193,7 @@ get_fileset (DskDiskhash *diskhash,
   return NULL;
 }
 
-static dsk_boolean
+static bool
 allocate_location (DskDiskhash *diskhash,
                    WhichHeap    heap,
                    uint32_t     size,
@@ -207,7 +207,7 @@ allocate_location (DskDiskhash *diskhash,
                         size, &index))
     {
       dsk_set_error (error, "too long");
-      return DSK_FALSE;
+      return false;
     }
   pos_out->index = index;
   if (fileset->files[index].fd < 0)
@@ -228,7 +228,7 @@ allocate_location (DskDiskhash *diskhash,
       uint64_t
       if (!peek_read (diskhash, fileset->files + index,
                       HASH_TABLE_HEADER_FREE_LIST_OFFSET, 8, &free_list_le, error))
-        return DSK_FALSE;
+        return false;
       free_list = dsk_uint64le_parse (free_list_le);
       if (free_list == FREE_LIST_EMPTY)
         {
@@ -247,10 +247,10 @@ allocate_location (DskDiskhash *diskhash,
         }
     }
   pos_out->length = size;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 free_location (DskDiskhash *diskhash,
                WhichHeap    heap,
                const FixedLengthFilesetPosition *pos,
@@ -265,10 +265,10 @@ free_location (DskDiskhash *diskhash,
 #define MASK_HASH(hashcode, log2) \
   (hashcode & ((1ULL << (log2)) - 1ULL))
 
-static dsk_boolean
+static bool
 read_table_entry (DskDiskhash  *diskhash,
                   uint64_t      index,
-                  dsk_boolean   from_resizing_table,
+                  bool   from_resizing_table,
                   FixedLengthFilesetPosition   *out,
                   DskError    **error)
 {
@@ -276,21 +276,21 @@ read_table_entry (DskDiskhash  *diskhash,
   DskDiskhashFile *table = from_resizing_table ? &diskhash->resize_table : &diskhash->table;
   uint8_t *data_packed;
   if (!peek_read (diskhash, table, offset, HASH_TABLE_ENTRY_SIZE, &data_packed, error))
-    return DSK_FALSE;
+    return false;
   out->file_index = dsk_uint32_unpack (data_packed + 0);
   out->length = dsk_uint32_unpack (data_packed + 4);
   out->offset = dsk_uint64_unpack (data_packed + 8);
 
   /* TODO: check file-index??? */
 
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 write_table_entry (DskDiskhash  *diskhash,
                    uint64_t      index,
-                   dsk_boolean   from_resizing_table,
-                   dsk_boolean   write_to_transaction,
+                   bool   from_resizing_table,
+                   bool   write_to_transaction,
                    const FixedLengthFilesetPosition   *to_write,
                    DskError    **error)
 {
@@ -308,14 +308,14 @@ write_table_entry (DskDiskhash  *diskhash,
       dsk_uint64_unpack (out->offset, data_packed + 8);
 
       if (!do_write (diskhash, table, offset, HASH_TABLE_ENTRY_SIZE, data_packed, error))
-        return DSK_FALSE;
+        return false;
     }
 
-  return DSK_TRUE;
+  return true;
 }
 
 /* --- API --- */
-dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
+bool dsk_diskhash_insert (DskDiskhash   *hash,
                                  unsigned       key_length,
 			         const uint8_t *key_data,
                                  unsigned       value_length,
@@ -327,7 +327,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
   if (!find_fixed_size (hash->n_chain_fixed_sizes, hash->chain_fixed_sizes, &which_chain_size_index))
     {
       dsk_set_error (error, "key too large (%u bytes)", key_length);
-      return DSK_FALSE;
+      return false;
     }
   unsigned donate_cycles = 32;
   uint64_t n_buckets = 1ULL << hash->n_buckets_log2;
@@ -339,7 +339,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           unsigned n_cycles_used;
           if (!resize_split_chain (hash, hash->resize_bucket_at, &n_cycles_used, error))
-            return DSK_FALSE;
+            return false;
           n_cycles_used += 1;           /* count the chain as a cycle too */
           hash->resize_bucket_at += 1;
           if (n_cycles_used >= donate_cycles)
@@ -369,7 +369,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           unsigned n_cycles_used;
           if (!backup_chain (hash, hash->backup_bucket_at, &n_cycles_used, error))
-            return DSK_FALSE;
+            return false;
           n_cycles_used += 1;           /* count the chain as a cycle too */
           hash->backup_bucket_at += 1;
           if (n_cycles_used >= donate_cycles)
@@ -383,7 +383,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           /* finish backup */
           if (!backup_done (hash, error))
-            return DSK_FALSE;
+            return false;
 
           if (hash->resizing && hash->resize_bucket_at == n_buckets)
             {
@@ -394,7 +394,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
     }
 
   /* Does this entry go in the new hash-table or the old hash-table? */
-  dsk_boolean use_new_hash_table = (hash->is_resizing && hash_table_index < hash->resize_bucket_at);
+  bool use_new_hash_table = (hash->is_resizing && hash_table_index < hash->resize_bucket_at);
   DskDbHelperFile *table;
   uint64_t table_index;
   DskDbHelperFile **chains;
@@ -415,7 +415,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
 
   FixedLengthFilesetPosition position;
   if (!read_table_entry (diskhash, use_new_hash_table, table_index, &position, error))
-    return DSK_FALSE;
+    return false;
 
   while (position.file_index != FILE_INDEX_EOL)
     {
@@ -423,10 +423,10 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           dsk_set_error (error, "chain corruption detected (0x%llx/0x%llx)",
                          table_index, 1ULL<<hash->n_buckets_log2);
-          return DSK_FALSE;
+          return false;
         }
       if (!read_chain_entry (diskhash, use_new_hash_table, position, &next_position, &value_position, &tmp_key_data, error))
-        return DSK_FALSE;
+        return false;
 
       if (position.length == key_length && memcmp (key_data, tmp_key_data, key_length) == 0)
         {
@@ -455,7 +455,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
                                       error))
                 {
                   abort_transaction (diskhash);
-                  return DSK_FALSE;
+                  return false;
                 }
               if (!free_location (diskhash,
                                   WHICH_HEAP__VALUE,
@@ -463,7 +463,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
                                   error))
                 {
                   abort_transaction (diskhash);
-                  return DSK_FALSE;
+                  return false;
                 }
 
               /* NOTE: this function is only called if the two bucket sizes differ,
@@ -473,10 +473,10 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
               dsk_db_helper_file_write_thru (...);
 
               if (!end_transaction (diskhash, error))
-                return DSK_FALSE;
+                return false;
             }
 
-          return DSK_TRUE;
+          return true;
         }
 
 
@@ -502,10 +502,10 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
   /* Commit transaction */
   dsk_db_helper_end_transaction (hash->helper);
 
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 resize_split_chain (DskDiskhash *diskhash,
                     unsigned     old_bucket,
                     unsigned    *n_elements_moved,
@@ -514,13 +514,13 @@ resize_split_chain (DskDiskhash *diskhash,
   FixedLengthFilesetPosition position;
   unsigned n_moved = 0;
   FixedLengthFilesetPosition split_pos[2] = {{FILE_INDEX_EOL,0,0},{FILE_INDEX_EOL,0,0}};
-  if (!read_table_entry (diskhash, DSK_FALSE, old_bucket, &position, error))
-    return DSK_FALSE;
+  if (!read_table_entry (diskhash, false, old_bucket, &position, error))
+    return false;
   while (position.file_index != FILE_INDEX_EOL)
     {
       uint8_t *tmp_key_data;
-      if (!read_chain_entry (diskhash, DSK_FALSE, position, &next_position, &value_position, &tmp_key_data, error))
-        return DSK_FALSE;
+      if (!read_chain_entry (diskhash, false, position, &next_position, &value_position, &tmp_key_data, error))
+        return false;
 
       /* compute hash (or should this be stored in the chain-entry?) */
       uint64_t hash = diskhash->hash_key (position.length, tmp_key_data, diskhash->hash_data);
@@ -534,20 +534,20 @@ resize_split_chain (DskDiskhash *diskhash,
       serialize_pos (&split_pos[which], part1 + 0);
       serialize_pos (&value_position, part1 + POSITION_SIZE);
       if (!write_fileset_plonk (diskhash, &diskhash->resize_chains, POSITION_SIZE*2, part1, position.length, tmp_key_data, &chain_pos, error))
-        return DSK_FALSE;
+        return false;
 
       /* update end of list for the output bucket */
       split_pos[which] = chain_pos;
     }
 
   /* emit the two buckets of the hashtable */
-  if (!write_table_entry (diskhash, DSK_TRUE, DSK_TRUE, old_bucket, &split_pos[0], error)
-   || !write_table_entry (diskhash, DSK_TRUE, DSK_TRUE, old_bucket + (1ULL<<diskhash->n_buckets_log2), &split_pos[1], error))
-    return DSK_FALSE;
+  if (!write_table_entry (diskhash, true, true, old_bucket, &split_pos[0], error)
+   || !write_table_entry (diskhash, true, true, old_bucket + (1ULL<<diskhash->n_buckets_log2), &split_pos[1], error))
+    return false;
 
   if (!end_transaction (...))
-    return DSK_FALSE;
+    return false;
 
   *n_elements_moved = n_moved;
-  return DSK_TRUE;
+  return true;
 }

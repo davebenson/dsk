@@ -22,7 +22,7 @@ typedef void (*DskDnsLookupFunc) (DskDnsLookupResult *result,
                                   void               *callback_data);
 
 void    dsk_dns_lookup (const char       *name,
-                        dsk_boolean       is_ipv6,
+                        bool       is_ipv6,
                         DskDnsLookupFunc  callback,
                         void             *callback_data);
 
@@ -41,7 +41,7 @@ typedef enum
 DskDnsLookupNonblockingResult
        dsk_dns_lookup_nonblocking (const char *name,
                                    DskIpAddress *out,
-                                   dsk_boolean    is_ipv6,
+                                   bool    is_ipv6,
                                    DskError     **error);
 
 
@@ -60,7 +60,7 @@ typedef struct _DskDnsCacheEntry DskDnsCacheEntry;
 struct _DskDnsCacheEntry
 {
   char *name;
-  dsk_boolean is_ipv6;
+  bool is_ipv6;
   unsigned expire_time;
   DskDnsCacheEntryType type;
   union {
@@ -73,9 +73,9 @@ struct _DskDnsCacheEntry
   } info;
 
   DskDnsCacheEntry *expire_left, *expire_right, *expire_parent;
-  dsk_boolean expire_is_red;
+  bool expire_is_red;
   DskDnsCacheEntry *name_type_left, *name_type_right, *name_type_parent;
-  dsk_boolean name_type_is_red;
+  bool name_type_is_red;
 };
 
 typedef enum
@@ -87,7 +87,7 @@ typedef enum
 typedef void (*DskDnsCacheEntryFunc) (DskDnsCacheEntry *entry,
                                       void             *callback_data);
 void              dsk_dns_lookup_cache_entry (const char       *name,
-                                              dsk_boolean       is_ipv6,
+                                              bool       is_ipv6,
                                               DskDnsLookupFlags flags,
                                               DskDnsCacheEntryFunc callback,
                                               void             *callback_data);

@@ -34,29 +34,29 @@ TestHook_Object0Class test_hook_object0_class = {
 };
 
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 typedef struct HandlerData HandlerData;
 struct HandlerData {
   unsigned notify_count;
-  dsk_boolean destroyed;
+  bool destroyed;
 };
-#define HANDLER_DATA_INIT {0,DSK_FALSE}
+#define HANDLER_DATA_INIT {0,false}
 
-static dsk_boolean handle_notify (void *obj, void *hd)
+static bool handle_notify (void *obj, void *hd)
 {
   dsk_assert (dsk_object_is_a (obj, &test_hook_object0_class));
   HandlerData *data = hd;
   TestHook_Object0 *o = obj;
   data->notify_count += 1;
   o->notify_count += 1;
-  return DSK_TRUE;
+  return true;
 }
 static void handle_destroy (void *hd)
 {
   HandlerData *data = hd;
   dsk_assert (!data->destroyed);
-  data->destroyed = DSK_TRUE;
+  data->destroyed = true;
 }
 
 static void test_hook_simple (void)

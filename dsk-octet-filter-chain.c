@@ -17,7 +17,7 @@ struct _DskSyncFilterChain
   DskSyncFilter **filters;
 };
 
-static dsk_boolean
+static bool
 dsk_sync_filter_chain_process (DskSyncFilter *filter,
                                 DskBuffer      *out,
                                 unsigned        in_length,
@@ -32,7 +32,7 @@ dsk_sync_filter_chain_process (DskSyncFilter *filter,
   /* first filter */
   if (!dsk_sync_filter_process (chain->filters[0], &b1, in_length, in_data,
                                  error))
-    return DSK_FALSE;
+    return false;
 
   /* middle filters */
   for (i = 1; i + 1 < chain->n_filters; i++)
@@ -41,8 +41,8 @@ dsk_sync_filter_chain_process (DskSyncFilter *filter,
       DskBuffer *out_buf = i%2 == 1 ? &b2 : &b1;
       if (!dsk_sync_filter_process_buffer (chain->filters[i], out_buf,
                                             in_buf->size, in_buf,
-                                            DSK_TRUE, error))
-        return DSK_FALSE;
+                                            true, error))
+        return false;
     }
 
   /* last filter */
@@ -50,13 +50,13 @@ dsk_sync_filter_chain_process (DskSyncFilter *filter,
     DskBuffer *in_buf = i%2 == 1  ? &b1 : &b2;
     if (!dsk_sync_filter_process_buffer (chain->filters[i], out,
                                           in_buf->size, in_buf,
-                                          DSK_TRUE, error))
-      return DSK_FALSE;
+                                          true, error))
+      return false;
   }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_sync_filter_chain_finish  (DskSyncFilter *filter,
                                 DskBuffer      *out,
                                 DskError      **error)
@@ -70,20 +70,20 @@ dsk_sync_filter_chain_finish  (DskSyncFilter *filter,
       if (!dsk_sync_filter_finish (chain->filters[i],
                                     (i+1 == chain->n_filters) ? out : &b1,
                                     error))
-        return DSK_FALSE;
+        return false;
       for (j = i + 1; b1.size && j < chain->n_filters; j++)
         {
           DskBuffer swap;
           if (!dsk_sync_filter_process_buffer (chain->filters[j],
                                                 (j+1) == chain->n_filters ? out : &b2,
-                                                b1.size, &b1, DSK_TRUE, error))
-            return DSK_FALSE;
+                                                b1.size, &b1, true, error))
+            return false;
           swap = b1;
           b1 = b2;
           b2 = swap;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 static void
 dsk_sync_filter_chain_finalize (DskSyncFilterChain *chain)

@@ -24,7 +24,7 @@ struct _DskBase64Decoder
 #define dsk_base64_decoder_init NULL
 #define dsk_base64_decoder_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_base64_decoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -66,16 +66,16 @@ dsk_base64_decoder_process (DskSyncFilter *filter,
 	  if (v == -1)
             {
               dsk_set_error (error, "bad base64-character %s", dsk_ascii_byte_name (*in_data));
-              return DSK_FALSE;
+              return false;
             }
 	}
       in_data++;
       in_length--;
     }
-  return DSK_TRUE;
+  return true;
 }
 #if 0
-static dsk_boolean
+static bool
 dsk_base64_decoder_finish(DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
@@ -84,9 +84,9 @@ dsk_base64_decoder_finish(DskSyncFilter *filter,
   if (enc->state != 0 && enc->partial != 0)
     {
       dsk_set_error (error, "stray bits at end of base64 data");
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 #else
 #define dsk_base64_decoder_finish NULL

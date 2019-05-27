@@ -49,7 +49,7 @@ struct _DskSpdySession
 };
 #define DSK_SPDY_SESSION_IS_CLIENT(session) ((session)->next_stream_id & 1)
 
-DskSpdySession*dsk_spdy_session_new                   (dsk_boolean     is_client_side,
+DskSpdySession*dsk_spdy_session_new                   (bool     is_client_side,
                                                        DskOctetStream *stream,
                                                        DskOctetSource *source,
                                                        DskOctetSink   *sink,
@@ -121,7 +121,7 @@ struct _DskSpdyStream
   DskSpdyHeaders *request_header;
   DskSpdyHeaders *response_header;
   DskSpdyStreamState state;
-  dsk_boolean remote_reset; /* if in a terminated state, who terminated. */
+  bool remote_reset; /* if in a terminated state, who terminated. */
   DskOctetSource *source;
   DskOctetSink *sink;
   zstream header_compressor;
@@ -129,7 +129,7 @@ struct _DskSpdyStream
   unsigned priority;            /* 0..7 */
 
   DskSpdyStream *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
   DskSpdyStream *prev_pending, *next_pending;
 
   DskSpdyMessage *first_message, *last_message;

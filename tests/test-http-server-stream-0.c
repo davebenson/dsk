@@ -4,13 +4,13 @@
 #include "../dsk.h"
 #include "../dsk-http-internals.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
-static dsk_boolean set_boolean_true (void *obj, void *pbool)
+static bool set_boolean_true (void *obj, void *pbool)
 {
   DSK_UNUSED (obj);
-  * (dsk_boolean *) pbool = DSK_TRUE;
-  return DSK_FALSE;
+  * (bool *) pbool = true;
+  return false;
 }
 
 static unsigned bbb_rem;
@@ -61,7 +61,7 @@ test_simple (void)
             = DSK_HTTP_RESPONSE_OPTIONS_INIT;
           DskHttpServerStreamResponseOptions stream_resp_opts
             = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
-          dsk_boolean got_notify;
+          bool got_notify;
           DskHttpServerStreamTransfer *xfer;
           DskMemorySource *content_source = NULL;
           char *line;
@@ -94,7 +94,7 @@ test_simple (void)
                 }
             }
           /* wait til we receive the request */
-          got_notify = DSK_FALSE;
+          got_notify = false;
           dsk_hook_trap (&stream->request_available,
                          set_boolean_true,
                          &got_notify,
@@ -256,12 +256,12 @@ test_response_keepalive (void)
                                                &server_opts);
           for (rep = 0; rep < 20; rep++)
             {
-              dsk_boolean got_notify;
+              bool got_notify;
               DskHttpServerStreamTransfer *xfer;
               DskMemorySource *content_source = NULL;
               char *line;
-              dsk_boolean in_header;
-              dsk_boolean chunked;
+              bool in_header;
+              bool chunked;
               int content_length;
 
               if (cmdline_verbose)
@@ -286,7 +286,7 @@ test_response_keepalive (void)
                     }
                 }
               /* wait til we receive the request */
-              got_notify = DSK_FALSE;
+              got_notify = false;
               dsk_hook_trap (&stream->request_available,
                              set_boolean_true,
                              &got_notify,
@@ -364,8 +364,8 @@ test_response_keepalive (void)
               dsk_assert (strncmp (line+9, "200", 3) == 0);
               dsk_assert (line[12] == 0 || dsk_ascii_isspace (line[12]));
               dsk_free (line);
-              in_header = DSK_TRUE;
-              chunked = DSK_FALSE;
+              in_header = true;
+              chunked = false;
               content_length = -1;
               while (in_header)
                 {
@@ -376,11 +376,11 @@ test_response_keepalive (void)
                     *cr = 0;
                   if (line[0] == 0)
                     {
-                      in_header = DSK_FALSE;
+                      in_header = false;
                     }
                   else if (strcmp (line, "Transfer-Encoding: chunked") == 0)
                     {
-                      chunked = DSK_TRUE;
+                      chunked = true;
                     }
                   else if (strncmp (line, "Content-Length:", 15) == 0)
                     {
@@ -467,7 +467,7 @@ test_pipelining (void)
             = DSK_HTTP_RESPONSE_OPTIONS_INIT;
           DskHttpServerStreamResponseOptions stream_resp_opts
             = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
-          dsk_boolean got_notify;
+          bool got_notify;
           DskHttpServerStreamTransfer *xfer;
           unsigned reqno;
           csink->max_buffer_size = 128*1024;
@@ -499,7 +499,7 @@ test_pipelining (void)
                 }
             }
           /* wait til we receive the request */
-          got_notify = DSK_FALSE;
+          got_notify = false;
           dsk_hook_trap (&stream->request_available,
                          set_boolean_true,
                          &got_notify,
@@ -543,7 +543,7 @@ test_pipelining (void)
                   break;
                 }
               if (reqno == 1)
-                resp_opts.connection_close = DSK_TRUE;
+                resp_opts.connection_close = true;
               if (!dsk_http_server_stream_respond (xfer, &stream_resp_opts, &error))
                 dsk_die ("error responding to request: %s", error->message);
 
@@ -583,7 +583,7 @@ test_pipelining (void)
           for (reqno = 0; reqno < 2; reqno++)
             {
               char *line;
-              dsk_boolean chunked = DSK_FALSE;
+              bool chunked = false;
               line = dsk_buffer_read_line (&csink->buffer);
               dsk_assert (line != NULL);
               dsk_assert (strncmp (line, "HTTP/1.", 7) == 0);
@@ -601,7 +601,7 @@ test_pipelining (void)
                     }
                   if (strncasecmp (line, "transfer-encoding: chunked", 26) == 0)
                     {
-                      chunked = DSK_TRUE;
+                      chunked = true;
                     }
 
                   /* TODO: process header line? */
@@ -711,10 +711,10 @@ test_simple_post (void)
           = DSK_HTTP_RESPONSE_OPTIONS_INIT;
         DskHttpServerStreamResponseOptions stream_resp_opts
           = DSK_HTTP_SERVER_STREAM_RESPONSE_OPTIONS_INIT;
-        dsk_boolean got_notify;
+        bool got_notify;
         DskHttpServerStreamTransfer *xfer;
         DskOctetSource *post_data;
-        dsk_boolean done;
+        bool done;
         DskBuffer buffer = DSK_BUFFER_INIT;
         char *line;
         csink->max_buffer_size = 128*1024;
@@ -746,7 +746,7 @@ test_simple_post (void)
               }
           }
         /* wait til we receive the request */
-        got_notify = DSK_FALSE;
+        got_notify = false;
         dsk_hook_trap (&stream->request_available,
                        set_boolean_true,
                        &got_notify,
@@ -777,7 +777,7 @@ test_simple_post (void)
           }
 
         post_data = dsk_object_ref (xfer->post_data);
-        done = DSK_FALSE;
+        done = false;
         while (!done)
           {
             switch (dsk_octet_source_read_buffer (post_data, &buffer, &error))
@@ -790,7 +790,7 @@ test_simple_post (void)
               case DSK_IO_RESULT_ERROR:
                 dsk_die ("error reading post-data: %s", error->message);
               case DSK_IO_RESULT_EOF:
-                done = DSK_TRUE;
+                done = true;
                 break;
               }
           }
@@ -874,7 +874,7 @@ test_simple_websocket (void)
         DskHttpServerStream *stream;
         DskHttpServerStreamOptions server_opts 
           = DSK_HTTP_SERVER_STREAM_OPTIONS_INIT;
-        dsk_boolean got_notify;
+        bool got_notify;
         DskHttpServerStreamTransfer *xfer;
         DskWebsocket *websocket;
         unsigned length;
@@ -907,7 +907,7 @@ test_simple_websocket (void)
               }
           }
         /* wait til we receive the request */
-        got_notify = DSK_FALSE;
+        got_notify = false;
         dsk_hook_trap (&stream->request_available,
                        set_boolean_true,
                        &got_notify,
@@ -935,7 +935,7 @@ test_simple_websocket (void)
         length = 0;
         while (!_dsk_http_scan_for_end_of_header (&csink->buffer,
                                                   &length,
-                                                  DSK_FALSE))
+                                                  false))
           dsk_main_run_once ();
 
         DskHttpResponse *response;
@@ -965,7 +965,7 @@ test_simple_websocket (void)
         dsk_memory_sink_drained (csink);
 
         /* send a packet client -> server */
-        got_notify = DSK_FALSE;
+        got_notify = false;
         DskHookTrap *trap;
         trap = dsk_hook_trap (&websocket->readable,
                               set_boolean_true,

@@ -77,13 +77,13 @@ struct _JsonType
   JsonMember *members;
 
   JsonType *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
 
-  dsk_boolean used_as_map_member;
+  bool used_as_map_member;
   unsigned def_line_no;
 
   // Used while computing the order in which to present types.
-  dsk_boolean in_ordered_set, computing_order;
+  bool in_ordered_set, computing_order;
   JsonType *tmp_container;
 };
 
@@ -256,7 +256,7 @@ parse_member_list (JsonMetatype metatype,
 }
 
 #if 0
-static dsk_boolean
+static bool
 add_containment (JsonType *container,
                  JsonType *contained,
                  JsonType *via,
@@ -265,7 +265,7 @@ add_containment (JsonType *container,
   Containment *c;
   for (c = container->contained_type_list; c; c = c->next_in_contained)
     if (c->contained == contained)
-      return DSK_FALSE;
+      return false;
   c = dsk_malloc (sizeof (Containment));
   c->next_in_contained = container->contained_type_list;
   container->contained_type_list = c;
@@ -273,39 +273,39 @@ add_containment (JsonType *container,
   c->contained = contained;
   c->contained_via = via;
   c->iteration = iteration;
-  return DSK_TRUE;
+  return true;
 }
 #endif
 
 
-static dsk_boolean
-foreach_recursive (JsonType *at, dsk_boolean (*func)(JsonType *cb))
+static bool
+foreach_recursive (JsonType *at, bool (*func)(JsonType *cb))
 {
   if (at == NULL)
-    return DSK_FALSE;
-  dsk_boolean rv = foreach_recursive (at->left, func);
+    return false;
+  bool rv = foreach_recursive (at->left, func);
   if (func (at))
-    rv = DSK_TRUE;
+    rv = true;
   if (foreach_recursive (at->right, func))
-    rv = DSK_TRUE;
+    rv = true;
   return rv;
 }
-static dsk_boolean
-foreach (dsk_boolean (*func)(JsonType *cb))
+static bool
+foreach (bool (*func)(JsonType *cb))
 {
   return foreach_recursive (tree_top, func);
 }
 
-static dsk_boolean
+static bool
 check_for_stubs (JsonType *type)
 {
   if (type->metatype == JSON_METATYPE_STUB)
     dsk_die ("type %s used but not defined", type->name);
-  return DSK_FALSE;
+  return false;
 }
 
 #if 0
-static dsk_boolean
+static bool
 init_containments (JsonType *type)
 {
   unsigned i;
@@ -319,15 +319,15 @@ init_containments (JsonType *type)
                            0);
         }
     }
-  return DSK_FALSE;
+  return false;
 }
 
 unsigned expand_containments_iteration = 0;
-static dsk_boolean
+static bool
 expand_containments (JsonType *type)
 {
   Containment *c1, *c2;
-  dsk_boolean rv = DSK_FALSE;
+  bool rv = false;
   for (c1 = type->contained_type_list; c1; c1 = c1->next_in_contained)
     for (c2 = c1->contained->contained_type_list;
          c2 && c2->iteration == expand_containments_iteration;
@@ -336,10 +336,10 @@ expand_containments (JsonType *type)
                            c2->contained,
                            c1->contained,
                            expand_containments_iteration + 1))
-        rv = DSK_TRUE;
+        rv = true;
   return rv;
 }
-static dsk_boolean
+static bool
 check_for_self_containment (JsonType *type)
 {
   Containment *c;
@@ -351,15 +351,15 @@ check_for_self_containment (JsonType *type)
 
         dsk_die ("type %s contains itself (via %s)", type->name, chain);
       }
-  return DSK_FALSE;
+  return false;
 }
 #endif
 
-static dsk_boolean
+static bool
 compute_type_order (JsonType *type)
 {
   if (type->in_ordered_set)
-    return DSK_FALSE;
+    return false;
   if (type->computing_order)
     {
       DskBuffer list = DSK_BUFFER_INIT;
@@ -374,7 +374,7 @@ compute_type_order (JsonType *type)
       dsk_die ("cannot fully order types in file: %s",
                dsk_buffer_empty_to_string (&list));
     }
-  type->computing_order = DSK_TRUE;
+  type->computing_order = true;
   unsigned i;
   for (i = 0; i < type->n_members; i++)
     if (type->members[i].member_type == JSON_MEMBER_TYPE_DEFAULT
@@ -385,9 +385,9 @@ compute_type_order (JsonType *type)
       }
   dsk_warning ("types[%u] = %s", n_types_ordered, type->name);
   types[n_types_ordered++] = type;
-  type->computing_order = DSK_FALSE;
-  type->in_ordered_set = DSK_TRUE;
-  return DSK_FALSE;
+  type->computing_order = false;
+  type->in_ordered_set = true;
+  return false;
 }
 
 
@@ -473,7 +473,7 @@ implement_from_json_by_type (FILE *fp,
       fprintf (fp, "%*sif (%s->type != %s)\n"
                    "%*s  {\n"
                    "%*s    dsk_set_error (error, \"not a %s\");\n"
-                   "%*s    return DSK_FALSE;\n"
+                   "%*s    return false;\n"
                    "%*s  }\n",
                    indent,"", input_name, req_type_enumname,
                    indent,"",
@@ -502,7 +502,7 @@ implement_from_json_by_type (FILE *fp,
     case JSON_METATYPE_STRUCT:
     case JSON_METATYPE_UNION:
       fprintf (fp, "%*sif (!%s%s__from_json (mem_pool, %s, &%s, error))\n"
-                   "%*s  return DSK_FALSE;\n",         /*TODO: add_prefix to error */
+                   "%*s  return false;\n",         /*TODO: add_prefix to error */
                indent, "", namespace_func_prefix, type->lc_name, input_name, output_name,
                indent, "");
       break;
@@ -520,9 +520,9 @@ int main(int argc, char **argv)
 {
   DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   unsigned i, j;
-  dsk_boolean use_stdout = DSK_FALSE;
-  dsk_boolean one_file = DSK_FALSE;
-  dsk_boolean include_dsk = DSK_TRUE;
+  bool use_stdout = false;
+  bool one_file = false;
+  bool include_dsk = true;
   dsk_cmdline_init ("generate JSON bindings",
                     "Take a file with ...",
                     NULL,
@@ -557,9 +557,9 @@ int main(int argc, char **argv)
     fund_type = force_type_by_name ("int", "int");
     fund_type->metatype = JSON_METATYPE_INT;
     fund_type->c_name = "int";
-    fund_type = force_type_by_name ("boolean", "dsk_boolean");
+    fund_type = force_type_by_name ("boolean", "bool");
     fund_type->metatype = JSON_METATYPE_BOOLEAN;
-    fund_type->c_name = "dsk_boolean";
+    fund_type->c_name = "bool";
     fund_type = force_type_by_name ("number", "double");
     fund_type->metatype = JSON_METATYPE_NUMBER;
     fund_type->c_name = "double";
@@ -670,7 +670,7 @@ int main(int argc, char **argv)
       if (IS_TOKEN (token->children + at, BAREWORD, "struct")
        || IS_TOKEN (token->children + at, BAREWORD, "union"))
         {
-          dsk_boolean is_struct = contents[token->children[at].start_byte] == 's';
+          bool is_struct = contents[token->children[at].start_byte] == 's';
           const char *metatype_name = is_struct ? "struct" : "union";
           JsonMetatype metatype = is_struct ? JSON_METATYPE_STRUCT : JSON_METATYPE_UNION;
           if (at + 2 >= token->n_children)
@@ -828,7 +828,7 @@ int main(int argc, char **argv)
         }
       else
         continue;
-      fprintf (fp, "dsk_boolean %s%s__from_json\n"
+      fprintf (fp, "bool %s%s__from_json\n"
                    "         (DskMemPool *mem_pool,\n"
                    "          DskJsonValue    *json,\n"
                    "          %s         *out,\n"
@@ -866,7 +866,7 @@ int main(int argc, char **argv)
       if (types[i]->metatype != JSON_METATYPE_UNION
        && types[i]->metatype != JSON_METATYPE_STRUCT)
         continue;
-      fprintf (fp, "dsk_boolean %s%s__from_json\n"
+      fprintf (fp, "bool %s%s__from_json\n"
                    "         (DskMemPool *mem_pool,\n"
                    "          DskJsonValue *json,\n"
                    "          %s *out,\n"
@@ -880,12 +880,12 @@ int main(int argc, char **argv)
           fprintf (fp, "  if (json->type != DSK_JSON_VALUE_OBJECT)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: not an object\", \"%s\");\n"
-                       "      return DSK_FALSE;\n"
+                       "      return false;\n"
                        "    }\n"
                        "  if (json->v_object.n_members == 1)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: did not have just one member\", \"%s\");\n"
-                       "      return DSK_FALSE;\n"
+                       "      return false;\n"
                        "    }\n"
                        "  switch (json->v_object.members[0].name[0])\n"
                        "    {\n",
@@ -914,7 +914,7 @@ int main(int argc, char **argv)
                                                        10, "json->v_object.members[0].value", n);
                           dsk_free (n);
                         }
-                      fprintf (fp,   "          return DSK_TRUE;\n"
+                      fprintf (fp,   "          return true;\n"
                                      "        }\n");
                       members_used[k] = 1;
                     }
@@ -926,7 +926,7 @@ int main(int argc, char **argv)
                        "    }\n"
                        "  dsk_set_error (error, \"from_json -> %s: bad type '%%s'\",\n"
                        "                 json->v_object.members[0].name);\n"
-                       "  return DSK_FALSE;\n"
+                       "  return false;\n"
                        "}\n",
                        types[i]->c_name);
           break;
@@ -934,7 +934,7 @@ int main(int argc, char **argv)
           fprintf (fp, "  if (json->type != DSK_JSON_VALUE_OBJECT)\n"
                        "    {\n"
                        "      dsk_set_error (error, \"union %%s from json: not an object\", \"%s\");\n"
-                       "      return DSK_FALSE;\n"
+                       "      return false;\n"
                        "    }\n",
                        types[i]->c_name);
           for (j = 0; j < types[i]->n_members; j++)
@@ -949,7 +949,7 @@ int main(int argc, char **argv)
                                "      {\n"
                                "        dsk_set_error (error, \"could not get %%s in %%s\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return DSK_FALSE;\n"
+                               "        return false;\n"
                                "      }\n",
                                types[i]->members[j].name,
                                types[i]->members[j].name,
@@ -994,7 +994,7 @@ int main(int argc, char **argv)
                                "      {\n"
                                "        dsk_set_error (error, \"member %%s of %%s is not an array\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return DSK_FALSE;\n"
+                               "        return false;\n"
                                "      }\n"
                                "    else\n"
                                "      {\n"
@@ -1034,7 +1034,7 @@ int main(int argc, char **argv)
                                "      {\n"
                                "        dsk_set_error (error, \"member %%s of %%s is not an object\",\n"
                                "                       \"%s\", \"%s\");\n"
-                               "        return DSK_FALSE;\n"
+                               "        return false;\n"
                                "      }\n"
                                "    else\n"
                                "      {\n"
@@ -1068,7 +1068,7 @@ int main(int argc, char **argv)
               default:
                 dsk_assert_not_reached ();
               }
-            fprintf (fp, "  return DSK_TRUE;\n"
+            fprintf (fp, "  return true;\n"
                          "}\n\n");
           break;
         default:

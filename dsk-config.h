@@ -65,16 +65,16 @@
 /* Miscellaneous features that linux has.
  *  TODO: other OSes. */
 #ifdef __linux__
-# define DSK_HAS_ATFILE_SUPPORT         DSK_TRUE
+# define DSK_HAS_ATFILE_SUPPORT         true
 #else
-# define DSK_HAS_ATFILE_SUPPORT         DSK_FALSE
+# define DSK_HAS_ATFILE_SUPPORT         false
 #endif
 
 /* we should eliminate stdio instead of defining this. */
 #ifdef __linux__
-# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         DSK_TRUE
+# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         true
 #else
-# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         DSK_FALSE
+# define DSK_HAS_UNLOCKED_STDIO_SUPPORT         false
 #endif
 
 /* Actually, this should be TRUE for all known versions
@@ -82,18 +82,18 @@
    If TRUE, this speeds up rm_rf by eliminating an
    extra lstat(2) call. */
 #ifdef __linux__
-# define UNLINK_DIR_RETURNS_EISDIR       DSK_TRUE
+# define UNLINK_DIR_RETURNS_EISDIR       true
 #elif defined(__APPLE__)
-# define UNLINK_DIR_RETURNS_EISDIR       DSK_FALSE
+# define UNLINK_DIR_RETURNS_EISDIR       false
 #else
-# define UNLINK_DIR_RETURNS_EISDIR       DSK_FALSE
+# define UNLINK_DIR_RETURNS_EISDIR       false
 # warn "add check that unlink() returns EISDIR"
 #endif
 
 #if defined(__linux__)
-# define DSK_HAS_EPOLL                   DSK_TRUE
+# define DSK_HAS_EPOLL                   true
 #else
-# define DSK_HAS_EPOLL                   DSK_FALSE
+# define DSK_HAS_EPOLL                   false
 #endif
 
-#define DSK_IEEE754                      DSK_TRUE
+#define DSK_IEEE754                      true

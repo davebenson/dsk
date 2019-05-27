@@ -63,7 +63,7 @@ print_char_class (const struct CharClass *cclass)
     printf ("%s", dsk_ascii_byte_name (SINGLE_CHAR_CLASS_GET_CHAR (cclass)));
   else
     {
-      dsk_boolean first = DSK_TRUE;
+      bool first = true;
       unsigned i,j;
       for (i = 1; i < 256; )
         if (CHAR_CLASS_BITVEC_IS_SET (cclass, i))
@@ -72,7 +72,7 @@ print_char_class (const struct CharClass *cclass)
             while ((j+1) < 256 && CHAR_CLASS_BITVEC_IS_SET (cclass, j+1))
               j++;
             if (first)
-              first = DSK_FALSE;
+              first = false;
             else
               printf (" ");
             if (i == j)
@@ -250,7 +250,7 @@ static struct {
 /* Parse a backslash-escape special character class,
    include a lot of punctuation.  The backslash
    should already have been skipped. */
-static dsk_boolean
+static bool
 get_backslash_char_class (const char **p_at, struct CharClass **out)
 {
   const char *start = *p_at;
@@ -284,7 +284,7 @@ get_backslash_char_class (const char **p_at, struct CharClass **out)
           *p_at = start + 3;
         }
       *out = MK_LITERAL_CHAR_CLASS (value);
-      return DSK_TRUE;
+      return true;
     }
   else
     {
@@ -294,12 +294,12 @@ get_backslash_char_class (const char **p_at, struct CharClass **out)
           {
             *out = &special_char_classes[i].cclass;
             *p_at = start + 1;
-            return DSK_TRUE;
+            return true;
           }
-      return DSK_FALSE;
+      return false;
     }
   *p_at = start + 1;
-  return DSK_TRUE;
+  return true;
 }
 
 /* Parse a [] character class expression */
@@ -309,11 +309,11 @@ parse_character_class (const char **p_regex,
                        DskError   **error)
 {
   const char *at = *p_regex;
-  dsk_boolean reverse = DSK_FALSE;
+  bool reverse = false;
   struct CharClass *out = dsk_mem_pool_alloc0 (pool, sizeof (struct CharClass));
   if (*at == '^')
     {
-      reverse = DSK_TRUE;
+      reverse = true;
       at++;
     }
   while (*at != 0 && *at != ']')
@@ -408,7 +408,7 @@ got_range_start_and_dash:
   return out;
 }
 
-static dsk_boolean
+static bool
 tokenize (const char   *regex,
           struct Token **token_list_out,
           DskMemPool   *pool,
@@ -452,7 +452,7 @@ tokenize (const char   *regex,
             regex++;
             cclass = parse_character_class (&regex, pool, error);
             if (cclass == NULL || *regex != ']')
-              return DSK_FALSE;
+              return false;
             regex++;
             t->type = TOKEN_PATTERN;
             t->pattern = dsk_mem_pool_alloc (pool, sizeof (struct Pattern));
@@ -478,7 +478,7 @@ tokenize (const char   *regex,
                   dsk_set_error (error, "unexpected backslash sequence in regex");
                 else
                   dsk_set_error (error, "bad char %s after backslash", dsk_ascii_byte_name (regex[1]));
-                return DSK_FALSE;
+                return false;
               }
             break;
           }
@@ -508,7 +508,7 @@ tokenize (const char   *regex,
         *token_list_out = last = t;
       last = t;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static struct Pattern *
@@ -517,8 +517,8 @@ parse_pattern (unsigned      pattern_index,
                DskMemPool   *pool,
                DskError    **error)
 {
-  dsk_boolean last_was_alter;
-  dsk_boolean accept_empty;
+  bool last_was_alter;
+  bool accept_empty;
 
   /* Handle parens */
   struct Token *token;
@@ -639,15 +639,15 @@ parse_pattern (unsigned      pattern_index,
   /* At this point we consist of nothing but alternations and
      patterns.  Scan through, discarding TOKEN_ALTER,
      and keeping track of whether the empty pattern matches */
-  last_was_alter = DSK_TRUE;     /* trick the empty pattern detector
+  last_was_alter = true;     /* trick the empty pattern detector
                                     into triggering on initial '|' */
-  accept_empty = DSK_FALSE;
+  accept_empty = false;
   for (token = token_list; token; token = token->next)
     if (token->type == TOKEN_ALTER)
       {
         if (last_was_alter)
-          accept_empty = DSK_TRUE;
-        last_was_alter = DSK_TRUE;
+          accept_empty = true;
+        last_was_alter = true;
 
         /* remove token from list */
         if (token->prev)
@@ -659,10 +659,10 @@ parse_pattern (unsigned      pattern_index,
       }
     else
       {
-        last_was_alter = DSK_FALSE;
+        last_was_alter = false;
       }
   if (last_was_alter)
-    accept_empty = DSK_TRUE;
+    accept_empty = true;
 
   /* if we accept an empty token, toss a PATTERN_EMPTY onto the list of patterns
      in the alternation. */
@@ -760,7 +760,7 @@ tail_recurse:
       rv->pattern = pattern;
       rv->transitions = NULL;
       rv->flag = 0;
-      rv->is_match = DSK_FALSE;
+      rv->is_match = false;
       prepend_transition (&rv->transitions, pattern->info.literal, result, pool);
       break;
       
@@ -859,7 +859,7 @@ nfa_state_tree_foreach_1 (struct NFA_State *state,
   struct NFA_Transition *trans;
 restart:
   dsk_assert (!state->flag);
-  state->flag = DSK_TRUE;
+  state->flag = true;
   callback (state, callback_data);
   {
     struct NFA_State *tail = NULL;
@@ -869,14 +869,14 @@ restart:
           if (tail == NULL)
             {
               tail = trans->next_state;
-              tail->flag = DSK_TRUE;
+              tail->flag = true;
             }
           else
             nfa_state_tree_foreach_1 (trans->next_state, callback, callback_data);
         }
     if (tail)
       {
-        tail->flag = DSK_FALSE;
+        tail->flag = false;
         state = tail;
         goto restart;
       }
@@ -1174,7 +1174,7 @@ struct DFA_TreeNode
 {
   struct DFA_TreeNode *next_skeletal;   /* if skeletal */
   struct DFA_TreeNode *parent, *left, *right;
-  dsk_boolean is_red;
+  bool is_red;
   struct DFA_State *state;
   unsigned n_nfa;
   struct NFA_State *states[1];  /* more follow; must be sorted */
@@ -1224,7 +1224,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
 {
   unsigned i, o;
   struct DFA_TreeNode *tree_node;
-  dsk_boolean is_match;
+  bool is_match;
   unsigned match_index;
   struct DFA_TreeNode *conflict;
 
@@ -1259,7 +1259,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
   memcpy (tree_node->states, nfa_states, sizeof (struct NFA_State *) * n_nfa_states);
   tree_node->n_nfa = n_nfa_states;
   tree_node->state = dsk_mem_pool_alloc0 (final_pool, sizeof (struct DFA_State));
-  is_match = DSK_FALSE;
+  is_match = false;
   match_index = 0;
   for (i = 0; i < n_nfa_states; i++)
     if (nfa_states[i]->is_match)
@@ -1267,7 +1267,7 @@ force_dfa (struct DFA_TreeNode **p_tree,
         if (!is_match)
           {
             match_index = nfa_states[i]->pattern_index;
-            is_match = DSK_TRUE;
+            is_match = true;
           }
         else if (match_index > nfa_states[i]->pattern_index)
           match_index = nfa_states[i]->pattern_index;
@@ -1380,7 +1380,7 @@ DskPattern *dsk_pattern_compile (unsigned n_entries,
       final_state = dsk_mem_pool_alloc (&mem_pool, sizeof (struct NFA_State));
       final_state->pattern = NULL;
       final_state->transitions = NULL;
-      final_state->is_match = DSK_TRUE;
+      final_state->is_match = true;
       final_state->flag = 0;
       final_state->pattern_index = i;
       init_state = pattern_to_nfa_state (pattern, i, final_state, &mem_pool);

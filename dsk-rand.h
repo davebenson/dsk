@@ -43,7 +43,7 @@ struct _DskRandXorshift1024
   DskRand base_instance;
   uint64_t s[16];
   unsigned p;
-  dsk_boolean has_extra;
+  bool has_extra;
   uint32_t extra;
 };
 

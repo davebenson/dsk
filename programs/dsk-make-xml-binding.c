@@ -37,7 +37,7 @@ static DSK_CMDLINE_CALLBACK_DECLARE (handle_searchpath)
   dsk_xml_binding_add_searchpath (binding,
                                   arg_value,
                                   (const char *) callback_data);
-  return DSK_TRUE;
+  return true;
 }
 
 #if 0
@@ -52,13 +52,13 @@ static int pstrcmp (const void *a, const void *b)
 static void set_string_ns (DskPrint *ctx,
                            const char *var,
                            const char *name,
-                           dsk_boolean uc_first,
-                           dsk_boolean uc_nonfirst)
+                           bool uc_first,
+                           bool uc_nonfirst)
 {
   char *str = dsk_malloc (strlen (name) * 2 + 1);
   char *at = str;
   const char *in = name;
-  dsk_boolean next_is_first = DSK_TRUE;
+  bool next_is_first = true;
   while (*in)
     {
       if (*in == '.')
@@ -66,11 +66,11 @@ static void set_string_ns (DskPrint *ctx,
           *at++ = '_';
           *at++ = '_';
           in++;
-          next_is_first = DSK_TRUE;
+          next_is_first = true;
         }
       else if (*in == '_' || *in == '-')
         {
-          next_is_first = DSK_TRUE;
+          next_is_first = true;
           in++;
         }
       else
@@ -81,7 +81,7 @@ static void set_string_ns (DskPrint *ctx,
           else
             *at++ = dsk_ascii_tolower (*in);
           in++;
-          next_is_first = DSK_FALSE;
+          next_is_first = false;
         }
     }
   *at = 0;
@@ -142,7 +142,7 @@ set_ctypename (DskPrint *ctx,
       char *str = dsk_malloc (max_size);
       char *at = str;
       const char *in = type->ns->name;
-      dsk_boolean next_is_upper = DSK_TRUE;
+      bool next_is_upper = true;
       while (*in)
         {
           if (*in == '.')
@@ -150,11 +150,11 @@ set_ctypename (DskPrint *ctx,
               *at++ = '_';
               *at++ = '_';
               in++;
-              next_is_upper = DSK_TRUE;
+              next_is_upper = true;
             }
           else if (*in == '_' || *in == '-')
             {
-              next_is_upper = DSK_TRUE;
+              next_is_upper = true;
               in++;
             }
           else
@@ -164,7 +164,7 @@ set_ctypename (DskPrint *ctx,
               else
                 *at++ = dsk_ascii_tolower (*in);
               in++;
-              next_is_upper = DSK_FALSE;
+              next_is_upper = false;
             }
         }
       *at++ = '_';
@@ -178,9 +178,9 @@ set_ctypename (DskPrint *ctx,
 static void
 set_boolean (DskPrint *ctx,
              const char *name,
-             dsk_boolean value)
+             bool value)
 {
-  dsk_print_set_string (ctx, name, value ? "DSK_TRUE" : "DSK_FALSE");
+  dsk_print_set_string (ctx, name, value ? "true" : "false");
 }
 
 static void
@@ -198,7 +198,7 @@ render_member (DskPrint *ctx, DskXmlBindingStructMember *member)
    || member->quantity == DSK_XML_BINDING_REPEATED)
     dsk_print (ctx, "${indent}unsigned n_$member_name;");
   if (member->quantity == DSK_XML_BINDING_OPTIONAL)
-    dsk_print (ctx, "${indent}dsk_boolean has_$member_name;");
+    dsk_print (ctx, "${indent}bool has_$member_name;");
   dsk_print (ctx, "${indent}$member_type $maybe_star$member_name;");
   dsk_print_pop (ctx);
 }
@@ -403,7 +403,7 @@ static void render_function_prototypes (DskPrint *ctx, DskXmlBindingType *type)
              "DskXml    * ${full_name}__to_xml\n"
              "                      (const $Full_Name *source,\n"
              "                       DskError **error);\n"
-             "dsk_boolean ${full_name}__parse\n"
+             "bool ${full_name}__parse\n"
              "                      (DskXml *source,\n"
              "                       $Full_Name *dest,\n"
              "                       DskError **error);");
@@ -466,8 +466,8 @@ render_descriptor_body (DskPrint *ctx,
 
   dsk_print_set_template_string (ctx, "base_type_definition",
                  "{\n"
-                 "    DSK_FALSE,    /* !is_fundamental */\n"
-                 "    DSK_TRUE,     /* is_static */\n"
+                 "    false,    /* !is_fundamental */\n"
+                 "    true,     /* is_static */\n"
                  "    $is_struct,    /* is_struct */\n"
                  "    $is_union,     /* is_union */\n"
                  "    0,            /* ref_count */\n"
@@ -757,7 +757,7 @@ static void render_namespace_descriptor_def (DskPrint *ctx,
 
   dsk_print (ctx, "const DskXmlBindingNamespace ${namespace}__descriptor =\n"
 		  "{\n"
-		  "  DSK_TRUE,              /* is_static */\n"
+		  "  true,              /* is_static */\n"
 		  "  \"$ns_name\",\n"            
 		  "  $n_types,               /* n_types */\n"
 		  "  (DskXmlBindingType **) ${namespace}__type_array,\n"
@@ -777,7 +777,7 @@ static void render_function_implementations (DskPrint *ctx,
              "{\n"
              "  return dsk_xml_binding_${category}_to_xml (${full_name}__type, source, error);\n"
              "}\n"
-             "dsk_boolean ${full_name}__parse\n"
+             "bool ${full_name}__parse\n"
              "                      (DskXml *source,\n"
              "                       $Full_Name *dest,\n"
              "                       DskError **error)\n"

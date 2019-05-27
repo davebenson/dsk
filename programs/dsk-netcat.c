@@ -6,7 +6,7 @@
 /* configuration */
 static unsigned port = 0;
 static const char *hostname = NULL;
-static dsk_boolean do_listen = DSK_FALSE;
+static bool do_listen = false;
 static const char *local_path = NULL;
 DskStream *std_input;
 DskStream *std_output;
@@ -18,7 +18,7 @@ int main(int argc, char **argv)
                     "Connect to a server or listen for a client; write data from socket to standard-output; any data collected on standard-input will be sent to the connection.",
                     "[HOST:PORT]",
                     0);
-  dsk_cmdline_permit_extra_arguments (DSK_TRUE);
+  dsk_cmdline_permit_extra_arguments (true);
   dsk_cmdline_add_string ("host", "Hostname to connect to", "HOSTNAME", 0, &hostname);
   dsk_cmdline_add_uint ("port", "Port to connect to or to listen on", "PORT", 0, &port);
   dsk_cmdline_add_string ("local", "Use local (aka unix-domain) socket", "PATH", 0, &local_path);

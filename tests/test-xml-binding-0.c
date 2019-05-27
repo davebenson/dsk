@@ -3,7 +3,7 @@
 #include <string.h>
 #include "generated/xml-binding-test.c"
 
-static dsk_boolean
+static bool
 is_text_child (DskXml *xml, const char *name, const char *contents)
 {
   return dsk_xml_is_element (xml, name)

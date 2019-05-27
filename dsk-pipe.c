@@ -52,15 +52,15 @@ static DskPipeClass dsk_pipe_class =
   dsk_pipe_shutdown_write,
 } };
 
-static dsk_boolean
+static bool
 handle_source_buffer_low (DskPipe         *source,
                           DskPipe         *pipe_sink)
 {
   dsk_assert (source->peer == pipe_sink);
   dsk_assert (pipe_sink->peer == source);
-  dsk_hook_set_idle_notify (&pipe_sink->base_instance.writable_hook, DSK_TRUE);
+  dsk_hook_set_idle_notify (&pipe_sink->base_instance.writable_hook, true);
   pipe_sink->buffer_low_trap = NULL;
-  return DSK_FALSE;
+  return false;
 }
 
 /* returns -1 on error */
@@ -96,7 +96,7 @@ dsk_pipe_write              (DskStream      *s,
   dsk_buffer_append (&msource->buffer, length, data_out);
   if (psink->source->buffer.size == psink->source->buffer_low_amount)
     {
-      dsk_hook_set_idle_notify (&sink->writable_hook, DSK_FALSE);
+      dsk_hook_set_idle_notify (&sink->writable_hook, false);
       if (psink->buffer_low_trap == NULL)
         psink->buffer_low_trap = dsk_hook_trap (&psink->source->buffer_low,
                                                 (DskHookFunc) handle_source_buffer_low,
@@ -129,7 +129,7 @@ dsk_pipe_write_buffer  (DskStream *s,
   dsk_buffer_transfer (&msource->buffer, write_buffer, length);
   if (psink->source->buffer.size == psink->source->buffer_low_amount)
     {
-      dsk_hook_set_idle_notify (&sink->writable_hook, DSK_FALSE);
+      dsk_hook_set_idle_notify (&sink->writable_hook, false);
       if (psink->buffer_low_trap == NULL)
         psink->buffer_low_trap = dsk_hook_trap (&psink->source->buffer_low,
                                                 (DskHookFunc) handle_source_buffer_low,
@@ -147,7 +147,7 @@ source_finalized (void *data)
   psink->source = NULL;
 
   /* notify the user so they get an error ("epipe") */
-  dsk_hook_set_idle_notify (&psink->base_instance.writable_hook, DSK_TRUE);
+  dsk_hook_set_idle_notify (&psink->base_instance.writable_hook, true);
 }
 
 static void
@@ -200,6 +200,6 @@ dsk_pipe_new (unsigned pipe_size,
   *source_out = DSK_OCTET_SOURCE (source);
   *sink_out = DSK_OCTET_SINK (sink);
   sink->source = source;
-  dsk_hook_set_idle_notify (&sink->base_instance.writable_hook, DSK_TRUE);
+  dsk_hook_set_idle_notify (&sink->base_instance.writable_hook, true);
   dsk_object_trap_finalize (DSK_OBJECT (source), source_finalized, sink);
 }

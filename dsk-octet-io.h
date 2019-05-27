@@ -135,13 +135,13 @@ struct _DskOctetConnection
 struct _DskOctetConnectionOptions
 {
   unsigned max_buffer;
-  dsk_boolean shutdown_on_read_error;
-  dsk_boolean shutdown_on_write_error;
+  bool shutdown_on_read_error;
+  bool shutdown_on_write_error;
 };
 #define DSK_OCTET_CONNECTION_OPTIONS_INIT \
 { 4096,                         /* max_buffer */                \
-  DSK_TRUE,                     /* shutdown_on_read_error */    \
-  DSK_TRUE                      /* shutdown_on_write_error */   \
+  true,                     /* shutdown_on_read_error */    \
+  true                      /* shutdown_on_write_error */   \
 }
 
 DSK_INLINE_FUNC void dsk_octet_connect       (DskOctetSource *source,
@@ -171,12 +171,12 @@ typedef struct _DskSyncFilter DskSyncFilter;
 struct _DskSyncFilterClass
 {
   DskObjectClass base_class;
-  dsk_boolean (*process) (DskSyncFilter *filter,
+  bool (*process) (DskSyncFilter *filter,
                           DskBuffer      *out,
                           unsigned        in_length,
                           const uint8_t  *in_data,
                           DskError      **error);
-  dsk_boolean (*finish)  (DskSyncFilter *filter,
+  bool (*finish)  (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error);
 };
@@ -184,18 +184,18 @@ struct _DskSyncFilter
 {
   DskObject base_instance;
 };
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
                                                       DskError      **error);
-dsk_boolean          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
+bool          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_len,
                                                       DskBuffer      *in,
-                                                      dsk_boolean     discard,
+                                                      bool     discard,
                                                       DskError      **error);
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error);
 
@@ -209,7 +209,7 @@ DskOctetSink   *dsk_sync_filter_sink   (DskOctetSource *sink,
 
 
 /* hackneyed helper function: unrefs the filter. */
-dsk_boolean dsk_filter_to_buffer  (unsigned length,
+bool dsk_filter_to_buffer  (unsigned length,
                                    const uint8_t *data,
                                    DskSyncFilter *filter,
                                    DskBuffer *output,
@@ -313,7 +313,7 @@ DSK_INLINE_FUNC void dsk_octet_connect       (DskOctetSource *source,
 {
   dsk_object_unref (dsk_octet_connection_new (source, sink, opt));
 }
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -323,12 +323,12 @@ DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
   return c->process (filter, out, in_length, in_data, error);
 }
 
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error)
 {
   DskSyncFilterClass *c = DSK_OCTET_FILTER_GET_CLASS (filter);
   if (c->finish == NULL)
-    return DSK_TRUE;
+    return true;
   return c->finish (filter, out, error);
 }

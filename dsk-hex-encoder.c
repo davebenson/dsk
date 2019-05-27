@@ -22,7 +22,7 @@ struct _DskHexEncoder
 #define dsk_hex_encoder_init NULL
 #define dsk_hex_encoder_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_hex_encoder_process (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -62,10 +62,10 @@ dsk_hex_encoder_process (DskSyncFilter *filter,
 	hexenc->cur_line_len += 2;
       dsk_buffer_append_small (out, n, buf);
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_hex_encoder_finish   (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
@@ -74,14 +74,14 @@ dsk_hex_encoder_finish   (DskSyncFilter *filter,
   DSK_UNUSED (error);
   if (enc->newlines && enc->cur_line_len != 0)
     dsk_buffer_append_byte (out, '\n');
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskHexEncoder, dsk_hex_encoder);
 
 
-DskSyncFilter *dsk_hex_encoder_new (dsk_boolean break_lines,
-                                     dsk_boolean include_spaces)
+DskSyncFilter *dsk_hex_encoder_new (bool break_lines,
+                                     bool include_spaces)
 {
   DskHexEncoder *rv = dsk_object_new (&dsk_hex_encoder_class);
   rv->newlines = break_lines ? 1 : 0;

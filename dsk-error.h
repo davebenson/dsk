@@ -48,7 +48,7 @@ void        dsk_add_error_suffix (DskError  **error,
                                   ...) DSK_GNUC_PRINTF(2,3);
 void       *dsk_error_force_data (DskError   *error,
                                   DskErrorDataType *data_type,
-                                  dsk_boolean *created_out);
+                                  bool *created_out);
 void       *dsk_error_find_data  (DskError   *error,
                                   DskErrorDataType *data_type);
 DskError   *dsk_error_ref        (DskError   *error);
@@ -60,5 +60,5 @@ void        dsk_propagate_error  (DskError  **dst,
 extern DskErrorDataType dsk_error_data_type_errno;
 void        dsk_error_set_errno  (DskError   *error,
                                   int         error_no);
-dsk_boolean dsk_error_get_errno  (DskError   *error,
+bool dsk_error_get_errno  (DskError   *error,
                                   int        *error_no_out);

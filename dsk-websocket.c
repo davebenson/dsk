@@ -40,7 +40,7 @@ static void ensure_has_write_trap (DskWebsocket *websocket);
 static void
 do_shutdown (DskWebsocket *websocket)
 {
-  websocket->is_shutdown = DSK_TRUE;
+  websocket->is_shutdown = true;
   if (websocket->read_trap)
     {
       dsk_hook_trap_destroy (websocket->read_trap);
@@ -71,7 +71,7 @@ do_deferred_shutdown (DskWebsocket *websocket)
   if (websocket->outgoing.size == 0)
     do_shutdown (websocket);
   else
-    websocket->is_deferred_shutdown = DSK_TRUE;
+    websocket->is_deferred_shutdown = true;
 }
 
 static void
@@ -143,7 +143,7 @@ restart_processing:
     goto unset_packet_readable;
 
 set_packet_readable:
-  dsk_hook_set_idle_notify (&websocket->readable, DSK_TRUE);
+  dsk_hook_set_idle_notify (&websocket->readable, true);
   if (websocket->read_trap != NULL)
     {
       dsk_hook_trap_destroy (websocket->read_trap);
@@ -152,12 +152,12 @@ set_packet_readable:
   return;
 
 unset_packet_readable:
-  dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
+  dsk_hook_set_idle_notify (&websocket->readable, false);
   ensure_has_read_trap (websocket);
   return;
 
 error_do_shutdown:
-  dsk_hook_set_idle_notify (&websocket->readable, DSK_FALSE);
+  dsk_hook_set_idle_notify (&websocket->readable, false);
   if (websocket->read_trap != NULL)
     {
       dsk_hook_trap_destroy (websocket->read_trap);
@@ -273,7 +273,7 @@ dsk_websocket_tune      (DskWebsocket *websocket,
   update_hooks_with_buffer (websocket);
 }
 
-static dsk_boolean
+static bool
 handle_sink_writable (DskOctetSink *sink,
                       DskWebsocket *websocket)
 {
@@ -289,7 +289,7 @@ handle_sink_writable (DskOctetSink *sink,
       /* fallthrough */
     case DSK_IO_RESULT_ERROR:
       do_shutdown (websocket);
-      return DSK_FALSE;
+      return false;
     }
 
   if (websocket->outgoing.size == 0)
@@ -298,19 +298,19 @@ handle_sink_writable (DskOctetSink *sink,
         {
           websocket->write_trap = NULL;
           do_shutdown (websocket);
-          return DSK_FALSE;
+          return false;
         }
       else
         {
           websocket->write_trap = NULL;
-          return DSK_FALSE;
+          return false;
         }
     }
   else
-    return DSK_TRUE;
+    return true;
 }
 
-static dsk_boolean
+static bool
 handle_source_readable (DskOctetSource *source,
                         DskWebsocket   *websocket)
 {
@@ -324,16 +324,16 @@ handle_source_readable (DskOctetSource *source,
       break;
     case DSK_IO_RESULT_ERROR:
       do_shutdown (websocket);
-      return DSK_FALSE;
+      return false;
     case DSK_IO_RESULT_EOF:
       websocket->read_trap = NULL;
       dsk_object_unref (websocket->source);
       websocket->source = NULL;
-      return DSK_FALSE;
+      return false;
     default:
       dsk_assert_not_reached ();
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -417,7 +417,7 @@ uint32_to_be (uint32_t n, uint8_t *out)
   out[3] = n;
 }
 
-dsk_boolean
+bool
 _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
                                  const char *key2,  /* NUL-terminated */
                                  const uint8_t *key3,  /* 8 bytes long */
@@ -441,13 +441,13 @@ _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
   if (spaces_1 == 0 || spaces_2 == 0)
     {
       dsk_set_error (error, "Websocket key did not include spaces");
-      return DSK_FALSE;
+      return false;
     }
   if (key_number_1 % spaces_1 != 0
    || key_number_2 % spaces_2 != 0)
     {
       dsk_set_error (error, "Websocket key number not a multiple of spaces");
-      return DSK_FALSE;
+      return false;
     }
   uint32_to_be (key_number_1 / spaces_1, challenge);
   uint32_to_be (key_number_2 / spaces_2, challenge+4);
@@ -459,5 +459,5 @@ _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
   dsk_checksum_done (checksum);
   dsk_checksum_get (checksum, resp);
   dsk_checksum_destroy (checksum);
-  return DSK_TRUE;
+  return true;
 }

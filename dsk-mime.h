@@ -6,7 +6,7 @@ struct _DskMimeKeyValueInplace
   const char *key_start, *key_end;
   const char *value_start, *value_end;
 };
-dsk_boolean dsk_mime_key_values_scan (const char *str,
+bool dsk_mime_key_values_scan (const char *str,
                                       unsigned    max_kv,
                                       DskMimeKeyValueInplace *kv,
                                       unsigned   *n_kv_out,
@@ -19,7 +19,7 @@ dsk_boolean dsk_mime_key_values_scan (const char *str,
 typedef struct _DskMimeContentDisposition DskMimeContentDisposition;
 struct _DskMimeContentDisposition
 {
-  dsk_boolean is_inline;
+  bool is_inline;
   const char *filename_start;
   const char *filename_end;
   const char *name_start;
@@ -28,6 +28,6 @@ struct _DskMimeContentDisposition
   const char *id_end;
 };
 
-dsk_boolean dsk_parse_mime_content_disposition_header (const char *line,
+bool dsk_parse_mime_content_disposition_header (const char *line,
                                                        DskMimeContentDisposition *out,
                                                        DskError **error);

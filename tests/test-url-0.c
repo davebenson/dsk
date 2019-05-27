@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "../dsk.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 #define SCAN(url, scan)                                                \
   do{                                                                  \

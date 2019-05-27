@@ -37,7 +37,7 @@ handle_timeout (void *data)
 }
 
 
-static dsk_boolean
+static bool
 handle_arg_kill_signal  (const char *arg_name,
                          const char *arg_value,
                          void       *callback_data,
@@ -53,10 +53,10 @@ handle_arg_kill_signal  (const char *arg_name,
       if (*end != '\0')
         {
           *error = dsk_error_new ("bad number for signal: '%s'", arg_value);
-          return DSK_FALSE;
+          return false;
         }
       * (int *) callback_data = (int) v;
-      return DSK_TRUE;
+      return true;
     }
 
   // match (case-insensitively) against sys_signame[] elements.
@@ -65,11 +65,11 @@ handle_arg_kill_signal  (const char *arg_name,
       if (dsk_ascii_strcasecmp (strsignal (i), arg_value) == 0)
         {
           * (int *) callback_data = i;
-          return DSK_TRUE;
+          return true;
         }
     }
   *error = dsk_error_new ("unknown signal '%s'", arg_value);
-  return DSK_FALSE;
+  return false;
 }
 
 /* --- main --- */
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   dsk_cmdline_add_func ("kill-signal", "signal to raise prior instead of exiting", "SIGNAL",
                         0, handle_arg_kill_signal, &cmdline_terminate_signal);
                         
-  dsk_daemon_add_cmdline_args (DSK_TRUE);
+  dsk_daemon_add_cmdline_args (true);
   dsk_cmdline_process_args (&argc, &argv);
 
   /* this function possibly forks, but then go about

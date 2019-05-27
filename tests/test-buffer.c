@@ -57,15 +57,15 @@ void decount(DskBuffer* buf, int start, int end)
 }
 
 /* Return whether 'buffer' begins with 'str'; remove it if so. */
-static dsk_boolean
+static bool
 try_initial_remove (DskBuffer *buffer, const char *str)
 {
   unsigned len = strlen (str);
   if (buffer->size < len)
-    return DSK_FALSE;
+    return false;
   char *tmp = dsk_malloc (len);
   dsk_buffer_read (buffer, len, tmp);
-  dsk_boolean rv = memcmp (str, tmp, len) == 0;
+  bool rv = memcmp (str, tmp, len) == 0;
   dsk_free (tmp);
   return rv;
 }

@@ -34,7 +34,7 @@ struct _DskZLangNamespaceEntry
 
   /* tree structure parts */
   DskZLangNamespaceEntry *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
 };
 
 struct _DskZLangNamespace
@@ -61,7 +61,7 @@ DskZLangContext *dsk_zlang_context_new        (void)
   return rv;
 }
 
-dsk_boolean      dsk_zlang_context_parse_file (DskZLangContext *context,
+bool      dsk_zlang_context_parse_file (DskZLangContext *context,
                                                const char      *filename,
                                                DskZLangInsn   **main_out,
                                                DskError       **error)
@@ -70,18 +70,18 @@ dsk_boolean      dsk_zlang_context_parse_file (DskZLangContext *context,
   char *contents = dsk_file_get_contents (filename, &size, error);
   DskCTokenScannerConfig config = DSK_CTOKEN_SCANNER_CONFIG_INIT;
   if (content == NULL)
-    return DSK_FALSE;
+    return false;
   config.error_filename = filename;
   ctoken = dsk_ctoken_scan_str (contents, contents + size, &config, error);
   if (ctoken == NULL)
     {
       dsk_free (contents);
-      return DSK_FALSE;
+      return false;
     }
   ...
 }
 
-dsk_boolean      dsk_zlang_context_register   (DskZLangContext *context,
+bool      dsk_zlang_context_register   (DskZLangContext *context,
                                                const char      *name,
                                                DskZLangFunction *function,
                                                DskError       **error);

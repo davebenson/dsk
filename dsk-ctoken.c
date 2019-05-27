@@ -63,7 +63,7 @@ setup_child_parents (DskCToken *tree)
     }
 }
 
-dsk_boolean 
+bool 
 dsk_ctoken_scan_quoted__default    (const char  *str,
                                     const char  *end,
                                     unsigned    *n_used_out,
@@ -85,14 +85,14 @@ dsk_ctoken_scan_quoted__default    (const char  *str,
             {
               dsk_set_error (error,
                              "unterminated escape sequence in \" string");
-              return DSK_FALSE;
+              return false;
             }
           at += 2;
         }
       else if (*at == '\n')
         {
           dsk_set_error (error, "unterminated \" string");
-          return DSK_FALSE;
+          return false;
         }
       else
         at++;
@@ -100,14 +100,14 @@ dsk_ctoken_scan_quoted__default    (const char  *str,
   if (at == end)
     {
       dsk_set_error (error, "got EOF in double-quoted string");
-      return DSK_FALSE;
+      return false;
     }
   at++;
   *n_used_out = at - str;
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean 
+bool 
 dsk_ctoken_scan_op__c    (const char  *str,
                           const char  *end,
                           unsigned    *n_used_out,
@@ -115,7 +115,7 @@ dsk_ctoken_scan_op__c    (const char  *str,
                           void       **token_opt_out,
                           DskError   **error)
 {
-  dsk_boolean tc = str + 1 < end;               /* two-character ops allowed */
+  bool tc = str + 1 < end;               /* two-character ops allowed */
   DSK_UNUSED (token_id_opt_out);
   DSK_UNUSED (token_opt_out);
   switch (*str)
@@ -202,17 +202,17 @@ dsk_ctoken_scan_op__c    (const char  *str,
                 goto one_char;
     case '~':   goto one_char;
     default:    dsk_set_error (error, "bad punctuation character %s",
-                               dsk_ascii_byte_name (*str)); return DSK_FALSE;
+                               dsk_ascii_byte_name (*str)); return false;
     }
 one_char:
   *n_used_out = 1;
-  return DSK_TRUE;
+  return true;
 two_char:
   *n_used_out = 2;
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_ctoken_scan_bareword__default  (const char  *str,
+bool dsk_ctoken_scan_bareword__default  (const char  *str,
                                                 const char  *end,
                                                 unsigned    *n_used_out,
                                                 unsigned    *token_id_opt_out,
@@ -226,10 +226,10 @@ dsk_boolean dsk_ctoken_scan_bareword__default  (const char  *str,
   while (at < end && (dsk_ascii_isalnum (*at) || *at == '_'))
     at++;
   *n_used_out = at - str;
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_ctoken_scan_number__c          (const char  *str,
+bool dsk_ctoken_scan_number__c          (const char  *str,
                                                 const char  *end,
                                                 unsigned    *n_used_out,
                                                 unsigned    *token_id_opt_out,
@@ -244,7 +244,7 @@ dsk_boolean dsk_ctoken_scan_number__c          (const char  *str,
       if (at + 2 == end)
         {
           dsk_set_error (error, "unexpected EOF after 0x");
-          return DSK_FALSE;
+          return false;
         }
       if (!dsk_ascii_isxdigit (at[2]))
         {
@@ -257,7 +257,7 @@ dsk_boolean dsk_ctoken_scan_number__c          (const char  *str,
       if (at < end && (*at == '.' || dsk_ascii_isalpha (*at)))
         goto unexpected_char;
       *n_used_out = at - str;
-      return DSK_TRUE;
+      return true;
     }
   while (at < end && dsk_ascii_isdigit (*at))
     at++;
@@ -274,7 +274,7 @@ dsk_boolean dsk_ctoken_scan_number__c          (const char  *str,
   if (at < end && dsk_ascii_isalpha (*at))
     goto unexpected_char;
   *n_used_out = at - str;
-  return DSK_TRUE;
+  return true;
 
 fractional_part:
   while (at < end && dsk_ascii_isdigit (*at))
@@ -287,7 +287,7 @@ fractional_part:
   if (at < end && dsk_ascii_isalpha (*at))
     goto unexpected_char;
   *n_used_out = at - str;
-  return DSK_TRUE;
+  return true;
 
 exponent_part:
   if (at < end && (*at == '+' || *at == '-'))
@@ -297,12 +297,12 @@ exponent_part:
   if (at < end && dsk_ascii_isalpha (*at))
     goto unexpected_char;
   *n_used_out = at - str;
-  return DSK_TRUE;
+  return true;
 
 unexpected_char:
   dsk_set_error (error, "got unexpected char %s after number",
                  dsk_ascii_byte_name (*at));
-  return DSK_FALSE;
+  return false;
 }
 
 DskCToken *dsk_ctoken_scan_str (const char             *str,

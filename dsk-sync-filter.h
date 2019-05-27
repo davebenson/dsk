@@ -9,12 +9,12 @@ typedef struct _DskSyncFilter DskSyncFilter;
 struct _DskSyncFilterClass
 {
   DskObjectClass base_class;
-  dsk_boolean (*process) (DskSyncFilter *filter,
+  bool (*process) (DskSyncFilter *filter,
                           DskBuffer      *out,
                           unsigned        in_length,
                           const uint8_t  *in_data,
                           DskError      **error);
-  dsk_boolean (*finish)  (DskSyncFilter *filter,
+  bool (*finish)  (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error);
 };
@@ -36,18 +36,18 @@ class_static ClassName##Class class_name ## _class = { {                      \
   class_name ## _finish                                                       \
 } }
 extern const DskSyncFilterClass dsk_sync_filter_class;
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
                                                       DskError      **error);
-dsk_boolean          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
+bool          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_len,
                                                       DskBuffer      *in,
-                                                      dsk_boolean     discard,
+                                                      bool     discard,
                                                       DskError      **error);
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error);
 
@@ -60,7 +60,7 @@ DskStream *dsk_stream_filter_write_end(DskStream *sink,
                                             DskSyncFilter *filter);
 
 /* hackneyed helper function: unrefs the filter. */
-dsk_boolean dsk_filter_to_buffer  (unsigned length,
+bool dsk_filter_to_buffer  (unsigned length,
                                    const uint8_t *data,
                                    DskSyncFilter *filter,
                                    DskBuffer *output,
@@ -76,7 +76,7 @@ uint8_t    *dsk_filter_to_data    (unsigned length,
                                    unsigned  *output_string_length_out,
                                    DskError **error);
 
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -86,12 +86,12 @@ DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_process (DskSyncFilter *filter,
   return c->process (filter, out, in_length, in_data, error);
 }
 
-DSK_INLINE_FUNC dsk_boolean dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error)
 {
   DskSyncFilterClass *c = DSK_SYNC_FILTER_GET_CLASS (filter);
   if (c->finish == NULL)
-    return DSK_TRUE;
+    return true;
   return c->finish (filter, out, error);
 }

@@ -6,7 +6,7 @@
 
 #define MAX_FILTERS     128
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 static const char *cmdline_filename = "tests/test-octet-filters.txt";
 
 static void
@@ -14,7 +14,7 @@ dequote (const char *c_quoted, unsigned line,
          unsigned *len_out, uint8_t **data_out)
 {
   DskBuffer buffer = DSK_BUFFER_INIT;
-  DskSyncFilter *filter = dsk_c_unquoter_new (DSK_FALSE);
+  DskSyncFilter *filter = dsk_c_unquoter_new (false);
   if (!dsk_sync_filter_process (filter, &buffer, strlen (c_quoted),
                                  (uint8_t*) c_quoted, NULL)
    || !dsk_sync_filter_finish (filter, &buffer, NULL))
@@ -37,11 +37,11 @@ create_filter (const char *code)
 	{
 	case 'u': filters[n_filters++] = dsk_url_encoder_new (); break;
 	case 'U': filters[n_filters++] = dsk_url_decoder_new (); break;
-	case 'c': filters[n_filters++] = dsk_c_quoter_new (DSK_FALSE, DSK_FALSE); break;
-	case 'C': filters[n_filters++] = dsk_c_unquoter_new (DSK_FALSE); break;
-	case 'h': filters[n_filters++] = dsk_hex_encoder_new (DSK_FALSE, DSK_FALSE); break;
+	case 'c': filters[n_filters++] = dsk_c_quoter_new (false, false); break;
+	case 'C': filters[n_filters++] = dsk_c_unquoter_new (false); break;
+	case 'h': filters[n_filters++] = dsk_hex_encoder_new (false, false); break;
 	case 'H': filters[n_filters++] = dsk_hex_decoder_new (); break;
-	case 'b': filters[n_filters++] = dsk_base64_encoder_new (DSK_FALSE); break;
+	case 'b': filters[n_filters++] = dsk_base64_encoder_new (false); break;
 	case 'B': filters[n_filters++] = dsk_base64_decoder_new (); break;
 	case 'q': filters[n_filters++] = dsk_quote_printable_new (); break;
 	case 'Q': filters[n_filters++] = dsk_unquote_printable_new (); break;

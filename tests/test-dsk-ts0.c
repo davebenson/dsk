@@ -4,8 +4,8 @@
 #define DSK_INCLUDE_TS0
 #include "../dsk.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
-static dsk_boolean cmdline_print_expected_errors = DSK_FALSE;
+static bool cmdline_verbose = false;
+static bool cmdline_print_expected_errors = false;
 
 #define DEFINE_DATA(contents, name) \
   static char name##_data[] = (contents); \

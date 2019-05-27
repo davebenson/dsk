@@ -5,7 +5,7 @@
 #include <string.h>
 #include "../dsk.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 static void
 respond_text_string (DskHttpServerRequest *request,
@@ -72,12 +72,12 @@ internal_redirect_short_sleep (DskHttpServerRequest *request,
 typedef struct _SimpleRequestInfo SimpleRequestInfo;
 struct _SimpleRequestInfo
 {
-  dsk_boolean done;
-  dsk_boolean failed;
+  bool done;
+  bool failed;
   DskBuffer content_buffer;
   DskHttpStatus status_code;
 };
-#define SIMPLE_REQUEST_INFO_INIT { DSK_FALSE, DSK_FALSE, DSK_BUFFER_INIT, 0 }
+#define SIMPLE_REQUEST_INFO_INIT { false, false, DSK_BUFFER_INIT, 0 }
 
 static void simple__handle_response (DskHttpClientStreamTransfer *xfer)
 {
@@ -103,12 +103,12 @@ static void simple__handle_content_complete (DskHttpClientStreamTransfer *xfer)
 static void simple__handle_error (DskHttpClientStreamTransfer *xfer)
 {
   SimpleRequestInfo *sri = xfer->user_data;
-  sri->failed = DSK_TRUE;
+  sri->failed = true;
 }
 static void simple__handle_destroy (DskHttpClientStreamTransfer *xfer)
 {
   SimpleRequestInfo *sri = xfer->user_data;
-  sri->done = DSK_TRUE;
+  sri->done = true;
 }
 
 static DskHttpClientStreamFuncs simple_client_stream_funcs =

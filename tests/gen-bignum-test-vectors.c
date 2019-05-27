@@ -222,7 +222,7 @@ static struct {
 int main(int argc, char **argv)
 {
   unsigned i;
-  dsk_boolean cmdline_verbose = false;
+  bool cmdline_verbose = false;
   const char *cmdline_spec = "10@20x20";
   const char *cmdline_mode = "multiply";
 

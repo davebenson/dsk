@@ -4,7 +4,7 @@
 #include "debug.h"
 
 #if DSK_ENABLE_DEBUGGING
-dsk_boolean dsk_debug_object_lifetimes;
+bool dsk_debug_object_lifetimes;
 #endif
 
 #define ASSERT_OBJECT_CLASS_MAGIC(class) \
@@ -33,7 +33,7 @@ DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskObject);
 DskObjectClass dsk_object_class =
 DSK_OBJECT_CLASS_DEFINE(DskObject, NULL, dsk_object_init, dsk_object_finalize);
 
-dsk_boolean
+bool
 dsk_object_is_a (void *object,
                  const void *isa_class)
 {
@@ -41,7 +41,7 @@ dsk_object_is_a (void *object,
   const DskObjectClass *c;
   const DskObjectClass *ic = isa_class;
   if (o == NULL)
-    return DSK_FALSE;
+    return false;
   ASSERT_OBJECT_CLASS_MAGIC (ic);
   /* Deliberately ignore ref_count, since we want to be able to cast during
      finalization, i guess */
@@ -50,13 +50,13 @@ dsk_object_is_a (void *object,
   while (c != NULL)
     {
       if (c == ic)
-        return DSK_TRUE;
+        return true;
       c = c->parent_class;
     }
-  return DSK_FALSE;
+  return false;
 }
 
-dsk_boolean
+bool
 dsk_object_class_is_a (const void *object_class,
                        const void *isa_class)
 {
@@ -67,10 +67,10 @@ dsk_object_class_is_a (const void *object_class,
   while (c != NULL)
     {
       if (c == ic)
-        return DSK_TRUE;
+        return true;
       c = c->parent_class;
     }
-  return DSK_FALSE;
+  return false;
 }
 
 static inline const char *
@@ -171,7 +171,7 @@ void _dsk_object_class_first_instance (const DskObjectClass *c)
       if (at->finalize)
         *fat++ = at->finalize;
     }
-  cd->instantiated = DSK_TRUE;
+  cd->instantiated = true;
 
   cd->prev_instantiated = all_instantiated_classes;
   all_instantiated_classes = c;
@@ -188,7 +188,7 @@ _dsk_object_cleanup_classes (void)
       all_instantiated_classes = cd->prev_instantiated;
 
       dsk_free (cd->init_funcs);
-      cd->instantiated = DSK_FALSE;
+      cd->instantiated = false;
     }
 }
 

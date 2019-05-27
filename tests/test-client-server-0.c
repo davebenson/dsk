@@ -3,10 +3,10 @@
 #include "../dsk.h"
 
 /* --- implement a simple echo server --- */
-static dsk_boolean cmdline_is_tcp = DSK_FALSE;
+static bool cmdline_is_tcp = false;
 static const char *cmdline_local_path = "./test-client-server-0.socket";
 static unsigned cmdline_tcp_port = 10101;
-static dsk_boolean cmdline_debug_server = DSK_FALSE;
+static bool cmdline_debug_server = false;
 
 typedef struct _EchoConnection EchoConnection;
 struct _EchoConnection
@@ -20,7 +20,7 @@ struct _EchoConnection
   DskStream *sink;
 };
 
-static dsk_boolean
+static bool
 handle_sink_writable (DskStream *sink,
                       EchoConnection *ec)
 {
@@ -40,21 +40,21 @@ handle_sink_writable (DskStream *sink,
               dsk_object_unref (sink);
               ec->sink = NULL;
             }
-          return DSK_FALSE;
+          return false;
         }
       else
-        return DSK_TRUE;
+        return true;
     case DSK_IO_RESULT_AGAIN:
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_EOF:
       dsk_assert_not_reached ();
     case DSK_IO_RESULT_ERROR:
       dsk_die ("error writing: %s", error->message);
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 handle_source_readable (DskStream      *source,
                         EchoConnection *ec)
 {
@@ -74,9 +74,9 @@ handle_source_readable (DskStream      *source,
                                           ec,
                                           NULL);
         }
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_AGAIN:
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_EOF:
       {
         ec->source = NULL;
@@ -89,15 +89,15 @@ handle_source_readable (DskStream      *source,
             dsk_object_unref (ec->sink);
             dsk_free (ec);
           }
-        return DSK_FALSE;
+        return false;
       }
     case DSK_IO_RESULT_ERROR:
       dsk_die ("read failed: %s", error->message);              /* eep! */
     }
-  return DSK_FALSE;
+  return false;
 }
 
-static dsk_boolean
+static bool
 handle_incoming_connection (DskStreamListener *listener)
 {
   DskError *error = NULL;
@@ -118,14 +118,14 @@ handle_incoming_connection (DskStreamListener *listener)
         break;
       }
     case DSK_IO_RESULT_AGAIN:
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_EOF:
       dsk_warning ("EOF from listening socket?");
-      return DSK_TRUE;
+      return true;
     case DSK_IO_RESULT_ERROR:
       dsk_die ("error accepting incoming connection: %s", error->message);
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static DskStreamListener *global_listener = NULL;
@@ -159,7 +159,7 @@ kill_server (void)
 /* --- client implementation --- */
 static DskClientStream *client_stream;
 static unsigned cmdline_wait_time = 250;
-static dsk_boolean cmdline_debug_client = DSK_FALSE;
+static bool cmdline_debug_client = false;
 
 static void
 create_client (void)
@@ -184,19 +184,19 @@ kill_client (void)
   dsk_object_unref (client_stream);
   client_stream = NULL;
 }
-static dsk_boolean set_boolean_true (void *object, void *data)
+static bool set_boolean_true (void *object, void *data)
 {
   DSK_UNUSED (object);
-  * (dsk_boolean *) data = DSK_TRUE;
-  return DSK_FALSE;
+  * (bool *) data = true;
+  return false;
 }
 
 static void handle_timeout (void *data)
 {
-  * (dsk_boolean *) data = DSK_TRUE;
+  * (bool *) data = true;
 }
 
-static dsk_boolean
+static bool
 write_then_read (unsigned write_len,
                  const uint8_t *write_data,
                  unsigned *read_len_out,
@@ -205,7 +205,7 @@ write_then_read (unsigned write_len,
                  unsigned time_millis)
 {
   unsigned n_written = 0;
-  dsk_boolean timer_expired = DSK_FALSE;
+  bool timer_expired = false;
   DskDispatchTimer *timer;
   DskBuffer readbuf = DSK_BUFFER_INIT;
   if (cmdline_debug_client)
@@ -215,7 +215,7 @@ write_then_read (unsigned write_len,
   /* write data */
   while (!timer_expired && n_written < write_len)
     {
-      dsk_boolean is_writable = DSK_FALSE;
+      bool is_writable = false;
       DskHookTrap *trap = dsk_hook_trap (&client_stream->base_instance.writable_hook, set_boolean_true, &is_writable, NULL);
       unsigned nw;
       while (!is_writable && !timer_expired)
@@ -232,20 +232,20 @@ write_then_read (unsigned write_len,
         case DSK_IO_RESULT_EOF:
           dsk_assert_not_reached ();
         case DSK_IO_RESULT_ERROR:
-          return DSK_FALSE;
+          return false;
         }
     }
   if (n_written < write_len)
     {
       dsk_set_error (error_out, "timer expired before data written");
-      return DSK_FALSE;
+      return false;
     }
 
   /* read til EOF */
   while (!timer_expired)
     {
       DskHookTrap *trap;
-      dsk_boolean is_readable = DSK_FALSE;
+      bool is_readable = false;
       if (cmdline_debug_client)
         dsk_warning ("client: trapping readability");
       trap = dsk_hook_trap (&client_stream->base_instance.readable_hook, set_boolean_true, &is_readable, NULL);
@@ -270,7 +270,7 @@ write_then_read (unsigned write_len,
         case DSK_IO_RESULT_ERROR:
           dsk_buffer_reset (&readbuf);
           dsk_main_remove_timer (timer);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -282,7 +282,7 @@ done_reading:
   *read_data_out = dsk_malloc (readbuf.size);
   dsk_buffer_read (&readbuf, *read_len_out, *read_data_out);
 
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -301,7 +301,7 @@ test_echo_server_up (void)
 static void
 pause_a_moment (void)
 {
-  dsk_boolean timer_expired = DSK_FALSE;
+  bool timer_expired = false;
   dsk_main_add_timer_millis (cmdline_wait_time, handle_timeout, &timer_expired);
   while (!timer_expired)
     dsk_main_run_once ();

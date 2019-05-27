@@ -9,7 +9,7 @@ struct _DskLoggerOptions
   unsigned period;
   int tz_offset;
   unsigned max_buffer;
-  dsk_boolean autonewline;
+  bool autonewline;
 };
 #define DSK_LOGGER_OPTIONS_INIT \
 { NULL,                         \
@@ -17,7 +17,7 @@ struct _DskLoggerOptions
   3600,                         \
   0,                            \
   8192,                         \
-  DSK_TRUE }
+  true }
 
 DskLogger *dsk_logger_new         (DskLoggerOptions *options,
                                    DskError        **error);

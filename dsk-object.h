@@ -26,13 +26,13 @@ typedef void (*DskObjectFinalizeFunc) (DskObject *object);
          (DskObjectClassCacheData *) &name ## __cache_data }
 #define DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(name) \
        static DskObjectClassCacheData name##__cache_data = \
-              { DSK_FALSE, 0, NULL, 0, NULL, NULL }
+              { false, 0, NULL, 0, NULL, NULL }
 #define DSK_OBJECT(object) DSK_OBJECT_CAST(DskObject, object, &dsk_object_class)
 #define DSK_OBJECT_CLASS(object) DSK_OBJECT_CLASS_CAST(DskObject, object, &dsk_object_class)
 #define DSK_OBJECT_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskObject, object, &dsk_object_class)
 struct _DskObjectClassCacheData
 {
-  dsk_boolean instantiated;
+  bool instantiated;
   unsigned n_init_funcs;
   DskObjectInitFunc *init_funcs;
   unsigned n_finalizer_funcs;
@@ -68,9 +68,9 @@ struct _DskObject
 DSK_INLINE_FUNC void      *dsk_object_new   (const void *object_class);
 DSK_INLINE_FUNC void       dsk_object_unref (void *object);
 DSK_INLINE_FUNC void      *dsk_object_ref   (void *object);
-                 dsk_boolean dsk_object_is_a (void *object,
+                 bool dsk_object_is_a (void *object,
                                               const void *isa_class);
-           dsk_boolean dsk_object_class_is_a (const void *object_class,
+           bool dsk_object_class_is_a (const void *object_class,
                                               const void *isa_class);
 
 /* for use by debugging cast-macro implementations */

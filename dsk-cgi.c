@@ -2,7 +2,7 @@
 #include "dsk.h"
 
 /* query_string starts (and includes) the '?'  */
-dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
+bool dsk_cgi_parse_query_string (const char *query_string,
                                         size_t     *n_cgi_variables_out,
                                         DskCgiVariable **cgi_variables_out,
                                         DskError  **error)
@@ -50,7 +50,7 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
                         dsk_free ((*cgi_variables_out)[i].key);
                       dsk_free (*cgi_variables_out);
                       dsk_set_error (error, "'%%' in CGI-variable not followed by two hexidecimal digits");
-                      return DSK_FALSE;
+                      return false;
 
                     }
                   value_len++;
@@ -97,7 +97,7 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
           (*cgi_variables_out)[n_cgi].value_length = 0;
         }
       (*cgi_variables_out)[n_cgi].content_type = NULL;
-      (*cgi_variables_out)[n_cgi].is_get = DSK_TRUE;
+      (*cgi_variables_out)[n_cgi].is_get = true;
 
       (*cgi_variables_out)[n_cgi].content_type = NULL;
       (*cgi_variables_out)[n_cgi].content_location = NULL;
@@ -105,10 +105,10 @@ dsk_boolean dsk_cgi_parse_query_string (const char *query_string,
       n_cgi++;
     }
   *n_cgi_variables_out = n_cgi;
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_cgi_parse_post_data (const char *content_type,
+bool dsk_cgi_parse_post_data (const char *content_type,
                                      char      **content_type_kv_pairs,
                                      size_t      post_data_length,
                                      const uint8_t *post_data,
@@ -128,37 +128,37 @@ dsk_boolean dsk_cgi_parse_post_data (const char *content_type,
                                        error))
         {
           dsk_free (pd_str);
-          return DSK_FALSE;
+          return false;
         }
       for (i = 0; i < *n_cgi_var_out; i++)
-        (*cgi_var_out)[i].is_get = DSK_FALSE;
+        (*cgi_var_out)[i].is_get = false;
       dsk_free (pd_str);
-      return DSK_TRUE;
+      return true;
     }
   else if (strcmp (content_type, "multipart/form-data") == 0)
     {
       DskMimeMultipartDecoder *decoder = dsk_mime_multipart_decoder_new (content_type_kv_pairs, error);
       if (decoder == NULL)
-        return DSK_FALSE;
+        return false;
       if (!dsk_mime_multipart_decoder_feed (decoder,
                                             post_data_length, post_data,
                                             NULL, error)
        || !dsk_mime_multipart_decoder_done (decoder, n_cgi_var_out, error))
         {
           dsk_object_unref (decoder);
-          return DSK_FALSE;
+          return false;
         }
       *cgi_var_out = DSK_NEW_ARRAY (*n_cgi_var_out, DskCgiVariable);
       dsk_mime_multipart_decoder_dequeue_all (decoder, *cgi_var_out);
       dsk_object_unref (decoder);
-      return DSK_TRUE;
+      return true;
     }
   else
     {
       dsk_set_error (error, 
                      "parsing POST form data: unhandled content-type %s",
                      content_type);
-      return DSK_FALSE;
+      return false;
     }
 }
 
@@ -182,7 +182,7 @@ init_get_cgi (DskCgiVariable *var,
   char *kv = dsk_malloc (key_len + 1 + value_len + 1);
   memcpy (kv, key, key_len + 1);
   memcpy (kv + key_len + 1, value, value_len + 1);
-  var->is_get = DSK_TRUE;
+  var->is_get = true;
   var->key = kv;
   var->value_length = value_len;
   var->value = kv + key_len + 1;

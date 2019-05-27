@@ -393,7 +393,7 @@ lock_blather (uint64_t blather_id)
 static const char *
 get_cgi_var (DskHttpServerRequest *request,
              const char           *variable_name,
-             dsk_boolean           mandatory)
+             bool           mandatory)
 {
   unsigned i;
   for (i = 0; i < request->n_cgi_variables; i++)
@@ -415,7 +415,7 @@ static void
 cgi_handler__add_user (DskHttpServerRequest *request,
                        void                 *func_data)
 {
-  const char *name = get_cgi_var (request, "name", DSK_TRUE);
+  const char *name = get_cgi_var (request, "name", true);
   if (name == NULL)
     return;
 
@@ -458,11 +458,11 @@ cgi_handler__lookup_user (DskHttpServerRequest *request,
                           void                 *func_data)
 {
   /* lookup username: fail if user already exists */
-  const char *name = get_cgi_var (request, "name", DSK_FALSE);
+  const char *name = get_cgi_var (request, "name", false);
   const char *id = NULL;
   if (name == NULL)
     {
-      id = get_cgi_var (request, "id", DSK_TRUE);
+      id = get_cgi_var (request, "id", true);
       if (id == NULL)
         return;
     }
@@ -523,7 +523,7 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
   for (i = 0; i < 2; i++)
     {
       const char *str;
-      if ((str=get_cgi_var (request, id_cgis[i], DSK_FALSE)) != NULL)
+      if ((str=get_cgi_var (request, id_cgis[i], false)) != NULL)
         {
           uint64_t id = strtoull (str, NULL, 10);
           users[i] = lookup_user_by_id (id);
@@ -535,7 +535,7 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
               return;
             }
         }
-      else if ((str=get_cgi_var (request, name_cgis[i], DSK_TRUE)) != NULL)
+      else if ((str=get_cgi_var (request, name_cgis[i], true)) != NULL)
         {
           users[i] = lookup_user_by_name (str);
           if (users[i] == NULL)
@@ -551,7 +551,7 @@ cgi_handler__add_connection (DskHttpServerRequest *request,
     }
 
   /* find out if they are already friends with eachother. */
-  dsk_boolean a_friendswith_b, b_friendswith_a;
+  bool a_friendswith_b, b_friendswith_a;
   for (i = 0; i < users[0]->n_friends; i++)
     if (users[0]->friends[i] == users[1]->id)
       break;
@@ -708,10 +708,10 @@ cgi_handler__blather        (DskHttpServerRequest *request,
                              void                 *func_data)
 {
   const char *author_id_str, *text;
-  author_id_str = get_cgi_var (request, "authorid", DSK_TRUE);
+  author_id_str = get_cgi_var (request, "authorid", true);
   if (author_id_str == NULL)
     return;
-  text = get_cgi_var (request, "text", DSK_TRUE);
+  text = get_cgi_var (request, "text", true);
   if (text == NULL)
     return;
 
@@ -798,7 +798,7 @@ struct _Query
   QueryPart *parts;
 };
 
-static dsk_boolean
+static bool
 score_blather (Blather       *blather,
                double        *score_out,
                DskJsonValue **json_out,
@@ -812,7 +812,7 @@ score_blather (Blather       *blather,
   dsk_mem_pool_init_buf (&mem_pool, sizeof (mem_pool_slab), mem_pool_slab);
   words = tokenize_blather (blather->text, &mem_pool, &n_tokens);
   if (words == NULL)
-    return DSK_FALSE;
+    return false;
 
   /* tf/idf */
   ...
@@ -829,10 +829,10 @@ cgi_handler__search    (DskHttpServerRequest *request,
                         void                 *func_data)
 {
   const char *user_id_str, *text;
-  user_id_str = get_cgi_var (request, "userid", DSK_TRUE);
+  user_id_str = get_cgi_var (request, "userid", true);
   if (user_id_str == NULL)
     return;
-  text = get_cgi_var (request, "text", DSK_TRUE);
+  text = get_cgi_var (request, "text", true);
   if (text == NULL)
     return;
   User *user = lookup_user_by_id (strtoull (user_id_str, NULL, 10));
@@ -1009,7 +1009,7 @@ int
 main (int argc, char **argv)
 {
   unsigned port;
-  dsk_boolean bind_any = DSK_FALSE;
+  bool bind_any = false;
   DskIpAddress bind_address = DSK_IP_ADDRESS_DEFAULT;
   const char *state_dir;
   dsk_cmdline_init ("run a social network search engine",

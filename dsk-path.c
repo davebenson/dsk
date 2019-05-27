@@ -9,10 +9,10 @@ struct _Component
   unsigned len;
 };
 
-dsk_boolean dsk_path_normalize_inplace (char *path_inout)
+bool dsk_path_normalize_inplace (char *path_inout)
 {
   if (path_inout[0] == 0)
-    return DSK_FALSE;
+    return false;
 
   /* Split into pieces */
   unsigned n_slash = 0;
@@ -71,5 +71,5 @@ dsk_boolean dsk_path_normalize_inplace (char *path_inout)
         }
     }
   *out = 0;
-  return DSK_TRUE;
+  return true;
 }

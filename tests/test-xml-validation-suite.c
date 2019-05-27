@@ -2,17 +2,17 @@
 #include <string.h>
 #include "../dsk.h"
 
-static dsk_boolean print_errors = DSK_FALSE;
-static dsk_boolean verbose = DSK_FALSE;
+static bool print_errors = false;
+static bool verbose = false;
 
 
-static dsk_boolean
+static bool
 xml_equal (DskXml *a, DskXml *b)
 {
   if (a->type != b->type)
-    return DSK_FALSE;
+    return false;
   if (strcmp (a->str, b->str) != 0)
-    return DSK_FALSE;
+    return false;
   if (a->type == DSK_XML_ELEMENT)
     {
       unsigned i;
@@ -21,17 +21,17 @@ xml_equal (DskXml *a, DskXml *b)
           if (a->attrs[i] == NULL && b->attrs[i] == NULL)
             break;
           if (a->attrs[i] == NULL || b->attrs[i] == NULL)
-            return DSK_FALSE;
+            return false;
           if (strcmp (a->attrs[i], b->attrs[i]) != 0)
-            return DSK_FALSE;
+            return false;
         }
       if (a->n_children != b->n_children)
-        return DSK_FALSE;
+        return false;
       for (i = 0; i < a->n_children; i++)
         if (!xml_equal (a->children[i], b->children[i]))
-          return DSK_FALSE;
+          return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 typedef struct
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
   unsigned n_correct_invalid = 0;
   unsigned n_failed_valid = 0;
   unsigned n_failed_invalid = 0;
-  dsk_boolean print_failure_descriptions = DSK_FALSE;
+  bool print_failure_descriptions = false;
   DskXmlParserConfig *config;
 
   dsk_cmdline_init ("standard xml conformance test",

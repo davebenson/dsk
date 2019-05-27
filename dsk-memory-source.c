@@ -33,9 +33,9 @@ dsk_memory_source_read        (DskStream      *source,
   if (!msource->done_adding)
     {
       if (msource->buffer.size <= msource->buffer_low_amount)
-        dsk_hook_set_idle_notify (&msource->buffer_low, DSK_TRUE);
+        dsk_hook_set_idle_notify (&msource->buffer_low, true);
       if (msource->buffer.size == 0 && msource->error == NULL)
-        dsk_hook_set_idle_notify (&source->readable_hook, DSK_FALSE);
+        dsk_hook_set_idle_notify (&source->readable_hook, false);
     }
   if (*bytes_read_out == 0)
     {
@@ -77,8 +77,8 @@ dsk_memory_source_read_buffer (DskStream      *source,
     rv = DSK_IO_RESULT_SUCCESS;
   if (!msource->done_adding)
     {
-      dsk_hook_set_idle_notify (&msource->buffer_low, DSK_TRUE);
-      dsk_hook_set_idle_notify (&source->readable_hook, DSK_FALSE);
+      dsk_hook_set_idle_notify (&msource->buffer_low, true);
+      dsk_hook_set_idle_notify (&source->readable_hook, false);
     }
   return rv;
 }
@@ -86,7 +86,7 @@ static void
 dsk_memory_source_shutdown (DskStream *source)
 {
   DskMemorySource *msource = DSK_MEMORY_SOURCE (source);
-  msource->got_shutdown = DSK_TRUE;
+  msource->got_shutdown = true;
 }
 
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskMemorySource);
@@ -108,18 +108,18 @@ DskMemorySourceClass dsk_memory_source_class =
 
 void dsk_memory_source_done_adding (DskMemorySource *source)
 {
-  source->done_adding = DSK_TRUE;
-  dsk_hook_set_idle_notify (&source->buffer_low, DSK_FALSE);
-  dsk_hook_set_idle_notify (&source->base_instance.readable_hook, DSK_TRUE);
+  source->done_adding = true;
+  dsk_hook_set_idle_notify (&source->buffer_low, false);
+  dsk_hook_set_idle_notify (&source->base_instance.readable_hook, true);
 }
 
 void dsk_memory_source_added_data  (DskMemorySource *source)
 {
   dsk_assert (!source->done_adding);
   if (source->buffer.size != 0)
-    dsk_hook_set_idle_notify (&source->base_instance.readable_hook, DSK_TRUE);
+    dsk_hook_set_idle_notify (&source->base_instance.readable_hook, true);
   if (source->buffer.size > source->buffer_low_amount)
-    dsk_hook_set_idle_notify (&source->buffer_low, DSK_FALSE);
+    dsk_hook_set_idle_notify (&source->buffer_low, false);
 }
 
 void
@@ -130,5 +130,5 @@ dsk_memory_source_take_error (DskMemorySource *source,
     dsk_error_unref (source->error);
   source->error = error;
   if (source->error != NULL)
-    dsk_hook_set_idle_notify (&source->base_instance.readable_hook, DSK_TRUE);
+    dsk_hook_set_idle_notify (&source->base_instance.readable_hook, true);
 }

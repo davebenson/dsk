@@ -55,7 +55,7 @@ struct _TableFileTrivialWriter
 };
 
 
-static dsk_boolean 
+static bool 
 table_file_trivial_writer__write  (DskTableFileWriter *writer,
                                    unsigned            key_length,
                                    const uint8_t      *key_data,
@@ -73,28 +73,28 @@ table_file_trivial_writer__write  (DskTableFileWriter *writer,
     {
       dsk_set_error (error, "error writing entry to index file: %s",
                      strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   if (key_length != 0
    && UNLOCKED_FWRITE (key_data, key_length, 1, wr->heap_fp) != 1)
     {
       dsk_set_error (error, "error writing key to heap file: %s",
                      strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   if (value_length != 0
    && UNLOCKED_FWRITE (value_data, value_length, 1, wr->heap_fp) != 1)
     {
       dsk_set_error (error, "error writing value to heap file: %s",
                      strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
 
   wr->heap_fp_offset += key_length + value_length;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean 
+static bool 
 table_file_trivial_writer__close  (DskTableFileWriter *writer,
                                    DskError          **error)
 {
@@ -104,7 +104,7 @@ table_file_trivial_writer__close  (DskTableFileWriter *writer,
       dsk_set_error (error, "error closing index file: %s",
                      strerror (errno));
       wr->index_fp = NULL;
-      return DSK_FALSE;
+      return false;
     }
   wr->index_fp = NULL;
   if (fclose (wr->heap_fp) != 0)
@@ -112,10 +112,10 @@ table_file_trivial_writer__close  (DskTableFileWriter *writer,
       dsk_set_error (error, "error closing heap file: %s",
                      strerror (errno));
       wr->heap_fp = NULL;
-      return DSK_FALSE;
+      return false;
     }
   wr->heap_fp = NULL;
-  return DSK_TRUE;
+  return true;
 }
 
 static void        
@@ -155,7 +155,7 @@ table_file_trivial__new_writer (DskTableFileInterface   *iface,
                        DSK_DIR_OPENFD_WRITABLE|DSK_DIR_OPENFD_MAY_CREATE|DSK_DIR_OPENFD_TRUNCATE,
                        0666, error);
   if (fd < 0)
-    return DSK_FALSE;
+    return false;
   wr.index_fp = fdopen (fd, "r+b");
   if (wr.index_fp == NULL)
     dsk_warning ("fdopen(%d) failed: %s", fd, strerror (errno));
@@ -167,7 +167,7 @@ table_file_trivial__new_writer (DskTableFileInterface   *iface,
   if (fd < 0)
     {
       fclose (wr.index_fp);
-      return DSK_FALSE;
+      return false;
     }
   wr.heap_fp = fdopen (fd, "wb");
   dsk_assert (wr.heap_fp);
@@ -186,7 +186,7 @@ struct _TableFileTrivialReader
   uint8_t *slab;
 };
 
-static dsk_boolean
+static bool
 read_next_index_entry (TableFileTrivialReader *reader,
                        DskError              **error)
 {
@@ -197,8 +197,8 @@ read_next_index_entry (TableFileTrivialReader *reader,
   if (nread == 0)
     {
       /* at EOF */
-      reader->base_instance.at_eof = DSK_TRUE;
-      return DSK_TRUE;
+      reader->base_instance.at_eof = true;
+      return true;
     }
   else if (nread < sizeof (IndexEntry))
     {
@@ -214,7 +214,7 @@ read_next_index_entry (TableFileTrivialReader *reader,
           dsk_set_error (error,
                          "index file truncated (partial record encountered)");
         }
-      return DSK_FALSE;
+      return false;
     }
   ie.heap_offset = UINT64_FROM_LE (ie.heap_offset);
   ie.key_length = UINT32_FROM_LE (ie.key_length);
@@ -224,7 +224,7 @@ read_next_index_entry (TableFileTrivialReader *reader,
     {
       dsk_set_error (error, "heap offset from index file was %"PRIu64" instead of expected %"PRIu64"",
                      ie.heap_offset, reader->next_heap_offset);
-      return DSK_FALSE;
+      return false;
     }
 
   kv_len = ie.key_length + ie.value_length;
@@ -241,17 +241,17 @@ read_next_index_entry (TableFileTrivialReader *reader,
   if (kv_len != 0 && UNLOCKED_FREAD (reader->slab, kv_len, 1, reader->heap_fp) != 1)
     {
       dsk_set_error (error, "error reading key/value from heap file");
-      return DSK_FALSE;
+      return false;
     }
   reader->base_instance.key_length = ie.key_length;
   reader->base_instance.value_length = ie.value_length;
   reader->base_instance.key_data = reader->slab;
   reader->base_instance.value_data = reader->slab + ie.key_length;
   reader->next_heap_offset += kv_len;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 table_file_trivial_reader__advance (DskTableReader     *reader,
                                     DskError          **error)
 {
@@ -279,7 +279,7 @@ new_reader  (DskDir                  *dir,
 {
   TableFileTrivialReader reader = {
     {
-      DSK_FALSE, 0, 0, NULL, NULL,
+      false, 0, 0, NULL, NULL,
 
       table_file_trivial_reader__advance,
       table_file_trivial_reader__destroy
@@ -363,14 +363,14 @@ struct _TableFileTrivialSeeker
   char *base_filename;
 };
 
-static inline dsk_boolean
+static inline bool
 check_index_entry_lengths (const IndexEntry *ie)
 {
   return ie->key_length < (1<<30)
       && ie->value_length < (1<<30);
 }
 
-static inline dsk_boolean
+static inline bool
 read_index_entry (DskTableFileSeeker *seeker,
                   uint64_t            index,
                   IndexEntry         *out,
@@ -386,12 +386,12 @@ read_index_entry (DskTableFileSeeker *seeker,
     {
       dsk_set_error (error, "error reading index entry %"PRIu64": %s",
                      index, strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   if (nread < (int) SIZEOF_INDEX_ENTRY)
     {
       dsk_set_error (error, "too short reading index entry %"PRIu64"", index);
-      return DSK_FALSE;
+      return false;
     }
   ie.heap_offset = UINT64_FROM_LE (ie.heap_offset);
   ie.key_length = UINT32_FROM_LE (ie.key_length);
@@ -400,10 +400,10 @@ read_index_entry (DskTableFileSeeker *seeker,
   if (!check_index_entry_lengths (&ie))
     {
       dsk_set_error (error, "corrupted index entry %"PRIu64"", index);
-      return DSK_FALSE;
+      return false;
     }
   *out = ie;
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -424,7 +424,7 @@ seeker_ensure_slab_size (TableFileTrivialSeeker *s,
   s->slab = dsk_malloc (new_size);
   s->slab_alloced = new_size;
 }
-static dsk_boolean
+static bool
 run_cmp (TableFileTrivialSeeker *s,
          uint64_t               index,
          DskTableSeekerFindFunc func,
@@ -434,7 +434,7 @@ run_cmp (TableFileTrivialSeeker *s,
          DskError             **error)
 {
   if (!read_index_entry ((DskTableFileSeeker*)s, index, ie_out, error))
-    return DSK_FALSE;
+    return false;
   if (ie_out->key_length != 0)
     {
       ssize_t nread;
@@ -449,14 +449,14 @@ run_cmp (TableFileTrivialSeeker *s,
                            ie_out->heap_offset, strerror (errno));
           else
             dsk_set_error (error, "premature EOF reading key from heap file");
-          return DSK_FALSE;
+          return false;
         }
     }
   *cmp_rv_out = func (ie_out->key_length, s->slab, func_data);
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 find_index (DskTableFileSeeker    *seeker,
             DskTableSeekerFindFunc func,
             void                  *func_data,
@@ -473,7 +473,7 @@ find_index (DskTableFileSeeker    *seeker,
       uint64_t mid = start + n / 2;
       IndexEntry ie;
       if (!run_cmp (s, mid, func, func_data, &cmp_rv, &ie, error))
-        return DSK_FALSE;
+        return false;
       if (cmp_rv > 0)
         {
           /* mid is after func_data; hence the new interval
@@ -502,7 +502,7 @@ find_index (DskTableFileSeeker    *seeker,
                     uint64_t mid2 = start + n / 2;
                     IndexEntry ie2;
                     if (!run_cmp (s, mid2, func, func_data, &cmp_rv, &ie2, error))
-                      return DSK_FALSE;
+                      return false;
                     dsk_assert (cmp_rv <= 0);
                     if (cmp_rv == 0)
                       {
@@ -517,14 +517,14 @@ find_index (DskTableFileSeeker    *seeker,
                   }
                 *index_out = start;
                 *ie_out = ie;
-                return DSK_TRUE;
+                return true;
               }
 
             case DSK_TABLE_FILE_FIND_ANY:
               {
                 *index_out = mid;
                 *ie_out = ie;
-                return DSK_TRUE;
+                return true;
               }
             case DSK_TABLE_FILE_FIND_LAST:
               {
@@ -538,7 +538,7 @@ find_index (DskTableFileSeeker    *seeker,
                     uint64_t mid2 = start + n / 2;
                     IndexEntry ie2;
                     if (!run_cmp (s, mid2, func, func_data, &cmp_rv, &ie2, error))
-                      return DSK_FALSE;
+                      return false;
                     dsk_assert (cmp_rv <= 0);
                     if (cmp_rv == 0)
                       {
@@ -555,17 +555,17 @@ find_index (DskTableFileSeeker    *seeker,
                   }
                 *index_out = start;
                 *ie_out = ie;
-                return DSK_TRUE;
+                return true;
               }
             }
         }
     }
 
   /* not found. */
-  return DSK_FALSE;
+  return false;
 }
 
-static dsk_boolean 
+static bool 
 table_file_trivial_seeker__find  (DskTableFileSeeker    *seeker,
                                   DskTableSeekerFindFunc func,
                                   void                  *func_data,
@@ -580,7 +580,7 @@ table_file_trivial_seeker__find  (DskTableFileSeeker    *seeker,
   IndexEntry ie;
   TableFileTrivialSeeker *s = (TableFileTrivialSeeker *) seeker;
   if (!find_index (seeker, func, func_data, mode, &index, &ie, error))
-    return DSK_FALSE;
+    return false;
 
   if (key_len_out || key_data_out || value_len_out || value_data_out)
     {
@@ -599,7 +599,7 @@ table_file_trivial_seeker__find  (DskTableFileSeeker    *seeker,
                                ie.heap_offset, strerror (errno));
               else
                 dsk_set_error (error, "premature EOF reading key/value from heap file");
-              return DSK_FALSE;
+              return false;
             }
         }
       if (key_len_out != NULL)
@@ -611,7 +611,7 @@ table_file_trivial_seeker__find  (DskTableFileSeeker    *seeker,
       if (value_data_out != NULL)
         *value_data_out = s->slab + ie.key_length;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -633,7 +633,7 @@ table_file_trivial_seeker__find_reader(DskTableFileSeeker    *seeker,
                      ie.heap_offset, error);
 }
 
-static dsk_boolean 
+static bool 
 table_file_trivial_seeker__index (DskTableFileSeeker    *seeker,
                                   uint64_t               index,
                                   unsigned              *key_len_out,
@@ -646,7 +646,7 @@ table_file_trivial_seeker__index (DskTableFileSeeker    *seeker,
   IndexEntry ie;
   unsigned kv_len;
   if (!read_index_entry (seeker, index, &ie, error))
-    return DSK_FALSE;
+    return false;
   kv_len = ie.key_length + ie.value_length;
   if (kv_len > 0)
     {
@@ -658,13 +658,13 @@ table_file_trivial_seeker__index (DskTableFileSeeker    *seeker,
         {
           dsk_set_error (error, "error reading heap entry %"PRIu64": %s",
                          index, strerror (errno));
-          return DSK_FALSE;
+          return false;
         }
       if (nread < (int) kv_len)
         {
           dsk_set_error (error, "too short reading heap entry %"PRIu64" (got %u of %u bytes)",
                          index, (unsigned) nread, kv_len);
-          return DSK_FALSE;
+          return false;
         }
     }
   if (key_len_out != NULL)
@@ -675,7 +675,7 @@ table_file_trivial_seeker__index (DskTableFileSeeker    *seeker,
     *value_len_out = ie.value_length;
   if (value_data_out != NULL)
     *value_data_out = s->slab + ie.key_length;
-  return DSK_TRUE;
+  return true;
 }
 
 static DskTableReader     * 
@@ -686,7 +686,7 @@ table_file_trivial_seeker__index_reader(DskTableFileSeeker    *seeker,
   TableFileTrivialSeeker *s = (TableFileTrivialSeeker *) seeker;
   IndexEntry ie;
   if (!read_index_entry (seeker, index, &ie, error))
-    return DSK_FALSE;
+    return false;
   return new_reader (s->dir, s->base_filename, index * SIZEOF_INDEX_ENTRY,
                      ie.heap_offset, error);
 }
@@ -757,7 +757,7 @@ table_file_trivial__new_seeker (DskTableFileInterface   *iface,
   return (DskTableFileSeeker *) rv;
 }
 
-static dsk_boolean
+static bool
 table_file_trivial__delete_file (DskTableFileInterface *iface,
                                  DskDir                  *dir,
                                  const char              *base_filename,
@@ -776,11 +776,11 @@ table_file_trivial__delete_file (DskTableFileInterface *iface,
       if (!dsk_dir_rm (dir, fname, 0, NULL, error))
         {
           dsk_free (fname);
-          return DSK_FALSE;
+          return false;
         }
     }
   dsk_free (fname);
-  return DSK_TRUE;
+  return true;
 }
 
 /* No destructor required for the static interface */

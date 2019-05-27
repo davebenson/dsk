@@ -119,7 +119,7 @@ handle_cache_entry_lookup (DskDnsCacheEntry *entry,
 }
 
 void    dsk_dns_lookup (const char       *name,
-                        dsk_boolean       is_ipv6,
+                        bool       is_ipv6,
                         DskDnsLookupFunc  callback,
                         void             *callback_data)
 {
@@ -149,7 +149,7 @@ static char **resolv_conf_search_paths = NULL;
 static unsigned max_resolv_conf_searchpath_len = 0;
 static DskDnsCacheEntry *etc_hosts_tree = NULL;
 static DskDnsConfigFlags config_flags = DSK_DNS_CONFIG_FLAGS_INIT;
-static dsk_boolean dns_initialized = DSK_FALSE;
+static bool dns_initialized = false;
 
 #define CACHE_ENTRY_NAME_IS_RED(n)  n->name_type_is_red
 #define CACHE_ENTRY_NAME_SET_IS_RED(n,v)  n->name_type_is_red=v
@@ -246,13 +246,13 @@ handle_message (DskDnsMessage *message)
       char answers_that_match[MAX_ANSWER_RR];
       unsigned n_matches = 0;
       int cname_index = -1;
-      dsk_boolean is_ipv6;
+      bool is_ipv6;
       DskDnsCacheEntry dummy, *entry;
       DskDnsCacheEntryJob *job;
       if (q->query_type == DSK_DNS_RR_HOST_ADDRESS)
-        is_ipv6 = DSK_FALSE;
+        is_ipv6 = false;
       else if (q->query_type == DSK_DNS_RR_HOST_ADDRESS_IPV6)
-        is_ipv6 = DSK_TRUE;
+        is_ipv6 = true;
       else
         {
           dsk_warning ("DNS system: received packet with unexpected question type %u", q->query_type);
@@ -280,7 +280,7 @@ handle_message (DskDnsMessage *message)
              || (a->type == DSK_DNS_RR_HOST_ADDRESS_IPV6 && is_ipv6))
               {
                 n_matches++;
-                answers_that_match[j] = DSK_TRUE;
+                answers_that_match[j] = true;
               }
             else if (a->type == DSK_DNS_RR_CANONICAL_NAME)
               {
@@ -331,7 +331,7 @@ handle_message (DskDnsMessage *message)
     }
 }
 
-static dsk_boolean
+static bool
 handle_dns_udp_socket_readable (void *socket,
                                 void *user_data)
 {
@@ -391,16 +391,16 @@ next_packet:
           }
         case DSK_IO_RESULT_AGAIN:
         case DSK_IO_RESULT_EOF:      /* shouldn't happen, try like AGAIN */
-          return DSK_TRUE;
+          return true;
         case DSK_IO_RESULT_ERROR:
           dsk_warning ("DNS: receiving from UDP socket: %s", error->message);
           dsk_error_unref (error);
-          return DSK_TRUE;              /* um, could induce busy loop */
+          return true;              /* um, could induce busy loop */
         }
     }
 }
 
-static dsk_boolean
+static bool
 dsk_dns_try_init (DskError **error)
 {
   char buf[2048];
@@ -416,7 +416,7 @@ dsk_dns_try_init (DskError **error)
     {
       dsk_set_error (error, "error opening %s: %s",
                      "/etc/hosts", strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   lineno = 0;
   while (fgets (buf, sizeof (buf), fp) != NULL)
@@ -484,7 +484,7 @@ retry:
     {
       dsk_set_error (error, "error opening %s: %s",
                      "/etc/resolv.conf", strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   lineno = 0;
   while (fgets (buf, sizeof (buf), fp) != NULL)
@@ -511,14 +511,14 @@ retry:
         {
           const char *in;
           char *out;
-          dsk_boolean dot_allowed;
+          bool dot_allowed;
           unsigned i;
 
           /* Add a searchpath to the list. */
 
           /* normalize argument (lowercase; check syntax) */
           in = out = arg;
-          dot_allowed = DSK_FALSE;
+          dot_allowed = false;
           while (*in)
             {
               if (*in == '.')
@@ -526,12 +526,12 @@ retry:
                   if (dot_allowed)
                     {
                       *out++ = '.';
-                      dot_allowed = DSK_FALSE;
+                      dot_allowed = false;
                     }
                 }
               else if ('A' <= *in && *in <= 'Z')
                 {
-                  dot_allowed = DSK_TRUE;
+                  dot_allowed = true;
                   *out++ = *in + ('a' - 'A');
                 }
               else if (('0' <= *in && *in <= '9')
@@ -539,7 +539,7 @@ retry:
                     || (*in == '-')
                     || (*in == '_'))
                 {
-                  dot_allowed = DSK_TRUE;
+                  dot_allowed = true;
                   *out++ = *in;
                 }
               else
@@ -620,23 +620,23 @@ next:
   if (n_resolv_conf_ns == 0)
     {
       dsk_set_error (error, "no nameservers given: cannot resolve names");
-      return DSK_FALSE;
+      return false;
     }
 
   /* make UDP socket for queries */
-  dns_udp_socket = dsk_udp_socket_new (DSK_FALSE, error);
+  dns_udp_socket = dsk_udp_socket_new (false, error);
   if (dns_udp_socket == NULL)
     {
       dsk_add_error_prefix (error, "initializing dns client");
-      return DSK_FALSE;
+      return false;
     }
   dsk_hook_trap (&dns_udp_socket->readable,
                  handle_dns_udp_socket_readable,
                  NULL, NULL);
 
 
-  dns_initialized = DSK_TRUE;
-  return DSK_TRUE;
+  dns_initialized = true;
+  return true;
 }
 
 #define MAYBE_DNS_INIT_RETURN(error, error_rv)         \
@@ -647,14 +647,14 @@ next:
 
 /* --- expunging old records --- */
 static unsigned expunge_block_count = 0;
-static dsk_boolean blocked_expunge = DSK_FALSE;
+static bool blocked_expunge = false;
 static void
 expunge_old_cache_entries (void)
 {
   dsk_time_t cur_time;
   if (expunge_block_count)
     {
-      blocked_expunge = DSK_TRUE;
+      blocked_expunge = true;
       return;
     }
   cur_time = dsk_get_current_time ();
@@ -700,7 +700,7 @@ expunge_old_cache_entries (void)
    name must be canonicalized. */
 DskDnsCacheEntry *
 dsk_dns_lookup_nonblocking_entry (const char    *name,
-                                  dsk_boolean    is_ipv6,
+                                  bool    is_ipv6,
                                   DskError     **error)
 {
   DskDnsCacheEntry ce;
@@ -714,7 +714,7 @@ dsk_dns_lookup_nonblocking_entry (const char    *name,
 DskDnsLookupNonblockingResult
 dsk_dns_lookup_nonblocking (const char *name,
                            DskIpAddress *out,
-                           dsk_boolean    is_ipv6,
+                           bool    is_ipv6,
                            DskError     **error)
 {
   unsigned n_cnames = 0;
@@ -770,7 +770,7 @@ job_send_message (DskDnsCacheEntryJob *job, DskError **error)
 static void clear_waiting_to_send_flag (DskDnsCacheEntryJob *job);
 static void raise_waiting_to_send_flag (DskDnsCacheEntryJob *job);
 
-static dsk_boolean
+static bool
 handle_socket_writable (void)
 {
   while (first_waiting_to_send != NULL)
@@ -786,7 +786,7 @@ handle_socket_writable (void)
 
         case DSK_IO_RESULT_AGAIN:
           raise_waiting_to_send_flag (job);
-          return DSK_FALSE; /* do not run this trap again -
+          return false; /* do not run this trap again -
                                we have a new one */
 
         case DSK_IO_RESULT_EOF:
@@ -802,7 +802,7 @@ handle_socket_writable (void)
           dsk_assert_not_reached ();
         }
     }
-  return DSK_FALSE;
+  return false;
 }
 
 #define GET_WAITING_TO_SEND_LIST() \
@@ -821,7 +821,7 @@ raise_waiting_to_send_flag (DskDnsCacheEntryJob *job)
                              NULL, NULL);
         }
       DSK_LIST_APPEND (GET_WAITING_TO_SEND_LIST (), job);
-      job->waiting_to_send = DSK_TRUE;
+      job->waiting_to_send = true;
     }
 }
 static void
@@ -830,7 +830,7 @@ clear_waiting_to_send_flag (DskDnsCacheEntryJob *job)
   if (job->waiting_to_send)
     {
       DSK_LIST_REMOVE (GET_WAITING_TO_SEND_LIST (), job);
-      job->waiting_to_send = DSK_FALSE;
+      job->waiting_to_send = false;
       if (first_waiting_to_send == NULL)
         {
           dsk_hook_trap_destroy (dns_udp_socket_trap);
@@ -921,7 +921,7 @@ begin_dns_request (DskDnsCacheEntry *entry)
   job->attempt = 0;
   job->timer = NULL;
   job->message = NULL;
-  job->waiting_to_send = DSK_FALSE;
+  job->waiting_to_send = false;
 
   /* send dns question to nameserver */
   memset (&message, 0, sizeof (message));
@@ -965,7 +965,7 @@ begin_dns_request (DskDnsCacheEntry *entry)
 
 static void
 lookup_without_searchpath_or_cnames (const char       *normalized_name,
-                                     dsk_boolean       is_ipv6,
+                                     bool       is_ipv6,
                                      DskDnsCacheEntryFunc callback,
                                      void             *callback_data)
 {
@@ -1026,7 +1026,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
       (*callback) (entry, callback_data);
       if (--expunge_block_count == 0 && blocked_expunge)
         {
-          blocked_expunge = DSK_FALSE;
+          blocked_expunge = false;
           expunge_old_cache_entries ();
         }
       return;
@@ -1036,7 +1036,7 @@ lookup_without_searchpath_or_cnames (const char       *normalized_name,
 typedef struct _CnameInfo CnameInfo;
 struct _CnameInfo
 {
-  dsk_boolean is_ipv6;
+  bool is_ipv6;
   unsigned n_cnames;
   DskDnsCacheEntryFunc callback;
   void *callback_data;
@@ -1087,7 +1087,7 @@ handle_cname_callback (DskDnsCacheEntry *entry,
 
 static void
 lookup_without_searchpath (const char       *normalized_name,
-                           dsk_boolean       is_ipv6,
+                           bool       is_ipv6,
                            DskDnsLookupFlags flags,
                            DskDnsCacheEntryFunc callback,
                            void             *callback_data)
@@ -1138,7 +1138,7 @@ handle_searchpath_entry_lookup (DskDnsCacheEntry *entry,
     case DSK_DNS_CACHE_ENTRY_ERROR:
       status->callback (entry, status->callback_data);
       if (status->in_progress)
-        status->found_while_in_progress = DSK_TRUE;
+        status->found_while_in_progress = true;
       else
         {
           dsk_free (status->name);
@@ -1150,7 +1150,7 @@ handle_searchpath_entry_lookup (DskDnsCacheEntry *entry,
       if (status->expire_time > entry->expire_time)
         status->expire_time = entry->expire_time;
       if (status->in_progress)
-        status->not_found_while_in_progress = DSK_TRUE;
+        status->not_found_while_in_progress = true;
       else
         {
 next_search_path:
@@ -1159,9 +1159,9 @@ next_search_path:
           if (status->searchpath_index <= n_resolv_conf_search_paths)
             {
               /* lookup with the given searchpath */
-              status->in_progress = DSK_TRUE;
-              status->found_while_in_progress = DSK_FALSE;
-              status->not_found_while_in_progress = DSK_FALSE;
+              status->in_progress = true;
+              status->found_while_in_progress = false;
+              status->not_found_while_in_progress = false;
               if (status->searchpath_index == n_resolv_conf_search_paths)
                 /* no searchpath */
                 *(status->end_of_name) = 0;
@@ -1173,7 +1173,7 @@ next_search_path:
                                          status->lookup_flags,
                                          handle_searchpath_entry_lookup,
                                          status);
-              status->in_progress = DSK_FALSE;
+              status->in_progress = false;
               if (status->found_while_in_progress)
                 {
                   dsk_free (status->name);
@@ -1223,7 +1223,7 @@ next_search_path:
    SO this must copy the string BEFORE it ousts anything from its cache. */
 void
 dsk_dns_lookup_cache_entry (const char       *name,
-                            dsk_boolean       is_ipv6,
+                            bool       is_ipv6,
                             DskDnsLookupFlags flags,
                             DskDnsCacheEntryFunc callback,
                             void             *callback_data)
@@ -1233,8 +1233,8 @@ dsk_dns_lookup_cache_entry (const char       *name,
   char normalized_name[DSK_DNS_MAX_NAMELEN + 1];
   const char *in = name;
   char *out = normalized_name;
-  dsk_boolean last_was_dot = DSK_TRUE;          /* to inhibit initial '.'s */
-  dsk_boolean ends_with_dot = DSK_FALSE;
+  bool last_was_dot = true;          /* to inhibit initial '.'s */
+  bool ends_with_dot = false;
 
   /* initialize */
   if (!dns_initialized && !dsk_dns_try_init (&error))
@@ -1253,7 +1253,7 @@ dsk_dns_lookup_cache_entry (const char       *name,
 
   /* ensure is_ipv6 is 0 or 1 */
   if (is_ipv6)
-    is_ipv6 = DSK_TRUE;
+    is_ipv6 = true;
 
   /* normalize name */
   while (*in)
@@ -1265,12 +1265,12 @@ dsk_dns_lookup_cache_entry (const char       *name,
               *out++ = '.';
               if (out == normalized_name + DSK_DNS_MAX_NAMELEN)
                 goto name_too_long;
-              last_was_dot = DSK_TRUE;
+              last_was_dot = true;
             }
         }
       else
         {
-          last_was_dot = DSK_FALSE;
+          last_was_dot = false;
           if (('0' <= *in && *in <= '9')
             || ('a' <= *in && *in <= 'z')
             || *in == '-' || *in == '_')
@@ -1306,7 +1306,7 @@ dsk_dns_lookup_cache_entry (const char       *name,
     {
       --out;
       *out = 0;
-      ends_with_dot = DSK_TRUE;
+      ends_with_dot = true;
     }
   /* ensure dns system is ready */
   if (!dns_initialized && !dsk_dns_try_init (&error))
@@ -1353,12 +1353,12 @@ dsk_dns_lookup_cache_entry (const char       *name,
             }
 
           /* make request without searchpath */
-          status->in_progress = DSK_TRUE;
-          status->not_found_while_in_progress = DSK_FALSE;
-          status->found_while_in_progress = DSK_FALSE;
+          status->in_progress = true;
+          status->not_found_while_in_progress = false;
+          status->found_while_in_progress = false;
           lookup_without_searchpath (normalized_name, is_ipv6, flags,
                                      handle_searchpath_entry_lookup, status);
-          status->in_progress = DSK_FALSE;
+          status->in_progress = false;
           if (status->not_found_while_in_progress)
             {
               /* next searchpath */

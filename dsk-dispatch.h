@@ -60,14 +60,14 @@ void  dsk_dispatch_remove_timer (DskDispatchTimer *);
 
 /* querying the timer (UNIMPLEMENTED) */
 
-dsk_boolean  dsk_dispatch_timer_is_wallclock (DskDispatchTimer *);
+bool  dsk_dispatch_timer_is_wallclock (DskDispatchTimer *);
 uint64_t     dsk_dispatch_timer_get_expiration_millis (DskDispatchTimer *);
 
 
 /* see effective-timers.txt
    
  */
-dsk_boolean  dsk_supports_effective_timers (void);
+bool  dsk_supports_effective_timers (void);
 
 /* Idle functions */
 typedef void (*DskIdleFunc)   (void               *func_data);
@@ -91,7 +91,7 @@ typedef struct _DskDispatchChildInfo DskDispatchChildInfo;
 struct _DskDispatchChildInfo
 {
   int process_id;
-  dsk_boolean killed;           /* killed by signal */
+  bool killed;           /* killed by signal */
   int value;                    /* exit status or signal number */
 };
 typedef void (*DskChildHandler) (DskDispatchChildInfo  *info,
@@ -148,10 +148,10 @@ struct _DskDispatch
   DskFileDescriptorNotify *notifies_desired;
 
   /* If TRUE, return immediately. */
-  dsk_boolean has_idle;
+  bool has_idle;
 
   /* number of milliseconds to wait if no events occur */
-  dsk_boolean has_timeout;
+  bool has_timeout;
   unsigned long timeout_secs;
   unsigned timeout_usecs;
 

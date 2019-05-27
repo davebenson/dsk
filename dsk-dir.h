@@ -45,7 +45,7 @@ DIR         *dsk_dir_sys_opendir             (DskDir         *dir,
                                               const char     *path);
 
 const char  *dsk_dir_get_str                 (DskDir         *dir);
-dsk_boolean  dsk_dir_did_create              (DskDir         *dir);
+bool  dsk_dir_did_create              (DskDir         *dir);
 
 typedef enum
 {
@@ -76,7 +76,7 @@ typedef enum
   DSK_DIR_SET_CONTENTS_NO_MKDIR = (1<<0),
   DSK_DIR_SET_CONTENTS_NO_TMP_FILE = (1<<1)
 } DskDirSetContentsFlags;
-dsk_boolean  dsk_dir_set_contents (DskDir                 *dir,
+bool  dsk_dir_set_contents (DskDir                 *dir,
                                    const char             *path,
                                    DskDirSetContentsFlags  flags,
                                    unsigned                mode,
@@ -104,7 +104,7 @@ typedef struct
   unsigned n_files_deleted;
 } DskDirRmStats;
 
-dsk_boolean  dsk_dir_rm                      (DskDir       *dir,
+bool  dsk_dir_rm                      (DskDir       *dir,
                                               const char   *path,
                                               DskDirRmFlags flags,
                                               DskDirRmStats*stats_out_optional,
@@ -119,7 +119,7 @@ typedef struct
   unsigned files_copied;
   unsigned dirs_copied;
 } DskDirCpStats;
-int          dsk_dir_cp                      (DskDir       *dir,
+bool         dsk_dir_cp                      (DskDir       *dir,
                                               const char   *src,
                                               const char   *dst,
                                               DskDirCpFlags flags,
@@ -135,7 +135,7 @@ typedef struct
 {
   unsigned dirs_made;
 } DskDirMkdirStats;
-int          dsk_dir_mkdir                   (DskDir       *dir,
+bool         dsk_dir_mkdir                   (DskDir       *dir,
                                               const char   *src,
                                               DskDirMkdirFlags flags,
                                               DskDirMkdirStats *stats_out_optional,
@@ -143,4 +143,4 @@ int          dsk_dir_mkdir                   (DskDir       *dir,
 
 
 
-void dsk_dir_set_erase_on_destroy (DskDir *dir, dsk_boolean do_erase);
+void dsk_dir_set_erase_on_destroy (DskDir *dir, bool do_erase);

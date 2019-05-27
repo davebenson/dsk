@@ -6,7 +6,7 @@
 #define MK_PTR(integer)     ((void*)(size_t)(integer))
 #define GET_INT(pointer)     ((unsigned)(size_t)(pointer))
 
-static dsk_boolean verbose = DSK_FALSE;
+static bool verbose = false;
 
 static void
 test_0 (void)
@@ -35,7 +35,7 @@ static void test_from_file (const char *filename)
   DskPatternEntry entries[100];
   unsigned line_no = 0;
   DskPattern *pattern = NULL;
-  dsk_boolean in_test = DSK_FALSE;
+  bool in_test = false;
   if (fp == NULL)
     dsk_die ("test_from_file: error opening %s", filename);
   while (fgets (buf, sizeof (buf), fp) != NULL)
@@ -121,7 +121,7 @@ restart:
           if (in_test)
             fprintf (stderr, " done.\n");
           fprintf (stderr, "Test: %s... ", banner);
-          in_test = DSK_TRUE;
+          in_test = true;
         }
       else
         {

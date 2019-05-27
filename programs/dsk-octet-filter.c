@@ -17,7 +17,7 @@ add_filter (DskSyncFilter *filter)
   filters[n_filters++] = filter;
 }
 
-static dsk_boolean
+static bool
 parse_comma_sep (const char *flag_str,
                  uint8_t    *flags_out,
                  DskError  **error,
@@ -57,7 +57,7 @@ parse_comma_sep (const char *flag_str,
           if (i == n_flags)
             {
               dsk_set_error (error, "bad flag '%.*s'", (int)(end-start), start);
-              return DSK_FALSE;
+              return false;
             }
           flags_out[i] = 1;
         }
@@ -67,20 +67,20 @@ parse_comma_sep (const char *flag_str,
         end++;
       flag_str = end;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 handle_generic_compress (DskZlibMode mode, const char *arg_value, DskError **error)
 {
   int level = atoi (arg_value);
   if (level < 0 || level > 9)
     {
       dsk_set_error (error, "bad level %s", arg_value);
-      return DSK_FALSE;
+      return false;
     }
   add_filter (dsk_zlib_compressor_new (mode, level));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_zlib_compress)
 {
@@ -99,12 +99,12 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_gzip_compress)
 }
 
 
-static dsk_boolean
+static bool
 handle_generic_decompress (DskZlibMode mode, DskError **error)
 {
   DSK_UNUSED (error);
   add_filter (dsk_zlib_decompressor_new (mode));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_zlib_decompress)
 {
@@ -129,22 +129,22 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_compress)
   if (level < 0 || level > 9)
     {
       dsk_set_error (error, "bad level %s", arg_value);
-      return DSK_FALSE;
+      return false;
     }
   add_filter (dsk_bz2lib_compressor_new (level));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_bz2lib_decompress)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value);
   DSK_UNUSED (error);
   add_filter (dsk_bz2lib_decompressor_new ());
-  return DSK_TRUE;
+  return true;
 }
 #endif
 DSK_CMDLINE_CALLBACK_DECLARE(handle_c_quote)
 {
-  dsk_boolean add_quotes = DSK_TRUE, protect_trigraphs = DSK_FALSE;
+  bool add_quotes = true, protect_trigraphs = false;
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (error);
   if (arg_value)
     {
@@ -152,74 +152,74 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_c_quote)
       if (!parse_comma_sep (arg_value, flags, error,
                             "quotes", "noquotes",
                             "trigraphs", "notrigraphs", NULL))
-        return DSK_FALSE;
+        return false;
       if (flags[0])
-        add_quotes = DSK_TRUE;
+        add_quotes = true;
       else if (flags[1])
-        add_quotes = DSK_FALSE;
+        add_quotes = false;
       if (flags[2])
-        protect_trigraphs = DSK_TRUE;
+        protect_trigraphs = true;
       else if (flags[3])
-        protect_trigraphs = DSK_FALSE;
+        protect_trigraphs = false;
     }
 
   add_filter (dsk_c_quoter_new (add_quotes, protect_trigraphs));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_c_unquote)
 {
-  dsk_boolean remove_quotes = DSK_TRUE;
+  bool remove_quotes = true;
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (error);
   if (arg_value)
     {
       uint8_t flags[2];
       if (!parse_comma_sep (arg_value, flags, error,
                             "quotes", "noquotes", NULL))
-        return DSK_FALSE;
+        return false;
       if (flags[0])
-        remove_quotes = DSK_TRUE;
+        remove_quotes = true;
       else if (flags[1])
-        remove_quotes = DSK_FALSE;
+        remove_quotes = false;
     }
 
   add_filter (dsk_c_unquoter_new (remove_quotes));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_quote_printable)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_quote_printable_new ());
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_unquote_printable)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_unquote_printable_new ());
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_base64_encode)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
-  add_filter (dsk_base64_encoder_new (DSK_TRUE));
-  return DSK_TRUE;
+  add_filter (dsk_base64_encoder_new (true));
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_base64_encode_oneline)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
-  add_filter (dsk_base64_encoder_new (DSK_FALSE));
-  return DSK_TRUE;
+  add_filter (dsk_base64_encoder_new (false));
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_base64_decode)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_base64_decoder_new ());
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_hex_encode)
 {
 
-  dsk_boolean newlines = DSK_FALSE, spaces = DSK_FALSE;
+  bool newlines = false, spaces = false;
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (error);
   if (arg_value)
     {
@@ -227,89 +227,89 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_hex_encode)
       if (!parse_comma_sep (arg_value, flags, error,
                             "newlines", "nonewlines",
                             "spaces", "nospaces", NULL))
-        return DSK_FALSE;
+        return false;
       if (flags[0])
-        newlines = DSK_TRUE;
+        newlines = true;
       else if (flags[1])
-        newlines = DSK_FALSE;
+        newlines = false;
       if (flags[2])
-        spaces = DSK_TRUE;
+        spaces = true;
       else if (flags[3])
-        spaces = DSK_FALSE;
+        spaces = false;
     }
   add_filter (dsk_hex_encoder_new (newlines, spaces));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_hex_decode)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_hex_decoder_new ());
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_url_encode)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_url_encoder_new ());
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_url_decode)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_url_decoder_new ());
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 parse_byte_spec (const char *spec, uint8_t *out, DskError **error)
 {
   if (spec[0] == 0)
     {
       *out = 0;
-      return DSK_TRUE;
+      return true;
     }
   else if (spec[1] == 0)
     {
       *out = *spec;
-      return DSK_TRUE;
+      return true;
     }
   else if (spec[0] == 'h' && spec[1] == 'e' && spec[2] == 'x' && spec[3] == ':')
     {
       if (!dsk_ascii_isxdigit (spec[4]) || !dsk_ascii_isxdigit (spec[5]) || spec[6] != 0)
         {
           dsk_set_error (error, "'hex:' must be followed by 2 hex digits");
-          return DSK_FALSE;
+          return false;
         }
       *out = (dsk_ascii_xdigit_value (spec[4]) << 4)
            | dsk_ascii_xdigit_value (spec[5]);
-      return DSK_TRUE;
+      return true;
     }
   else if (spec[0] == '\\')
     {
       /* fire up c-unquoter */
       DskBuffer buf = DSK_BUFFER_INIT;
-      DskSyncFilter *f = dsk_c_unquoter_new (DSK_FALSE);
+      DskSyncFilter *f = dsk_c_unquoter_new (false);
       if (!dsk_sync_filter_process (f, &buf, strlen (spec), (uint8_t*)spec, error)
        || !dsk_sync_filter_finish (f, &buf, error))
         {
           dsk_object_unref (f);
           dsk_buffer_clear (&buf);
-          return DSK_FALSE;
+          return false;
         }
       dsk_object_unref (f);
       if (buf.size != 1)
         {
           dsk_set_error (error, "trailing garbage after \\ sequence for byte-spec");
-          return DSK_FALSE;
+          return false;
         }
       dsk_buffer_read (&buf, 1, out);
-      return DSK_TRUE;
+      return true;
     }
   else
     {
       dsk_set_error (error, "unrecognized byte-spec");
-      return DSK_FALSE;
+      return false;
     }
 }
 
@@ -320,14 +320,14 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_byte_doubler)
 
   /* parse byte */
   if (!parse_byte_spec (arg_value, &byte, error))
-    return DSK_FALSE;
+    return false;
   add_filter (dsk_byte_doubler_new (byte));
-  return DSK_TRUE;
+  return true;
 }
 DSK_CMDLINE_CALLBACK_DECLARE(handle_byte_undoubler)
 {
   unsigned len = strlen (arg_value);
-  dsk_boolean ignore_errors;
+  bool ignore_errors;
   uint8_t byte;
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
   if (len > 1 && arg_value[len-1] == '!')
@@ -338,26 +338,26 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_byte_undoubler)
       if (!parse_byte_spec (av, &byte, error))
         {
           dsk_free (av);
-          return DSK_FALSE;
+          return false;
         }
       dsk_free (av);
-      ignore_errors = DSK_TRUE;
+      ignore_errors = true;
     }
   else
     {
       if (!parse_byte_spec (arg_value, &byte, error))
-        return DSK_FALSE;
-      ignore_errors = DSK_FALSE;
+        return false;
+      ignore_errors = false;
     }
   add_filter (dsk_byte_undoubler_new (byte, ignore_errors));
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_xml_escape)
 {
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data); DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_xml_escaper_new ());
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_utf8_fixer)
@@ -371,10 +371,10 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_utf8_fixer)
   else
     {
       dsk_set_error (error, "invalid mode to utf-fixer '%s': only 'drop' and 'latin1' known", arg_value);
-      return DSK_FALSE;
+      return false;
     }
   add_filter (dsk_utf8_fixer_new (mode));
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_latin1_to_utf8)
@@ -382,7 +382,7 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_latin1_to_utf8)
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
   DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_codepage_to_utf8_new (&dsk_codepage_latin1));
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_CMDLINE_CALLBACK_DECLARE(handle_json_prettier)
@@ -390,7 +390,7 @@ DSK_CMDLINE_CALLBACK_DECLARE(handle_json_prettier)
   DSK_UNUSED (arg_name); DSK_UNUSED (callback_data);
   DSK_UNUSED (arg_value); DSK_UNUSED (error);
   add_filter (dsk_json_prettier_new ());
-  return DSK_TRUE;
+  return true;
 }
 
 int main(int argc, char **argv)
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
         }
       if (rv == 0)
         break;
-      if (!dsk_sync_filter_process_buffer (filter, &out, in.size, &in, DSK_TRUE, &error))
+      if (!dsk_sync_filter_process_buffer (filter, &out, in.size, &in, true, &error))
         dsk_die ("error running filter: %s", error->message);
       if (!dsk_buffer_write_all_to_fd (&out, STDOUT_FILENO, &error))
         dsk_die ("error writing to stdout: %s", error->message);

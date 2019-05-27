@@ -17,7 +17,7 @@ char * dsk_codegen_mixedcase_to_uppercase    (const char *mixedcase)
       out_len++;
   out_len += (at - mixedcase);
 
-  dsk_boolean suppress_underscore = DSK_TRUE;
+  bool suppress_underscore = true;
   char *rv = dsk_malloc (out_len + 1);
   char *rv_at = rv;
   for (at = mixedcase; *at; at++)
@@ -26,13 +26,13 @@ char * dsk_codegen_mixedcase_to_uppercase    (const char *mixedcase)
         {
           if (!suppress_underscore)
             *rv_at++ = '_';
-          suppress_underscore = DSK_TRUE;
+          suppress_underscore = true;
           *rv_at++ = *at;
         }
       else
         {
           *rv_at++ = dsk_ascii_toupper (*at);
-          suppress_underscore = DSK_FALSE;
+          suppress_underscore = false;
         }
     }
   *rv_at = 0;
@@ -48,7 +48,7 @@ char * dsk_codegen_mixedcase_to_lowercase    (const char *mixedcase)
       out_len++;
   out_len += (at - mixedcase);
 
-  dsk_boolean suppress_underscore = DSK_TRUE;
+  bool suppress_underscore = true;
   char *rv = dsk_malloc (out_len + 1);
   char *rv_at = rv;
   for (at = mixedcase; *at; at++)
@@ -57,13 +57,13 @@ char * dsk_codegen_mixedcase_to_lowercase    (const char *mixedcase)
         {
           if (!suppress_underscore)
             *rv_at++ = '_';
-          suppress_underscore = DSK_TRUE;
+          suppress_underscore = true;
           *rv_at++ = dsk_ascii_tolower (*at);
         }
       else
         {
           *rv_at++ = *at;
-          suppress_underscore = DSK_FALSE;
+          suppress_underscore = false;
         }
     }
   *rv_at = 0;

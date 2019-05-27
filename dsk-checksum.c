@@ -1,5 +1,6 @@
 #include "dsk.h"
 #include <string.h>
+#include <alloca.h>
 
 /* --- for implementing new types of hash functions --- */
 struct _DskChecksum
@@ -142,6 +143,19 @@ dsk_checksum_destroy    (DskChecksum        *checksum)
 
   dsk_free (checksum);
 }
+
+void           dsk_checksum            (DskChecksumType type,
+                                        size_t          len,
+                                        const void     *data,
+                                        uint8_t        *checksum_out)
+{
+  void *sum = alloca (dsk_checksum_sizeof_instance (type));
+  dsk_checksum_init (sum, type);
+  dsk_checksum_feed (sum, len, data);
+  dsk_checksum_done (sum);
+  dsk_checksum_get (sum, checksum_out);
+}
+
 
 /*
  *  __  __ ____  ____
@@ -1431,7 +1445,7 @@ dsk_checksum_crc32_done_swap (DskChecksum        *checksum)
  */
 static void
 _dsk_checksum_crc32_init (DskChecksum *checksum,
-                          dsk_boolean swap)
+                          bool swap)
 {
   ChecksumCRC32 *checksum_crc32 = (ChecksumCRC32 *) checksum;
   checksum->size = 4;

@@ -35,7 +35,7 @@ typedef enum
               if (--in_length == 0) \
                 { \
                   cunquoter->last_char = UNESCAPED_CHAR; \
-                  return DSK_TRUE; \
+                  return true; \
                 } \
               goto unescaped_char_loop
 #define WRITE_SINGLE_CHAR_ESCAPED_CASES \
@@ -48,7 +48,7 @@ typedef enum
             WRITE_CASE_SIMPLE_ESCAPED ('\v', "\\v"); \
             WRITE_CASE_SIMPLE_ESCAPED ('"' , "\\\""); \
             WRITE_CASE_SIMPLE_ESCAPED ('\\', "\\\\");
-static dsk_boolean
+static bool
 dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
@@ -57,7 +57,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
 {
   DskSyncFilterCUnquoter *cunquoter = (DskSyncFilterCUnquoter *) filter;
   if (in_length == 0)
-    return DSK_TRUE;
+    return true;
   if (cunquoter->remove_initial_quote)
     {
       if (*in_data == '"')
@@ -66,13 +66,13 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           in_length--;
           cunquoter->remove_initial_quote = 0;
           if (in_length == 0)
-            return DSK_TRUE;
+            return true;
         }
       else
         {
           dsk_set_error (error, "expected '\"' start of string");
           cunquoter->remove_initial_quote = 0;
-          return DSK_FALSE;
+          return false;
         }
     }
   switch (cunquoter->state)
@@ -92,10 +92,10 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
                     if (rem != 1)
                       {
                         dsk_set_error (error, "trailing data after '\"'");
-                        return DSK_FALSE;
+                        return false;
                       }
                     cunquoter->state = STATE_DONE;
-                    return DSK_TRUE;
+                    return true;
                   }
                 else if (*at == '\\')
                   {
@@ -117,7 +117,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           {
             dsk_buffer_append (out, in_length, in_data);
             cunquoter->state = STATE_DEFAULT;
-            return DSK_TRUE;
+            return true;
           }
         unsigned n = bs - in_data;
         dsk_buffer_append (out, n, in_data);
@@ -126,7 +126,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
         if (in_length == 0)
           {
             cunquoter->state = STATE_AFTER_BACKSLASH;
-            return DSK_TRUE;
+            return true;
           }
       }
       goto state_after_backslash;
@@ -142,7 +142,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (in_length == 0) \
             { \
               cunquoter->state = STATE_DEFAULT; \
-              return DSK_TRUE; \
+              return true; \
             } \
           goto state_default
         WRITE_CASE ('a', '\a');
@@ -159,7 +159,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (in_length == 0)
             {
               cunquoter->state = STATE_DEFAULT;
-              return DSK_TRUE;
+              return true;
             }
           goto state_default;
         case '0': case '1': case '2': case '3':
@@ -170,14 +170,14 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (in_length == 0)
             {
               cunquoter->state = STATE_AFTER_1_OCTAL;
-              return DSK_TRUE;
+              return true;
             }
           goto state_after_1_octal;
 
         default:
           dsk_set_error (error, "expected character %s after backslash",
                          dsk_ascii_byte_name (*in_data));
-          return DSK_FALSE;
+          return false;
         }
 #undef WRITE_CASE
     case STATE_AFTER_1_OCTAL:
@@ -191,7 +191,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (in_length == 0)
             {
               cunquoter->state = STATE_AFTER_2_OCTAL;
-              return DSK_TRUE;
+              return true;
             }
           goto state_after_2_octal;
         }
@@ -207,7 +207,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (cunquoter->partial_octal >= 32)
             {
               dsk_set_error (error, "octal value too large parsing c-quoted data");
-              return DSK_FALSE;
+              return false;
             }
           cunquoter->partial_octal <<= 3;
           cunquoter->partial_octal += *in_data - '0';
@@ -217,7 +217,7 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
           if (in_length == 0)
             {
               cunquoter->state = STATE_DEFAULT;
-              return DSK_TRUE;
+              return true;
             }
           goto state_default;
         }
@@ -236,14 +236,14 @@ dsk_sync_filter_c_unquoter_process (DskSyncFilter *filter,
       if (in_length)
         {
           dsk_set_error (error, "non-whitespace after trailing quote");
-          return DSK_FALSE;
+          return false;
         }
-      return DSK_TRUE;
+      return true;
     }
-  dsk_return_val_if_reached (NULL, DSK_FALSE);
+  dsk_return_val_if_reached (NULL, false);
 }
 
-static dsk_boolean
+static bool
 dsk_sync_filter_c_unquoter_finish  (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    DskError      **error)
@@ -255,19 +255,19 @@ dsk_sync_filter_c_unquoter_finish  (DskSyncFilter *filter,
       break;
     case STATE_AFTER_BACKSLASH:
       dsk_set_error (error, "unterminated backslash escape sequence");
-      return DSK_FALSE;
+      return false;
     case STATE_AFTER_1_OCTAL:
     case STATE_AFTER_2_OCTAL:
       dsk_buffer_append_byte (out, cunquoter->partial_octal);
       break;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskSyncFilterCUnquoter, dsk_sync_filter_c_unquoter);
 
 DskSyncFilter *
-dsk_c_unquoter_new (dsk_boolean remove_quotes)
+dsk_c_unquoter_new (bool remove_quotes)
 {
   DskSyncFilterCUnquoter *cu = dsk_object_new (&dsk_sync_filter_c_unquoter_class);
   if (remove_quotes)

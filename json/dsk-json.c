@@ -25,7 +25,7 @@ DskJsonValue *dsk_json_value_new_null   (void)
   rv->type = DSK_JSON_VALUE_NULL;
   return rv;
 }
-DskJsonValue *dsk_json_value_new_boolean(dsk_boolean    value)
+DskJsonValue *dsk_json_value_new_boolean(bool    value)
 {
   DskJsonValue *rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_BOOLEAN;

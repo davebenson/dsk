@@ -40,7 +40,7 @@ struct _DskDnsHeader
 /* === parsing a binary message === */
 
 /* Returns the name's length, including NUL */
-static dsk_boolean
+static bool
 gather_name_length (unsigned       length,
                     const uint8_t *data,
                     unsigned      *used_inout,
@@ -50,26 +50,26 @@ gather_name_length (unsigned       length,
   unsigned used = *used_inout;
   unsigned at = used;
   unsigned rv = 0;
-  dsk_boolean has_followed_pointer = DSK_FALSE;
+  bool has_followed_pointer = false;
   unsigned n_pieces = 0;
   for (;;)
     {
       if (at == length)
         {
           dsk_set_error (error, "truncated at beginning of name");
-          return DSK_FALSE;
+          return false;
         }
       if (data[at] != 0 && (data[at] & 0xc0) == 0)
         {
           if (++n_pieces > MAX_PIECES)
             {
               dsk_set_error (error, "too many components in message (or circular loop)");
-              return DSK_FALSE;
+              return false;
             }
           if (at + data[at] + 1 > length)
             {
               dsk_set_error (error, "string of length %u truncated", data[at]);
-              return DSK_FALSE;
+              return false;
             }
           rv += data[at] + 1;
           at += data[at] + 1;
@@ -79,17 +79,17 @@ gather_name_length (unsigned       length,
           if (!has_followed_pointer)
             *used_inout = at + 1;
           *sublen_out = rv ? rv : 1;
-          return DSK_TRUE;
+          return true;
         }
       else if ((data[at] & 0xc0) != 0xc0)
         {
           dsk_set_error (error, "invalid bytes in dns string");
-          return DSK_FALSE;
+          return false;
         }
       else if (at + 1 == length)
         {
           dsk_set_error (error, "string truncated in middle of pointer");
-          return DSK_FALSE;
+          return false;
         }
       else
         {
@@ -97,12 +97,12 @@ gather_name_length (unsigned       length,
           if (!has_followed_pointer)
             {
               *used_inout = at + 2;
-              has_followed_pointer = DSK_TRUE;
+              has_followed_pointer = true;
             }
           if (new_offset >= length)
             {
               dsk_set_error (error, "pointer out-of-bounds unpacking dns");
-              return DSK_FALSE;
+              return false;
             }
           at = new_offset;
         }
@@ -110,7 +110,7 @@ gather_name_length (unsigned       length,
 }
 
 
-static dsk_boolean
+static bool
 gather_name_length_resource_record (unsigned       length,
                                     const uint8_t *data,
                                     unsigned      *used_inout, 
@@ -127,12 +127,12 @@ gather_name_length_resource_record (unsigned       length,
 
   /* owner */
   if (!gather_name_length (length, data, used_inout, &sublen, error))
-    return DSK_FALSE;
+    return false;
   *str_space_inout += sublen;
   if (*used_inout + 10 > length)
     {
       dsk_set_error (error, "truncated resource-record");
-      return DSK_FALSE;
+      return false;
     }
   memcpy (header, data + *used_inout, 10);
   *used_inout += 10;
@@ -141,7 +141,7 @@ gather_name_length_resource_record (unsigned       length,
   if (*used_inout + rdlength > length)
     {
       dsk_set_error (error, "truncated resource-data");
-      return DSK_FALSE;
+      return false;
     }
   //rddata = data + *used_inout;
   switch (type)
@@ -160,10 +160,10 @@ gather_name_length_resource_record (unsigned       length,
     case DSK_DNS_RR_ZONE_TRANSFER:
     case DSK_DNS_RR_ZONE_MAILB:
       dsk_set_error (error, "unimplemented resource-record type %u", type);
-      return DSK_FALSE;
+      return false;
     default:
       dsk_set_error (error, "unknown resource-record type %u", type);
-      return DSK_FALSE;
+      return false;
     }
 
   init_used = *used_inout;
@@ -194,7 +194,7 @@ gather_name_length_resource_record (unsigned       length,
           }
         case 'n':
           if (!gather_name_length (length, data, used_inout, &sublen, error))
-            return DSK_FALSE;
+            return false;
           *str_space_inout += sublen;
           break;
         default:
@@ -206,12 +206,12 @@ gather_name_length_resource_record (unsigned       length,
     {
       dsk_set_error (error, "mismatch between parsed size %u and stated rdlength %u", 
                      *used_inout - init_used, rdlength);
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 truncated:
   dsk_set_error (error, "data truncated in resource-record of type %u", type);
-  return DSK_FALSE;
+  return false;
 }
 
 static const char *
@@ -242,7 +242,7 @@ parse_domain_name     (unsigned              length,
     {
       /* truncated */
       dsk_set_error (error, "truncated in domain name");
-      return DSK_FALSE;
+      return false;
     }
   if (data[*used_inout] == 0)
     {
@@ -298,7 +298,7 @@ parse_length_prefixed_string (const uint8_t *data,
   return rv;
 }
 
-static dsk_boolean
+static bool
 parse_question (unsigned          length,
                 const uint8_t    *data,
                 unsigned         *used_inout,
@@ -312,7 +312,7 @@ parse_question (unsigned          length,
   if (*used_inout + 4 > length)
     {
       dsk_set_error (error, "data truncated in question");
-      return DSK_FALSE;
+      return false;
     }
   memcpy (array, data + *used_inout, 4);
   *used_inout += 4;
@@ -320,10 +320,10 @@ parse_question (unsigned          length,
   question->query_type = htons (array[0]);
   question->query_class = htons (array[1]);
   /* TODO: validate query_type and query_class */
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 parse_resource_record (unsigned              length,
                        const uint8_t        *data,
                        unsigned             *used_inout,
@@ -338,11 +338,11 @@ parse_resource_record (unsigned              length,
   //uint16_t rdlength;
   rr->owner = parse_domain_name (length, data, used_inout, str_heap_at, error);
   if (rr->owner == NULL)
-    return DSK_FALSE;
+    return false;
   if (*used_inout + 10 > length)
     {
       dsk_set_error (error, "data truncated in resource-record header");
-      return DSK_FALSE;
+      return false;
     }
   memcpy (header, data + *used_inout, 10);
   *used_inout += 10;
@@ -369,7 +369,7 @@ parse_resource_record (unsigned              length,
     case DSK_DNS_RR_POINTER:
       rr->rdata.domain_name = parse_domain_name (length, data, used_inout, str_heap_at, error);
       if (rr->rdata.domain_name == NULL)
-        return DSK_FALSE;
+        return false;
       break;
     case DSK_DNS_RR_HOST_INFO:
       rr->rdata.hinfo.cpu = parse_length_prefixed_string (data, used_inout, str_heap_at);
@@ -383,12 +383,12 @@ parse_resource_record (unsigned              length,
         *used_inout += 2;
       }
       if ((rr->rdata.mx.mail_exchange_host_name = parse_domain_name (length, data, used_inout, str_heap_at, error)) == NULL)
-       return DSK_FALSE;
+       return false;
       break;
     case DSK_DNS_RR_START_OF_AUTHORITY:
       if ((rr->rdata.soa.mname = parse_domain_name (length, data, used_inout, str_heap_at, error)) == NULL
        || (rr->rdata.soa.rname = parse_domain_name (length, data, used_inout, str_heap_at, error)) == NULL)
-       return DSK_FALSE;
+       return false;
       {
         uint32_t intervals[5];
         memcpy (intervals, data + *used_inout, 20);
@@ -405,17 +405,17 @@ parse_resource_record (unsigned              length,
       break;
     default:
       dsk_set_error (error, "invalid type %u of resource-record", type);
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 validate_opcode (DskDnsOpcode opcode)
 {
   return opcode <= 5;
 }
-static dsk_boolean
+static bool
 validate_rcode (DskDnsRcode rcode)
 {
   return rcode <= 10;
@@ -554,7 +554,7 @@ struct _StrTreeNode
   unsigned is_red;
 };
 
-static dsk_boolean
+static bool
 validate_name (const char *domain_name)
 {
   unsigned n_non_dot = 0;
@@ -565,37 +565,37 @@ validate_name (const char *domain_name)
       if (*domain_name == '.')
         {
           if (n_non_dot == 0)
-            return DSK_FALSE;
+            return false;
           n_non_dot = 0;
         }
       else
         {
           if (!('a' <= *domain_name && *domain_name <= 'z')
                && *domain_name != '-' && *domain_name != '_')
-            return DSK_FALSE;
+            return false;
           domain_name++;
           n_non_dot++;
           if (n_non_dot > 63)
-            return DSK_FALSE;
+            return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 validate_question (DskDnsQuestion *question)
 {
   if (!validate_name (question->name))
-    return DSK_FALSE;
+    return false;
   /* TODO: consider validating class/rr-type */
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 validate_resource_record (DskDnsResourceRecord *rr)
 {
   if (!validate_name (rr->owner))
-    return DSK_FALSE;
+    return false;
   switch (rr->type)
     {
     case DSK_DNS_RR_NAME_SERVER:
@@ -615,10 +615,10 @@ validate_resource_record (DskDnsResourceRecord *rr)
     case DSK_DNS_RR_TEXT:
     case DSK_DNS_RR_HOST_ADDRESS:
     case DSK_DNS_RR_HOST_ADDRESS_IPV6:
-      return DSK_TRUE;
+      return true;
     case DSK_DNS_RR_WELL_KNOWN_SERVICE:
     default:
-      return DSK_FALSE;
+      return false;
     }
 }
 
@@ -719,8 +719,8 @@ get_name_size (const char     *name,
 {
   const char *end = strchr (name, 0);
   StrTreeNode **p_at = p_top;
-  dsk_boolean is_first = DSK_TRUE;
-  dsk_boolean use_ptr = DSK_FALSE;
+  bool is_first = true;
+  bool use_ptr = false;
   unsigned str_size = 0;
   if (end == name)
     return 1;
@@ -745,7 +745,7 @@ get_name_size (const char     *name,
       if (is_first)
         {
           use_ptr = (child != NULL);
-          is_first = DSK_FALSE;
+          is_first = false;
         }
       if (child == NULL)
         {

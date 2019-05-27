@@ -38,15 +38,15 @@ ping_idle_disconnect_timer (DskClientStream *stream)
 
 
 
-static dsk_boolean ip_address_is_default (DskIpAddress *address)
+static bool ip_address_is_default (DskIpAddress *address)
 {
   unsigned i;
   if (address->type != 0)
-    return DSK_FALSE;
+    return false;
   for (i = 0; i < 16; i++)
     if (address->address[i])
-      return DSK_FALSE;
-  return DSK_TRUE;
+      return false;
+  return true;
 }
 
 DskClientStream *
@@ -54,7 +54,7 @@ dsk_client_stream_new       (DskClientStreamOptions *options,
                              DskError        **error)
 {
   DskClientStream *rv;
-  dsk_boolean has_address = !ip_address_is_default (&options->address);
+  bool has_address = !ip_address_is_default (&options->address);
 
   /* check trivial usage considerations */
   dsk_warn_if_fail (!(options->hostname != NULL && has_address),
@@ -66,7 +66,7 @@ dsk_client_stream_new       (DskClientStreamOptions *options,
           dsk_set_error (error,
                          "port must be non-zero for client (hostname is '%s')",
                          options->hostname);
-          return DSK_FALSE;
+          return false;
         }
       dsk_warn_if_fail (options->path == NULL,
                         "cannot decide between tcp and local client");
@@ -277,8 +277,8 @@ handle_fd_connecting (DskFileDescriptor   fd,
   DSK_UNUSED (events);
   if (err == 0)
     {
-      stream->is_connecting = DSK_FALSE;
-      stream->is_connected = DSK_TRUE;
+      stream->is_connecting = false;
+      stream->is_connected = true;
       handle_fd_connected (stream);             /* sets the watch on the fd */
       return;
     }
@@ -290,7 +290,7 @@ handle_fd_connecting (DskFileDescriptor   fd,
                                        stream->name, strerror (err));
       dsk_dispatch_close_fd (dsk_dispatch_default (), stream->fd);
       stream->fd = -1;
-      stream->is_connecting = DSK_FALSE;
+      stream->is_connecting = false;
       maybe_set_autoreconnect_timer (stream);
       return;
     }
@@ -340,7 +340,7 @@ retry_sys_connect:
       
       if (e == EAGAIN || e == EINPROGRESS)
         {
-          stream->is_connecting = DSK_TRUE;
+          stream->is_connecting = true;
           stream->fd = fd;
           dsk_dispatch_watch_fd (dsk_dispatch_default (), fd,
                                  DSK_EVENT_WRITABLE|DSK_EVENT_READABLE,
@@ -356,7 +356,7 @@ retry_sys_connect:
       goto handle_error;
     }
 
-  stream->is_connected = DSK_TRUE;
+  stream->is_connected = true;
   stream->fd = fd;
   handle_fd_connected (stream);
   return;
@@ -459,7 +459,7 @@ begin_connecting (DskClientStream *stream)
       stream->is_resolving_name = 1;
       dsk_object_ref (stream);
       dsk_dns_lookup (stream->name,
-                      DSK_FALSE,                /* is_ipv6? should be be needed */
+                      false,                /* is_ipv6? should be be needed */
                       handle_dns_done, stream);
     }
 }
@@ -471,7 +471,7 @@ void dsk_client_stream_disconnect (DskClientStream *stream)
 
   /* close fd */
   dsk_main_close_fd (stream->fd);
-  stream->is_connected = DSK_FALSE;
+  stream->is_connected = false;
   stream->fd = -1;
 
   /* emit disconnect hook */

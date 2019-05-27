@@ -10,7 +10,7 @@ static inline void
 set_flag_generic (DskFileDescriptor fd,
                   int               get_op,
                   int               set_op,
-                  dsk_boolean       set,
+                  bool       set,
                   long              flag)
 {
   long flags;
@@ -40,25 +40,25 @@ retry_set:
 void
 dsk_fd_set_nonblocking (DskFileDescriptor fd)
 {
-  set_flag_generic (fd, F_GETFL, F_SETFL, DSK_TRUE, O_NONBLOCK);
+  set_flag_generic (fd, F_GETFL, F_SETFL, true, O_NONBLOCK);
 }
 
 void
 dsk_fd_set_close_on_exec (DskFileDescriptor fd)
 {
-  set_flag_generic (fd, F_GETFD, F_SETFD, DSK_TRUE, FD_CLOEXEC);
+  set_flag_generic (fd, F_GETFD, F_SETFD, true, FD_CLOEXEC);
 }
 
 void
 dsk_fd_set_blocking (DskFileDescriptor fd)
 {
-  set_flag_generic (fd, F_GETFL, F_SETFL, DSK_FALSE, O_NONBLOCK);
+  set_flag_generic (fd, F_GETFL, F_SETFL, false, O_NONBLOCK);
 }
 
 void
 dsk_fd_set_no_close_on_exec (DskFileDescriptor fd)
 {
-  set_flag_generic (fd, F_GETFD, F_SETFD, DSK_FALSE, FD_CLOEXEC);
+  set_flag_generic (fd, F_GETFD, F_SETFD, false, FD_CLOEXEC);
 }
 
 static void

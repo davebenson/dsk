@@ -2,11 +2,11 @@
 #include <zlib.h>
 
 /* helper function: is there space for more data at the end of this fragment? */
-static dsk_boolean
+static bool
 fragment_has_empty_space (DskBufferFragment *fragment)
 {
   if (fragment->is_foreign)
-    return DSK_FALSE;
+    return false;
   return (fragment->buf_max_size > fragment->buf_start + fragment->buf_length);
 }
 
@@ -21,10 +21,10 @@ struct _DskZlibCompressor
 {
   DskSyncFilter base_instance;
   z_stream zlib;
-  dsk_boolean initialized;
+  bool initialized;
 };
 
-static dsk_boolean
+static bool
 dsk_zlib_compressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -33,7 +33,7 @@ dsk_zlib_compressor_process(DskSyncFilter *filter,
 {
   DskZlibCompressor *compressor = (DskZlibCompressor *) filter;
   DskBufferFragment *prev_last_frag;
-  dsk_boolean added_fragment = DSK_FALSE;
+  bool added_fragment = false;
   while (in_length > 0)
     {
       DskBufferFragment *f;
@@ -42,7 +42,7 @@ dsk_zlib_compressor_process(DskSyncFilter *filter,
       if (out->last_frag == NULL
        || !fragment_has_empty_space (out->last_frag))
         {
-          added_fragment = DSK_TRUE;
+          added_fragment = true;
           prev_last_frag = out->last_frag;
           dsk_buffer_append_empty_fragment (out);
         }
@@ -69,7 +69,7 @@ dsk_zlib_compressor_process(DskSyncFilter *filter,
           dsk_set_error (error, "error compressing: %s",
                          compressor->zlib.msg);
           dsk_buffer_maybe_remove_empty_fragment (out);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -82,17 +82,17 @@ dsk_zlib_compressor_process(DskSyncFilter *filter,
       if (out->last_frag == NULL)
         out->first_frag = NULL;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_zlib_compressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
   DskZlibCompressor *compressor = (DskZlibCompressor *) filter;
   DskBufferFragment *prev_last_frag;
-  dsk_boolean added_fragment = DSK_FALSE;
+  bool added_fragment = false;
   for (;;)
     {
       DskBufferFragment *f;
@@ -101,7 +101,7 @@ dsk_zlib_compressor_finish (DskSyncFilter *filter,
       if (out->last_frag == NULL
        || !fragment_has_empty_space (out->last_frag))
         {
-          added_fragment = DSK_TRUE;
+          added_fragment = true;
           prev_last_frag = out->last_frag;
           dsk_buffer_append_empty_fragment (out);
         }
@@ -126,7 +126,7 @@ dsk_zlib_compressor_finish (DskSyncFilter *filter,
           dsk_set_error (error, "error finishing compression: %s",
                          compressor->zlib.msg);
           dsk_buffer_maybe_remove_empty_fragment (out);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -139,7 +139,7 @@ dsk_zlib_compressor_finish (DskSyncFilter *filter,
       if (out->last_frag == NULL)
         out->first_frag = NULL;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_zlib_compressor_init NULL
@@ -168,7 +168,7 @@ DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
       dsk_object_unref (rv);
       return NULL;
     }
-  rv->initialized = DSK_TRUE;
+  rv->initialized = true;
   return DSK_SYNC_FILTER (rv);
 }
 
@@ -189,7 +189,7 @@ struct _DskZlibDecompressor
   unsigned input_ended : 1;
 };
 
-static dsk_boolean
+static bool
 dsk_zlib_decompressor_process(DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -198,13 +198,13 @@ dsk_zlib_decompressor_process(DskSyncFilter *filter,
 {
   DskZlibDecompressor *decompressor = (DskZlibDecompressor *) filter;
   DskBufferFragment *prev_last_frag;
-  dsk_boolean added_fragment = DSK_FALSE;
+  bool added_fragment = false;
   if (decompressor->input_ended)
     {
       if (in_length == 0)
-        return DSK_TRUE;
+        return true;
       dsk_set_error (error, "garbage after compressed data");
-      return DSK_FALSE;
+      return false;
     }
   while (in_length > 0)
     {
@@ -214,7 +214,7 @@ dsk_zlib_decompressor_process(DskSyncFilter *filter,
       if (out->last_frag == NULL
        || !fragment_has_empty_space (out->last_frag))
         {
-          added_fragment = DSK_TRUE;
+          added_fragment = true;
           prev_last_frag = out->last_frag;
           dsk_buffer_append_empty_fragment (out);
         }
@@ -237,12 +237,12 @@ dsk_zlib_decompressor_process(DskSyncFilter *filter,
           out->size += amt_out;
           if (zrv == Z_STREAM_END)
             {
-              decompressor->input_ended = DSK_TRUE;
+              decompressor->input_ended = true;
               if (in_length > 0)
                 {
                   dsk_set_error (error, "garbage after compressed data");
                   dsk_buffer_maybe_remove_empty_fragment (out);
-                  return DSK_FALSE;
+                  return false;
                 }
             }
         }
@@ -251,7 +251,7 @@ dsk_zlib_decompressor_process(DskSyncFilter *filter,
           dsk_set_error (error, "error decompressing: %s [%d]",
                          decompressor->zlib.msg, zrv);
           dsk_buffer_maybe_remove_empty_fragment (out);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -264,19 +264,19 @@ dsk_zlib_decompressor_process(DskSyncFilter *filter,
       if (out->last_frag == NULL)
         out->first_frag = NULL;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_zlib_decompressor_finish (DskSyncFilter *filter,
                             DskBuffer      *out,
                             DskError      **error)
 {
   DskZlibDecompressor *decompressor = (DskZlibDecompressor *) filter;
   DskBufferFragment *prev_last_frag;
-  dsk_boolean added_fragment = DSK_FALSE;
+  bool added_fragment = false;
   if (decompressor->input_ended)
-    return DSK_TRUE;
+    return true;
   for (;;)
     {
       DskBufferFragment *f;
@@ -285,7 +285,7 @@ dsk_zlib_decompressor_finish (DskSyncFilter *filter,
       if (out->last_frag == NULL
        || !fragment_has_empty_space (out->last_frag))
         {
-          added_fragment = DSK_TRUE;
+          added_fragment = true;
           prev_last_frag = out->last_frag;
           dsk_buffer_append_empty_fragment (out);
         }
@@ -310,7 +310,7 @@ dsk_zlib_decompressor_finish (DskSyncFilter *filter,
           dsk_set_error (error, "error finishing decompression: %s [%d]",
                          decompressor->zlib.msg, zrv);
           dsk_buffer_maybe_remove_empty_fragment (out);
-          return DSK_FALSE;
+          return false;
         }
     }
 
@@ -323,7 +323,7 @@ dsk_zlib_decompressor_finish (DskSyncFilter *filter,
       if (out->last_frag == NULL)
         out->first_frag = NULL;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_zlib_decompressor_init NULL
@@ -350,6 +350,6 @@ DskSyncFilter *dsk_zlib_decompressor_new   (DskZlibMode mode)
       dsk_object_unref (rv);
       return NULL;
     }
-  rv->initialized = DSK_TRUE;
+  rv->initialized = true;
   return DSK_SYNC_FILTER (rv);
 }

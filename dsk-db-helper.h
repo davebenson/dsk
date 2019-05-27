@@ -34,7 +34,7 @@ struct _DskDbHelperTransactionEntry
 
   /* per-file tree, sorted by start position. */
   DskDbHelperTransactionEntry *file_left, *file_right, *file_parent;
-  dsk_boolean file_is_red;
+  bool file_is_red;
 };
 
 struct _DskDbHelper
@@ -54,7 +54,7 @@ DskDbHelper     *dsk_db_helper_new                (const char      *dir,
                                                    DskError       **error);
 void             dsk_db_helper_begin_transaction  (DskDbHelper     *helper);
 void             dsk_db_helper_abort_transaction  (DskDbHelper     *helper);
-dsk_boolean      dsk_db_helper_end_transaction    (DskDbHelper     *helper,
+bool      dsk_db_helper_end_transaction    (DskDbHelper     *helper,
                                                    DskError       **error);
 
 /* --- file api --- */
@@ -63,7 +63,7 @@ DskDbHelperFile *dsk_db_helper_create_file        (DskDbHelper     *helper,
 DskDbHelperFile *dsk_db_helper_create_file_printf (DskDbHelper     *helper,
                                                    const char      *filename_format,
 						   ...);
-dsk_boolean      dsk_db_helper_file_peek_read     (DskDbHelperFile *file,
+bool      dsk_db_helper_file_peek_read     (DskDbHelperFile *file,
                                                    uint64_t         offset,
 			                           unsigned         length,
                                                    uint8_t        **data_out,
@@ -82,7 +82,7 @@ struct _DskDbHelperPoolConfig
 {
   unsigned n_lengths;
   uint32_t *lengths;
-  dsk_boolean builtin;
+  bool builtin;
 };
 extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_2;
 extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_sqrt2;
@@ -90,7 +90,7 @@ extern DskDbHelperPoolConfig dsk_db_helper_pool__powers_of_2__sesqui;
 DskDbHelperPoolAllocator *
                  dsk_db_helper_pool_allocator_new (DskDbHelper     *helper,
                                                    DskDbHelperPoolConfig *config);
-dsk_boolean      dsk_db_helper_pool_alloc         (DskDbHelperPoolAllocator *allocator,
+bool      dsk_db_helper_pool_alloc         (DskDbHelperPoolAllocator *allocator,
                                                    uint32_t         size,
                                                    DskDbHelperPoolPosition *position_out,
                                                    DskError       **error);
@@ -117,28 +117,28 @@ struct _DskDiskhash
   DskDbHelperFile **values;
 
   /* While resizing */
-  dsk_boolean resizing;
+  bool resizing;
   unsigned resize_bucket_at;  /* index in starting size array */
   DskDbHelperFile *new_table;
   DskDbHelperFile **new_chains;
   uint64_t *new_chain_counts;
 
   /* While backing up */
-  dsk_boolean backing_up;
+  bool backing_up;
   unsigned backup_bucket_at;
   DskDbHelperFile *backup_table;
   DskDbHelperFile **backup_chains;
   DskDbHelperFile **backup_values;
 };
 
-static inline dsk_boolean
+static inline bool
 find_fixed_size (unsigned n_fixed_sizes,
                  const unsigned *fixed_sizes,
 		 unsigned size,
 		 unsigned *index_out)
 {
   if (size > fixed_sizes[n_fixed_sizes-1])
-    return DSK_FALSE;
+    return false;
   unsigned min = 0, count = n_fixed_sizes;
   while (count > 1)
     {
@@ -151,12 +151,12 @@ find_fixed_size (unsigned n_fixed_sizes,
 	}
     }
   *index_out = min;
-  return DSK_TRUE;
+  return true;
 }
 
 #define MASK_HASH(hashcode, log2) \
   (hashcode & ((1ULL << (log2)) - 1ULL))
-dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
+bool dsk_diskhash_insert (DskDiskhash   *hash,
                                  unsigned       key_length,
 			         const uint8_t *key_data,
                                  unsigned       value_length,
@@ -168,7 +168,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
   if (!find_fixed_size (hash->n_chain_fixed_sizes, hash->chain_fixed_sizes, &which_chain_size_index))
     {
       dsk_set_error (error, "key too large (%u bytes)", key_length);
-      return DSK_FALSE;
+      return false;
     }
   unsigned donate_cycles = 32;
   uint64_t n_buckets = 1ULL << hash->n_buckets_log2;
@@ -180,7 +180,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           unsigned n_cycles_used;
           if (!resize_split_chain (hash, hash->resize_bucket_at, &n_cycles_used, error))
-            return DSK_FALSE;
+            return false;
           n_cycles_used += 1;           /* count the chain as a cycle too */
           hash->resize_bucket_at += 1;
           if (n_cycles_used >= donate_cycles)
@@ -210,7 +210,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           unsigned n_cycles_used;
           if (!backup_chain (hash, hash->backup_bucket_at, &n_cycles_used, error))
-            return DSK_FALSE;
+            return false;
           n_cycles_used += 1;           /* count the chain as a cycle too */
           hash->backup_bucket_at += 1;
           if (n_cycles_used >= donate_cycles)
@@ -224,7 +224,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           /* finish backup */
           if (!backup_done (hash, error))
-            return DSK_FALSE;
+            return false;
 
           if (hash->resizing && hash->resize_bucket_at == n_buckets)
             {
@@ -235,7 +235,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
     }
 
   /* Does this entry go in the new hash-table or the old hash-table? */
-  dsk_boolean use_new_hash_table = (hash->is_resizing && hash_table_index < hash->resize_bucket_at);
+  bool use_new_hash_table = (hash->is_resizing && hash_table_index < hash->resize_bucket_at);
   DskDbHelperFile *table;
   uint64_t table_index;
   DskDbHelperFile **chains;
@@ -256,7 +256,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
 
   uint8_t *table_entry_data;
   if (!dsk_db_helper_file_peek_read (hash->table, hash_table_index * HASH_ENTRY_SIZE + HASH_HEADER_SIZE, HASH_ENTRY_SIZE, &table_entry_data, error))
-    return DSK_FALSE;
+    return false;
   uint32_t cur_which_chain_size_index = dsk_uint32_parse_le (table_entry_data + 0);
   uint32_t cur_key_length = dsk_uint32_parse_le (table_entry_data + 4);
   uint64_t cur_bucket_offset = dsk_uint64_parse_le (table_entry_data + 8);
@@ -267,7 +267,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
         {
           dsk_set_error (error, "chain corruption detected (0x%llx/0x%llx)",
                          table_index, 1ULL<<hash->n_buckets_log2);
-          return DSK_FALSE;
+          return false;
         }
       unsigned size_index = cur_which_chain_size_index - 1;
 
@@ -281,13 +281,13 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
                                                        "CHAIN.%02x",
                                                        size_index);
           if (chain_file == NULL)
-            return DSK_FALSE;
+            return false;
           hash->chains[size_index] = chain_file;
         }
 
       chain_element_size = CHAIN_FILE_ENTRY_SIZE (hash->chain_fixed_sizes[size_index]);
       if (!dsk_db_helper_file_peek_read (chain_file, cur_bucket_offset * chain_element_size + CHAIN_FILE_HEADER_SIZE, chain_element_size, &chain_element, error))
-        return DSK_FALSE;
+        return false;
 
       if (key_length == cur_key_length
        //&& cur_extra_hash == extra_hash
@@ -320,7 +320,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
                                       error))
                 {
                   dsk_db_helper_abort_transaction (hash->helper);
-                  return DSK_FALSE;
+                  return false;
                 }
               if (!free_location (hash->helper,
                                   hash->n_value_fixed_sizes,
@@ -330,7 +330,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
                                   error))
                 {
                   dsk_db_helper_abort_transaction (hash->helper);
-                  return DSK_FALSE;
+                  return false;
                 }
 
               /* NOTE: this function is only called if the two bucket sizes differ,
@@ -342,7 +342,7 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
               dsk_db_helper_end_transaction (hash->helper);
             }
 
-          return DSK_TRUE;
+          return true;
         }
 
 
@@ -368,5 +368,5 @@ dsk_boolean dsk_diskhash_insert (DskDiskhash   *hash,
   /* Commit transaction */
   dsk_db_helper_end_transaction (hash->helper);
 
-  return DSK_TRUE;
+  return true;
 }

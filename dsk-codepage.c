@@ -12,7 +12,7 @@ struct _DskCodepageToUtf8
   const DskCodepage *codepage;
 };
 
-static dsk_boolean
+static bool
 dsk_codepage_to_utf8_process (DskSyncFilter *filter,
                               DskBuffer      *out,
                               unsigned        in_length,
@@ -41,10 +41,10 @@ dsk_codepage_to_utf8_process (DskSyncFilter *filter,
           in_data += i;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dsk_codepage_to_utf8_finish (DskSyncFilter *filter,
                               DskBuffer      *out,
                               DskError      **error)
@@ -52,7 +52,7 @@ dsk_codepage_to_utf8_finish (DskSyncFilter *filter,
   DSK_UNUSED (filter);
   DSK_UNUSED (out);
   DSK_UNUSED (error);
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_codepage_to_utf8_init NULL
 #define dsk_codepage_to_utf8_finalize NULL

@@ -7,12 +7,12 @@ typedef struct _DskMimeMultipartDecoder DskMimeMultipartDecoder;
  */
 DskMimeMultipartDecoder *dsk_mime_multipart_decoder_new (char **kv_pairs,
                                                          DskError **error);
-dsk_boolean dsk_mime_multipart_decoder_feed (DskMimeMultipartDecoder *decoder,
+bool dsk_mime_multipart_decoder_feed (DskMimeMultipartDecoder *decoder,
                                              size_t                   length,
 					     const uint8_t           *data,
 					     size_t                  *n_parts_ready_out,
 					     DskError               **error);
-dsk_boolean dsk_mime_multipart_decoder_done (DskMimeMultipartDecoder *decoder,
+bool dsk_mime_multipart_decoder_done (DskMimeMultipartDecoder *decoder,
 					     size_t                  *n_parts_ready_out,
 					     DskError               **error);
 

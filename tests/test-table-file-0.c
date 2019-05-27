@@ -8,9 +8,9 @@
 #include "../dsk.h"
 
 static DskDir *location;
-static dsk_boolean cmdline_verbose = DSK_FALSE;
-static dsk_boolean cmdline_slow = DSK_FALSE;
-static dsk_boolean cmdline_keep_testdir = DSK_FALSE;
+static bool cmdline_verbose = false;
+static bool cmdline_slow = false;
+static bool cmdline_keep_testdir = false;
 
 
 

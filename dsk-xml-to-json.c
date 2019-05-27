@@ -41,7 +41,7 @@ struct _PatternComponent
 
 struct _Path
 {
-  dsk_boolean 
+  bool 
   char *component;
 
   /* a tree sorted by name */

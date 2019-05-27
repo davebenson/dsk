@@ -140,17 +140,17 @@ void      dsk_add_error_suffix (DskError   **error,
 
 void       *dsk_error_force_data (DskError   *error,
                                   DskErrorDataType *data_type,
-                                  dsk_boolean *created_out)
+                                  bool *created_out)
 {
   char *data = dsk_error_find_data (error, data_type);
   if (data)
     {
       if (created_out)
-        *created_out = DSK_FALSE;
+        *created_out = false;
       return data;
     }
   if (created_out)
-    *created_out = DSK_TRUE;
+    *created_out = true;
   DskErrorData *at = dsk_malloc (sizeof (DskErrorData) + data_type->size);
   at->type = data_type;
   at->next = error->data_list;
@@ -179,16 +179,16 @@ void        dsk_error_set_errno  (DskError   *error,
   * (int *) dsk_error_force_data (error, &dsk_error_data_type_errno, NULL) = error_no;
 }
 
-dsk_boolean dsk_error_get_errno  (DskError   *error,
+bool dsk_error_get_errno  (DskError   *error,
                                   int        *error_no_out)
 {
   int *e = dsk_error_find_data (error, &dsk_error_data_type_errno);
   if (e)
     {
       *error_no_out = *e;
-      return DSK_TRUE;
+      return true;
     }
-  return DSK_FALSE;
+  return false;
 }
 
 void        dsk_propagate_error  (DskError  **dst,

@@ -37,7 +37,7 @@ parse_name_value_block (DskSpdySession *session,
   DskBuffer decompressed = DSK_BUFFER_INIT;
   DskError *e = NULL;
   if (!dsk_sync_filter_process_buffer (session->decompressor, &decompressed,
-                                        n_bytes, &session->incoming, DSK_FALSE,
+                                        n_bytes, &session->incoming, false,
                                         &e)
    || !dsk_zlib_decompressor_sync (session->decompressor, &decompressed,
                                    &e))
@@ -184,7 +184,7 @@ struct _Info_SYN_STREAM
 
 /* Should only respond FALSE if there is a framing layer error
    that cannot be recovered from. */
-static dsk_boolean
+static bool
 handle_SYN_STREAM (DskSpdySession *session,
                    uint32_t        stream_id,
                    uint32_t        assoc_to_stream_id,
@@ -204,8 +204,8 @@ handle_SYN_STREAM (DskSpdySession *session,
       /* destroy stream, RST_STREAM */
       destroy_stream (session, stream_id, DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
                       SPDY_STATUS_INVALID_STREAM,       /* TODO: is this correct? */
-                      DSK_FALSE);
-      return DSK_TRUE;
+                      false);
+      return true;
     }
 
   /* Failure parsing the name/value block is considered a
@@ -219,7 +219,7 @@ handle_SYN_STREAM (DskSpdySession *session,
                      e->message);
       dsk_error_unref (e);
       send_reset_stream_message (session, stream_id, SPDY_STATUS_PROTOCOL_ERROR);
-      return DSK_TRUE;
+      return true;
     }
   if (DSK_SPDY_SESSION_IS_CLIENT (session) == (stream_id & 1))
     {
@@ -228,13 +228,13 @@ handle_SYN_STREAM (DskSpdySession *session,
          the spec says this is an error, but 
          doesn't seem to say how to handle it.
          We disband the session. */
-      dsk_boolean peer_client = !DSK_SPDY_SESSION_IS_CLIENT (session);
+      bool peer_client = !DSK_SPDY_SESSION_IS_CLIENT (session);
       dsk_set_error (error,
                  "SPDY: %s sent message with id %u (should be %s)",
                      peer_client ? "client" : "server",
                      stream_id,
                      peer_client ? "odd" : "even");
-      return DSK_FALSE;
+      return false;
     }
   stream = dsk_object_new (&dsk_spdy_stream_class);
   if (flags & SPDY_FLAG_UNIDIRECTIONAL)
@@ -250,7 +250,7 @@ handle_SYN_STREAM (DskSpdySession *session,
 
 }
 
-static dsk_boolean
+static bool
 is_terminated_state (DskSpdyStreamState state)
 {
   return  stream->state == DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR
@@ -266,7 +266,7 @@ static void
 destroy_stream (DskSpdyStream     *stream,
                 DskSpdyStreamState new_state,
                 SpdyStatusCode     status_code,
-                dsk_boolean        remote_reset)
+                bool        remote_reset)
 {
   DskSpdySession *session = stream->session;
   dsk_assert (session != NULL);
@@ -336,7 +336,7 @@ append_outgoing (DskSpdySession *session,
 
 /* Should only respond FALSE if there is a framing layer error
    that cannot be recovered from. */
-static dsk_boolean
+static bool
 try_processing_incoming (DskOctetSource *source,
                          DskSpdySession *session,
                          DskError      **error)
@@ -346,7 +346,7 @@ try_processing_incoming (DskOctetSource *source,
     {
       uint8_t hdr[8];
       dsk_buffer_peek (&session->incoming, 8, hdr);
-      dsk_boolean is_control = (hdr[0] & 0x80) != 0;
+      bool is_control = (hdr[0] & 0x80) != 0;
       uint16_t version = ((unsigned)(hdr[0] & 0x7f) << 8) + (hdr[1]);
       uint16_t type = ((unsigned)hdr[2] << 8) + hdr[3];
       uint8_t flags = hdr[4];
@@ -370,9 +370,9 @@ try_processing_incoming (DskOctetSource *source,
                 SynStreamInfo info;
                 dsk_buffer_read (&session->incoming, 10, subhdr);
                 if (!parse_SYN_STREAM (subhdr, length, &info, error))
-                  return DSK_FALSE;
+                  return false;
                 if (!handle_SYN_STREAM (session, &info, error))
-                  return DSK_FALSE;
+                  return false;
               }
               break;
             case SPDY_TYPE__SYN_REPLY:
@@ -396,7 +396,7 @@ try_processing_incoming (DskOctetSource *source,
                     /* must issue a stream error STREAM_IN_USE */
                     dsk_buffer_discard (&session->incoming, length - 4);
                     destroy_stream (stream, DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
-                                    SPDY_STATUS_STREAM_IN_USE, DSK_FALSE);
+                                    SPDY_STATUS_STREAM_IN_USE, false);
                     break;
                   }
 
@@ -407,7 +407,7 @@ try_processing_incoming (DskOctetSource *source,
                     destroy_stream (session, stream_id, 
                                     DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
                                     SPDY_STATUS_PROTOCOL_ERROR,
-                                    DSK_FALSE);
+                                    false);
                     break;
                   }
                 stream->response_header = headers;
@@ -482,7 +482,7 @@ try_processing_incoming (DskOctetSource *source,
                     break;
                   }
 
-                destroy_stream (session, stream->id, new_state, status, DSK_TRUE);
+                destroy_stream (session, stream->id, new_state, status, true);
               }
               break;
             case SPDY_TYPE__SETTINGS:
@@ -520,7 +520,7 @@ try_processing_incoming (DskOctetSource *source,
                 uint32_t id = dsk_uint32be_parse (id_buf);
                 /* We call it a 'pong' if it appears to be a response
                    to a 'ping' we sent. */
-                dsk_boolean is_pong = (id & 1) == DSK_SPDY_SESSION_IS_CLIENT (session);
+                bool is_pong = (id & 1) == DSK_SPDY_SESSION_IS_CLIENT (session);
                 if (is_pong)
                   {
                     if (!session->ping_outstanding || session->ping_id != id)
@@ -536,9 +536,9 @@ try_processing_incoming (DskOctetSource *source,
                         int micros = (t-p)*1000000 + (tu-pu);
                         if (micros < 0)
                           micros = 0;
-                        session->has_roundtrip_time = DSK_TRUE;
+                        session->has_roundtrip_time = true;
                         session->roundtrip_time = micros;
-                        session->ping_outstanding = DSK_FALSE;
+                        session->ping_outstanding = false;
                         session->ping_id += 2;
                       }
                   }
@@ -571,7 +571,7 @@ try_processing_incoming (DskOctetSource *source,
                     destroy_stream (session, stream_id, 
                                     DSK_SPDY_STREAM_STATE_PROTOCOL_ERROR,
                                     SPDY_STATUS_PROTOCOL_ERROR,
-                                    DSK_FALSE);
+                                    false);
                     break;
                   }
 
@@ -607,15 +607,15 @@ try_processing_incoming (DskOctetSource *source,
             }
         }
     }
-  return DSK_TRUE;
+  return true;
 
 packet_too_short:
   dsk_set_error (error, "SPDY session: packet too short for message type: terminating");
-  return DSK_FALSE;
+  return false;
 }
 
 DskSpdySession *
-dsk_spdy_session_new  (dsk_boolean     is_client_side,
+dsk_spdy_session_new  (bool     is_client_side,
                        DskOctetStream *stream,
                        DskOctetSource *source,
                        DskOctetSink   *sink,

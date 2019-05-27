@@ -5,16 +5,16 @@ typedef struct {
   DskHttpResponse *response;
   DskBuffer content;
   DskError *error;
-  dsk_boolean content_complete;
-  dsk_boolean destroyed;
+  bool content_complete;
+  bool destroyed;
 } ClientRequestData;
 #define CLIENT_REQUEST_DATA_DEFAULT \
 { \
   NULL, \
   DSK_BUFFER_INIT, \
   NULL, \
-  DSK_FALSE, \
-  DSK_FALSE \
+  false, \
+  false \
 }
 static void client_handle_response (DskHttpClientStreamTransfer *xfer)
 {
@@ -28,7 +28,7 @@ static void client_content_complete (DskHttpClientStreamTransfer *xfer)
   ClientRequestData *crd = xfer->user_data;
   dsk_octet_source_read_buffer (DSK_OCTET_SOURCE (xfer->content),
                                 &crd->content, NULL);
-  crd->content_complete = DSK_TRUE;
+  crd->content_complete = true;
 }
 static void client_handle_error (DskHttpClientStreamTransfer *xfer)
 {
@@ -39,7 +39,7 @@ static void client_handle_error (DskHttpClientStreamTransfer *xfer)
 static void client_destroy (DskHttpClientStreamTransfer *xfer)
 {
   ClientRequestData *crd = xfer->user_data;
-  crd->destroyed = DSK_TRUE;
+  crd->destroyed = true;
 }
 
 static void

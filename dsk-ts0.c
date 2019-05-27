@@ -36,7 +36,7 @@ static DskTs0Expr *dsk_ts0_expr_new_function_anon (DskTs0Filename *filename,
                                                    unsigned    n_args,
                                                    DskTs0Expr **args);
 static void        dsk_ts0_expr_free     (DskTs0Expr *expr);
-       dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+       bool dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                           DskTs0Namespace *ns,
                                           DskBuffer  *target,
                                           DskError  **error);
@@ -65,7 +65,7 @@ typedef struct
 struct _DskTs0NamespaceNode
 {
   DskTs0NamespaceNode *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
   void *value;
   /* key immediately follows structure */
 };
@@ -442,13 +442,13 @@ dsk_ts0_context_peek_namespace       (DskTs0Context *context)
 #define function_destroy__dsk_free ((void(*)(DskTs0Function*)) dsk_free)
 
 /* helper function to invoke strict (ie non-lazy) functions */
-typedef dsk_boolean (*StrictMarshal) (DskTs0Function *function,
+typedef bool (*StrictMarshal) (DskTs0Function *function,
                                       DskTs0Namespace *ns,
                                       unsigned        n_args,
                                       char          **args,
                                       DskBuffer      *output,
                                       DskError      **error);
-static dsk_boolean
+static bool
 function_invoke_strict_generic (DskTs0Function *function,
                                 DskTs0Namespace *ns,
                                 unsigned        n_args,
@@ -467,14 +467,14 @@ function_invoke_strict_generic (DskTs0Function *function,
       if (!dsk_ts0_expr_evaluate (args[i], ns, &buffer, error))
         {
           dsk_buffer_clear (&buffer);
-          return DSK_FALSE;
+          return false;
         }
       lengths[i] = buffer.size - last_size;
       last_size = buffer.size;
     }
 
   unsigned needed_length = buffer.size + n_args;        /* for NUL characters */
-  dsk_boolean must_free = (needed_length >= 512);
+  bool must_free = (needed_length >= 512);
 
   char *slab;
   if (must_free)
@@ -490,7 +490,7 @@ function_invoke_strict_generic (DskTs0Function *function,
       at += lengths[i];
       *at++ = '\0';
     }
-  dsk_boolean rv = marshal (function, ns, n_args, arg_strings, output, error);
+  bool rv = marshal (function, ns, n_args, arg_strings, output, error);
   if (must_free)
     dsk_free (slab);
   return rv;
@@ -503,7 +503,7 @@ typedef struct {
   DskTs0StrictFunc func;
 } DskTs0Function_Strict;
 
-static dsk_boolean
+static bool
 strict_marshal (DskTs0Function *function,
                 DskTs0Namespace *ns,
                 unsigned        n_args,
@@ -515,7 +515,7 @@ strict_marshal (DskTs0Function *function,
   return F->func (ns, n_args, args, output, error);
 }
 
-static dsk_boolean
+static bool
 function_invoke__strict (FUNCTION_INVOKE__ARGS)
 {
   return function_invoke_strict_generic (function, ns, n_args, args, output, strict_marshal, error);
@@ -540,7 +540,7 @@ typedef struct {
   DskDestroyNotify destroy;
 } DskTs0Function_StrictData;
 
-static dsk_boolean
+static bool
 strict_marshal__data (DskTs0Function *function,
                       DskTs0Namespace *ns,
                       unsigned        n_args,
@@ -552,7 +552,7 @@ strict_marshal__data (DskTs0Function *function,
   return F->func (ns, n_args, args, output, F->func_data, error);
 }
 
-static dsk_boolean
+static bool
 function_invoke__strict_data (FUNCTION_INVOKE__ARGS)
 {
   return function_invoke_strict_generic (function, ns, n_args, args, output, strict_marshal__data, error);
@@ -587,7 +587,7 @@ typedef struct {
   DskTs0Function base;
   DskTs0LazyFunc func;
 } DskTs0Function_Lazy;
-static dsk_boolean
+static bool
 function_invoke__lazy (FUNCTION_INVOKE__ARGS)
 {
   DskTs0Function_Lazy *F = (DskTs0Function_Lazy *) function;
@@ -612,7 +612,7 @@ typedef struct {
   void *func_data;
   DskDestroyNotify destroy;
 } DskTs0Function_LazyData;
-static dsk_boolean
+static bool
 function_invoke__lazy_data (FUNCTION_INVOKE__ARGS)
 {
   DskTs0Function_LazyData *F = (DskTs0Function_LazyData *) function;
@@ -664,15 +664,15 @@ static inline void dsk_ts0_filename_unref (DskTs0Filename *filename)
 
 
 /* --- end-user api --- */
-dsk_boolean dsk_ts0_evaluate (DskTs0Namespace *ns,
+bool dsk_ts0_evaluate (DskTs0Namespace *ns,
                               const char  *filename,
                               DskBuffer   *output,
                               DskError   **error)
 {
   DskTs0Stanza *stanza = dsk_ts0_stanza_parse_file (filename, error);
-  dsk_boolean rv;
+  bool rv;
   if (stanza == NULL)
-    return DSK_FALSE;
+    return false;
   rv = dsk_ts0_stanza_evaluate (ns, stanza, output, error);
   dsk_ts0_stanza_free (stanza);
   return rv;
@@ -711,7 +711,7 @@ struct _DskTs0Stanza
   DskTs0StanzaPiece *pieces;
 };
 
-dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
+bool   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
                                          DskTs0Stanza *stanza,
 			                 DskBuffer    *target,
                                          DskError    **error)
@@ -730,7 +730,7 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
         case DSK_TS0_STANZA_PIECE_EXPRESSION:
           if (!dsk_ts0_expr_evaluate (p->info.expression,
                                       ns, target, error))
-            return DSK_FALSE;
+            return false;
           break;
         case DSK_TS0_STANZA_PIECE_TAG:
           {
@@ -741,7 +741,7 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
                 if (tag == NULL)
                   {
                     //dsk_add_error_suffix (error, " (at %s:%u)", filename, line_no);
-                    return DSK_FALSE;
+                    return false;
                   }
                 if (tag->cachable)
                   {
@@ -759,7 +759,7 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
                     dsk_add_error_prefix (error, "evaluating arg %s",
                                           p->info.tag.args[i].name);
                     dsk_ts0_namespace_unref (new_ns);
-                    return DSK_FALSE;
+                    return false;
                   }
                 char *buf;
                 buf = dsk_ts0_namespace_set_variable_slot (new_ns,
@@ -771,14 +771,14 @@ dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
               {
                 /// dsk_add_error_prefix(error, ...);
                 dsk_ts0_namespace_unref (new_ns);
-                return DSK_FALSE;
+                return false;
               }
             dsk_ts0_namespace_unref (new_ns);
           }
           break;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DskTs0Stanza *dsk_ts0_stanza_parse_file (const char   *filename,
@@ -834,13 +834,13 @@ skip_whitespace (const char **str_inout,
   *line_no_inout = line_no;
 }
 
-static inline dsk_boolean
+static inline bool
 slice_matches (const char *start, const char *end, const char *str)
 {
   while (start < end)
     {
       if (*str != *start)
-        return DSK_FALSE;
+        return false;
       start++;
       str++;
     }
@@ -905,27 +905,27 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
   /* Whether $variable is a variable substitution in plain text.
    * Control with +/-dollar_var.
    */
-  dsk_boolean dollar_variables = DSK_TRUE;
+  bool dollar_variables = true;
 
   /* Whether a newline is removed immediately following a tag.
    * Control with +/-tag_chomp.
    */
-  dsk_boolean tags_chomp_newline = DSK_TRUE;
+  bool tags_chomp_newline = true;
 
   /* Strip whitespace at start of block, end of block.
      Control with +/-strip_leading_spaces, +/-strip_trailing_spaces
      or +/-strip_spaces to set both at once. */
-  dsk_boolean strip_leading_whitespace = DSK_FALSE;
-  dsk_boolean strip_trailing_whitespace = DSK_FALSE;
+  bool strip_leading_whitespace = false;
+  bool strip_trailing_whitespace = false;
 
   /* stack of open <% tags %> */
   TagStack tag_stack[MAX_TAG_DEPTH];
   unsigned tag_stack_size = 0;
 
   /* stripping whitespace for the next literal we are going to add */
-  dsk_boolean now_strip_first_newline = DSK_FALSE;
-  dsk_boolean now_strip_leading_whitespace = DSK_FALSE;
-  dsk_boolean now_strip_trailing_whitespace = DSK_FALSE;
+  bool now_strip_first_newline = false;
+  bool now_strip_leading_whitespace = false;
+  bool now_strip_trailing_whitespace = false;
 
 
   unsigned n_pieces = 0;
@@ -952,12 +952,12 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                 }
               at++;
             }
-          now_strip_first_newline = DSK_FALSE;
+          now_strip_first_newline = false;
         }
       if (now_strip_leading_whitespace)
         {
           skip_whitespace (&str, &line_no);
-          now_strip_leading_whitespace = DSK_FALSE;
+          now_strip_leading_whitespace = false;
         }
       if (dollar_variables)
         {
@@ -997,7 +997,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
         {
           while (end_literal > start && dsk_ascii_isspace (*(end_literal-1)))
             end_literal--;
-          now_strip_trailing_whitespace = DSK_FALSE;
+          now_strip_trailing_whitespace = false;
         }
       if (end_literal > start)
         {
@@ -1067,7 +1067,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
             }
         }
 
-      dsk_boolean setup_posttag_whitespace_rules = DSK_FALSE;
+      bool setup_posttag_whitespace_rules = false;
 
       /* at <% */
       dsk_assert (str[0] == '<' && str[1] == '%');
@@ -1176,7 +1176,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
             dsk_free (args);
 
           /* setup whitespace-swallowing */
-          setup_posttag_whitespace_rules = DSK_TRUE;
+          setup_posttag_whitespace_rules = true;
         }
       else if (*str == '/')
         {
@@ -1253,7 +1253,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           tag_stack_size--;
 
           /* setup whitespace-swallowing */
-          setup_posttag_whitespace_rules = DSK_TRUE;
+          setup_posttag_whitespace_rules = true;
         }
       else if (*str == '(')
         {
@@ -1278,14 +1278,14 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
           str += 2;
 
           /* setup whitespace-swallowing */
-          setup_posttag_whitespace_rules = DSK_TRUE;
+          setup_posttag_whitespace_rules = true;
         }
       else if (*str == '+' || *str == '-')
         {
           for (;;)
             {
               /* tokenizer / parser flags */
-              dsk_boolean enable = *str == '+';
+              bool enable = *str == '+';
               str++;
               const char *name_start = str;
               while (dsk_ascii_isalnum (*str) || *str == '_')
@@ -1331,7 +1331,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
             }
 
           /* setup whitespace-swallowing */
-          setup_posttag_whitespace_rules = DSK_TRUE;
+          setup_posttag_whitespace_rules = true;
         }
       else
         {
@@ -1383,7 +1383,7 @@ void           dsk_ts0_stanza_dump       (DskTs0Stanza *stanza,
         case DSK_TS0_STANZA_PIECE_LITERAL:
           dsk_filter_to_buffer (stanza->pieces[i].info.literal.length,
                                 stanza->pieces[i].info.literal.data,
-                                dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                                dsk_c_quoter_new (true, true),
                                 buffer,
                                 NULL);
           break;
@@ -1515,7 +1515,7 @@ struct _DskTs0ExprToken
   CachedSubexpr *cached_subexpr_list;
 };
 
-static dsk_boolean
+static bool
 scan_number (const char *start,
              const char **end_out,
              DskTs0Filename *filename,
@@ -1557,10 +1557,10 @@ scan_number (const char *start,
                      "unexpected character %s after number at %s:%u",
                      dsk_ascii_byte_name (*str),
                      FILENAME_STR (filename), line_no);
-      return DSK_FALSE;
+      return false;
     }
   *end_out = str;
-  return DSK_TRUE;
+  return true;
 }
 
 static DskTs0Expr *parse_expr_from_tokens (DskTs0Filename *filename,
@@ -1582,7 +1582,7 @@ DskTs0Expr *dsk_ts0_expr_parse (const char *str,
   DskTs0ExprToken init_tokens[32];
   DskTs0ExprToken *tokens = init_tokens;
 
-  dsk_boolean do_dollar_variable_interpolation = DSK_TRUE;      /* TODO: make tunable */
+  bool do_dollar_variable_interpolation = true;      /* TODO: make tunable */
 
   /* we figure out the end of an expression at
      tokenization time by realizing that an expression
@@ -1886,7 +1886,7 @@ parse_expr_from_tokens (DskTs0Filename *filename,
                         DskTs0ExprToken *tokens,
                         DskError   **error)
 {
-  dsk_boolean permit_multiline_quoted_string = DSK_FALSE;               /* TODO: tunable */
+  bool permit_multiline_quoted_string = false;               /* TODO: tunable */
 restart_parse:
   if (n_tokens == 0)
     {
@@ -2023,7 +2023,7 @@ restart_parse:
       const char *iq_end = tokens[0].end - 1;
       const char *at = iq_start;
       DskBuffer dst = DSK_BUFFER_INIT;
-      dsk_boolean do_dollar_variable_interpolation = DSK_TRUE; /* TODO: tunable */
+      bool do_dollar_variable_interpolation = true; /* TODO: tunable */
       unsigned line_no = tokens[0].start_line_no;
       unsigned max_pieces = 1;
       if (do_dollar_variable_interpolation)
@@ -2195,7 +2195,7 @@ static void        dsk_ts0_expr_to_buffer (DskTs0Expr *expr,
                             expr->info.literal.data,
                             dsk_sync_filter_chain_new_take_list (
                               dsk_byte_doubler_new ('$'),
-                              dsk_c_quoter_new (DSK_TRUE, DSK_TRUE),
+                              dsk_c_quoter_new (true, true),
                               NULL
                             ),
                             out,
@@ -2327,7 +2327,7 @@ add_expr_error_suffix (DskError **error,
                         expr->line_no);
 }
 
-dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+bool dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                    DskTs0Namespace *ns,
                                    DskBuffer  *target,
                                    DskError  **error)
@@ -2340,7 +2340,7 @@ dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
         if (str == NULL)
           {
             add_expr_error_suffix (error, expr);
-            return DSK_FALSE;
+            return false;
           }
         dsk_buffer_append_string (target, str);
         break;
@@ -2357,7 +2357,7 @@ dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
             if (func == NULL)
               {
                 add_expr_error_suffix (error, expr);
-                return DSK_FALSE;
+                return false;
               }
             if (func->cachable)
               expr->info.function_call.function = dsk_ts0_function_ref (func);
@@ -2368,11 +2368,11 @@ dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                            target, error))
           {
             add_expr_error_suffix (error, expr);
-            return DSK_FALSE;
+            return false;
           }
         break;
       }
     }
-  return DSK_TRUE;
+  return true;
 }
 

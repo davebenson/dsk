@@ -5,7 +5,7 @@
 
 
 #if DSK_ENABLE_DEBUGGING
-dsk_boolean dsk_debug_hooks;
+bool dsk_debug_hooks;
 #endif
 
 static DskDispatchIdle *idle_handler = NULL;
@@ -55,7 +55,7 @@ dsk_hook_notify (DskHook *hook)
   if (DSK_UNLIKELY (hook->trap.next != NULL))
     {
       DskHookTrap *trap;
-      dsk_boolean must_prune = DSK_FALSE;
+      bool must_prune = false;
       for (trap = hook->trap.next;
            trap != NULL;
            trap = trap->next)
@@ -75,7 +75,7 @@ dsk_hook_notify (DskHook *hook)
               trap->callback_data_destroy = NULL;
               if (destroy)
                 destroy (destroy_data);
-              must_prune = DSK_TRUE;
+              must_prune = true;
             }
           trap->is_notifying = 0;
         }
@@ -191,7 +191,7 @@ void _dsk_hook_trap_count_nonzero (DskHook *hook)
   if (hook->funcs->set_poll != NULL)
     {
       hook->in_set_poll = 1;
-      hook->funcs->set_poll (hook->object, DSK_TRUE);
+      hook->funcs->set_poll (hook->object, true);
       hook->in_set_poll = 0;
     }
 }
@@ -205,7 +205,7 @@ void _dsk_hook_trap_count_zero (DskHook *hook)
   if (hook->funcs->set_poll != NULL)
     {
       hook->in_set_poll = 1;
-      hook->funcs->set_poll (hook->object, DSK_FALSE);
+      hook->funcs->set_poll (hook->object, false);
       hook->in_set_poll = 0;
     }
 }
@@ -228,7 +228,7 @@ void
 dsk_hook_clear      (DskHook       *hook)
 {
   DskHookTrap *trap;
-  dsk_boolean was_trapped = hook->trap_count > 0;
+  bool was_trapped = hook->trap_count > 0;
   dsk_assert (!hook->is_cleared);
   dsk_assert (hook->magic == DSK_HOOK_MAGIC);
   if (hook->is_notifying)

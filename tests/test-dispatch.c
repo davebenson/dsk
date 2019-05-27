@@ -5,16 +5,16 @@
 #include <sys/stat.h>
 #include "../dsk.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
-static void set_boolean_true (void *data) { * (dsk_boolean *) data = DSK_TRUE; }
+static void set_boolean_true (void *data) { * (bool *) data = true; }
 
 static void
 test_signal_handling (void)
 {
   DskDispatchSignal *sig;
-  dsk_boolean sig_triggered = DSK_FALSE;
-  dsk_boolean timer_triggered = DSK_FALSE;
+  bool sig_triggered = false;
+  bool timer_triggered = false;
   sig = dsk_main_add_signal (SIGUSR1, set_boolean_true, &sig_triggered);
   dsk_main_add_timer_millis (50, set_boolean_true, &timer_triggered);
   while (!timer_triggered)
@@ -23,7 +23,7 @@ test_signal_handling (void)
   raise (SIGUSR1);
   while (!sig_triggered)
     dsk_main_run_once ();
-  sig_triggered = DSK_FALSE;
+  sig_triggered = false;
   raise (SIGUSR1);
   while (!sig_triggered)
     dsk_main_run_once ();

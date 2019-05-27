@@ -12,7 +12,7 @@ struct _DskBufferFragment
   unsigned              buf_start;	/* offset in buf of valid data */
   unsigned              buf_length;	/* length of valid data in buf; != 0 */
   
-  dsk_boolean           is_foreign;
+  bool           is_foreign;
   DskDestroyNotify      destroy;
   void                 *destroy_data;
 };
@@ -125,7 +125,7 @@ int      dsk_buffer_writev_len          (DskBuffer *read_from,
 		                         int              fd,
 		                         unsigned         max_bytes);
 /* returns TRUE iff all the data was written.  'read_from' is blank. */
-dsk_boolean dsk_buffer_write_all_to_fd  (DskBuffer       *read_from,
+bool dsk_buffer_write_all_to_fd  (DskBuffer       *read_from,
                                          int              fd,
                                          DskError       **error);
 int      dsk_buffer_readv               (DskBuffer       *write_to,
@@ -162,7 +162,7 @@ typedef enum {
   DSK_BUFFER_DUMP_EXECUTABLE = (1<<5),
 } DskBufferDumpFlags;
 
-dsk_boolean dsk_buffer_dump (DskBuffer          *buffer,
+bool dsk_buffer_dump (DskBuffer          *buffer,
                              const char         *filename,
                              DskBufferDumpFlags  flags,
                              DskError          **error);
@@ -179,7 +179,7 @@ unsigned dsk_buffer_fragment_read (DskBufferFragment**fragment_inout,
                                    unsigned          *offset_inout,
                                    unsigned           length,
                                    void              *buf);
-dsk_boolean dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
+bool dsk_buffer_fragment_advance (DskBufferFragment **frag_inout,
                                          unsigned           *offset_inout,
                                          unsigned            skip);
 

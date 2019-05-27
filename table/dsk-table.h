@@ -33,7 +33,7 @@ typedef DskTableMergeResult (*DskTableMergeFunc)  (unsigned       key_length,
                                                    unsigned       b_length,
                                                    const uint8_t *b_data,
 						   DskTableBuffer *buffer,
-						   dsk_boolean    complete,
+						   bool    complete,
 						   void          *merge_data);
 typedef int                 (*DskTableCompareFunc)(unsigned       key_a_length,
                                                    const uint8_t *key_a_data,
@@ -48,7 +48,7 @@ struct _DskTableConfig
   void *compare_data;
   DskTableMergeFunc merge;
   void *merge_data;
-  dsk_boolean chronological_lookup_merges;
+  bool chronological_lookup_merges;
   DskDir *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
@@ -63,7 +63,7 @@ struct _DskTableConfig
 {                                                                      \
   NULL, NULL,           /* standard comparator */                      \
   NULL, NULL,           /* standard replacement merge */               \
-  DSK_FALSE,            /* anti-chronological lookups */               \
+  false,            /* anti-chronological lookups */               \
   NULL,                 /* directory (DskDir) */                       \
   NULL,                 /* default to trivial table-file */            \
   NULL,                 /* default to trivial checkpoint interface */  \
@@ -74,13 +74,13 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
                                     DskError      **error);
 
 /* Returns FALSE on error or on "not found". */
-dsk_boolean dsk_table_lookup       (DskTable       *table,
+bool dsk_table_lookup       (DskTable       *table,
                                     unsigned        key_length,
                                     const uint8_t  *key_data,
                                     unsigned       *value_len_out,
                                     const uint8_t **value_data_out,
                                     DskError      **error);
-dsk_boolean dsk_table_insert       (DskTable       *table,
+bool dsk_table_insert       (DskTable       *table,
                                     unsigned        key_length,
                                     const uint8_t  *key_data,
                                     unsigned        value_length,
@@ -95,14 +95,14 @@ typedef struct _DskTableReader DskTableReader;
 struct _DskTableReader
 {
   /* Readonly public data */
-  dsk_boolean at_eof;
+  bool at_eof;
   unsigned key_length;
   unsigned value_length;
   const uint8_t *key_data;
   const uint8_t *value_data;
 
   /* Virtual functions */
-  dsk_boolean (*advance)     (DskTableReader *reader,
+  bool (*advance)     (DskTableReader *reader,
                               DskError      **error);
   void        (*destroy)     (DskTableReader *reader);
 };

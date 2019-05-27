@@ -7,14 +7,14 @@ struct _DskCryptoOptions
   int algo_index;
   unsigned key_length;
   const uint8_t *key_data;
-  dsk_boolean encrypt;
+  bool encrypt;
 };
 #define DSK_CRYPTO_OPTIONS_INIT \
   { NULL,             /* algo */               \
     -1,               /* algo_index */         \
     0,                /* key_length */         \
     NULL,             /* key_data */           \
-    DSK_TRUE          /* encrypt by default */ \
+    true          /* encrypt by default */ \
   }
 
 struct _DskCipherInfo

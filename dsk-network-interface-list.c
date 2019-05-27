@@ -150,7 +150,7 @@ make_interface_list (void)
 
 #ifdef SIOCGIFHWADDR
       if (interface.is_loopback)
-        interface.has_hw_address = DSK_FALSE;
+        interface.has_hw_address = false;
       else
 	{
 	  if (ioctl (tmp_socket, SIOCGIFHWADDR, (char *) &tmp_req) < 0)
@@ -159,11 +159,11 @@ make_interface_list (void)
 			 tmp_req.ifr_name);
 	      continue;
 	    }
-          interface.has_hw_address = DSK_TRUE;
+          interface.has_hw_address = true;
 	  memcpy (interface.hw_address.address, (uint8_t*)tmp_req.ifr_addr.sa_data, 6);
 	}
 #else
-      interface.has_hw_address = DSK_FALSE;
+      interface.has_hw_address = false;
 #endif
 
       if (interface.is_p2p)

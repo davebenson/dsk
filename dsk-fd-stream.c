@@ -11,12 +11,12 @@
 
 DskStream *dsk_stream_new_stdin (void)
 {
-  static dsk_boolean has_returned = DSK_FALSE;
+  static bool has_returned = false;
   DskFdStream *stream;
   DskError *error = NULL;
   if (has_returned)
     return NULL;
-  has_returned = DSK_TRUE;
+  has_returned = true;
   stream = dsk_fd_stream_new (STDIN_FILENO,
                               DSK_FILE_DESCRIPTOR_IS_NOT_WRITABLE
                               |DSK_FILE_DESCRIPTOR_IS_READABLE
@@ -29,12 +29,12 @@ DskStream *dsk_stream_new_stdin (void)
 
 DskStream *dsk_stream_new_stdout (void)
 {
-  static dsk_boolean has_returned = DSK_FALSE;
+  static bool has_returned = false;
   DskError *error = NULL;
   DskFdStream *stream;
   if (has_returned)
     return NULL;
-  has_returned = DSK_TRUE;
+  has_returned = true;
   stream = dsk_fd_stream_new (STDOUT_FILENO,
                               DSK_FILE_DESCRIPTOR_IS_NOT_READABLE
                               |DSK_FILE_DESCRIPTOR_IS_WRITABLE
@@ -87,12 +87,12 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
   int getfl_flags;
   struct stat stat_buf;
   DskFdStream *rv;
-  dsk_boolean is_pollable, is_readable, is_writable;
+  bool is_pollable, is_readable, is_writable;
   if (fstat (fd, &stat_buf) < 0)
     {
       dsk_set_error (error, "error calling fstat on file-descriptor %u",
                      (unsigned) fd);
-      return DSK_FALSE;
+      return false;
     }
   getfl_flags = fcntl (fd, F_GETFL);
   is_pollable = S_ISFIFO (stat_buf.st_mode)
@@ -110,7 +110,7 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
       if (is_readable)
         shutdown (fd, SHUT_RD);
 #endif
-      is_readable = DSK_FALSE;
+      is_readable = false;
     }
   else
     {
@@ -119,7 +119,7 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
         {
           dsk_set_error (error, "file-descriptor %u is not readable",
                          (unsigned) fd);
-          return DSK_FALSE;
+          return false;
         }
     }
   if ((flags & DSK_FILE_DESCRIPTOR_IS_NOT_WRITABLE) != 0)
@@ -129,7 +129,7 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
       if (is_writable)
         shutdown (fd, SHUT_WR);
 #endif
-      is_writable = DSK_FALSE;
+      is_writable = false;
     }
   else
     {
@@ -138,13 +138,13 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
         {
           dsk_set_error (error, "file-descriptor %u is not writable",
                          (unsigned) fd);
-          return DSK_FALSE;
+          return false;
         }
     }
   if (flags & DSK_FILE_DESCRIPTOR_IS_POLLABLE)
-    is_pollable = DSK_TRUE;
+    is_pollable = true;
   else if (flags & DSK_FILE_DESCRIPTOR_IS_NOT_POLLABLE)
-    is_pollable = DSK_FALSE;
+    is_pollable = false;
 
   rv = dsk_object_new (&dsk_fd_stream_class);
   rv->fd = fd;
@@ -166,10 +166,10 @@ dsk_fd_stream_new       (DskFileDescriptor fd,
     {
       if (is_writable)
         dsk_hook_set_idle_notify (&rv->base_instance.writable_hook,
-                                  DSK_TRUE);
+                                  true);
       if (is_readable)
         dsk_hook_set_idle_notify (&rv->base_instance.readable_hook,
-                                  DSK_TRUE);
+                                  true);
     }
 
   return rv;

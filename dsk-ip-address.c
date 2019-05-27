@@ -12,7 +12,7 @@
 #define ASCII_IS_DIGIT(c)  C_IN_RANGE(c,'0','9')
 #define ASCII_IS_XDIGIT(c)  ( C_IN_RANGE(c,'0','9') || C_IN_RANGE(c,'a','f') || C_IN_RANGE(c,'A','F') )
 
-dsk_boolean
+bool
 dsk_hostname_looks_numeric (const char *str)
 {
   unsigned i;
@@ -38,7 +38,7 @@ dsk_hostname_looks_numeric (const char *str)
   SKIP_WHITESPACE (at);
   if (*at != 0)
     goto is_not_ipv4;
-  return DSK_TRUE;              /* ipv4 */
+  return true;              /* ipv4 */
 
 is_not_ipv4:
   for (i = 0; i < 4; i++)
@@ -54,13 +54,13 @@ is_not_ipv4:
         goto is_not_ipv6;
       at++;
     }
-  return DSK_TRUE;
+  return true;
 
 is_not_ipv6:
-  return DSK_FALSE;
+  return false;
 }
 
-dsk_boolean
+bool
 dsk_ip_address_parse_numeric (const char *str,
                                DskIpAddress *out)
 {
@@ -78,7 +78,7 @@ dsk_ip_address_parse_numeric (const char *str,
             break;
           v = strtoul (str, &end, 16);
           if (n == 16)
-            return DSK_FALSE;
+            return false;
           out->address[n++] = v>>8;
           out->address[n++] = v;
           str = end;
@@ -93,19 +93,19 @@ dsk_ip_address_parse_numeric (const char *str,
       out->type = DSK_IP_ADDRESS_IPV4;
       out->address[0] = strtoul (str, &end, 10);
       if (*end != '.')
-        return DSK_FALSE;
+        return false;
       str = end + 1;
       out->address[1] = strtoul (str, &end, 10);
       if (*end != '.')
-        return DSK_FALSE;
+        return false;
       str = end + 1;
       out->address[2] = strtoul (str, &end, 10);
       if (*end != '.')
-        return DSK_FALSE;
+        return false;
       str = end + 1;
       out->address[3] = strtoul (str, &end, 10);
     }
-  return DSK_TRUE;
+  return true;
 }
 
 char *
@@ -134,12 +134,12 @@ dsk_ip_address_to_string (const DskIpAddress *addr)
     }
   return dsk_strdup (buf);
 }
-dsk_boolean dsk_ip_addresses_equal (const DskIpAddress *a,
+bool dsk_ip_addresses_equal (const DskIpAddress *a,
                                     const DskIpAddress *b)
 {
   unsigned size;
   if (a->type != b->type)
-    return DSK_FALSE;
+    return false;
   size = a->type == DSK_IP_ADDRESS_IPV4 ? 4 : 16;
   return memcmp (a->address, b->address, size) == 0;
 }
@@ -182,20 +182,20 @@ void dsk_ip_address_to_sockaddr (const DskIpAddress *address,
     }
 }
 
-dsk_boolean dsk_sockaddr_to_ip_address  (unsigned     addr_len,
+bool dsk_sockaddr_to_ip_address  (unsigned     addr_len,
                                          const void   *addr,
                                          DskIpAddress *out,
                                          unsigned     *port_out)
 {
   if (addr_len < sizeof (struct sockaddr))
-    return DSK_FALSE;           /* too short */
+    return false;           /* too short */
   switch (((const struct sockaddr *) addr)->sa_family)
     {
     case PF_INET:
       {
         const struct sockaddr_in *s = addr;
         if (addr_len < sizeof (*s))
-          return DSK_FALSE;
+          return false;
         out->type = DSK_IP_ADDRESS_IPV4;
         memcpy (out->address, &s->sin_addr, 4);
         *port_out = htons (s->sin_port);
@@ -205,16 +205,16 @@ dsk_boolean dsk_sockaddr_to_ip_address  (unsigned     addr_len,
       {
         const struct sockaddr_in6 *s = addr;
         if (addr_len < sizeof (*s))
-          return DSK_FALSE;
+          return false;
         out->type = DSK_IP_ADDRESS_IPV6;
         memcpy (out->address, &s->sin6_addr, 16);
         *port_out = htons (s->sin6_port);
         break;
       }
     default:
-      return DSK_FALSE;          /* unhandled protocol */
+      return false;          /* unhandled protocol */
     }
-  return DSK_TRUE;
+  return true;
 }
 
 /* XXX: implement using network-interface api */
@@ -228,7 +228,7 @@ dsk_ip_address_localhost (DskIpAddress *out)
   out->address[3] = 1;
 }
 
-dsk_boolean dsk_getsockname (DskFileDescriptor fd,
+bool dsk_getsockname (DskFileDescriptor fd,
                              DskIpAddress     *addr_out,
                              unsigned         *port_out)
 {
@@ -239,11 +239,11 @@ retry:
     {
       if (errno == EINTR)
         goto retry;
-      return DSK_FALSE;
+      return false;
     }
   return dsk_sockaddr_to_ip_address (addrlen, &addr, addr_out, port_out);
 }
-dsk_boolean dsk_getpeername (DskFileDescriptor fd,
+bool dsk_getpeername (DskFileDescriptor fd,
                              DskIpAddress     *addr_out,
                              unsigned         *port_out)
 {
@@ -254,7 +254,7 @@ retry:
     {
       if (errno == EINTR)
         goto retry;
-      return DSK_FALSE;
+      return false;
     }
   return dsk_sockaddr_to_ip_address (addrlen, &addr, addr_out, port_out);
 }

@@ -10,10 +10,6 @@
 #include <errno.h>              /* for E* definitions */
 #include <stdbool.h>            /* for bool, true, false */
 
-typedef int dsk_boolean;
-#define DSK_FALSE		0
-#define DSK_TRUE		1
-
 #define DSK_N_ELEMENTS(array)   ( sizeof(array) / sizeof((array)[0]) )
 #define DSK_MIN(a,b)            (((a) < (b)) ? (a) : (b))
 #define DSK_MAX(a,b)            (((a) > (b)) ? (a) : (b))
@@ -221,4 +217,4 @@ char *dsk_strdup_vprintf (const char *str, va_list args);
 char *dsk_strdup_printf (const char *str, ...) DSK_GNUC_PRINTF(1,2);
 #define dsk_asprintf dsk_strdup_printf
 
-dsk_boolean dsk_parse_boolean (const char *str, dsk_boolean *out);
+bool dsk_parse_boolean (const char *str, bool *out);

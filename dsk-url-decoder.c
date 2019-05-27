@@ -19,7 +19,7 @@ struct _DskUrlDecoder
 #define dsk_url_decoder_init NULL
 #define dsk_url_decoder_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_url_decoder_process    (DskSyncFilter *filter,
                             DskBuffer      *out,
                             unsigned        in_length,
@@ -28,7 +28,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
 {
   DskUrlDecoder *dec = (DskUrlDecoder *) filter;
   if (in_length == 0)
-    return DSK_TRUE;
+    return true;
   if (dec->state != 0)
     {
       if (dec->state == 1)
@@ -39,7 +39,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
                 goto ERROR;
               dec->state = 2;
               dec->nibble = dsk_ascii_xdigit_value (in_data[0]);
-              return DSK_TRUE;
+              return true;
             }
           if (!dsk_ascii_isxdigit (in_data[0])
            || !dsk_ascii_isxdigit (in_data[1]))
@@ -63,7 +63,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
         }
       dec->state = 0;
       if (in_length == 0)
-        return DSK_TRUE;
+        return true;
     }
   while (in_length > 0)
     {
@@ -77,7 +77,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
           in_data += unquoted_len;
           in_length -= unquoted_len;
           if (in_length == 0)
-            return DSK_TRUE;
+            return true;
         }
 
       /* handle special bytes */
@@ -86,7 +86,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
           if (in_length == 1)
             {
               dec->state = 1;
-              return DSK_TRUE;
+              return true;
             }
           else if (in_length == 2)
             {
@@ -94,7 +94,7 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
                 goto ERROR;
               dec->state = 2;
               dec->nibble = dsk_ascii_xdigit_value (in_data[1]);
-              return DSK_TRUE;
+              return true;
             }
           else
             {
@@ -116,13 +116,13 @@ dsk_url_decoder_process    (DskSyncFilter *filter,
           in_length--;
         }
     }
-  return DSK_TRUE;
+  return true;
 
 ERROR:
   dsk_set_error (error, "expected two hex digits after '%%'");
-  return DSK_FALSE;
+  return false;
 }
-static dsk_boolean
+static bool
 dsk_url_decoder_finish (DskSyncFilter *filter,
                         DskBuffer      *buffer,
                         DskError      **error)
@@ -133,9 +133,9 @@ dsk_url_decoder_finish (DskSyncFilter *filter,
   if (dec->state != 0)
     {
       dsk_set_error (error, "unterminated %% sequence");
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskUrlDecoder, dsk_url_decoder);

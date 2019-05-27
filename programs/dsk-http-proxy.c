@@ -1,13 +1,13 @@
 #include "../dsk.h"
 
-static dsk_boolean
+static bool
 handle_http_stream_request_available (DskHttpServerStream *stream)
 {
   /* receive a new request */
   DskHttpServerStreamTransfer *xfer;
   xfer = dsk_http_server_stream_get_request (stream);
   if (xfer == NULL)
-    return DSK_TRUE;
+    return true;
 
   /* make remote request */
   DskHttpServerStreamResponseOptions resp_options
@@ -19,10 +19,10 @@ handle_http_stream_request_available (DskHttpServerStream *stream)
       ...
     }
 
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 handle_incoming_connection (DskOctetListener *listener)
 {
   DskHttpServerStream *stream;
@@ -48,16 +48,16 @@ handle_incoming_connection (DskOctetListener *listener)
                    error->message);
       dsk_error_unref (error);
       error = NULL;
-      return DSK_FALSE;
+      return false;
     case DSK_IO_RESULT_EOF:
       dsk_assert_not_reached ();
     }
 
   /* invoke this handler when the next incoming connection is available. */
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 handle_port (const char *arg_name,
              const char *arg_value,
              void       *callback_data,
@@ -70,18 +70,18 @@ handle_port (const char *arg_name,
   if (arg_value == end || *end != 0)
     {
       dsk_set_error (error, "error parsing integer from '%s'", arg_value);
-      return DSK_FALSE;
+      return false;
     }
 
   listener = dsk_octet_listener_socket_new (&options, error);
   if (listener == NULL)
-    return DSK_FALSE;
+    return false;
   dsk_hook_trap (&listener->incoming,
                  (DskHookFunc) handle_incoming_connection,
                  NULL,
                  NULL);
   dsk_main_add_object (listener);
-  return DSK_TRUE;
+  return true;
 }
 
 int main(int argc, char **argv)

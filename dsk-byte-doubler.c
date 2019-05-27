@@ -17,7 +17,7 @@ struct _DskByteDoubler
 #define dsk_byte_doubler_init NULL
 #define dsk_byte_doubler_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_byte_doubler_process    (DskSyncFilter *filter,
                              DskBuffer      *out,
                              unsigned        in_length,
@@ -33,7 +33,7 @@ dsk_byte_doubler_process    (DskSyncFilter *filter,
       if (end == NULL)
 	{
 	  dsk_buffer_append (out, in_length, in_data);
-	  return DSK_TRUE;
+	  return true;
 	}
       dsk_buffer_append (out, end - in_data, in_data);
       in_length -= (end - in_data);
@@ -45,7 +45,7 @@ dsk_byte_doubler_process    (DskSyncFilter *filter,
       in_length -= c;
       in_data += c;
     }
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_byte_doubler_finish NULL
 

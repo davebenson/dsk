@@ -27,7 +27,7 @@ typedef enum
 struct _My__Test__A
 {
   int a;
-  dsk_boolean has_b;
+  bool has_b;
   int b;
   unsigned n_c;
   int *c;
@@ -38,7 +38,7 @@ struct _My__Test__A
 DskXml    * my__test__a__to_xml
                       (const My__Test__A *source,
                        DskError **error);
-dsk_boolean my__test__a__parse
+bool my__test__a__parse
                       (DskXml *source,
                        My__Test__A *dest,
                        DskError **error);
@@ -55,7 +55,7 @@ struct _My__Test__B
 DskXml    * my__test__b__to_xml
                       (const My__Test__B *source,
                        DskError **error);
-dsk_boolean my__test__b__parse
+bool my__test__b__parse
                       (DskXml *source,
                        My__Test__B *dest,
                        DskError **error);
@@ -76,7 +76,7 @@ struct _My__Test__C
 DskXml    * my__test__c__to_xml
                       (const My__Test__C *source,
                        DskError **error);
-dsk_boolean my__test__c__parse
+bool my__test__c__parse
                       (DskXml *source,
                        My__Test__C *dest,
                        DskError **error);

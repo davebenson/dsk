@@ -1,16 +1,16 @@
 
 
 DskSyncFilter *dsk_sync_filter_identity_new      (void);
-DskSyncFilter *dsk_base64_encoder_new             (dsk_boolean break_lines);
+DskSyncFilter *dsk_base64_encoder_new             (bool break_lines);
 DskSyncFilter *dsk_base64_decoder_new             (void);
-DskSyncFilter *dsk_hex_encoder_new                (dsk_boolean break_lines,
-                                                    dsk_boolean include_spaces);
+DskSyncFilter *dsk_hex_encoder_new                (bool break_lines,
+                                                    bool include_spaces);
 DskSyncFilter *dsk_hex_decoder_new                (void);
 DskSyncFilter *dsk_url_encoder_new                (void);
 DskSyncFilter *dsk_url_decoder_new                (void);
-DskSyncFilter *dsk_c_quoter_new                   (dsk_boolean add_quotes,
-                                                    dsk_boolean protect_trigraphs);
-DskSyncFilter *dsk_c_unquoter_new                 (dsk_boolean remove_quotes);
+DskSyncFilter *dsk_c_quoter_new                   (bool add_quotes,
+                                                    bool protect_trigraphs);
+DskSyncFilter *dsk_c_unquoter_new                 (bool remove_quotes);
 DskSyncFilter *dsk_quote_printable_new            (void);
 DskSyncFilter *dsk_unquote_printable_new          (void);
 DskSyncFilter *dsk_xml_escaper_new                (void);
@@ -36,7 +36,7 @@ typedef enum
 DskSyncFilter *dsk_utf16_to_utf8_converter_new    (DskUtf16ParserMode mode);
 DskSyncFilter *dsk_byte_doubler_new               (uint8_t c);
 DskSyncFilter *dsk_byte_undoubler_new             (uint8_t c,
-                                                    dsk_boolean ignore_errors);
+                                                    bool ignore_errors);
 
 typedef enum
 {

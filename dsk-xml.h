@@ -69,9 +69,9 @@ DskXml *dsk_xml_comment_new_len (unsigned length,
 const char *dsk_xml_find_attr (const DskXml *xml,
                                const char   *name);
 
-dsk_boolean dsk_xml_is_whitespace (const DskXml *xml);
+bool dsk_xml_is_whitespace (const DskXml *xml);
 char *dsk_xml_get_all_text (const DskXml *xml);
-dsk_boolean dsk_xml_is_element (const DskXml *xml, const char *name);
+bool dsk_xml_is_element (const DskXml *xml, const char *name);
 DskXml *dsk_xml_find_solo_child (DskXml *, DskError **error);
 
 /* --- simple (namespace free) serialization --- */
@@ -86,7 +86,7 @@ DskXml *_dsk_xml_new_elt_parse (unsigned n_attrs,
                                 const char *name_and_attrs,
                                 unsigned n_children,
                                 DskXml **children,
-                                dsk_boolean condense_text_nodes);
+                                bool condense_text_nodes);
 void _dsk_xml_set_position (DskXml *xml,
                             DskXmlFilename *filename,
                             unsigned line_no);

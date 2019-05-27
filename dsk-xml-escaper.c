@@ -15,7 +15,7 @@ struct _DskXmlEscaper
 #define dsk_xml_escaper_init NULL
 #define dsk_xml_escaper_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_xml_escaper_process (DskSyncFilter *filter,
                         DskBuffer      *out,
                         unsigned        in_length,
@@ -56,7 +56,7 @@ dsk_xml_escaper_process (DskSyncFilter *filter,
         else
           break;
     }
-  return DSK_TRUE;
+  return true;
 }
 #define dsk_xml_escaper_finish NULL
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskXmlEscaper, dsk_xml_escaper);

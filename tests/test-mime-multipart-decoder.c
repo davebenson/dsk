@@ -2,7 +2,7 @@
 #include <string.h>
 #include "../dsk.h"
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 
   /* Example from RFC 2046, Section 5.1.1.  Page 21. */

@@ -78,6 +78,25 @@ const char *dsk_tls_signature_scheme_name (DskTlsSignatureScheme scheme)
       default: return "*unknown signature scheme*";
     }
 }
+const char *dsk_tls_named_group_name (DskTlsNamedGroup g)
+{
+  switch (g)
+    {
+#define WRITE_CASE(shortname) case DSK_TLS_NAMED_GROUP_##shortname: return #shortname
+      WRITE_CASE(SECP256R1);
+      WRITE_CASE(SECP384R1);
+      WRITE_CASE(SECP521R1);
+      WRITE_CASE(X25519);
+      WRITE_CASE(X448);
+      WRITE_CASE(FFDHE2048);
+      WRITE_CASE(FFDHE3072);
+      WRITE_CASE(FFDHE4096);
+      WRITE_CASE(FFDHE6144);
+      WRITE_CASE(FFDHE8192);
+#undef WRITE_CASE
+      default: return "*unknown named group*";
+    }
+}
 
 DskTlsRecordHeaderParseResult
 dsk_tls_parse_record_header (DskBuffer               *buffer)
@@ -505,24 +524,42 @@ parse_extension (DskTlsHandshake    *under_construction,
           return NULL;
         }
 
-    TODO:case DSK_TLS_EXTENSION_TYPE_EARLY_DATA:
+    //TODO:case DSK_TLS_EXTENSION_TYPE_EARLY_DATA:
     case DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS:
-      if (ext_payload_len < 3)
+      switch (under_construction->type)
         {
-          *error = dsk_error_new ("too short in SupportedVersions extension");
-          return NULL;
+          case DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO:
+            if (ext_payload_len < 3)
+              {
+                *error = dsk_error_new ("too short in SupportedVersions extension");
+                return NULL;
+              }
+            if (ext_payload_len != 1 + ext_payload[0])
+              {
+                *error = dsk_error_new ("malformed SupportedVersions extension");
+                return NULL;
+              }
+            assert(ext_payload_len == 1 + ext_payload[0]);
+            unsigned n_versions = (ext_payload_len - 1) / 2;
+            ext->supported_versions.n_supported_versions = n_versions;
+            ext->supported_versions.supported_versions = dsk_mem_pool_alloc (pool, sizeof(DskTlsProtocolVersion) * n_versions);
+            for (unsigned i = 0; i < n_versions; i++)
+              ext->supported_versions.supported_versions[i] = dsk_uint16be_parse (ext_payload + 1 + 2 * i);
+            break;
+          case DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO:
+            if (ext_payload_len != 2)
+              {
+                *error = dsk_error_new ("malformed SupportedVersions extension in ServerHello");
+                return NULL;
+              }
+            ext->supported_versions.n_supported_versions = 1;
+            ext->supported_versions.supported_versions = dsk_mem_pool_alloc (pool, sizeof(DskTlsProtocolVersion));
+            ext->supported_versions.supported_versions[0] = dsk_uint16be_parse (ext_payload);
+            break;
+          default:
+            *error = dsk_error_new ("SupportedVersions only allowed under ServerHello or ClientHello");
+            return NULL;
         }
-      if (ext_payload_len != 1 + ext_payload[0])
-        {
-          *error = dsk_error_new ("malformed SupportedVersions extension");
-          return NULL;
-        }
-      assert(ext_payload_len == 1 + ext_payload[0]);
-      unsigned n_versions = (ext_payload_len - 1) / 2;
-      ext->supported_versions.n_supported_versions = n_versions;
-      ext->supported_versions.supported_versions = dsk_mem_pool_alloc (pool, sizeof(DskTlsProtocolVersion) * n_versions);
-      for (unsigned i = 0; i < n_versions; i++)
-	ext->supported_versions.supported_versions[i] = dsk_uint16be_parse (ext_payload + 1 + 2 * i);
       break;
 
     //TODO:case DSK_TLS_EXTENSION_TYPE_COOKIE:
@@ -801,6 +838,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       memcpy (rv->server_hello.random, at, 32);
       at += 32;
 
+
       //
       // Magic value for retry-request. (See RFC 8446 Section 4.1.3)
       //
@@ -834,7 +872,9 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
           return false;
         }
       rv->server_hello.cipher_suite = dsk_uint16be_parse (at);
+      at += 2;
       rv->server_hello.compression_method = dsk_uint16be_parse (at);
+      at += 1;
 
       //
       // Parse Extensions.
@@ -864,3 +904,26 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
   return rv;
 }
 
+void
+dsk_tls_derive_secret (DskChecksumType type,
+                       const uint8_t  *secret,
+                       size_t          label_len,
+                       const uint8_t  *label,
+                       const uint8_t  *transcript_hash,
+                       uint8_t        *out)
+{
+  uint8_t hkdf_label[2 + 256 + 256];
+  unsigned checksum_size = dsk_checksum_type_get_size (type);
+  dsk_uint16be_pack (checksum_size,hkdf_label);
+  hkdf_label[2] = label_len + 6;
+  memcpy (hkdf_label + 3, "tls13 ", 6);
+  memcpy (hkdf_label + 9, label, label_len);
+  hkdf_label[9 + label_len] = checksum_size;
+  memcpy (hkdf_label + 9 + label_len + 1, transcript_hash, checksum_size);
+  unsigned hkdf_label_len = 9 + label_len + 1 + checksum_size;
+  printf("prk:");for(unsigned i=0;i<checksum_size;i++)printf(" %02x",secret[i]);printf("\n");
+  printf("info:");for(unsigned i=0;i<hkdf_label_len;i++)printf(" %02x",hkdf_label[i]);printf("\n");
+  printf("th:");for(unsigned i=0;i<checksum_size;i++)printf(" %02x",transcript_hash[i]);printf("\n");
+  dsk_hkdf_expand (type, secret, hkdf_label_len, hkdf_label,
+                   checksum_size, out);
+}

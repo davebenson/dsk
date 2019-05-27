@@ -16,12 +16,12 @@ void dsk_fd_set_no_close_on_exec (DskFileDescriptor fd);
 typedef void (*DskOutOfFileDescriptorsFunc)(void);
 extern DskOutOfFileDescriptorsFunc dsk_too_many_fds;
 
-DSK_INLINE_FUNC dsk_boolean dsk_fd_creation_failed (int e)
+DSK_INLINE_FUNC bool dsk_fd_creation_failed (int e)
 {
   if (e == ENFILE || e == EMFILE)
     {
       dsk_too_many_fds ();
-      return DSK_TRUE;
+      return true;
     }
-  return DSK_FALSE;
+  return false;
 }

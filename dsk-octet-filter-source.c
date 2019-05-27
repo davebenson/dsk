@@ -17,7 +17,7 @@ struct _DskStreamSourceFilter
   DskHookTrap *read_trap;
 };
 
-static dsk_boolean
+static bool
 read_into_buffer (DskStreamSourceFilter *filter,
                   DskError            **error)
 {
@@ -27,7 +27,7 @@ read_into_buffer (DskStreamSourceFilter *filter,
     case DSK_IO_RESULT_SUCCESS:
       break;
     case DSK_IO_RESULT_ERROR:
-      return DSK_FALSE;
+      return false;
     case DSK_IO_RESULT_EOF:
       {
         if (filter->read_trap)
@@ -39,24 +39,24 @@ read_into_buffer (DskStreamSourceFilter *filter,
         filter->sub = NULL;
 
         if (!dsk_sync_filter_finish (filter->filter, &filter->buffer, error))
-          return DSK_FALSE;
+          return false;
         dsk_object_unref (filter->filter);
         filter->filter = NULL;
-        return DSK_TRUE;
+        return true;
       }
     case DSK_IO_RESULT_AGAIN:
-      return DSK_TRUE;
+      return true;
     }
   if (!dsk_sync_filter_process_buffer (filter->filter, &filter->buffer,
-                                        tmp.size, &tmp, DSK_TRUE, error))
+                                        tmp.size, &tmp, true, error))
     {
       dsk_buffer_clear (&tmp);
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 notify_filter_readable (DskStream *sub,
                         DskStreamSourceFilter *sf)
 {
@@ -66,9 +66,9 @@ notify_filter_readable (DskStream *sub,
    || sf->filter == NULL)
     {
       sf->read_trap = NULL;
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -149,7 +149,7 @@ dsk_stream_source_filter_shutdown_read  (DskStream *source)
       sf->filter = NULL;
     }
   dsk_buffer_reset (&sf->buffer);
-  dsk_hook_set_idle_notify (&source->readable_hook, DSK_TRUE);
+  dsk_hook_set_idle_notify (&source->readable_hook, true);
 }
 
 static void
@@ -180,7 +180,7 @@ static DskStreamSourceFilterClass dsk_stream_source_filter_class =
 
 static void
 set_poll   (void       *object,
-            dsk_boolean is_trapped)
+            bool is_trapped)
 {
   DskStreamSourceFilter *sf = (DskStreamSourceFilter *) object;
   if (sf->sub == NULL)

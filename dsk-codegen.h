@@ -33,9 +33,9 @@ struct _DskCodegenFunction
   const char    *name;
   unsigned       n_args;
   DskCodegenArg *args;
-  dsk_boolean    semicolon;
-  dsk_boolean    newline;
-  dsk_boolean    render_void_args;  /* say "void" if n_args==0 */
+  bool    semicolon;
+  bool    newline;
+  bool    render_void_args;  /* say "void" if n_args==0 */
 
   /* --- used to align all functions in a file together --- */
 
@@ -60,9 +60,9 @@ struct _DskCodegenFunction
   "void",                       /* return_type */       \
   NULL,                         /* name */              \
   0, NULL,                      /* n_args, args */      \
-  DSK_FALSE,                    /* semicolon */         \
-  DSK_TRUE,                     /* newline */           \
-  DSK_TRUE,                     /* render_void_args */  \
+  false,                    /* semicolon */         \
+  true,                     /* newline */           \
+  true,                     /* render_void_args */  \
   -1, -1, -1, -1                /* optional alignment args */ \
 }
 

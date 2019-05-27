@@ -14,11 +14,11 @@ struct _DskWhitespaceTrimmer
 };
 static void dsk_whitespace_trimmer_init (DskWhitespaceTrimmer *trimmer)
 {
-  trimmer->in_space = trimmer->in_initial_space = DSK_TRUE;
+  trimmer->in_space = trimmer->in_initial_space = true;
 }
 #define dsk_whitespace_trimmer_finalize NULL
 
-static dsk_boolean
+static bool
 dsk_whitespace_trimmer_process    (DskSyncFilter *filter,
                                    DskBuffer      *out,
                                    unsigned        in_length,
@@ -33,24 +33,24 @@ dsk_whitespace_trimmer_process    (DskSyncFilter *filter,
       uint8_t c = *in_data++;
       if (dsk_ascii_isspace (c))
         {
-          in_space = DSK_TRUE;
+          in_space = true;
         }
       else
         {
           if (in_space)
             {
               if (trimmer->in_initial_space)
-                trimmer->in_initial_space = DSK_FALSE;
+                trimmer->in_initial_space = false;
               else
                 dsk_buffer_append_byte (out, ' ');
             }
-          in_space = DSK_FALSE;
+          in_space = false;
           dsk_buffer_append_byte (out, c);
         }
       in_length--;
     }
   trimmer->in_space = in_space;
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_whitespace_trimmer_finish NULL
@@ -60,7 +60,7 @@ DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskWhitespaceTrimmer, dsk_whitespace_tri
 DskSyncFilter *dsk_whitespace_trimmer_new         (void)
 {
   DskWhitespaceTrimmer *trimmer = dsk_object_new (&dsk_whitespace_trimmer_class);
-  trimmer->in_initial_space = trimmer->in_space = DSK_TRUE;
+  trimmer->in_initial_space = trimmer->in_space = true;
   return DSK_SYNC_FILTER (trimmer);
 }
   

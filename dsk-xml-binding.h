@@ -32,7 +32,7 @@ struct _DskXmlBindingType
   char *ctypename;              /* usually NULL */
 
   /* virtual functions */
-  dsk_boolean (*parse)(DskXmlBindingType *type,
+  bool (*parse)(DskXmlBindingType *type,
                        DskXml            *to_parse,
 		       void              *out,
 		       DskError         **error);
@@ -49,7 +49,7 @@ struct _DskXmlBindingType
 
 struct _DskXmlBindingNamespace
 {
-  dsk_boolean is_static;
+  bool is_static;
   char *name;
   unsigned n_types;
   DskXmlBindingType **types;
@@ -104,7 +104,7 @@ typedef unsigned int DskXmlBindingTypeUnionTag;
 struct _DskXmlBindingUnionCase
 {
   char *name;
-  dsk_boolean elide_struct_outer_tag;
+  bool elide_struct_outer_tag;
   DskXmlBindingType *type;
 };
 struct _DskXmlBindingTypeUnion
@@ -145,7 +145,7 @@ extern DskXmlBindingNamespace dsk_xml_binding_namespace_builtin;
 #define dsk_xml_binding__string__type  (&dsk_xml_binding_type_string)
 
 /* --- for generated code --- */
-dsk_boolean dsk_xml_binding_struct_parse (DskXmlBindingType *type,
+bool dsk_xml_binding_struct_parse (DskXmlBindingType *type,
 		                          DskXml            *to_parse,
 		                          void              *out,
 		                          DskError         **error);
@@ -154,7 +154,7 @@ DskXml  *   dsk_xml_binding_struct_to_xml(DskXmlBindingType *type,
 		                          DskError         **error);
 void        dsk_xml_binding_struct_clear (DskXmlBindingType *type,
 		                          void              *out);
-dsk_boolean dsk_xml_binding_union_parse  (DskXmlBindingType *type,
+bool dsk_xml_binding_union_parse  (DskXmlBindingType *type,
 		                          DskXml            *to_parse,
 		                          void              *out,
 		                          DskError         **error);

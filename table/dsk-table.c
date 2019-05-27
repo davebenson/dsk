@@ -64,7 +64,7 @@ struct _File
   PossibleMerge *prev_merge;
   PossibleMerge *next_merge;
 
-  dsk_boolean used_by_last_checkpoint;
+  bool used_by_last_checkpoint;
 
   File *prev, *next;
 };
@@ -92,7 +92,7 @@ struct _PossibleMerge
 
   /* possible merges, ordered by actual_entry_count_ratio_log2_b10,
      then a->n_entries then a->first_entry_index */
-  dsk_boolean is_red;
+  bool is_red;
   PossibleMerge *left, *right, *parent;
 };
 
@@ -102,7 +102,7 @@ struct _TreeNode
   unsigned value_length;
   unsigned value_alloced;
   TreeNode *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
 };
 
 struct _DskTable
@@ -111,7 +111,7 @@ struct _DskTable
   void *compare_data;
   DskTableMergeFunc merge;
   void *merge_data;
-  dsk_boolean chronological_lookup_merges;
+  bool chronological_lookup_merges;
   DskDir *dir;
   DskTableFileInterface *file_interface;
   DskTableCheckpointInterface *cp_interface;
@@ -250,7 +250,7 @@ add_to_tree (DskTable           *table,
                             (uint8_t *) (node+1) + node->key_length,
                             value_length, value_data,
                             &table->merge_buffers[0],
-                            DSK_FALSE,
+                            false,
                             table->merge_data))
         {
         case DSK_TABLE_MERGE_RETURN_A_FINAL:
@@ -279,7 +279,7 @@ add_to_tree (DskTable           *table,
         }
     }
 }
-static dsk_boolean
+static bool
 handle_checkpoint_replay_element (unsigned            key_length,
                                   const uint8_t      *key_data,
                                   unsigned            value_length,
@@ -291,7 +291,7 @@ handle_checkpoint_replay_element (unsigned            key_length,
   DSK_UNUSED (error);
   add_to_tree (table, key_length, key_data, value_length, value_data);
   table->cp_n_entries += 1;
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -370,7 +370,7 @@ parse_uint64_le (const uint8_t *data)
 #endif
 }
 
-static dsk_boolean
+static bool
 parse_checkpoint_data (DskTable *table,
                        unsigned  len,
                        const uint8_t *data,
@@ -382,25 +382,25 @@ parse_checkpoint_data (DskTable *table,
     {
       dsk_set_error (error, "checkpoint too small (must be 8 bytes, got %u)",
                      len);
-      return DSK_FALSE;
+      return false;
     }
   magic = parse_uint32_le (data + 0);
   version = parse_uint32_le (data + 4);
   if (magic != DSK_TABLE_CPDATA_MAGIC)
     {
       dsk_set_error (error, "checkpoint data magic invalid");
-      return DSK_FALSE;
+      return false;
     }
   if (version != 0)
     {
       dsk_set_error (error, "bad version of checkpoint data");
-      return DSK_FALSE;
+      return false;
     }
 
   if ((len - 8) % 32 != 0)
     {
       dsk_set_error (error, "checkpoint data should be a multiple of 32 bytes");
-      return DSK_FALSE;
+      return false;
     }
   n_files = (len - 8) / 32;
   for (i = 0; i < n_files; i++)
@@ -415,12 +415,12 @@ parse_checkpoint_data (DskTable *table,
       file->merge = NULL;
       file->prev_merge = NULL;
       file->next_merge = NULL;
-      file->used_by_last_checkpoint = DSK_TRUE;
+      file->used_by_last_checkpoint = true;
       DSK_LIST_APPEND (GET_FILE_LIST (), file);
       if (file->id >= table->next_id)
         table->next_id = file->id + 1;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -534,7 +534,7 @@ start_merge_job (DskTable *table,
      Not sure if it is worth checking for that. */
   merge->is_complete = merge->a->first_entry_index == 0ULL;
 
-  merge->finishing_writer = DSK_FALSE;
+  merge->finishing_writer = false;
 
   /* insert sorted into list of running merges */
   p_next = &table->running_merges;
@@ -552,7 +552,7 @@ start_merge_job (DskTable *table,
   return merge;
 }
 
-static dsk_boolean
+static bool
 maybe_start_merge_jobs (DskTable *table,
                         DskError **error)
 {
@@ -561,16 +561,16 @@ maybe_start_merge_jobs (DskTable *table,
     {
       DSK_RBTREE_FIRST (GET_POSSIBLE_MERGE_TREE (), best);
       if (best == NULL)
-        return DSK_TRUE;
+        return true;
 
       /* TODO: make this tunable */
       if (best->actual_entry_count_ratio_log2_b10 > 1024)
         break;
 
       if (start_merge_job (table, best, error) == NULL)
-        return DSK_FALSE;
+        return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 static DskTableMergeResult
 dsk_table_std_merge (unsigned       key_length,
@@ -580,7 +580,7 @@ dsk_table_std_merge (unsigned       key_length,
                      unsigned       b_length,
                      const uint8_t *b_data,
                      DskTableBuffer *buffer,
-                     dsk_boolean    complete,
+                     bool    complete,
                      void          *merge_data)
 {
   DSK_UNUSED (key_length);
@@ -626,7 +626,7 @@ DskTable   *dsk_table_new          (DskTableConfig *config,
                                     DskError      **error)
 {
   DskTable rv;
-  dsk_boolean is_new = DSK_FALSE;
+  bool is_new = false;
   memset (&rv, 0, sizeof (rv));
   rv.compare = config->compare;
   rv.compare_data = config->compare_data;
@@ -792,8 +792,8 @@ lookup_do_merge_or_set (DskTable *table,
                         unsigned     value_length,
                         const uint8_t *value_data,
                         int      *res_index_inout,
-                        dsk_boolean *is_done_out,
-                        dsk_boolean  is_final)
+                        bool *is_done_out,
+                        bool  is_final)
 {
   if (*res_index_inout < 0)
     {
@@ -810,7 +810,7 @@ lookup_do_merge_or_set (DskTable *table,
       DskTableBuffer *res = &table->merge_buffers[*res_index_inout];
       unsigned b_len = res->length;
       const uint8_t *b_data = res->data;
-      dsk_boolean is_correct;
+      bool is_correct;
       if (table->chronological_lookup_merges)
         {
           { unsigned swap = a_len; a_len = b_len; b_len = swap; }
@@ -828,18 +828,18 @@ lookup_do_merge_or_set (DskTable *table,
           break;
         case DSK_TABLE_MERGE_RETURN_A:
           is_correct = a_data == res->data;
-          *is_done_out = DSK_TRUE;
+          *is_done_out = true;
           break;
         case DSK_TABLE_MERGE_RETURN_B_FINAL:
           is_correct = b_data == res->data;
           break;
         case DSK_TABLE_MERGE_RETURN_B:
           is_correct = b_data == res->data;
-          *is_done_out = DSK_TRUE;
+          *is_done_out = true;
           break;
         case DSK_TABLE_MERGE_RETURN_BUFFER_FINAL:
           *res_index_inout = 1 - *res_index_inout;
-          *is_done_out = DSK_TRUE;
+          *is_done_out = true;
           return;
         case DSK_TABLE_MERGE_RETURN_BUFFER:
           *res_index_inout = 1 - *res_index_inout;
@@ -861,14 +861,14 @@ lookup_do_merge_or_set (DskTable *table,
 /* *res_index_inout is -1 if no result has been located yet.
    it may be 0 or 1 depending on which merge_buffer has the result.
  */
-static dsk_boolean
+static bool
 do_file_lookup (DskTable    *table,
                 File        *file,
                 unsigned     key_length,
                 const uint8_t *key_data,
                 int         *res_index_inout,
-                dsk_boolean *is_done_out,
-                dsk_boolean  is_final,
+                bool *is_done_out,
+                bool  is_final,
                 DskError   **error)
 {
   DskError *e = NULL;
@@ -885,7 +885,7 @@ do_file_lookup (DskTable    *table,
                                         table->basename,
                                         error);
       if (file->seeker == NULL)
-        return DSK_FALSE;
+        return false;
     }
   seeker = file->seeker;
   if (!seeker->find (seeker, seeker_find_function, &find_info,
@@ -899,16 +899,16 @@ do_file_lookup (DskTable    *table,
             *error = e;
           else
             dsk_error_unref (e);
-          return DSK_FALSE;
+          return false;
         }
-      return DSK_TRUE;
+      return true;
     }
 
   lookup_do_merge_or_set (table,
                           key_length, key_data,
                           value_length, value_data,
                           res_index_inout, is_done_out, is_final);
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -916,8 +916,8 @@ do_tree_lookup (DskTable *table,
                 unsigned        key_length,
                 const uint8_t  *key_data,
                 int      *res_index_inout,
-                dsk_boolean *is_done_out,
-                dsk_boolean  is_final)
+                bool *is_done_out,
+                bool  is_final)
 {
   TreeNode *node = lookup_tree_node (table, key_length, key_data);
   if (node == NULL)
@@ -930,7 +930,7 @@ do_tree_lookup (DskTable *table,
                           res_index_inout, is_done_out, is_final);
 }
 
-dsk_boolean
+bool
 dsk_table_lookup       (DskTable       *table,
                         unsigned        key_len,
                         const uint8_t  *key_data,
@@ -939,7 +939,7 @@ dsk_table_lookup       (DskTable       *table,
                         DskError      **error)
 {
   int res_index = -1;
-  dsk_boolean is_done = DSK_FALSE;
+  bool is_done = false;
   if (table->chronological_lookup_merges)
     {
       /* iterate files from oldest to newest */
@@ -948,38 +948,38 @@ dsk_table_lookup       (DskTable       *table,
         {
           if (!do_file_lookup (table, file,
                                key_len, key_data,
-                               &res_index, &is_done, DSK_FALSE,
+                               &res_index, &is_done, false,
                                error))
-            return DSK_FALSE;
+            return false;
           file = file->next;
         }
       if (!is_done)
-        do_tree_lookup (table, key_len, key_data, &res_index, &is_done, DSK_TRUE);
+        do_tree_lookup (table, key_len, key_data, &res_index, &is_done, true);
     }
   else
     {
       File *file = table->newest_file;
-      do_tree_lookup (table, key_len, key_data, &res_index, &is_done, DSK_FALSE);
+      do_tree_lookup (table, key_len, key_data, &res_index, &is_done, false);
       while (!is_done && file != NULL)
         {
           if (!do_file_lookup (table, file,
                                key_len, key_data,
                                &res_index, &is_done, file->prev == NULL,
                                error))
-            return DSK_FALSE;
+            return false;
           file = file->prev;
         }
     }
   if (res_index < 0)
-    return DSK_FALSE;
+    return false;
   if (value_len_out != NULL)
     *value_len_out = table->merge_buffers[res_index].length;
   if (value_data_out != NULL)
     *value_data_out = table->merge_buffers[res_index].data;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 dump_tree_to_writer (DskTableFileWriter *writer,
                      TreeNode           *at,
                      DskError          **error)
@@ -988,19 +988,19 @@ dump_tree_to_writer (DskTableFileWriter *writer,
   if (at->left)
     {
       if (!dump_tree_to_writer (writer, at->left, error))
-        return DSK_FALSE;
+        return false;
     }
   if (!writer->write(writer, at->key_length, key, at->value_length, key + at->key_length, error))
-    return DSK_FALSE;
+    return false;
   if (at->right)
     {
       if (!dump_tree_to_writer (writer, at->right, error))
-        return DSK_FALSE;
+        return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 merge_passthrough (Merge *merge,
                    DskTableReader *reader,
                    DskError **error)
@@ -1012,12 +1012,12 @@ merge_passthrough (Merge *merge,
                              reader->value_length,
                              reader->value_data,
                              error))
-    return DSK_FALSE;
+    return false;
   merge->entries_written += 1;
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 delete_file (DskTable *table,
              uint64_t  id,
              DskError **error)
@@ -1029,7 +1029,7 @@ delete_file (DskTable *table,
                                              error);
 }
 
-static dsk_boolean
+static bool
 merge_job_readers_at_eof (DskTable  *table,
                           Merge     *merge,
                           DskError **error)
@@ -1043,17 +1043,17 @@ merge_job_readers_at_eof (DskTable  *table,
         case DSK_TABLE_FILE_WRITER_FINISHED:
           break;
         case DSK_TABLE_FILE_WRITER_FINISHING:
-          merge->finishing_writer = DSK_TRUE;
-          return DSK_TRUE;
+          merge->finishing_writer = true;
+          return true;
         case DSK_TABLE_FILE_WRITER_FINISH_FAILED:
-          return DSK_FALSE;
+          return false;
         }
     }
 
   /* close writer */
   if (!merge->writer->close (merge->writer, error))
     {
-      return DSK_FALSE;
+      return false;
     }
 
   /* make new File */
@@ -1065,7 +1065,7 @@ merge_job_readers_at_eof (DskTable  *table,
   new->entry_count = merge->entries_written;
   new->merge = NULL;
   new->prev_merge = new->next_merge = NULL;
-  new->used_by_last_checkpoint = DSK_FALSE;
+  new->used_by_last_checkpoint = false;
   new->prev = merge->a->prev;
   new->next = merge->b->next;
   if (new->prev == NULL)
@@ -1124,12 +1124,12 @@ merge_job_readers_at_eof (DskTable  *table,
 
   /* maybe time to start another merge job running */
   if (!maybe_start_merge_jobs (table, error))
-    return DSK_FALSE;
+    return false;
 
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 run_first_merge_job (DskTable *table,
                      DskError **error)
 {
@@ -1142,12 +1142,12 @@ run_first_merge_job (DskTable *table,
         {
           /* done */
           if (!merge_job_readers_at_eof (table, merge, error))
-            return DSK_FALSE;
+            return false;
         }
       else
         {
           if (!merge_passthrough (merge, merge->b_reader, error))
-            return DSK_FALSE;
+            return false;
         }
     }
   else
@@ -1155,7 +1155,7 @@ run_first_merge_job (DskTable *table,
       if (merge->b_reader->at_eof)
         {
           if (!merge_passthrough (merge, merge->a_reader, error))
-            return DSK_FALSE;
+            return false;
         }
       else
         {
@@ -1167,18 +1167,18 @@ run_first_merge_job (DskTable *table,
           if (cmp < 0)
             {
               if (!merge_passthrough (merge, merge->a_reader, error))
-                return DSK_FALSE;
+                return false;
               merge->inputs_remaining -= 1;
               if (!merge->b_reader->advance (merge->a_reader, error))
-                return DSK_FALSE;
+                return false;
             }
           else if (cmp > 0)
             {
               if (!merge_passthrough (merge, merge->b_reader, error))
-                return DSK_FALSE;
+                return false;
               merge->inputs_remaining -= 1;
               if (!merge->b_reader->advance (merge->b_reader, error))
-                return DSK_FALSE;
+                return false;
             }
           else
             {
@@ -1196,12 +1196,12 @@ run_first_merge_job (DskTable *table,
                 case DSK_TABLE_MERGE_RETURN_A_FINAL:
                 case DSK_TABLE_MERGE_RETURN_A:
                   if (!merge_passthrough (merge, merge->a_reader, error))
-                    return DSK_FALSE;
+                    return false;
                   break;
                 case DSK_TABLE_MERGE_RETURN_B_FINAL:
                 case DSK_TABLE_MERGE_RETURN_B:
                   if (!merge_passthrough (merge, merge->b_reader, error))
-                    return DSK_FALSE;
+                    return false;
                   break;
                 case DSK_TABLE_MERGE_RETURN_BUFFER_FINAL:
                 case DSK_TABLE_MERGE_RETURN_BUFFER:
@@ -1211,7 +1211,7 @@ run_first_merge_job (DskTable *table,
                                              table->merge_buffers[0].length,
                                              table->merge_buffers[0].data,
                                              error))
-                    return DSK_FALSE;
+                    return false;
                   merge->entries_written += 1;
                   break;
                 case DSK_TABLE_MERGE_DROP:
@@ -1221,14 +1221,14 @@ run_first_merge_job (DskTable *table,
               merge->inputs_remaining -= 2;
               if (!merge->a_reader->advance (merge->a_reader, error)
                || !merge->b_reader->advance (merge->b_reader, error))
-                return DSK_FALSE;
+                return false;
             }
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean
+bool
 dsk_table_insert       (DskTable       *table,
                         unsigned        key_length,
                         const uint8_t  *key_data,
@@ -1244,7 +1244,7 @@ dsk_table_insert       (DskTable       *table,
                        key_length, key_data,
                        value_length, value_data,
                        error))
-    return DSK_FALSE;
+    return false;
   table->cp_n_entries++;
 
   /* maybe flush tree, creating new checkpoint */
@@ -1262,16 +1262,16 @@ dsk_table_insert       (DskTable       *table,
                                                   table->dir,
                                                   table->basename, error);
       if (writer == NULL)
-        return DSK_FALSE;
+        return false;
       if (!dump_tree_to_writer (writer, table->small_tree, error))
         {
           writer->destroy (writer);
-          return DSK_FALSE;
+          return false;
         }
       if (!writer->close (writer, error))
         {
           writer->destroy (writer);
-          return DSK_FALSE;
+          return false;
         }
       writer->destroy (writer);
       file = DSK_NEW (File);
@@ -1282,7 +1282,7 @@ dsk_table_insert       (DskTable       *table,
       file->entry_count = table->tree_size;
       file->merge = NULL;
       file->prev_merge = file->next_merge = NULL;
-      file->used_by_last_checkpoint = DSK_FALSE;
+      file->used_by_last_checkpoint = false;
       DSK_LIST_APPEND (GET_FILE_LIST (), file);
       if (file->prev)
         create_possible_merge (table, file->prev);
@@ -1304,7 +1304,7 @@ dsk_table_insert       (DskTable       *table,
       dsk_free (cp_data);
       if (new_cp == NULL)
         {
-          return DSK_FALSE;
+          return false;
         }
 
       /* destroy old checkpoint */
@@ -1315,7 +1315,7 @@ dsk_table_insert       (DskTable       *table,
       if (dsk_dir_sys_rename (table->dir, "NEW_CP", "CP") < 0)
         {
           dsk_set_error (error, "error renaming checkout (from NEW_CP to CP): %s", strerror (errno));
-          return DSK_FALSE;
+          return false;
         }
 
       /* delete any defunct files */
@@ -1340,23 +1340,23 @@ dsk_table_insert       (DskTable       *table,
   while (n_processed < 512 && table->running_merges != NULL)
     {
       if (!run_first_merge_job (table, error))
-        return DSK_FALSE;
+        return false;
       n_processed++;
     }
 
   /* start more jobs */
   if (!maybe_start_merge_jobs (table, error))
-    return DSK_FALSE;
+    return false;
 
   /* do more work, if there's something to do */
   while (n_processed < 512 && table->running_merges != NULL)
     {
       if (!run_first_merge_job (table, error))
-        return DSK_FALSE;
+        return false;
       n_processed++;
     }
   }
-  return DSK_TRUE;
+  return true;
 }
 
 /* create a Reader corresponding to the small tree. */
@@ -1394,7 +1394,7 @@ small_tree_reader_init_recursive (TreeNode *tree,
     small_tree_reader_init_recursive (tree->right, kv_len_pairs_inout, kv_data_inout);
 }
 
-static dsk_boolean
+static bool
 small_tree_reader_advance (DskTableReader *reader,
                            DskError      **error)
 {
@@ -1403,8 +1403,8 @@ small_tree_reader_advance (DskTableReader *reader,
   if (s->remaining <= 1)
     {
       s->remaining = 0;
-      reader->at_eof = DSK_TRUE;
-      return DSK_TRUE;
+      reader->at_eof = true;
+      return true;
     }
   s->remaining -= 1;
   s->kv_data += s->kv_len_pairs[0] + s->kv_len_pairs[1];
@@ -1413,7 +1413,7 @@ small_tree_reader_advance (DskTableReader *reader,
   reader->value_length = s->kv_len_pairs[1];
   reader->key_data = s->kv_data;
   reader->value_data = s->kv_data + s->kv_len_pairs[0];
-  return DSK_TRUE;
+  return true;
 }
 
 static DskTableReader *
@@ -1424,7 +1424,7 @@ make_small_tree_reader (DskTable *table)
   SmallTreeReader misc_fields =
   {
     {
-      DSK_FALSE,        /* never empty at this point */
+      false,        /* never empty at this point */
       0,0,NULL,NULL,    /* filled in below */
       small_tree_reader_advance,
       (void (*)(DskTableReader*)) dsk_free
@@ -1450,12 +1450,12 @@ make_small_tree_reader (DskTable *table)
   return &rv->base;
 }
 
-static dsk_boolean empty_advance (DskTableReader *reader,
+static bool empty_advance (DskTableReader *reader,
                                   DskError      **error)
 {
   DSK_UNUSED (reader);
   DSK_UNUSED (error);
-  return DSK_TRUE;
+  return true;
 }
 static void empty_destroy (DskTableReader *reader)
 {
@@ -1466,7 +1466,7 @@ make_empty_reader (void)
 {
   static DskTableReader empty =
     {
-      DSK_TRUE,         /* always at EOF */
+      true,         /* always at EOF */
       0,0,NULL,NULL,    /* unused */
       empty_advance,
       empty_destroy
@@ -1649,7 +1649,7 @@ dsk_table_destroy      (DskTable       *table)
 void
 dsk_table_destroy_erase(DskTable       *table)
 {
-  dsk_dir_set_erase_on_destroy (table->dir, DSK_TRUE);
+  dsk_dir_set_erase_on_destroy (table->dir, true);
   dsk_table_destroy (table);
 }
 
@@ -1682,7 +1682,7 @@ merge2_copy_kv_data (DskTableReader *dst,
   dst->value_data = src->value_data;
 }
 
-static dsk_boolean
+static bool
 merge2_setup_output (TableReaderMerge2 *merge2)
 {
   DskTableReader *a = merge2->a;
@@ -1714,7 +1714,7 @@ merge2_setup_output (TableReaderMerge2 *merge2)
                             merge2->b->value_length,
                             merge2->b->value_data,
                             &merge2->buffer,
-                            DSK_FALSE,          /* complete? */
+                            false,          /* complete? */
                             table->merge_data))
         {
         case DSK_TABLE_MERGE_RETURN_A_FINAL:
@@ -1734,13 +1734,13 @@ merge2_setup_output (TableReaderMerge2 *merge2)
           break;
         case DSK_TABLE_MERGE_DROP:
           merge2->state = TABLE_READER_MERGE2_BOTH;
-          return DSK_FALSE;
+          return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-static dsk_boolean
+static bool
 merge2_advance (DskTableReader *reader,
                 DskError      **error)
 {
@@ -1750,24 +1750,24 @@ restart_advance:
     {
     case TABLE_READER_MERGE2_A:
       if (!merge2->a->advance (merge2->a, error))
-        return DSK_FALSE;
+        return false;
       break;
     case TABLE_READER_MERGE2_B:
       if (!merge2->b->advance (merge2->b, error))
-        return DSK_FALSE;
+        return false;
       break;
     case TABLE_READER_MERGE2_BOTH:
       if (!merge2->a->advance (merge2->a, error)
        || !merge2->b->advance (merge2->b, error))
-        return DSK_FALSE;
+        return false;
       break;
     case TABLE_READER_MERGE2_EOF:
-      return DSK_TRUE;
+      return true;
     }
 
   if (merge2->a->at_eof && merge2->b->at_eof)
     {
-      merge2->base.at_eof = DSK_TRUE;
+      merge2->base.at_eof = true;
       merge2->state = TABLE_READER_MERGE2_EOF;
     }
   else if (merge2->a->at_eof)
@@ -1785,7 +1785,7 @@ restart_advance:
       if (!merge2_setup_output (merge2))
         goto restart_advance;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static void
@@ -1826,7 +1826,7 @@ dsk_table_reader_new_merge2 (DskTable *table,
   merge2 = DSK_NEW (TableReaderMerge2);
   merge2->base.advance = merge2_advance;
   merge2->base.destroy = merge2_destroy;
-  merge2->base.at_eof = DSK_FALSE;
+  merge2->base.at_eof = false;
   merge2->table = table;
   merge2->a = a;
   merge2->b = b;

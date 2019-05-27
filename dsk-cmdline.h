@@ -18,12 +18,12 @@ typedef enum
   _DSK_CMDLINE_IS_FOUR_BYTES = (1<<16)
 } DskCmdlineFlags;
 
-typedef dsk_boolean (*DskCmdlineCallback) (const char *arg_name,
+typedef bool (*DskCmdlineCallback) (const char *arg_name,
                                            const char *arg_value,
                                            void       *callback_data,
                                            DskError  **error);
 #define DSK_CMDLINE_CALLBACK_DECLARE(name) \
-        dsk_boolean          name         (const char *arg_name, \
+        bool          name         (const char *arg_name, \
                                            const char *arg_value, \
                                            void       *callback_data, \
                                            DskError  **error)
@@ -62,7 +62,7 @@ void dsk_cmdline_add_boolean (const char     *static_option_name,
                               const char     *static_description,
                               const char     *static_arg_description,
                               DskCmdlineFlags flags,
-                              dsk_boolean    *value_out);
+                              bool    *value_out);
 void dsk_cmdline_add_string  (const char     *static_option_name,
                               const char     *static_description,
 			      const char     *static_arg_description,
@@ -82,18 +82,18 @@ void dsk_cmdline_add_shortcut(char            shortcut,
 /* Handling of extra arguments and options.  (Here, _arguments_
    are command-line elements that DO NOT begin with "-";
    _options_ DO begin with "-".) */
-typedef dsk_boolean (*DskCmdlineArgumentHandler) (const char *argument,
+typedef bool (*DskCmdlineArgumentHandler) (const char *argument,
                                                   DskError  **error);
 void dsk_cmdline_set_argument_handler   (DskCmdlineArgumentHandler handler);
-void dsk_cmdline_permit_unknown_options (dsk_boolean     permit);
-void dsk_cmdline_permit_extra_arguments (dsk_boolean     permit);
+void dsk_cmdline_permit_unknown_options (bool     permit);
+void dsk_cmdline_permit_extra_arguments (bool     permit);
 
 
 /* Functions to make it easy to warn user about incompatible options.  */
-void dsk_cmdline_mutually_exclusive     (dsk_boolean     one_required,
+void dsk_cmdline_mutually_exclusive     (bool     one_required,
                                          const char     *arg_1,
                                          ...) DSK_GNUC_NULL_TERMINATED();
-void dsk_cmdline_mutually_exclusive_v   (dsk_boolean     one_required,
+void dsk_cmdline_mutually_exclusive_v   (bool     one_required,
                                          unsigned        n_excl,
                                          char          **excl);
 
@@ -110,13 +110,13 @@ void dsk_cmdline_end_mode               (void);
 
 /* Wrapper program support. After the first non-option given to a
    wrapper program, command-line processing ceases. */
-void dsk_cmdline_program_wrapper        (dsk_boolean     is_wrapper);
+void dsk_cmdline_program_wrapper        (bool     is_wrapper);
 
 /* --- Processing the Command-line --- */
 void        dsk_cmdline_process_args     (int            *argc_inout,
                                           char         ***argv_inout);
 
-dsk_boolean dsk_cmdline_try_process_args (int *argc_inout,
+bool dsk_cmdline_try_process_args (int *argc_inout,
                                           char ***argv_inout,
                                           DskError **error);
 

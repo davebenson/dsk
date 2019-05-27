@@ -3,7 +3,7 @@
 #include "dsk-ts0-builtins.h"
 
 
-static dsk_boolean
+static bool
 function_invoke__concat (DskTs0Function  *function,
                          DskTs0Namespace *ns,
                          unsigned         n_args,
@@ -15,8 +15,8 @@ function_invoke__concat (DskTs0Function  *function,
   (void) function;
   for (i = 0; i < n_args; i++)
     if (!dsk_ts0_expr_evaluate (args[i], ns, output, error))
-      return DSK_FALSE;
-  return DSK_TRUE;
+      return false;
+  return true;
 }
 
 DskTs0Function dsk_ts0_function_concat =
@@ -34,7 +34,7 @@ DskTs0Function dsk_ts0_function_concat =
                              DskBuffer      *output, \
                              DskError      **error)
 
-static dsk_boolean
+static bool
 tr__strict (STRICT_FUNCTION_ARGS)
 {
   DSK_UNUSED (ns);

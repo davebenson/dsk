@@ -190,7 +190,7 @@ handle_subvalue          (DskJsonParser *parser,
     }
 }
 
-static dsk_boolean
+static bool
 is_allowed_subvalue_token (JsonTokenType  token)
 {
   return token == JSON_TOKEN_LBRACE
@@ -283,10 +283,10 @@ handle_expected_subvalue (DskJsonParser *parser,
       }
 
     case JSON_TOKEN_TRUE:
-      handle_subvalue (parser, dsk_json_value_new_boolean (DSK_TRUE));
+      handle_subvalue (parser, dsk_json_value_new_boolean (true));
       break;
     case JSON_TOKEN_FALSE:
-      handle_subvalue (parser, dsk_json_value_new_boolean (DSK_FALSE));
+      handle_subvalue (parser, dsk_json_value_new_boolean (false));
       break;
     case JSON_TOKEN_NULL:
       handle_subvalue (parser, dsk_json_value_new_null ());
@@ -298,7 +298,7 @@ handle_expected_subvalue (DskJsonParser *parser,
 }
 
 
-static dsk_boolean
+static bool
 handle_token (DskJsonParser *parser,
               JsonTokenType  token,
               DskError     **error)
@@ -376,7 +376,7 @@ handle_token (DskJsonParser *parser,
       break;
     }
   parser->str_len = 0;
-  return DSK_TRUE;
+  return true;
 
 bad_token:
   dsk_set_error (error, "got unexpected token %s: %s (line %u)",
@@ -384,12 +384,12 @@ bad_token:
                  parse_state_expecting_strings[parser->parse_state],
                  parser->line_no);
   parser->str_len = 0;
-  return DSK_FALSE;
+  return false;
 }
 
 
 /* --- lexing --- */
-dsk_boolean
+bool
 dsk_json_parser_feed     (DskJsonParser *parser,
                           size_t         n_bytes,
                           const uint8_t *bytes,
@@ -448,7 +448,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
 #define WRITE_CHAR_TOKEN_CASE(character, SHORTNAME) \
             case character: \
               if (!handle_token (parser, JSON_TOKEN_##SHORTNAME, error)) \
-                return DSK_FALSE; \
+                return false; \
               n_bytes--; \
               bytes++; \
               break
@@ -473,7 +473,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
               dsk_set_error (error,
                              "unexpected character %s in json (line %u)",
                              dsk_ascii_byte_name (*bytes), parser->line_no);
-              return DSK_FALSE;
+              return false;
             }
           break;
 
@@ -488,14 +488,14 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                                  "got %s after '%s' (line %u)", \
                                  dsk_ascii_byte_name (*bytes), lc, \
                                  parser->line_no); \
-                  return DSK_FALSE; \
+                  return false; \
                 } \
               else \
                 { \
                   parser->lex_state = JSON_LEX_STATE_INIT; \
                   if (!handle_token (parser, JSON_TOKEN_##SHORTNAME, \
                                      error)) \
-                    return DSK_FALSE; \
+                    return false; \
                 } \
             } \
           else if (*bytes == lc[parser->fixed_n_chars] \
@@ -510,7 +510,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
               dsk_set_error (error, \
                            "unexpected character %s (parsing %s) (line %u)", \
                            dsk_ascii_byte_name (*bytes), UC, parser->line_no); \
-              return DSK_FALSE; \
+              return false; \
             } \
           break;
         WRITE_FIXED_BAREWORD_CASE(TRUE, "true", "TRUE", 4);
@@ -523,7 +523,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
             {
               // TODO ASSERT utf16_surrogate == 0
               if (!handle_token (parser, JSON_TOKEN_STRING, error))
-                return DSK_FALSE;
+                return false;
               bytes++;
               n_bytes--;
               parser->lex_state = JSON_LEX_STATE_INIT;
@@ -581,7 +581,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                   dsk_set_error (error,
                                "invalid character %s after '\\' (line %u)",
                                dsk_ascii_byte_name (*bytes), parser->line_no);
-                  return DSK_FALSE;
+                  return false;
                 }
             }
           else
@@ -592,7 +592,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                   dsk_set_error (error,
                                "expected 4 hex digits after \\u, got %s (line %u)",
                                dsk_ascii_byte_name (*bytes), parser->line_no);
-                  return DSK_FALSE;
+                  return false;
                 }
               parser->bs_sequence[parser->bs_sequence_len++] = *bytes++;
               n_bytes--;
@@ -610,7 +610,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                           dsk_set_error (error,
                                        "low (second) half of surrogate pair was encountered without high-half, line %u",
                                        parser->line_no);
-                          return DSK_FALSE;
+                          return false;
                         }
                       uint32_t code = dsk_utf16_surrogate_pair_to_codepoint (parser->utf16_surrogate, value);
                       append_to_string_buffer (parser,
@@ -626,7 +626,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                           dsk_set_error (error,
                                        "got two first-half surrogate pairs (UTF16 surrogate \\u%04u was followed by \\%04u), line %u",
                                        parser->utf16_surrogate, value, parser->line_no);
-                          return DSK_FALSE;
+                          return false;
                         }
                       parser->utf16_surrogate = value;
                     }
@@ -637,7 +637,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                           dsk_set_error (error,
                                        "second half of UTF16 surrogate \\u%04u was not preceded by utf16, line %u", 
                                        parser->utf16_surrogate, parser->line_no);
-                          return DSK_FALSE;
+                          return false;
                         }
                       append_to_string_buffer (parser,
                                                dsk_utf8_encode_unichar (utf8buf, value),
@@ -652,7 +652,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
                   dsk_set_error (error,
                                "internal error: expected 4 hex digits (line %u)",
                                parser->line_no);
-                  return DSK_FALSE;
+                  return false;
                 }
 #endif
             }
@@ -673,7 +673,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
             {
               /* append the number token */
               if (!handle_token (parser, JSON_TOKEN_NUMBER, error))
-                return DSK_FALSE;
+                return false;
 
               /* go back to init state (do not consume character) */
               parser->lex_state = JSON_LEX_STATE_INIT;
@@ -683,7 +683,7 @@ dsk_json_parser_feed     (DskJsonParser *parser,
           dsk_error ("unhandled lex state %u", parser->lex_state);
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -708,19 +708,19 @@ DskJsonValue * dsk_json_parser_pop      (DskJsonParser *parser)
   return rv;
 }
 
-dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
+bool    dsk_json_parser_finish   (DskJsonParser *parser,
                                          DskError     **error)
 {
   switch (parser->lex_state)
     {
     case JSON_LEX_STATE_INIT:
-      return DSK_TRUE;
+      return true;
 
     case JSON_LEX_STATE_TRUE:
       if (parser->fixed_n_chars == 4)
         {
           if (!handle_token (parser, JSON_TOKEN_TRUE, error))
-            return DSK_FALSE;
+            return false;
           break;
         }
       else
@@ -729,7 +729,7 @@ dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
       if (parser->fixed_n_chars == 5)
         {
           if (!handle_token (parser, JSON_TOKEN_FALSE, error))
-            return DSK_FALSE;
+            return false;
           break;
         }
       else
@@ -738,7 +738,7 @@ dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
       if (parser->fixed_n_chars == 4)
         {
           if (!handle_token (parser, JSON_TOKEN_NULL, error))
-            return DSK_FALSE;
+            return false;
           break;
         }
       else
@@ -748,22 +748,22 @@ dsk_boolean    dsk_json_parser_finish   (DskJsonParser *parser,
       goto bad_lex_state;
     case JSON_LEX_STATE_IN_NUMBER:
       if (!handle_token (parser, JSON_TOKEN_NUMBER, error))
-        return DSK_FALSE;
+        return false;
       break;
     }
   if (parser->parse_state != PARSE_INIT)
     {
       dsk_set_error (error, "unfinished %s",
                      parser->stack[0].type == STACK_NODE_OBJECT ? "object" : "array");
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 
 
 bad_lex_state:
   dsk_set_error (error, "invalid lex state %s at end-of-file",
                  lex_state_names[parser->lex_state]);
-  return DSK_FALSE;
+  return false;
 }
 
 void           dsk_json_parser_destroy  (DskJsonParser *parser)

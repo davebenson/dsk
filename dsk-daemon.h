@@ -10,7 +10,7 @@
  */
 
 
-void dsk_daemon_add_cmdline_args (dsk_boolean with_dsk_prefix);
+void dsk_daemon_add_cmdline_args (bool with_dsk_prefix);
 
 /* After you run this function, you should go about the non-terminating
    stuff your process presumably does.

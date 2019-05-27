@@ -3,16 +3,16 @@
 #include "../dsk.h"
 
 /* configuration */
-static dsk_boolean use_ipv6 = DSK_FALSE;
-static dsk_boolean no_links = DSK_FALSE;
+static bool use_ipv6 = false;
+static bool no_links = false;
 static const char *nameserver = NULL;
-static dsk_boolean verbose = DSK_FALSE;
+static bool verbose = false;
 static unsigned max_concurrent = 1;
-static dsk_boolean fatal_errors = DSK_FALSE;
+static bool fatal_errors = false;
 
 /* state */
 static unsigned n_running = 0;
-static dsk_boolean exit_status = 0;
+static bool exit_status = 0;
 
 static void
 handle_dns_result  (DskDnsLookupResult *result,
@@ -51,13 +51,13 @@ handle_dns_result  (DskDnsLookupResult *result,
 int main(int argc, char **argv)
 {
   DskDnsConfigFlags cfg_flags = DSK_DNS_CONFIG_FLAGS_INIT;
-  dsk_boolean no_searchpath = DSK_FALSE;
+  bool no_searchpath = false;
   int i;
   dsk_cmdline_init ("perform DNS lookups",
                     "Perform DNS lookups with Dsk DNS client.\n",
                     "HOSTNAMES...",
                     0);
-  dsk_cmdline_permit_extra_arguments (DSK_TRUE);
+  dsk_cmdline_permit_extra_arguments (true);
   dsk_cmdline_add_boolean ("ipv6", "Lookup names in the IPv6 namespace", NULL, 0, &use_ipv6);
   dsk_cmdline_add_boolean ("ipv4", "Lookup names in the IPv4 namespace", NULL, DSK_CMDLINE_REVERSED, &use_ipv6);
   dsk_cmdline_add_boolean ("cname", "Return CNAME or POINTER records if they arise", NULL, 0, &no_links);

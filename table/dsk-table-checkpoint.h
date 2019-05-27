@@ -1,6 +1,6 @@
 typedef struct _DskTableCheckpoint DskTableCheckpoint;
 
-typedef dsk_boolean
+typedef bool
          (*DskTableCheckpointReplayFunc) (unsigned            key_length,
                                           const uint8_t      *key_data,
                                           unsigned            value_length,
@@ -29,15 +29,15 @@ struct _DskTableCheckpointInterface
 
 struct _DskTableCheckpoint
 {
-  dsk_boolean (*add)    (DskTableCheckpoint *cp,
+  bool (*add)    (DskTableCheckpoint *cp,
                          unsigned            key_length,
                          const uint8_t      *key_data,
                          unsigned            value_length,
                          const uint8_t      *value_data,
                          DskError          **error);
-  dsk_boolean (*sync)   (DskTableCheckpoint *cp,
+  bool (*sync)   (DskTableCheckpoint *cp,
 		         DskError          **error);
-  dsk_boolean (*close)  (DskTableCheckpoint *cp,
+  bool (*close)  (DskTableCheckpoint *cp,
 		         DskError          **error);
   void        (*destroy)(DskTableCheckpoint *cp);
 };

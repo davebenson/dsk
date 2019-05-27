@@ -29,7 +29,7 @@ get_month_from_code (unsigned code)
     }
 }
 
-static dsk_boolean
+static bool
 parse_generic (const char *format,
                const char *str,
                char      **end,
@@ -52,7 +52,7 @@ parse_generic (const char *format,
           if (*at != *format)
             {
               dsk_set_error (error, "expected '%c' in date (offset %u)", *format, (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           at++;
           format++;
@@ -73,7 +73,7 @@ parse_generic (const char *format,
            || !dsk_ascii_isdigit (at[3]))
             {
               dsk_set_error (error, "expected 4-digit year");
-              return DSK_FALSE;
+              return false;
             }
           out->year = (unsigned)(at[0] - '0') * 1000
                     + (unsigned)(at[1] - '0') * 100
@@ -87,14 +87,14 @@ parse_generic (const char *format,
            || !dsk_ascii_isdigit (at[1]) )
             {
               dsk_set_error (error, "expected year");
-              return DSK_FALSE;
+              return false;
             }
           if (dsk_ascii_isdigit (at[2]))
             {
               if (!dsk_ascii_isdigit (at[3]))
                 {
                   dsk_set_error (error, "3-digit year?");
-                  return DSK_FALSE;
+                  return false;
                 }
               out->year = (unsigned)(at[0] - '0') * 1000
                         + (unsigned)(at[1] - '0') * 100
@@ -118,7 +118,7 @@ parse_generic (const char *format,
           if (!dsk_ascii_isdigit (at[0]) || !dsk_ascii_isdigit (at[1]))
             {
               dsk_set_error (error, "expected two digit day-of-month");
-              return DSK_FALSE;
+              return false;
             }
           out->day = (at[0] - '0') * 10 + (at[1] - '0');
           at += 2;
@@ -143,7 +143,7 @@ parse_generic (const char *format,
           else
             {
               dsk_set_error (error, "expected day-of-month");
-              return DSK_FALSE;
+              return false;
             }
           format += 2;
           break;
@@ -155,7 +155,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "expected three letter month abbrev (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           code = THREE_CHAR_CODE (dsk_ascii_tolower (at[0]),
                                   dsk_ascii_tolower (at[1]),
@@ -165,7 +165,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "invalid month name (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           format += 2;
           at += 3;
@@ -177,7 +177,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "expected two digit month number (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           out->month = (at[0] - '0') * 10 + (at[1] - '0');
           at += 2;
@@ -190,7 +190,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "expected two digit hour (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           out->hour = (at[0] - '0') * 10 + (at[1] - '0');
           at += 2;
@@ -202,7 +202,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "expected two digit minute (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           out->minute = (at[0] - '0') * 10 + (at[1] - '0');
           at += 2;
@@ -214,7 +214,7 @@ parse_generic (const char *format,
             {
               dsk_set_error (error, "expected two digit second (at offset %u)",
                              (unsigned)(at-str));
-              return DSK_FALSE;
+              return false;
             }
           out->second = (at[0] - '0') * 10 + (at[1] - '0');
           at += 2;
@@ -233,7 +233,7 @@ parse_generic (const char *format,
             if (!dsk_date_parse_timezone (at, &end, &out->zone_offset))
               {
                 dsk_set_error (error, "error parsing timezone (at %.5s)", at);
-                return DSK_FALSE;
+                return false;
               }
             at = end;
             format += 2;
@@ -243,7 +243,7 @@ parse_generic (const char *format,
     }
   if (end)
     *end = (char*) at;
-  return DSK_TRUE;
+  return true;
 }
 
 
@@ -253,7 +253,7 @@ parse_generic (const char *format,
  * or ANSI C dates (Sun Nov  6 08:49:37 1994)
  * or ISO 8601 dates (2009-02-12 T 14:32:61.1+01:00) (see RFC 3339)
  */
-dsk_boolean dsk_date_parse   (const char *str,
+bool dsk_date_parse   (const char *str,
                               char      **end,
                               DskDate    *out,
                               DskError  **error)
@@ -291,7 +291,7 @@ dsk_boolean dsk_date_parse   (const char *str,
   else
     {
       dsk_set_error (error, "unrecognized date format");
-      return DSK_FALSE;
+      return false;
     }
 }
 static const unsigned month_starts_in_days[12]
@@ -373,7 +373,7 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
   unsigned secs_since_midnight = unixtime % 86400;
   unsigned year;
   int64_t delta;
-  dsk_boolean first_is_leap = DSK_FALSE;
+  bool first_is_leap = false;
 
   /* --- figure out the year --- */
   /* This is actually the hard part, b/c of leap years being so random.
@@ -418,7 +418,7 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
      the next three are 100*365+24 days */
   if (delta < 100*365+25)
     {
-      first_is_leap = DSK_TRUE;
+      first_is_leap = true;
     }
   else if (delta < 200*365+49)
     {
@@ -445,7 +445,7 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
         {
           year += 4;
           delta -= 365*4;
-          first_is_leap = DSK_TRUE;
+          first_is_leap = true;
         }
     }
   year += (delta / (365*4+1)) * 4;
@@ -458,7 +458,7 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
     {
       if (delta >= 366)
         {
-          first_is_leap = DSK_FALSE;
+          first_is_leap = false;
           year += 1 + (delta-366)/365;
           delta = (delta - 1) % 365;
         }
@@ -502,7 +502,7 @@ void        dsk_unixtime_to_date (int64_t  unixtime,
 
 /* we recognise: UT, UTC, GMT; EST EDT CST CDT MST MDT PST PDT [A-Z]
    and the numeric formats: +#### and -#### */
-dsk_boolean dsk_date_parse_timezone (const char *at,
+bool dsk_date_parse_timezone (const char *at,
                                      char **end,
 				     int *zone_offset_out)
 {
@@ -512,10 +512,10 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
       if (*at == 'z' || *at == 'Z')
         *zone_offset_out = 0;
       else
-        return DSK_FALSE;
+        return false;
       if (end)
         *end = (char*)at + 1;
-      return DSK_TRUE;
+      return true;
     }
   switch (*at)
     {
@@ -526,7 +526,7 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
           if (end)
             *end = (char*)at + 2;
           *zone_offset_out = 0;
-          return DSK_TRUE;
+          return true;
         }
       if ((at[1] == 't' || at[1] == 'T')                /* UTC */
        && (at[2] == 'c' || at[2] == 'C'))
@@ -534,9 +534,9 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
           if (end)
             *end = (char*)at + 3;
           *zone_offset_out = 0;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
     case 'g': case 'G':
       if ((at[1] == 'm' || at[1] == 'M')                /* GMT */
        && (at[2] == 't' || at[2] == 'T'))
@@ -544,82 +544,82 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
           if (end)
             *end = (char*)at + 3;
           *zone_offset_out = 0;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
     case 'e': case 'E':
       if (!(at[2] == 't' || at[2] == 'T'))
-        return DSK_FALSE;
+        return false;
       if (at[1] == 's' || at[1] == 'S')                 /* EST */
         {
           *zone_offset_out = -5*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
       if (at[1] == 'd' || at[1] == 'D')
         {
           *zone_offset_out = -4*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
       
     case 'c': case 'C':
       if (!(at[2] == 't' || at[2] == 'T'))
-        return DSK_FALSE;
+        return false;
       if (at[1] == 's' || at[1] == 'S')                 /* CST */
         {
           *zone_offset_out = -6*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
       if (at[1] == 'd' || at[1] == 'D')                 /* CDT */
         {
           *zone_offset_out = -5*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
     case 'm': case 'M':
       if (!(at[2] == 't' || at[2] == 'T'))
-        return DSK_FALSE;
+        return false;
       if (at[1] == 's' || at[1] == 'S')                 /* MST */
         {
           *zone_offset_out = -7*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
       if (at[1] == 'd' || at[1] == 'D')                 /* MDT */
         {
           *zone_offset_out = -6*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
     case 'p': case 'P':
       if (!(at[2] == 't' || at[2] == 'T'))
-        return DSK_FALSE;
+        return false;
       if (at[1] == 's' || at[1] == 'S')                 /* PST */
         {
           *zone_offset_out = -8*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
       if (at[1] == 'd' || at[1] == 'D')                 /* PDT */
         {
           *zone_offset_out = -7*60;
           if (end)
             *end = (char*)at + 3;
-          return DSK_TRUE;
+          return true;
         }
-      return DSK_FALSE;
+      return false;
 
     case '+':
     case '-':
@@ -627,12 +627,12 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
         unsigned has_colon = 0;
         if (!dsk_ascii_isdigit (at[1])
          || !dsk_ascii_isdigit (at[2]))
-          return DSK_FALSE;
+          return false;
         if (at[3] == ':')
           has_colon = 1;
         if (!dsk_ascii_isdigit (at[3+has_colon])
          || !dsk_ascii_isdigit (at[4+has_colon]))
-          return DSK_FALSE;
+          return false;
         *zone_offset_out = dsk_ascii_digit_value (at[1]) * 600
                          + dsk_ascii_digit_value (at[2]) * 60
                          + dsk_ascii_digit_value (at[3+has_colon]) * 10
@@ -641,13 +641,13 @@ dsk_boolean dsk_date_parse_timezone (const char *at,
           *zone_offset_out = -*zone_offset_out;
         if (end)
           *end = (char*)at + (5+has_colon);
-        return DSK_TRUE;
+        return true;
       }
     default:
-      return DSK_FALSE;
+      return false;
     }
 }
-dsk_boolean
+bool
 dsk_date_is_leap_year (unsigned year)
 {
   return (year % 4 == 0)
@@ -656,7 +656,7 @@ dsk_date_is_leap_year (unsigned year)
 
 unsigned    dsk_date_get_day_of_year (const DskDate *date)
 {
-  dsk_boolean is_after_leap = date->month >= 3 && dsk_date_is_leap_year (date->year);
+  bool is_after_leap = date->month >= 3 && dsk_date_is_leap_year (date->year);
   dsk_assert (1 <= date->month && date->month <= 12);
   return month_starts_in_days[date->month-1] + date->day - 1
        + (is_after_leap ? 1 : 0);
@@ -668,7 +668,7 @@ int    dsk_date_get_days_since_epoch (const DskDate *date)
   /* we need to find the number of leap years between 1970
      and ly_year inclusive.  Therefore, the current year
      is included only if the date falls after Feb 28. */
-  dsk_boolean before_leap = (date->month <= 2);  /* jan and feb are before leap */
+  bool before_leap = (date->month <= 2);  /* jan and feb are before leap */
   unsigned ly_year = year - (before_leap ? 1 : 0);
 
   /* Number of leap years before the date in question, since epoch.
@@ -761,7 +761,7 @@ static const char day_of_week_abbrevs[21] = "SunMonTueWedThuFriSat";
 static const char month_abbrevs[36] = "JanFebMarAprMayJunJulAugSepOctNovDec";
 
 /* TODO: support years >= 10000 */
-dsk_boolean
+bool
 dsk_date_strftime (const DskDate *date,
                    const char    *format,
                    unsigned       max_out,
@@ -774,7 +774,7 @@ dsk_date_strftime (const DskDate *date,
     if (out + str_length >= end_out)              \
       {                                           \
         memcpy (out, str_value, end_out - out);   \
-        return DSK_FALSE;                         \
+        return false;                         \
       }                                           \
     else                                          \
       {                                           \
@@ -916,7 +916,7 @@ dsk_date_strftime (const DskDate *date,
         case 'E':
           /* NOTE: alternate formats (roman numerals???) not supported,
              fun as it would be. */
-          return DSK_FALSE;
+          return false;
 
         case 'p':
           buf[0] = date->hour >= 12 ? 'P' : 'A';
@@ -1010,9 +1010,9 @@ dsk_date_strftime (const DskDate *date,
 #undef MAYBE_APPEND
 #undef MAYBE_APPEND_STRING
   if (out == end_out)
-    return DSK_FALSE;
+    return false;
   *out = 0;
-  return DSK_TRUE;
+  return true;
 }
 
 #define MAX_DAY_OF_WEEK_NAME_LENGTH 15
@@ -1107,7 +1107,7 @@ dsk_strftime_max_length (const char    *format)
         case 'E':
           /* NOTE: alternate formats (roman numerals???) not supported,
              fun as it would be. */
-          return DSK_FALSE;
+          return false;
 
         case 'R':
         case 'r':

@@ -1,14 +1,14 @@
 
-dsk_boolean dsk_uint32_parse_decimal (const char  *str,
+bool dsk_uint32_parse_decimal (const char  *str,
                                       const char **end_out,
 				      uint32_t    *value_out);
-dsk_boolean dsk_int32_parse_decimal  (const char  *str,
+bool dsk_int32_parse_decimal  (const char  *str,
                                       const char **end_out,
 				      int32_t     *value_out);
-dsk_boolean dsk_uint64_parse_decimal (const char  *str,
+bool dsk_uint64_parse_decimal (const char  *str,
                                       const char **end_out,
 				      uint64_t    *value_out);
-dsk_boolean dsk_int64_parse_decimal  (const char  *str,
+bool dsk_int64_parse_decimal  (const char  *str,
                                       const char **end_out,
 				      int64_t     *value_out);
 

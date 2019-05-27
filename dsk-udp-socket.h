@@ -25,7 +25,7 @@ struct _DskUdpSocket
 };
 
 
-DskUdpSocket * dsk_udp_socket_new     (dsk_boolean  is_ipv6,
+DskUdpSocket * dsk_udp_socket_new     (bool  is_ipv6,
                                        DskError   **error);
 DskIOResult    dsk_udp_socket_send    (DskUdpSocket  *socket,
                                        unsigned       length,
@@ -43,7 +43,7 @@ DskIOResult    dsk_udp_socket_send_to_ip(DskUdpSocket  *socket,
 			               unsigned       length,
 			               const uint8_t *data,
 			               DskError     **error);
-dsk_boolean    dsk_udp_socket_bind    (DskUdpSocket  *socket,
+bool    dsk_udp_socket_bind    (DskUdpSocket  *socket,
                                        DskIpAddress *bind_addr,
 				       unsigned       port,
 			               DskError     **error);

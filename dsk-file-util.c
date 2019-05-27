@@ -52,7 +52,7 @@ uint8_t    *dsk_file_get_contents (const char *filename,
   return rv;
 }
 
-dsk_boolean dsk_file_set_contents (const char    *filename,
+bool dsk_file_set_contents (const char    *filename,
                                    size_t         size,
                                    const uint8_t *contents,
 			           DskError     **error)
@@ -67,7 +67,7 @@ retry_open:
         goto retry_open;
       dsk_set_error (error, "error creating %s: %s",
                      filename, strerror (errno));
-      return DSK_FALSE;
+      return false;
     }
   rem = size;
   while (rem > 0)
@@ -80,16 +80,16 @@ retry_open:
           dsk_set_error (error, "error writing to %s: %s",
                          filename, strerror (errno));
           close (fd);
-          return DSK_FALSE;
+          return false;
         }
       rem -= write_rv;
       contents += write_rv;
     }
   close (fd);
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_file_test_exists  (const char *filename)
+bool dsk_file_test_exists  (const char *filename)
 {
   struct stat stat_buf;
 retry_stat:
@@ -97,12 +97,12 @@ retry_stat:
     {
       if (errno == EINTR)
         goto retry_stat;
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean dsk_file_test_is_dir  (const char *filename)
+bool dsk_file_test_is_dir  (const char *filename)
 {
   struct stat stat_buf;
 retry_stat:
@@ -110,12 +110,12 @@ retry_stat:
     {
       if (errno == EINTR)
         goto retry_stat;
-      return DSK_FALSE;
+      return false;
     }
   return S_ISDIR (stat_buf.st_mode);
 }
 
-static dsk_boolean
+static bool
 safe_unlink (const char *dir_or_file,
              const char **failed_op_out,
              int *errno_out)
@@ -126,22 +126,22 @@ safe_unlink (const char *dir_or_file,
     {
       *errno_out = errno;
       *failed_op_out = "lstat";
-      return DSK_FALSE;
+      return false;
     }
   if (S_ISDIR (stat_buf.st_mode))
     {
       *errno_out = EISDIR;
       *failed_op_out = "unlink";
-      return DSK_FALSE;
+      return false;
     }
 #endif
   if (unlink (dir_or_file) < 0)
     {
       *errno_out = errno;
       *failed_op_out = "unlink";
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 /**
@@ -154,18 +154,18 @@ safe_unlink (const char *dir_or_file,
  *
  * returns: whether the removal was successful.
  * This routine fails if there is a permission or i/o problem.
- * (It returns DSK_TRUE if the file does not exist.)
+ * (It returns true if the file does not exist.)
  * If it fails, and error is non-NULL, *error will hold
  * a #DskError object.
  */
-dsk_boolean dsk_rm_rf   (const char *dir_or_file, DskError    **error)
+bool dsk_rm_rf   (const char *dir_or_file, DskError    **error)
 {
   int e;
   const char *op;
   if (!safe_unlink (dir_or_file, &op, &e))
     {
       if (strcmp (op, "lstat") == 0 && e == ENOENT)
-        return DSK_TRUE;
+        return true;
       if (e == EISDIR)
         {
           /* scan directory, removing contents recursively */
@@ -176,7 +176,7 @@ dsk_boolean dsk_rm_rf   (const char *dir_or_file, DskError    **error)
             {
               dsk_set_error (error, "error opening %s: %s",
                              dir_or_file, strerror (errno));
-              return DSK_FALSE;
+              return false;
             }
           while ((dirent = readdir (dir)) != NULL)
             {
@@ -197,7 +197,7 @@ dsk_boolean dsk_rm_rf   (const char *dir_or_file, DskError    **error)
                 {
                   dsk_free (fname);
                   closedir (dir);
-                  return DSK_FALSE;
+                  return false;
                 }
               dsk_free (fname);
             }
@@ -208,21 +208,21 @@ dsk_boolean dsk_rm_rf   (const char *dir_or_file, DskError    **error)
               dsk_set_error (error,
                              "error running rmdir(%s): %s", dir_or_file,
                              strerror (errno));
-              return DSK_FALSE;
+              return false;
             }
-          return DSK_TRUE;
+          return true;
         }
       else
         {
           dsk_set_error (error, "error %s %s: %s",
                          op, dir_or_file, strerror (e));
-          return DSK_FALSE;
+          return false;
         }
     }
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean
+bool
 dsk_remove_dir_recursive   (const char *dir,
                             DskError    **error)
 {
@@ -230,17 +230,17 @@ dsk_remove_dir_recursive   (const char *dir,
   if (lstat (dir, &stat_buf) < 0)
     {
       dsk_set_error (error, "error %s not found", dir);
-      return DSK_FALSE;
+      return false;
     }
   if (!S_ISDIR (stat_buf.st_mode))
     {
       dsk_set_error (error, "dsk_remove_dir_recursive called on non-directory");
-      return DSK_FALSE;
+      return false;
     }
   return dsk_rm_rf (dir, error);
 }
 
-dsk_boolean dsk_mkdir_recursive (const char *dir,
+bool dsk_mkdir_recursive (const char *dir,
                                  unsigned    permissions,
                                  DskError  **error)
 {
@@ -249,7 +249,7 @@ dsk_boolean dsk_mkdir_recursive (const char *dir,
   unsigned cur_len = 0;
 
   if (dsk_file_test_is_dir (dir))
-    return DSK_TRUE;
+    return true;
 
   /* append to dir_buf any number of consecutive '/'
      characters. */
@@ -283,20 +283,20 @@ dsk_boolean dsk_mkdir_recursive (const char *dir,
                 {
                   dsk_set_error (error, "error making directory %s: %s",
                                dir_buf, strerror (errno));
-                  return DSK_FALSE;
+                  return false;
                 }
             }
         }
 
       SCAN_THROUGH_SLASHES();
     }
-  return DSK_TRUE;
+  return true;
 #undef SCAN_THROUGH_SLASHES
 }
 
 #if 0
 #if DSK_HAS_ATFILE_SUPPORT
-dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
+bool dsk_mkdir_recursive_at (int openat_fd,
                                     const char *dir,
                                     unsigned    permissions,
                                     DskError  **error)
@@ -306,7 +306,7 @@ dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
   unsigned cur_len = 0;
 
   if (dsk_file_test_is_dir (dir))
-    return DSK_TRUE;
+    return true;
 
   /* append to dir_buf any number of consecutive '/'
      characters. */
@@ -340,14 +340,14 @@ dsk_boolean dsk_mkdir_recursive_at (int openat_fd,
                 {
                   dsk_set_error (error, "error making directory %s: %s",
                                dir_buf, strerror (errno));
-                  return DSK_FALSE;
+                  return false;
                 }
             }
         }
 
       SCAN_THROUGH_SLASHES();
     }
-  return DSK_TRUE;
+  return true;
 #undef SCAN_THROUGH_SLASHES
 }
 #endif
@@ -369,7 +369,7 @@ const char *dsk_get_tmp_dir (void)
       if (tmp_dir == NULL)
         tmp_dir = dsk_strdup (getenv ("TEMP"));
       if (tmp_dir == NULL)
-        tmp_dir = (char *) "/tmp";
+        tmp_dir = (char *) default_tmpdir;
     }
   return tmp_dir;
 }

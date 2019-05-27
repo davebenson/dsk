@@ -4,7 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 #define assert_or_error(call)                                      \
 {if (call) {}                                                      \
@@ -404,7 +404,7 @@ static struct
 int main(int argc, char **argv)
 {
   unsigned i;
-  dsk_boolean large = DSK_FALSE;
+  bool large = false;
 
   dsk_cmdline_init ("test DskTable",
                     "Test DskTable, our small persistent key-value table",

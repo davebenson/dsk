@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static dsk_boolean cmdline_verbose = DSK_FALSE;
+static bool cmdline_verbose = false;
 
 static void test_little_endian (void)
 {

@@ -95,6 +95,7 @@ typedef enum
   DSK_TLS_NAMED_GROUP_FFDHE6144     = 0x103,
   DSK_TLS_NAMED_GROUP_FFDHE8192     = 0x104,
 } DskTlsNamedGroup;
+const char *dsk_tls_named_group_name (DskTlsNamedGroup g);
 
 
 typedef enum {

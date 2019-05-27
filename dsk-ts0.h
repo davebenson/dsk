@@ -53,7 +53,7 @@ typedef struct _DskTs0Stanza DskTs0Stanza;
 /* --- string-valued functions --- */
 struct _DskTs0Function
 {
-  dsk_boolean (*invoke) (DskTs0Function *function,
+  bool (*invoke) (DskTs0Function *function,
                          DskTs0Namespace *ns,
                          unsigned        n_args,
                          DskTs0Expr    **args,
@@ -67,7 +67,7 @@ struct _DskTs0Function
 DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
 DSK_INLINE_FUNC void            dsk_ts0_function_unref (DskTs0Function *);
 
-dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
+bool dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                    DskTs0Namespace *ns,
                                    DskBuffer  *target,
                                    DskError  **error);
@@ -75,7 +75,7 @@ dsk_boolean dsk_ts0_expr_evaluate (DskTs0Expr *expr,
 /* --- tag-type operators --- */
 struct _DskTs0Tag
 {
-  dsk_boolean (*invoke) (DskTs0Tag         *tag,
+  bool (*invoke) (DskTs0Tag         *tag,
                          DskTs0Namespace   *ns,
                          DskTs0Stanza      *body,
                          DskBuffer         *output,
@@ -162,14 +162,14 @@ void dsk_ts0_global_add_subspace (const char *key,
                                   DskTs0Namespace *ns);
 
 /* simple ways to add various types of functions */
-typedef dsk_boolean (*DskTs0LazyFunc)  (DskTs0Namespace *ns,
+typedef bool (*DskTs0LazyFunc)  (DskTs0Namespace *ns,
                                               unsigned         n_args,
                                               DskTs0Expr     **args,
                                               DskBuffer       *output,
                                               DskError       **error);
 void dsk_ts0_global_add_lazy_func(const char *name,
                                   DskTs0LazyFunc lazy_func);
-typedef dsk_boolean (*DskTs0LazyDataFunc) (DskTs0Namespace *ns,
+typedef bool (*DskTs0LazyDataFunc) (DskTs0Namespace *ns,
                                                  unsigned        n_args,
                                                  DskTs0Expr    **args,
                                                  DskBuffer      *output,
@@ -179,14 +179,14 @@ void dsk_ts0_global_add_lazy_func_data       (const char *name,
                                               DskTs0LazyDataFunc lazy_func,
                                               void *func_data,
                                               DskDestroyNotify destroy);
-typedef dsk_boolean (*DskTs0StrictFunc)     (DskTs0Namespace *ns,
+typedef bool (*DskTs0StrictFunc)     (DskTs0Namespace *ns,
                                              unsigned        n_args,
                                              char          **args,
                                              DskBuffer      *output,
                                              DskError      **error);
 void dsk_ts0_global_add_func(const char *name,
                                   DskTs0StrictFunc func);
-typedef dsk_boolean (*DskTs0StrictDataFunc)     (DskTs0Namespace *ns,
+typedef bool (*DskTs0StrictDataFunc)     (DskTs0Namespace *ns,
                                              unsigned        n_args,
                                              char          **args,
                                              DskBuffer      *output,
@@ -256,14 +256,14 @@ typedef enum
 #endif
 
 /* --- end-user api --- */
-dsk_boolean dsk_ts0_evaluate (DskTs0Namespace *ns,
+bool dsk_ts0_evaluate (DskTs0Namespace *ns,
                               const char  *filename,
                               DskBuffer   *output,
                               DskError   **error);
 
 
 
-dsk_boolean   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
+bool   dsk_ts0_stanza_evaluate   (DskTs0Namespace *ns,
                                          DskTs0Stanza *stanza,
 			                 DskBuffer    *target,
                                          DskError    **error);

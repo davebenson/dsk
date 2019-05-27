@@ -11,32 +11,32 @@ typedef enum
 } DskUrlInterpretation;
 
 /* general sanity check */
-static dsk_boolean
+static bool
 is_valid_hostname (const char *hostname_start,
                    const char *hostname_end)
 {
   const char *hostname;
   if (hostname_start == hostname_end)
-    return DSK_FALSE;
+    return false;
   if (!dsk_ascii_isalnum (hostname_start[0]))
-    return DSK_FALSE;
+    return false;
   for (hostname = hostname_start + 1; hostname < hostname_end; hostname++)
     if (!dsk_ascii_istoken (*hostname) && *hostname != '.')
-      return DSK_FALSE;
-  return DSK_TRUE;
+      return false;
+  return true;
 }
 
-static dsk_boolean
+static bool
 is_valid_generic_component (const char *start, const char *end)
 {
   const char *at;
   for (at = start; at < end; at++)
     if (!(33 <= *at && *at <= 126))
-      return DSK_FALSE;
-  return DSK_TRUE;
+      return false;
+  return true;
 }
 
-dsk_boolean
+bool
 dsk_url_scheme_parse (const char   *url,
                       unsigned     *scheme_length_out,
                       DskUrlScheme *scheme_out,
@@ -48,7 +48,7 @@ dsk_url_scheme_parse (const char   *url,
   if (*p != ':')
     {
       dsk_set_error (error, "missing ':' in URL");
-      return DSK_FALSE;
+      return false;
     }
   *scheme_length_out = p + 1 - url;
    if ((url[0] == 'h' || url[0] == 'H')
@@ -59,12 +59,12 @@ dsk_url_scheme_parse (const char   *url,
       if (p - url == 4)
         {
           *scheme_out = DSK_URL_SCHEME_HTTP;
-          return DSK_TRUE;
+          return true;
         }
       else if (p - url == 5 && (p[4] == 's' || p[4] == 'S'))
         {
           *scheme_out = DSK_URL_SCHEME_HTTPS;
-          return DSK_TRUE;
+          return true;
         }
     }
   else if ((url[0] == 'f' || url[0] == 'F')
@@ -73,16 +73,16 @@ dsk_url_scheme_parse (const char   *url,
         && p - url == 3)
     {
       *scheme_out = DSK_URL_SCHEME_FTP;
-      return DSK_TRUE;
+      return true;
     }
   dsk_set_error (error, "unknown scheme %.*s", (int)(p - url), url);
-  return DSK_FALSE;
+  return false;
 }
 
 
 
 /* TODO: rewrite this thing! */
-dsk_boolean  dsk_url_scan  (const char     *url_string,
+bool  dsk_url_scan  (const char     *url_string,
                             DskUrlScanned  *out,
                             DskError      **error)
 {
@@ -99,12 +99,12 @@ dsk_boolean  dsk_url_scan  (const char     *url_string,
   if (out->scheme_start == at)
     {
       dsk_set_error (error, "no scheme found in URL");
-      return DSK_FALSE;
+      return false;
     }
   if (*at != ':')
     {
       dsk_set_error (error, "missing : after scheme in URL");
-      return DSK_FALSE;
+      return false;
     }
   out->scheme_end = at;
   at++;         /* skip : */
@@ -232,7 +232,7 @@ dsk_boolean  dsk_url_scan  (const char     *url_string,
     {
       dsk_set_error (error, "cannot guess how to interpret %.*s URL",
                      (int)(out->scheme_end - out->scheme_start), out->scheme_start);
-      return DSK_FALSE;
+      return false;
     }
 
 
@@ -269,13 +269,13 @@ dsk_boolean  dsk_url_scan  (const char     *url_string,
    && !function (out->base##_start, out->base##_end))         \
     {                                                         \
       dsk_set_error (error, "invalid character in %s", #base);\
-      return DSK_FALSE;                                       \
+      return false;                                       \
     }
   CHECK (host, is_valid_hostname)
   CHECK (path, is_valid_generic_component)
   CHECK (query, is_valid_generic_component)
 #undef CHECK
-  return DSK_TRUE;
+  return true;
 }
 
 static char *strcut (const char *start, const char *end)

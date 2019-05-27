@@ -33,7 +33,7 @@ uint16_array_swap (unsigned count,
     }
 }
 
-static dsk_boolean
+static bool
 dsk_utf8_to_utf16_process (DskSyncFilter *filter,
                            DskBuffer      *out,
                            unsigned        in_length,
@@ -47,7 +47,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
       if (u8to16->swap)
         uint16_array_swap (1, &bom);
       dsk_buffer_append (out, 2, &bom);
-      u8to16->must_emit_bom = DSK_FALSE;
+      u8to16->must_emit_bom = false;
     }
   unsigned in_used = 0;
   if (u8to16->n_utf8_bytes)
@@ -58,7 +58,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
         {
           memcpy (u8to16->utf8_bytes + u8to16->n_utf8_bytes, in_data, in_length);
           u8to16->n_utf8_bytes += in_length;
-          return DSK_TRUE;
+          return true;
         }
       memcpy (u8to16->utf8_bytes, in_data, needed);
       in_used = needed;
@@ -68,7 +68,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
       if (!dsk_utf8_decode_unichar (size, (char*)u8to16->utf8_bytes, &used, &v))
         {
           dsk_set_error (error, "bad UTF-8");
-          return DSK_FALSE;
+          return false;
         }
       unsigned count;
       uint16_t b[2];
@@ -116,7 +116,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
               if (dsk_unicode_is_surrogate (buf[n_buf]))
                 {
                   dsk_set_error (error, "surrogate-pair found in UTF-8 input");
-                  return DSK_FALSE;
+                  return false;
                 }
               n_buf++;
               in_used += 3;
@@ -132,7 +132,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
                 if (v < 0x10000)
                   {
                     dsk_set_error (error, "bad UTF-8");
-                    return DSK_FALSE;
+                    return false;
                   }
                 dsk_utf16_to_surrogate_pair (v, buf + n_buf);
                 n_buf += 2;
@@ -145,7 +145,7 @@ dsk_utf8_to_utf16_process (DskSyncFilter *filter,
       dsk_buffer_append (out, n_buf * 2, buf);
     }
   u8to16->n_utf8_bytes = 0;
-  return DSK_TRUE;
+  return true;
 
 partial:
   if (u8to16->swap)
@@ -153,10 +153,10 @@ partial:
   dsk_buffer_append (out, n_buf * 2, buf);
   u8to16->n_utf8_bytes = in_length - in_used;
   memcpy (u8to16->utf8_bytes, in_data + in_used, in_length - in_used);
-  return DSK_TRUE;
+  return true;
 }
 
-dsk_boolean
+bool
 dsk_utf8_to_utf16_finish (DskSyncFilter *filter,
                           DskBuffer      *out,
                           DskError      **error)
@@ -165,7 +165,7 @@ dsk_utf8_to_utf16_finish (DskSyncFilter *filter,
   if (DSK_UNLIKELY (u8to16->n_utf8_bytes))
     {
       dsk_set_error (error, "partial UTF-8 sequence at end-of-file");
-      return DSK_FALSE;
+      return false;
     }
   if (u8to16->must_emit_bom)
     {
@@ -174,7 +174,7 @@ dsk_utf8_to_utf16_finish (DskSyncFilter *filter,
         uint16_array_swap (1, &bom);
       dsk_buffer_append (out, 2, &bom);
     }
-  return DSK_TRUE;
+  return true;
 }
 
 #define dsk_utf8_to_utf16_init NULL

@@ -6,7 +6,7 @@
    dsk_print_context_free (codegen);
  */
 
-typedef dsk_boolean (*DskPrintAppendFunc) (unsigned   length,
+typedef bool (*DskPrintAppendFunc) (unsigned   length,
                                            const uint8_t *data,
                                            void      *append_data,
 					   DskError **error);
@@ -95,7 +95,7 @@ void dsk_print_set_filtered_buffer   (DskPrint    *context,
 
 
 /* generally discouraged, but still useful */
-dsk_boolean dsk_print_append_data    (DskPrint *print,
+bool dsk_print_append_data    (DskPrint *print,
                                       unsigned   length,
                                       const uint8_t *data,
 			              DskError **error);

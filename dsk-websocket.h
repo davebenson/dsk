@@ -71,7 +71,7 @@ void _dsk_websocket_client_init (DskWebsocket *websocket,
 
 /* used by the server to compute a response to the client.
    semi-public b/c it is useful for test code. */
-dsk_boolean
+bool
 _dsk_websocket_compute_response (const char *key1,  /* NUL-terminated */
                                  const char *key2,  /* NUL-terminated */
                                  const uint8_t *key3,  /* 8 bytes long */

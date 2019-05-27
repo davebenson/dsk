@@ -18,7 +18,7 @@ struct _VarDef
 
   /* Only valid if VarDef is in the tree */
   VarDef *left, *right, *parent;
-  dsk_boolean is_red;
+  bool is_red;
 
   unsigned value_length;
   /* value follows */
@@ -248,7 +248,7 @@ void dsk_print_pop (DskPrint *context)
 }
 
 /* --- implementation of print --- */
-static dsk_boolean
+static bool
 handle_template_expression (DskPrint *context,
                             const char *expr,
                             unsigned   *expr_len_out,
@@ -270,7 +270,7 @@ handle_template_expression (DskPrint *context,
         {
           dsk_set_error (error, "unexpected character %s after '${' in dsk_print",
                          dsk_ascii_byte_name (*start));
-          return DSK_FALSE;
+          return false;
         }
       length = 1;
       while (ascii_is_ident (start[length]))
@@ -284,7 +284,7 @@ handle_template_expression (DskPrint *context,
                          "unexpected character %s after '${%.*s' in dsk_print",
                          dsk_ascii_byte_name (*end),
                          (int) length, start);
-          return DSK_FALSE;
+          return false;
         }
       *expr_len_out = (end + 1) - expr;
     }
@@ -300,7 +300,7 @@ handle_template_expression (DskPrint *context,
     {
       dsk_set_error (error, "unexpected character %s after '$' in dsk_print",
                      dsk_ascii_byte_name (expr[1]));
-      return DSK_FALSE;
+      return false;
     }
 #define COMPARE_START_LEN_TO_VAR_DEF(unused,b, rv) \
       rv = memcmp (start, b->key, length);            \
@@ -315,15 +315,15 @@ handle_template_expression (DskPrint *context,
       dsk_set_error (error,
                      "unset variable $%.*s excountered in print template",
                      (int) length, start);
-      return DSK_FALSE;
+      return false;
     }
   if (!context->append (result->value_length, (uint8_t*)(result+1),
                         context->append_data, error))
-    return DSK_FALSE;
-  return DSK_TRUE;
+    return false;
+  return true;
 }
 
-static dsk_boolean
+static bool
 print__internal (DskPrint   *context,
                  const char *str,
                  DskError  **error)
@@ -339,7 +339,7 @@ print__internal (DskPrint   *context,
               /* call append - include the '$' */
               if (!context->append (at-last_at+1, (uint8_t*) last_at, 
                                     context->append_data, error))
-                return DSK_FALSE;
+                return false;
 
               at += 2;
               last_at = at;
@@ -351,11 +351,11 @@ print__internal (DskPrint   *context,
               if (at > last_at
                && !context->append (at-last_at, (uint8_t*) last_at, 
                                     context->append_data, error))
-                return DSK_FALSE;
+                return false;
 
               /* parse template expression */
               if (!handle_template_expression (context, at, &expr_len, error))
-                return DSK_FALSE;
+                return false;
               at += expr_len;
               last_at = at;
             }
@@ -367,9 +367,9 @@ print__internal (DskPrint   *context,
     {
       if (!context->append (at-last_at, (uint8_t*) last_at, 
                             context->append_data, error))
-        return DSK_FALSE;
+        return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 void
@@ -387,7 +387,7 @@ dsk_print (DskPrint *context,
     }
 }
 
-dsk_boolean dsk_print_append_data           (DskPrint *print,
+bool dsk_print_append_data           (DskPrint *print,
                                       unsigned   length,
                                       const uint8_t *data,
                                      DskError **error)
@@ -395,14 +395,14 @@ dsk_boolean dsk_print_append_data           (DskPrint *print,
   return print->append (length, data, print->append_data, error);
 }
 
-static dsk_boolean append_to_buffer (unsigned   length,
+static bool append_to_buffer (unsigned   length,
                                      const uint8_t *data,
                                      void      *append_data,
                                      DskError **error)
 {
   DSK_UNUSED (error);
   dsk_buffer_append (append_data, length, data);
-  return DSK_TRUE;
+  return true;
 }
 
 void
@@ -515,7 +515,7 @@ void dsk_print_set_filtered_binary   (DskPrint    *context,
 }
 
 
-static dsk_boolean
+static bool
 append_to_file_pointer (unsigned   length,
                         const uint8_t *data,
                         void      *append_data,
@@ -523,13 +523,13 @@ append_to_file_pointer (unsigned   length,
 {
   /* TODO: use fwrite_unlocked where available */
   if (length == 0)
-    return DSK_TRUE;
+    return true;
   if (fwrite (data, length, 1, append_data) != 1)
     {
       dsk_set_error (error, "error writing to file-pointer");
-      return DSK_FALSE;
+      return false;
     }
-  return DSK_TRUE;
+  return true;
 }
 
 static void

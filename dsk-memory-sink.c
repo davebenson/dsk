@@ -4,7 +4,7 @@ static void
 dsk_memory_sink_init (DskMemorySink *sink)
 {
   dsk_hook_init (&sink->buffer_nonempty, sink);
-  dsk_hook_set_idle_notify (&sink->base_instance.writable_hook, DSK_TRUE);
+  dsk_hook_set_idle_notify (&sink->base_instance.writable_hook, true);
 }
 
 static void
@@ -30,7 +30,7 @@ dsk_memory_sink_write (DskStream      *sink,
   else
     *n_written_out = msink->max_buffer_size - msink->buffer.size;
   dsk_buffer_append (&msink->buffer, *n_written_out, data_out);
-  dsk_hook_set_idle_notify (&msink->buffer_nonempty, DSK_TRUE);
+  dsk_hook_set_idle_notify (&msink->buffer_nonempty, true);
   return DSK_IO_RESULT_SUCCESS;
 }
 
@@ -45,13 +45,13 @@ dsk_memory_sink_write_buffer (DskStream      *sink,
   if (msink->buffer.size >= msink->max_buffer_size)
     return DSK_IO_RESULT_AGAIN;
   dsk_buffer_transfer (&msink->buffer, buffer, max_xfer);
-  dsk_hook_set_idle_notify (&msink->buffer_nonempty, DSK_TRUE);
+  dsk_hook_set_idle_notify (&msink->buffer_nonempty, true);
   return DSK_IO_RESULT_SUCCESS;
 }
 static void
 dsk_memory_sink_shutdown (DskStream      *sink)
 {
-  DSK_MEMORY_SINK (sink)->got_shutdown = DSK_TRUE;
+  DSK_MEMORY_SINK (sink)->got_shutdown = true;
 }
 
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskMemorySink);
@@ -74,5 +74,5 @@ DskMemorySinkClass dsk_memory_sink_class =
 void dsk_memory_sink_drained (DskMemorySink *sink)
 {
   if (sink->buffer.size == 0)
-    dsk_hook_set_idle_notify (&sink->buffer_nonempty, DSK_FALSE);
+    dsk_hook_set_idle_notify (&sink->buffer_nonempty, false);
 }
