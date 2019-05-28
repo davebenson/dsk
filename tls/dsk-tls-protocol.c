@@ -214,6 +214,18 @@ parse_extension (DskTlsHandshake    *under_construction,
         //    } ServerNameList;
         //
         // extension_data is a ServerNameList.
+        if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+         || under_construction->type == DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS)
+          {
+            if (at != end)
+              {
+                *error = dsk_error_new ("ServerName extension in ServerHello must be empty");
+                return false;
+              }
+            ext->server_name.n_entries = 0;
+            ext->server_name.entries = NULL;
+            return ext;
+          }
         if (at + 2 > end)
           {
             *error = dsk_error_new ("too short in ServerName extension");
@@ -888,9 +900,19 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         return false;
       break;
     }
+  case DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS:
+    {
+      if (!parse_length_prefixed_extensions (rv,
+                                             &at, end,
+                                             &rv->encrypted_extensions.n_extensions,
+                                             &rv->encrypted_extensions.extensions,
+                                             pool,
+                                             error))
+        return false;
+      break;
+    }
   case DSK_TLS_HANDSHAKE_TYPE_NEW_SESSION_TICKET:
   case DSK_TLS_HANDSHAKE_TYPE_END_OF_EARLY_DATA:
-  case DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS:
   case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE:
   case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_REQUEST:
   case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY:
@@ -907,23 +929,35 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
 void
 dsk_tls_derive_secret (DskChecksumType type,
                        const uint8_t  *secret,
-                       size_t          label_len,
+                       size_t          label_length,
                        const uint8_t  *label,
                        const uint8_t  *transcript_hash,
                        uint8_t        *out)
 {
+  unsigned hash_size = dsk_checksum_type_get_size (type);
+  dsk_tls_hkdf_expand_label (type, secret, label_length, label,
+                             hash_size, transcript_hash,
+                             hash_size, out);
+}
+
+void
+dsk_tls_hkdf_expand_label(DskChecksumType type,
+                          const uint8_t  *secret,
+                          size_t          label_length,
+                          const uint8_t  *label,                // an ascii string
+                          size_t          context_length,
+                          const uint8_t  *context,
+                          size_t          output_length,
+                          uint8_t        *out)
+{
   uint8_t hkdf_label[2 + 256 + 256];
-  unsigned checksum_size = dsk_checksum_type_get_size (type);
-  dsk_uint16be_pack (checksum_size,hkdf_label);
-  hkdf_label[2] = label_len + 6;
+  dsk_uint16be_pack (output_length, hkdf_label);
+  hkdf_label[2] = label_length + 6;
   memcpy (hkdf_label + 3, "tls13 ", 6);
-  memcpy (hkdf_label + 9, label, label_len);
-  hkdf_label[9 + label_len] = checksum_size;
-  memcpy (hkdf_label + 9 + label_len + 1, transcript_hash, checksum_size);
-  unsigned hkdf_label_len = 9 + label_len + 1 + checksum_size;
-  printf("prk:");for(unsigned i=0;i<checksum_size;i++)printf(" %02x",secret[i]);printf("\n");
-  printf("info:");for(unsigned i=0;i<hkdf_label_len;i++)printf(" %02x",hkdf_label[i]);printf("\n");
-  printf("th:");for(unsigned i=0;i<checksum_size;i++)printf(" %02x",transcript_hash[i]);printf("\n");
+  memcpy (hkdf_label + 9, label, label_length);
+  hkdf_label[9 + label_length] = context_length;
+  memcpy (hkdf_label + 9 + label_length + 1, context, context_length);
+  unsigned hkdf_label_len = 9 + label_length + 1 + context_length;
   dsk_hkdf_expand (type, secret, hkdf_label_len, hkdf_label,
-                   checksum_size, out);
+                   output_length, out);
 }

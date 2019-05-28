@@ -29,6 +29,9 @@ typedef struct DskTlsExtension_ServerNameList DskTlsExtension_ServerNameList;
 struct DskTlsExtension_ServerNameList
 {
   DskTlsExtensionBase base;
+
+  // This will always be 0 for ServerHello messages.
+  // In that case, it merely means that the server used the ServerName extension's value.
   unsigned n_entries;
   DskTlsExtension_ServerNameList_Entry *entries;
 };
@@ -429,6 +432,23 @@ void
 dsk_tls_derive_secret (DskChecksumType type,
                        const uint8_t  *secret,
                        size_t          label_len,
-                       const uint8_t  *label,
+                       const uint8_t  *label,                   // an ascii string
                        const uint8_t  *transcript_hash,
                        uint8_t        *out);
+
+// RFC 8446, 7.1 Key Schedule gives this function as HKDF-Expand-Label.
+//
+// NOTE: in most cases, context/context_len is a transcript_hash,
+//       but in a few cases in TLS context is the empty string.
+//
+//       So, we need to give the length even though it is usually
+//       determined by the hash-type.
+void
+dsk_tls_hkdf_expand_label(DskChecksumType type,
+                          const uint8_t  *secret,
+                          size_t          label_length,
+                          const uint8_t  *label,                // an ascii string
+                          size_t          context_length,
+                          const uint8_t  *context,
+                          size_t          output_length,
+                          uint8_t        *out);

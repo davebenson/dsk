@@ -29,6 +29,15 @@ static const char rfc8448_sec3_server_hello_data[] =
   "\x1d\x00\x20\xc9\x82\x88\x76\x11\x20\x95\xfe\x66\x76\x2b\xdb\xf7\xc6\x72\xe1\x56\xd6"
   "\xcc\x25\x3b\x83\x3d\xf1\xdd\x69\xb1\xb0\x4e\x75\x1f\x0f\x00\x2b\x00\x02\x03\x04";
 
+static const char rfc8448_sec3_server_encrypted_extensions_data[] =
+  "\x08\x00\x00\x24"                  // handshake header
+  "\x00\x22"                          // length in bytes of all extensions
+  "\x00\x0a\x00\x14"                  // extension header for supported-groups
+  "\x00\x12\x00\x1d\x00\x17\x00\x18\x00\x19\x01\x00\x01\x01\x01\x02\x01\x03\x01\x04" // supported groups
+  "\x00\x1c\x00\x02"                  // extension header, type=28 length=2
+  "\x40\x01"                          // payload for type=28 extension
+  "\x00\x00\x00\x00"                  // extension 0???
+  ;
 
 static void
 test_client_hello ()
@@ -158,10 +167,10 @@ test_server_secret_calculations_1 (void)
                               "\xd4\x62\x72\x90\x0f\x89\x49\x2d";
 
   /* {server} extract secret "early". */
-  uint8_t salt[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  uint8_t ikm[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint8_t zero_salt[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  uint8_t zero_ikm[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   uint8_t prk[32];
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256, 32, salt, 32, ikm, prk);
+  dsk_hkdf_extract (DSK_CHECKSUM_SHA256, 32, zero_salt, 32, zero_ikm, prk);
 
   assert (memcmp (prk,
               "\x33\xad\x0a\x1c\x60\x7e\xc0\x3b"
@@ -202,6 +211,10 @@ test_server_secret_calculations_1 (void)
   uint8_t curve25519_shared[32];
   dsk_curve25519_private_to_shared (
                  server_curve25519_private, client_curve25519_public,
+                 curve25519_shared);
+  assert(memcmp (expected_curve25519_shared, curve25519_shared, 32) == 0);
+  dsk_curve25519_private_to_shared (
+                 client_curve25519_private, server_curve25519_public,
                  curve25519_shared);
   assert(memcmp (expected_curve25519_shared, curve25519_shared, 32) == 0);
 
@@ -268,6 +281,41 @@ test_server_secret_calculations_1 (void)
                   "\x2d\xd7\xa0\xbb\x7c\xe2\x54\xb4",
                   32) == 0);
 
+  // {server} extract secret "master"
+  uint8_t master_secret[32];
+  dsk_hkdf_extract (DSK_CHECKSUM_SHA256,
+                    32, derived_for_master,
+                    32, zero_ikm,
+                    master_secret);
+  assert (memcmp (master_secret,
+                  "\x18\xdf\x06\x84\x3d\x13\xa0\x8b"
+                  "\xf2\xa4\x49\x84\x4c\x5f\x8a\x47"
+                  "\x80\x01\xbc\x4d\x4c\x62\x79\x84"
+                  "\xd5\xa4\x1d\xa8\xd0\x40\x29\x19",
+                  32) == 0);
+  
+  // {server} derive write traffic keys for handshake data
+  uint8_t server_write_traffic_key[16],
+          server_write_traffic_iv[12];
+  dsk_tls_hkdf_expand_label(DSK_CHECKSUM_SHA256,
+                            tls13_s_hs_traffic,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            sizeof(server_write_traffic_key),
+                            server_write_traffic_key);
+  assert (memcmp (server_write_traffic_key,
+                  "\x3f\xce\x51\x60\x09\xc2\x17\x27\xd0\xf2\xe4\xe8\x6e\xe4\x03\xbc",
+                  sizeof(server_write_traffic_key)) == 0);
+  dsk_tls_hkdf_expand_label(DSK_CHECKSUM_SHA256,
+                            tls13_s_hs_traffic,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            sizeof(server_write_traffic_iv),
+                            server_write_traffic_iv);
+  assert (memcmp (server_write_traffic_iv,
+                  "\x5d\x31\x3e\xb2\x67\x12\x76\xee\x13\x00\x0b\x30",
+                  sizeof(server_write_traffic_iv)) == 0);
+
 
 }
 
@@ -313,6 +361,37 @@ test_server_hello (void)
   assert(has_key_share);
 }
 
+static void
+test_encrypted_extensions (void)
+{
+  DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
+  DskError *error = NULL;
+  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS,
+                                                    sizeof (rfc8448_sec3_server_encrypted_extensions_data) - 4 -1,
+                                                    (uint8_t*) rfc8448_sec3_server_encrypted_extensions_data + 4,
+                                                    &pool,
+                                                    &error);
+  if (shake == NULL)
+    dsk_die ("error parsing EncryptedExtensions: %s", error->message);
+
+  for (unsigned i = 0; i < shake->encrypted_extensions.n_extensions; i++)
+    {
+      DskTlsExtension *ext = shake->encrypted_extensions.extensions[i];
+      switch (ext->type)
+        {
+          case DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS:
+            assert (ext->supported_groups.n_supported_groups == 9);
+            break;
+          case DSK_TLS_EXTENSION_TYPE_SERVER_NAME:
+            assert (ext->server_name.n_entries == 0);
+            break;
+          default:
+            dsk_die ("unhandled EncryptedExtensions extension in test: type=%u", ext->type);
+            assert(false);
+        }
+    }
+}
+
 static struct 
 {
   const char *name;
@@ -322,6 +401,7 @@ static struct
   { "Client Hello parsing", test_client_hello },
   { "Server secret calculations", test_server_secret_calculations_1 },
   { "Server Hello parsing", test_server_hello },
+  { "EncryptedExtensions parsing", test_encrypted_extensions },
 };
 
 
