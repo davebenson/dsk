@@ -6,6 +6,12 @@
  * be signed but not encrypted.
  */
 
+/* Although the algorithm doesn't restrict IV-length,
+ * RFC 5116 forces it to 12 bytes.  (Section 5.1)
+ */
+#define DSK_AEAD_GCM_MIN_IV_LENGTH              12
+#define DSK_AEAD_GCM_MAX_IV_LENGTH              12
+
 // key-dependent pre-computations.
 typedef struct {
   void *block_cipher_object;

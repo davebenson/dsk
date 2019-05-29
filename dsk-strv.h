@@ -16,4 +16,10 @@ char    **dsk_strsplit     (const char *str,
 /* see also:  dsk_utf8_split_on_whitespace() */
 
 
+// Return a char** that is allocated with all
+// data in one contiguous segment
+// so that you can simply dsk_free().
+//
+// This is recommended if you are going to keep the string-array
+// around for a while.
 char   **dsk_strv_copy_compact (char **strv);

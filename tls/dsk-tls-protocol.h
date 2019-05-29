@@ -301,6 +301,13 @@ typedef union {
   DskTlsExtension_Cookie cookie;
 } DskTlsExtension;
 
+typedef struct {
+  unsigned cert_data_length;
+  const uint8_t *cert_data;
+  size_t n_extensions;
+  DskTlsExtension **extensions;
+} DskTlsCertificateEntry;
+
 typedef struct DskTlsHandshake DskTlsHandshake;
 struct DskTlsHandshake
 {
@@ -354,12 +361,16 @@ struct DskTlsHandshake
     struct {
       // Should be empty in handshake; only for post-handshake auth.
       unsigned certificate_request_context_len;
-      uint8_t *certificate_request_context;
+      const uint8_t *certificate_request_context;
 
-      // Chain of certificates, each supporting the one before it.
-      unsigned chain_length;
-      DskTlsCertificate **certificate_chain;
+      unsigned n_entries;
+      DskTlsCertificateEntry *entries;
     } certificate;
+    struct {
+      DskTlsSignatureScheme algorithm;
+      unsigned signature_length;
+      const uint8_t *signature_data;
+    } certificate_verify;
   };
 };
 

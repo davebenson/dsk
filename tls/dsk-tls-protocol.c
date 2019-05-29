@@ -803,13 +803,13 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       if (at == end)
         {
           *error = dsk_error_new ("too little data for ClientHello message (truncated n-compression-methods)");
-          return false;
+          return NULL;
         }
       n_compression_methods = *at++;
       if (at + n_compression_methods + 2 > end)
         {
           *error = dsk_error_new ("too little data for ClientHello message (truncated compression-methods)");
-          return false;
+          return NULL;
         }
       rv->client_hello.n_compression_methods = n_compression_methods;
       rv->client_hello.compression_methods = dsk_mem_pool_alloc_unaligned (pool, n_compression_methods);
@@ -825,7 +825,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
                                              &rv->client_hello.extensions,
                                              pool,
                                              error))
-        return false;
+        return NULL;
       break;
     }
   case DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO:
@@ -833,7 +833,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       if (at + 35 > end)
         {
           *error = dsk_error_new ("too little data for ServerHello message");
-          return false;
+          return NULL;
         }
 
       //
@@ -869,7 +869,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       if (legacy_session_id_length > 32 || at + legacy_session_id_length > end)
         {
           *error = dsk_error_new ("too little data for ServerHello message (truncated legacy-session-id)");
-          return false;
+          return NULL;
         }
       memcpy (rv->server_hello.legacy_session_id_echo, at,
               legacy_session_id_length);
@@ -881,7 +881,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       if (at + 3 > end)
         {
           *error = dsk_error_new ("too little data for ServerHello message (truncated cipher-suite length)");
-          return false;
+          return NULL;
         }
       rv->server_hello.cipher_suite = dsk_uint16be_parse (at);
       at += 2;
@@ -897,7 +897,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
                                              &rv->server_hello.extensions,
                                              pool,
                                              error))
-        return false;
+        return NULL;
       break;
     }
   case DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS:
@@ -908,14 +908,124 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
                                              &rv->encrypted_extensions.extensions,
                                              pool,
                                              error))
-        return false;
+        return NULL;
       break;
     }
+  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE:
+    {
+      if (at + 6 > end)
+        {
+          *error = dsk_error_new ("too short in Certificate message");
+          return NULL;
+        }
+      unsigned cert_req_context_len = *at++;
+      const uint8_t *cert_req_context = at;
+      at += cert_req_context_len;
+      if (at + 3 > end)
+        {
+          *error = dsk_error_new ("too short in Certificate message (in certificate_request_context)");
+          return NULL;
+        }
+
+      unsigned entries_data_len = dsk_uint24be_parse (at);
+      at += 3;
+      if (at + entries_data_len > end)
+        {
+          *error = dsk_error_new ("too short in Certificate message (cert entries)");
+          return NULL;
+        }
+      if (at + entries_data_len < end)
+        {
+          *error = dsk_error_new ("trailing garbage after Certificate message");
+          return NULL;
+        }
+
+      //
+      // Count CertificateEntries.
+      //
+      unsigned n_entries = 0;
+      const uint8_t *tmp = at;
+      while (tmp < end)
+        {
+          if (tmp + 3 > end)
+            {
+              *error = dsk_error_new ("too short in Certificate Entry (cert entries)");
+              return NULL;
+            }
+          unsigned len = dsk_uint24be_parse(tmp);
+          if (tmp + 3 + len > end)
+            {
+              *error = dsk_error_new ("too little data for Cert in CertificateEntry");
+              return NULL;
+            }
+          tmp += 3 + len;
+          if (tmp + 2 > end)
+            {
+              *error = dsk_error_new ("too little data for Extensions' length in CertificateEntry");
+              return NULL;
+            }
+          unsigned ext_len = dsk_uint16be_parse(tmp);
+          tmp += 2;
+          if (tmp + ext_len > end)
+            {
+              *error = dsk_error_new ("too little data for Extensions in CertificateEntry");
+              return NULL;
+            }
+          n_entries++;
+          tmp += ext_len;
+        }
+
+      rv->certificate.certificate_request_context_len = cert_req_context_len;
+      rv->certificate.certificate_request_context = cert_req_context;
+      rv->certificate.n_entries = n_entries;
+      rv->certificate.entries = dsk_mem_pool_alloc (pool, n_entries * sizeof(DskTlsCertificateEntry));
+
+      //
+      // Parse CertificateEntries
+      //
+      for (unsigned e = 0; e < n_entries; e++)
+        {
+          unsigned cdlen = dsk_uint24be_parse(at);
+          rv->certificate.entries[e].cert_data_length = cdlen;
+          rv->certificate.entries[e].cert_data = at + 3;
+          at += 3 + cdlen;
+          if (!parse_length_prefixed_extensions (rv, &at, end,
+                                          &rv->certificate.entries[e].n_extensions,
+                                          &rv->certificate.entries[e].extensions,
+                                                 pool, error))
+            {
+              return NULL;
+            }
+        }
+      break;
+    }
+  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY:
+    {
+      if (at + 4 > end)
+        {
+          *error = dsk_error_new ("much too short in CertificateVerify");
+          return NULL;
+        }
+      rv->certificate_verify.algorithm = dsk_uint16be_parse (at);
+      rv->certificate_verify.signature_length = dsk_uint16be_parse (at+2);
+      at += 4;
+      rv->certificate_verify.signature_data = at;
+      if (at + rv->certificate_verify.signature_length > end)
+        {
+          *error = dsk_error_new ("too short in CertificateVerify");
+          return NULL;
+        }
+      if (at + rv->certificate_verify.signature_length < end)
+        {
+          *error = dsk_error_new ("trailing garbage in CertificateVerify");
+          return NULL;
+        }
+      return rv;
+    }
+
   case DSK_TLS_HANDSHAKE_TYPE_NEW_SESSION_TICKET:
   case DSK_TLS_HANDSHAKE_TYPE_END_OF_EARLY_DATA:
-  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE:
   case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_REQUEST:
-  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY:
   case DSK_TLS_HANDSHAKE_TYPE_FINISHED:
   case DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE:
   case DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH:

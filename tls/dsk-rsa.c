@@ -7,6 +7,7 @@ static unsigned get_n_leading_zeros (DskASN1Value *v)
   for (n_leading_zeros = 0; n_leading_zeros < 8 * L; n_leading_zeros++)
     if (value_start[(L - 1) - (n_leading_zeros / 8)] & (1<<(7-n_leading_zeros%8)))
       break;
+  return n_leading_zeros;
 }
 
 static unsigned integer_word_count (DskASN1Value *v)
@@ -226,3 +227,5 @@ void dsk_rsassa_pkcs1_sign  (DskRSAPrivateKey *key,
                              const uint8_t    *message_data,
                              uint8_t          *signature_out)
 {
+...
+}

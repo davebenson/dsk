@@ -40,13 +40,13 @@ typedef struct { uint8_t w[16 * 13]; uint32_t align[4 * 13]; } DskAES192;
 
 void
 dsk_aes192_init           (DskAES192            *s,
-                           const uint8_t        *key);     /* length 16 */
+                           const uint8_t        *key);     /* length 16 (TODO: check) */
 void
 dsk_aes192_encrypt_inplace(const DskAES192      *aes_key,
                            uint8_t              *in_out);  /* length 16 */
 void
 dsk_aes192_decrypt_inplace(const DskAES192      *aes_key,
-                           uint8_t              *in_out);  /* length 16 */
+                           uint8_t              *in_out);  /* length 24 */
 
 
 typedef struct { uint8_t w[16 * 15]; uint32_t align[4 * 15]; } DskAES256;
@@ -54,7 +54,7 @@ typedef struct { uint8_t w[16 * 15]; uint32_t align[4 * 15]; } DskAES256;
 
 void
 dsk_aes256_init           (DskAES256            *s,
-                           const uint8_t        *key);     /* length 16 */
+                           const uint8_t        *key);     /* length 32 (TODO: check) */
 void
 dsk_aes256_encrypt_inplace(const DskAES256      *aes_key,
                            uint8_t              *in_out);  /* length 16 */

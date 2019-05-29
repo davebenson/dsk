@@ -89,12 +89,15 @@ void     dsk_tls_bignum_shiftright_truncated (unsigned len,
                                               uint32_t *out);
 
 //
+//
+// Compute p / q and p % q (where p, q are positive integers).
+//
 // Preconditions:
 //
-// p_len >= q_len.
-// quotient_out is of size p_len - q_len + 1.
-// remainder_out is of size q.
-// q_words[q_len-1] != 0.
+// * p_len >= q_len.      (otherwise, quotient==0, remainder==p)
+// * quotient_out is of size p_len - q_len + 1.
+// * remainder_out is of size q_len.
+// * q_words[q_len-1] != 0.
 //
 void     dsk_tls_bignum_divide               (unsigned p_len,
                                               const uint32_t *p_words,
@@ -121,7 +124,7 @@ void     dsk_tls_bignum_modular_add          (unsigned        len,
 // for various primes such with Diffie-Hellman Finite-Field Key Exchange.
 //
 // Returns whether an inverse existed (which is true iff X and modulus
-// are relatively prime.
+// are relatively prime).
 //
 bool     dsk_tls_bignum_modular_inverse      (unsigned len,
                                               const uint32_t *X_words,
@@ -135,6 +138,11 @@ bool     dsk_tls_bignum_modular_inverse      (unsigned len,
 // This routine may return a false negative
 // if modulus_words is non-prime.
 // (modular sqrt is as hard as factorization for composite numbers)
+//
+// TODO: there's an optimization for modulus==5 % 8.
+// Not sure if that's important in Elliptic Curve decompression;
+// the modulus is carefully chosen in those applications.
+// See the wiki page for quadratic residues.
 //
 bool     dsk_tls_bignum_modular_sqrt         (unsigned len,
                                               const uint32_t *X_words,

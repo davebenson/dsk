@@ -345,6 +345,7 @@ dsk_tls_bignum_divide  (unsigned x_len,
                              | ((uint64_t) rem << shift)
                              | ((uint64_t) remaining[q_digit + y_len - 2] >> (32-shift));
           uint32_t q = x_shifted / y_hi_shifted;
+
           // do scaled subtract from remainder
           uint32_t borrow = do_scaled_subtraction (y_len, y_words, remaining + q_digit, q);
           assert(borrow <= remaining[q_digit + y_len]);
@@ -367,20 +368,18 @@ dsk_tls_bignum_divide  (unsigned x_len,
           // XXX: I believe at most 2 subtractions are necessary, but a
           //      proof would be good.
           //
-          int ccc=0;
           for (;;)
             {
-            borrow = dsk_tls_bignum_subtract_with_borrow (y_len, remaining + q_digit, y_words, 0, tmp);
-            if (borrow <= remaining[q_digit + y_len])
-              {
-                memcpy (remaining + q_digit, tmp, y_len * 4);
-                assert(remaining[q_digit + y_len] == borrow);
-                remaining[q_digit + y_len] = 0;           // Not necessary
-                q++;
-                ccc++;
-              }
-            else
-              break;
+              borrow = dsk_tls_bignum_subtract_with_borrow (y_len, remaining + q_digit, y_words, 0, tmp);
+              if (borrow <= remaining[q_digit + y_len])
+                {
+                  memcpy (remaining + q_digit, tmp, y_len * 4);
+                  assert(remaining[q_digit + y_len] == borrow);
+                  remaining[q_digit + y_len] = 0;           // Not necessary
+                  q++;
+                }
+              else
+                break;
             }
           quotient_out[q_digit] = q;
         }

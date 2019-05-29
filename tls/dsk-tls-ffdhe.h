@@ -37,7 +37,13 @@ void dsk_tls_ffdhe_compute_public_key (DskTlsFFDHE   *ffdhe,
                                        uint8_t       *public_key_out);
 
 //
-// Generate a public key from a private key.
+// Generate a shared key from my private key
+// and someone else's public key.
+// (They will get the same key from their private
+// and my public key)
+//
+// It is a cryptographically-hard problem to get
+// the shared key from both public keys, however.
 //
 void dsk_tls_ffdhe_compute_shared_key (DskTlsFFDHE   *ffdhe,
                                        const uint8_t *private_key,

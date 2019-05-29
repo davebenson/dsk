@@ -420,7 +420,6 @@ void dsk_aead_gcm_encrypt (Dsk_AEAD_GCM_Precomputation *precompute,
         J0.u32, plaintext_len, ciphertext);
   J0.u32[3] -= 1;
 
-
   //
   // Step 4:  compute padding amounts needed for
   // plaintext_len, associated_data to round
