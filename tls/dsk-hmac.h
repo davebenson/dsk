@@ -3,7 +3,7 @@
 // See RFC 2104. "HMAC: Keyed-Hashing for Message Authentication"
 //
 
-void dsk_hmac_digest (DskChecksumType type,
+void dsk_hmac_digest (DskChecksumType*type,
                       size_t          key_len,
                       const uint8_t  *key,
                       size_t          text_len,

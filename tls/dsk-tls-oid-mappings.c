@@ -79,13 +79,13 @@ dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
 
 bool
 dsk_tls_oid_to_checksum_type (const DskTlsObjectID *oid,
-                      DskChecksumType *out)
+                      DskChecksumType **out)
 {
   if (oid->n_subids == 6)
     {
       if (dsk_tls_object_ids_equal (oid, dsk_tls_object_id__hash_sha1))
         {
-          *out = DSK_CHECKSUM_SHA1;
+          *out = &dsk_checksum_type_sha1;
           return true;
         }
       return false;
@@ -105,22 +105,22 @@ dsk_tls_oid_to_checksum_type (const DskTlsObjectID *oid,
           switch (oid->subids[9])
             {
             case 1:
-              *out = DSK_CHECKSUM_SHA256;
+              *out = &dsk_checksum_type_sha256;
               return true;
             case 2:
-              *out = DSK_CHECKSUM_SHA384;
+              *out = &dsk_checksum_type_sha384;
               return true;
             case 3:
-              *out = DSK_CHECKSUM_SHA512;
+              *out = &dsk_checksum_type_sha512;
               return true;
             case 4:
-              *out = DSK_CHECKSUM_SHA224;
+              *out = &dsk_checksum_type_sha224;
               return true;
             case 5:
-              *out = DSK_CHECKSUM_SHA512_224;
+              *out = &dsk_checksum_type_sha512_224;
               return true;
             case 6:
-              *out = DSK_CHECKSUM_SHA512_256;
+              *out = &dsk_checksum_type_sha512_256;
               return true;
             default:
               return false;
@@ -160,7 +160,7 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
                          DskTlsX509SignatureAlgorithm *out,
                          DskError **error)
 {
-  DskChecksumType hash = DSK_CHECKSUM_SHA1;
+  DskChecksumType *hash = &dsk_checksum_type_sha1;
   unsigned n = algo_params->v_sequence.n_children;
   unsigned salt_length = 20, trailer_field = 1;
   unsigned i = 0;
@@ -245,7 +245,7 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
       return false;
     }
 
-  if (dsk_checksum_type_get_size (hash) != salt_length)
+  if (hash->hash_size != salt_length)
     {
       *error = dsk_error_new ("checksum size does not match salt length");
       return false;
@@ -256,18 +256,23 @@ parse_rsapss_parameters (const DskASN1Value *algo_params,
       return false;
     }
 
-  switch (hash)
+  if (hash == &dsk_checksum_type_sha256)
     {
-    case DSK_CHECKSUM_SHA256:
       *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA256;
       return true;
-    case DSK_CHECKSUM_SHA384:
+    }
+  else if (hash == &dsk_checksum_type_sha384)
+    {
       *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA384;
       return true;
-    case DSK_CHECKSUM_SHA512:
+    }
+  else if (hash == &dsk_checksum_type_sha512)
+    {
       *out = DSK_TLS_X509_SIGNATURE_ALGORITHM_RSA_PSS_SHA512;
       return true;
-    default:
+    }
+  else
+    {
       *error = dsk_error_new ("checksum type not allowed for RSASSA_PSS");
       return false;
     }

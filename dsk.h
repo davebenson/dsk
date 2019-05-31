@@ -138,6 +138,7 @@
 #include "tls/dsk-tls-x509.h"
 #include "tls/dsk-tls-bignum.h"
 #include "tls/dsk-tls-ffdhe.h"
+#include "tls/dsk-tls-key-schedule.h"
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"
 #include "tls/dsk-tls-connection.h"

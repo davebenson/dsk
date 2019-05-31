@@ -1,6 +1,6 @@
 
 
-bool dsk_tls_oid_to_checksum_type (const DskTlsObjectID *oid, DskChecksumType *out);
+bool dsk_tls_oid_to_checksum_type (const DskTlsObjectID *oid, DskChecksumType **out);
 const DskTlsObjectID *dsk_tls_checksum_to_oid (DskChecksumType type);
 
 //

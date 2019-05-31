@@ -45,28 +45,28 @@ int main ()
     {
       uint8_t buf[64];
 
-      h = dsk_checksum_new (DSK_CHECKSUM_MD5);
+      h = dsk_checksum_new (&dsk_checksum_type_md5);
       dsk_checksum_feed_str (h, tests[i].str);
       dsk_checksum_done (h);
       dsk_checksum_get (h, buf);
       dsk_assert (memcmp (buf, tests[i].md5, 16) == 0);
       dsk_checksum_destroy (h);
 
-      h = dsk_checksum_new (DSK_CHECKSUM_SHA1);
+      h = dsk_checksum_new (&dsk_checksum_type_sha1);
       dsk_checksum_feed_str (h, tests[i].str);
       dsk_checksum_done (h);
       dsk_checksum_get (h, buf);
       dsk_assert (memcmp (buf, tests[i].sha1, 20) == 0);
       dsk_checksum_destroy (h);
 
-      h = dsk_checksum_new (DSK_CHECKSUM_SHA256);
+      h = dsk_checksum_new (&dsk_checksum_type_sha256);
       dsk_checksum_feed_str (h, tests[i].str);
       dsk_checksum_done (h);
       dsk_checksum_get (h, buf);
       dsk_assert (memcmp (buf, tests[i].sha256, 32) == 0);
       dsk_checksum_destroy (h);
 
-      h = dsk_checksum_new (DSK_CHECKSUM_SHA512);
+      h = dsk_checksum_new (&dsk_checksum_type_sha512);
       dsk_checksum_feed_str (h, tests[i].str);
       dsk_checksum_done (h);
       dsk_checksum_get (h, buf);

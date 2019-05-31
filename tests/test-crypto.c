@@ -922,20 +922,20 @@ static void
 test_hmac (void)
 {
   uint8_t digest[16];
-  dsk_hmac_digest (DSK_CHECKSUM_MD5,
+  dsk_hmac_digest (&dsk_checksum_type_md5,
                    16, (uint8_t *) "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b",
                    8, (uint8_t *) "Hi There",
                    digest);
   assert (memcmp (digest, "\x92\x94\x72\x7a\x36\x38\xbb\x1c\x13\xf4\x8e\xf8\x15\x8b\xfc\x9d", 16) == 0);
 
 
-  dsk_hmac_digest (DSK_CHECKSUM_MD5,
+  dsk_hmac_digest (&dsk_checksum_type_md5,
                    4, (uint8_t *) "Jefe",
                    28, (uint8_t *) "what do ya want for nothing?",
                    digest);
   assert (memcmp (digest, "\x75\x0c\x78\x3e\x6a\xb0\xb5\x03\xea\xa8\x6e\x31\x0a\x5d\xb7\x38", 16) == 0);
 
-  dsk_hmac_digest (DSK_CHECKSUM_MD5,
+  dsk_hmac_digest (&dsk_checksum_type_md5,
                    16, (uint8_t *) "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa",
                    50, (uint8_t *)
                    "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
@@ -1054,7 +1054,7 @@ test_hmac_rfc4231 (void)
   for (unsigned i = 0; i < DSK_N_ELEMENTS (test_cases); i++)
     {
        uint8_t hmac_sha256[32];
-       dsk_hmac_digest (DSK_CHECKSUM_SHA256, 
+       dsk_hmac_digest (&dsk_checksum_type_sha256,
                         test_cases[i].key_len,
                         test_cases[i].key,
                         test_cases[i].data_len,
@@ -1084,13 +1084,13 @@ test_hkdf (void)
   uint8_t prk[32], okm[100];
 
   // Test Case 1.
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256,
+  dsk_hkdf_extract (&dsk_checksum_type_sha256,
                     13, (uint8_t *) "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c",
                     22, (uint8_t *) "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b",
                     prk);
   assert (memcmp (prk, "\x07\x77\x09\x36\x2c\x2e\x32\xdf\x0d\xdc\x3f\x0d\xc4\x7b\xba\x63"
                        "\x90\xb6\xc7\x3b\xb5\x0f\x9c\x31\x22\xec\x84\x4a\xd7\xc2\xb3\xe5", 32) == 0);
-  dsk_hkdf_expand (DSK_CHECKSUM_SHA256, prk,
+  dsk_hkdf_expand (&dsk_checksum_type_sha256, prk,
                    10, (uint8_t *) "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9",
                    42, okm);
   assert (memcmp (okm, "\x3c\xb2\x5f\x25\xfa\xac\xd5\x7a\x90\x43\x4f\x64\xd0\x36\x2f\x2a"
@@ -1098,7 +1098,7 @@ test_hkdf (void)
                        "\x34\x00\x72\x08\xd5\xb8\x87\x18\x58\x65", 42) == 0);
 
   // Test Case 2.
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256,
+  dsk_hkdf_extract (&dsk_checksum_type_sha256,
                     80,
                     (uint8_t *)
                     "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
@@ -1116,7 +1116,7 @@ test_hkdf (void)
                     prk);
   assert (memcmp (prk, "\x06\xa6\xb8\x8c\x58\x53\x36\x1a\x06\x10\x4c\x9c\xeb\x35\xb4\x5c"
                        "\xef\x76\x00\x14\x90\x46\x71\x01\x4a\x19\x3f\x40\xc1\x5f\xc2\x44", 32) == 0);
-  dsk_hkdf_expand (DSK_CHECKSUM_SHA256,
+  dsk_hkdf_expand (&dsk_checksum_type_sha256,
                    prk,
                    80,
                    (uint8_t *)

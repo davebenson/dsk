@@ -113,9 +113,16 @@ void dsk_cmdline_end_mode               (void);
 void dsk_cmdline_program_wrapper        (bool     is_wrapper);
 
 /* --- Processing the Command-line --- */
+
+//
+// Process arguments.
+//
+
+// This terminates with usage-message on error.
 void        dsk_cmdline_process_args     (int            *argc_inout,
                                           char         ***argv_inout);
 
+// This requires caller to handle errors.
 bool dsk_cmdline_try_process_args (int *argc_inout,
                                           char ***argv_inout,
                                           DskError **error);

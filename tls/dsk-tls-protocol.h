@@ -304,7 +304,7 @@ typedef union {
 typedef struct {
   unsigned cert_data_length;
   const uint8_t *cert_data;
-  size_t n_extensions;
+  unsigned n_extensions;
   DskTlsExtension **extensions;
 } DskTlsCertificateEntry;
 
@@ -314,7 +314,9 @@ struct DskTlsHandshake
   DskTlsHandshakeType type;
   unsigned data_length;
   const uint8_t *data;
+  const uint8_t *transcript_hash;       /* hash of all handshakes up to this point */
   DskTlsHandshake *next;
+  bool is_outgoing;                     /* are we the sender or recipient of this message? */
   union {
     struct {
       uint16_t legacy_version;
@@ -346,15 +348,16 @@ struct DskTlsHandshake
     struct {
       uint32_t ticket_lifetime;
       uint32_t ticket_age_add;
-      uint32_t ticket_nonce;
+      uint32_t ticket_nonce_length;
+      const uint8_t *ticket_nonce;
       unsigned ticket_length;
       const uint8_t *ticket_data;
       unsigned n_extensions;
       DskTlsExtension **extensions;
-    } new_session;
+    } new_session_ticket;
     struct {
       unsigned certificate_request_context_length;
-      uint8_t *certificate_request_context;
+      const uint8_t *certificate_request_context;
       unsigned n_extensions;
       DskTlsExtension **extensions;
     } certificate_request;
@@ -371,6 +374,13 @@ struct DskTlsHandshake
       unsigned signature_length;
       const uint8_t *signature_data;
     } certificate_verify;
+    struct {
+      unsigned verify_data_length;
+      const uint8_t *verify_data;
+    } finished;
+    struct {
+      bool update_requested;
+    } key_update;
   };
 };
 
@@ -440,7 +450,7 @@ DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *
 
 // RFC 8446, 7.1 Key Schedule gives this function as Derive-Secret.
 void
-dsk_tls_derive_secret (DskChecksumType type,
+dsk_tls_derive_secret (DskChecksumType*type,
                        const uint8_t  *secret,
                        size_t          label_len,
                        const uint8_t  *label,                   // an ascii string
@@ -455,7 +465,7 @@ dsk_tls_derive_secret (DskChecksumType type,
 //       So, we need to give the length even though it is usually
 //       determined by the hash-type.
 void
-dsk_tls_hkdf_expand_label(DskChecksumType type,
+dsk_tls_hkdf_expand_label(DskChecksumType*type,
                           const uint8_t  *secret,
                           size_t          label_length,
                           const uint8_t  *label,                // an ascii string
@@ -463,3 +473,5 @@ dsk_tls_hkdf_expand_label(DskChecksumType type,
                           const uint8_t  *context,
                           size_t          output_length,
                           uint8_t        *out);
+
+

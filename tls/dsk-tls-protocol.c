@@ -1022,13 +1022,95 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       return rv;
     }
+  case DSK_TLS_HANDSHAKE_TYPE_FINISHED:
+    {
+      // recipient must verify verify_data_length==hash-length
+      rv->finished.verify_data_length = end - at;
+      rv->finished.verify_data = at;
+      return rv;
+    }
 
   case DSK_TLS_HANDSHAKE_TYPE_NEW_SESSION_TICKET:
+    {
+      //UNTESTED
+      if (at + 13 > end)
+        {
+          *error = dsk_error_new ("too short in NewSessionTicket");
+          return NULL;
+        }
+      rv->new_session_ticket.ticket_lifetime = dsk_uint32be_parse(at);
+      rv->new_session_ticket.ticket_age_add = dsk_uint32be_parse(at+4);
+      rv->new_session_ticket.ticket_nonce_length = at[8];
+      rv->new_session_ticket.ticket_nonce = at + 9;
+      at += 9 + rv->new_session_ticket.ticket_nonce_length;
+      if (at + 4 > end)
+        {
+          *error = dsk_error_new ("too short in NewSessionTicket");
+          return NULL;
+        }
+      rv->new_session_ticket.ticket_length = dsk_uint16be_parse(at);
+      rv->new_session_ticket.ticket_data = at + 2;
+      at += 2 + rv->new_session_ticket.ticket_length;
+      if (at + 2 > end)
+        {
+          *error = dsk_error_new ("too short in NewSessionTicket");
+          return NULL;
+        }
+      if (!parse_length_prefixed_extensions (rv, &at, end,
+                                          &rv->new_session_ticket.n_extensions,
+                                          &rv->new_session_ticket.extensions,
+                                                 pool, error))
+        return NULL;
+      break;
+    }
   case DSK_TLS_HANDSHAKE_TYPE_END_OF_EARLY_DATA:
+    {
+      if (at != end)
+        {
+          *error = dsk_error_new ("EndOfEarlyData message must be empty");
+          return NULL;
+        }
+      break;
+    }
   case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_REQUEST:
-  case DSK_TLS_HANDSHAKE_TYPE_FINISHED:
+    {
+      if (at + 3 > end)
+        {
+          *error = dsk_error_new ("too short in CertificateRequest");
+          return NULL;
+        }
+      unsigned crc_len = *at++;
+      rv->certificate_request.certificate_request_context_length = crc_len;
+      rv->certificate_request.certificate_request_context = at;
+      at += crc_len;
+      if (at + 2 > end)
+        {
+          *error = dsk_error_new ("too short in CertificateRequest");
+          return NULL;
+        }
+      if (!parse_length_prefixed_extensions (rv, &at, end,
+                                   &rv->certificate_request.n_extensions,
+                                   &rv->certificate_request.extensions,
+                                             pool, error))
+        {
+          return NULL;
+        }
+      return rv;
+    }
   case DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE:
-  case DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH:
+    if (at + 1 != end)
+      {
+        *error = dsk_error_new ("KeyUpdate message must be a single byte");
+        return NULL;
+      }
+    if (*at > 1)
+      {
+        *error = dsk_error_new ("KeyUpdate message must be 0 or 1");
+        return NULL;
+      }
+    rv->key_update.update_requested = *at;
+    return rv;
+        
   default:
     *error = dsk_error_new ("bad handshake packet: 0x%02x", rv->type);
     return false;
@@ -1037,21 +1119,20 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
 }
 
 void
-dsk_tls_derive_secret (DskChecksumType type,
+dsk_tls_derive_secret (DskChecksumType*type,
                        const uint8_t  *secret,
                        size_t          label_length,
                        const uint8_t  *label,
                        const uint8_t  *transcript_hash,
                        uint8_t        *out)
 {
-  unsigned hash_size = dsk_checksum_type_get_size (type);
   dsk_tls_hkdf_expand_label (type, secret, label_length, label,
-                             hash_size, transcript_hash,
-                             hash_size, out);
+                             type->hash_size, transcript_hash,
+                             type->hash_size, out);
 }
 
 void
-dsk_tls_hkdf_expand_label(DskChecksumType type,
+dsk_tls_hkdf_expand_label(DskChecksumType*type,
                           const uint8_t  *secret,
                           size_t          label_length,
                           const uint8_t  *label,                // an ascii string
@@ -1071,3 +1152,4 @@ dsk_tls_hkdf_expand_label(DskChecksumType type,
   dsk_hkdf_expand (type, secret, hkdf_label_len, hkdf_label,
                    output_length, out);
 }
+

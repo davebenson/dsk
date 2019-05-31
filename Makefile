@@ -114,6 +114,11 @@ libdsk.a: dsk-inlines.o \
 	  dsk-file-util.o dsk-path.o dsk-pattern.o dsk-dir.o \
 	  dsk-logger.o \
 	  dsk-ts0.o dsk-ts0-builtins.o \
+          checksums/dsk-checksum-crc32.o \
+          checksums/dsk-checksum-md5.o \
+          checksums/dsk-checksum-sha1.o \
+          checksums/dsk-checksum-sha256.o \
+          checksums/dsk-checksum-sha512.o \
           tls/dsk-aes.o \
           tls/dsk-aead-gcm.o \
           tls/dsk-aead-ccm.o \
@@ -124,6 +129,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-tls-object-id.o \
           tls/dsk-tls-object-ids.o \
           tls/dsk-tls-x509.o \
+          tls/dsk-tls-key-schedule.o \
           tls/dsk-tls-oid-mappings.o \
           tls/dsk-tls-protocol.o \
           tls/dsk-tls-bignum.o \
@@ -198,7 +204,7 @@ codepages: mk-codepage Makefile
 #	examples/generated/wikiformats.h examples/generated/wikiformats.c
 #
 clean:
-	rm -f *.o libdsk.a
+	rm -f *.o tls/*.o checksums/*.o libdsk.a
 	rm -f $(TEST_PROGRAMS)
 	rm -f $(BUILT_SOURCES)
 	rm -f $(PROGRAMS)

@@ -8,7 +8,7 @@
 // and a cryptographic hash function (an HMAC).
 //
 
-void dsk_hkdf_extract   (DskChecksumType hash_type,
+void dsk_hkdf_extract   (DskChecksumType*hash_type,
                          size_t          salt_len,
                          const uint8_t  *salt,
                          size_t          initial_key_len,
@@ -16,7 +16,7 @@ void dsk_hkdf_extract   (DskChecksumType hash_type,
                          uint8_t        *pseudorandom_key_out);
 
 
-void dsk_hkdf_expand    (DskChecksumType hash_type,
+void dsk_hkdf_expand    (DskChecksumType*hash_type,
                          const uint8_t  *pseudorandom_key,
                          size_t          info_len,
                          const uint8_t  *info,

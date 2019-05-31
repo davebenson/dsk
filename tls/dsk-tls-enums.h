@@ -28,7 +28,7 @@ typedef enum
   DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY = 15,
   DSK_TLS_HANDSHAKE_TYPE_FINISHED = 20,
   DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE = 24,
-  DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,
+  DSK_TLS_HANDSHAKE_TYPE_MESSAGE_HASH = 254,    // not a real message type; see 4.4.1
 } DskTlsHandshakeType;
 const char *dsk_tls_handshake_type_name (DskTlsHandshakeType type);
 

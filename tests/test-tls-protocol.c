@@ -223,7 +223,7 @@ test_server_secret_calculations_1 (void)
   uint8_t zero_salt[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   uint8_t zero_ikm[32] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   uint8_t prk[32];
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256, 32, zero_salt, 32, zero_ikm, prk);
+  dsk_hkdf_extract (&dsk_checksum_type_sha256, 32, zero_salt, 32, zero_ikm, prk);
 
   assert (memcmp (prk,
               "\x33\xad\x0a\x1c\x60\x7e\xc0\x3b"
@@ -235,7 +235,7 @@ test_server_secret_calculations_1 (void)
   /* {server} derive secret for handshake "tls13 derived" */
   uint8_t transcript_hash[32];
   assert(sizeof(rfc8448_sec3_client_hello_data) - 1 == 196);
-  dsk_checksum (DSK_CHECKSUM_SHA256,
+  dsk_checksum (&dsk_checksum_type_sha256,
                 0, "",
                 transcript_hash);
   assert (memcmp (transcript_hash,
@@ -246,7 +246,7 @@ test_server_secret_calculations_1 (void)
                   32) == 0);
 
   uint8_t tls13_derived[32];
-  dsk_tls_derive_secret (DSK_CHECKSUM_SHA256,
+  dsk_tls_derive_secret (&dsk_checksum_type_sha256,
                          prk,
                          7, (uint8_t *) "derived",
                          transcript_hash,
@@ -272,7 +272,7 @@ test_server_secret_calculations_1 (void)
 
 
   uint8_t hs_secret[32];
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256, 32, tls13_derived, 32, curve25519_shared, hs_secret);
+  dsk_hkdf_extract (&dsk_checksum_type_sha256, 32, tls13_derived, 32, curve25519_shared, hs_secret);
   assert(memcmp (hs_secret,
                  "\x1d\xc8\x26\xe9\x36\x06\xaa\x6f"
                  "\xdc\x0a\xad\xc1\x2f\x74\x1b\x01"
@@ -281,7 +281,7 @@ test_server_secret_calculations_1 (void)
                  32) == 0);
 
   // compute transcript hash of ClientHello + ServerHello
-  DskChecksum *csum = dsk_checksum_new (DSK_CHECKSUM_SHA256);
+  DskChecksum *csum = dsk_checksum_new (&dsk_checksum_type_sha256);
   dsk_checksum_feed (csum, sizeof (rfc8448_sec3_client_hello_data) - 1, (uint8_t *)rfc8448_sec3_client_hello_data);
   dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_hello_data) - 1, (uint8_t *)rfc8448_sec3_server_hello_data);
   dsk_checksum_done (csum);
@@ -290,7 +290,7 @@ test_server_secret_calculations_1 (void)
 
   // {server} derive secret "tls13 c hs traffic"
   uint8_t tls13_c_hs_traffic[32];
-  dsk_tls_derive_secret (DSK_CHECKSUM_SHA256,
+  dsk_tls_derive_secret (&dsk_checksum_type_sha256,
                          hs_secret,
                          12, (uint8_t *) "c hs traffic",
                          transcript_hash,
@@ -304,7 +304,7 @@ test_server_secret_calculations_1 (void)
 
   // {server} derive secret "tls13 s hs traffic"
   uint8_t tls13_s_hs_traffic[32];
-  dsk_tls_derive_secret (DSK_CHECKSUM_SHA256,
+  dsk_tls_derive_secret (&dsk_checksum_type_sha256,
                          hs_secret,
                          12, (uint8_t *) "s hs traffic",
                          transcript_hash,
@@ -317,11 +317,11 @@ test_server_secret_calculations_1 (void)
                   32) == 0);
 
   // {server} derive secret for master "tls13 derived"
-  dsk_checksum (DSK_CHECKSUM_SHA256,
+  dsk_checksum (&dsk_checksum_type_sha256,
                 0, "",
                 transcript_hash);
   uint8_t derived_for_master[32];
-  dsk_tls_derive_secret (DSK_CHECKSUM_SHA256,
+  dsk_tls_derive_secret (&dsk_checksum_type_sha256,
                          hs_secret,
                          7, (uint8_t *) "derived",
                          transcript_hash,
@@ -335,7 +335,7 @@ test_server_secret_calculations_1 (void)
 
   // {server} extract secret "master"
   uint8_t master_secret[32];
-  dsk_hkdf_extract (DSK_CHECKSUM_SHA256,
+  dsk_hkdf_extract (&dsk_checksum_type_sha256,
                     32, derived_for_master,
                     32, zero_ikm,
                     master_secret);
@@ -349,7 +349,7 @@ test_server_secret_calculations_1 (void)
   // {server} derive write traffic keys for handshake data
   uint8_t server_write_traffic_key[16],
           server_write_traffic_iv[12];
-  dsk_tls_hkdf_expand_label(DSK_CHECKSUM_SHA256,
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
                             tls13_s_hs_traffic,
                             3, (const uint8_t *) "key",
                             0, NULL,
@@ -358,7 +358,7 @@ test_server_secret_calculations_1 (void)
   assert (memcmp (server_write_traffic_key,
                   "\x3f\xce\x51\x60\x09\xc2\x17\x27\xd0\xf2\xe4\xe8\x6e\xe4\x03\xbc",
                   sizeof(server_write_traffic_key)) == 0);
-  dsk_tls_hkdf_expand_label(DSK_CHECKSUM_SHA256,
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
                             tls13_s_hs_traffic,
                             2, (const uint8_t *) "iv",
                             0, NULL,
@@ -485,6 +485,63 @@ test_certificate_verify_handshake_message_parsing (void)
 }
 
 static void
+test_server_finished_handshake_message_parsing(void)
+{
+  DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
+  DskError *error = NULL;
+  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_FINISHED,
+                                                    sizeof (rfc8448_sec3_server_finished_data) - 4 -1,
+                                                    (uint8_t*) rfc8448_sec3_server_finished_data + 4,
+                                                    &pool,
+                                                    &error);
+  if (shake == NULL)
+    dsk_die ("error parsing Finished: %s", error->message);
+  assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_FINISHED);
+  assert(shake->finished.verify_data_length == 32);
+
+  //
+  // Calculations from RFC 8446 4.4.4. Finished.
+  //
+  // compute finished key
+  uint8_t finished_key[32];
+  dsk_tls_hkdf_expand_label (&dsk_checksum_type_sha256,
+                   (uint8_t*)"\xb6\x7b\x7d\x69\x0c\xc1\x6c\x4e"
+                             "\x75\xe5\x42\x13\xcb\x2d\x37\xb4"
+                             "\xe9\xc9\x12\xbc\xde\xd9\x10\x5d"
+                             "\x42\xbe\xfd\x59\xd3\x91\xad\x38",
+                             8, (uint8_t *) "finished",
+                             0, (uint8_t*) "",
+                             32, finished_key);
+  assert (memcmp (finished_key,
+                  "\x00\x8d\x3b\x66\xf8\x16\xea\x55"
+                  "\x9f\x96\xb5\x37\xe8\x85\xc3\x1f"
+                  "\xc0\x68\xbf\x49\x2c\x65\x2f\x01"
+                  "\xf2\x88\xa1\xd8\xcd\xc1\x9f\xc8", 32) == 0);
+
+  // compute transcript hash of
+  // Transcript-Hash(Handshake Context, Certificate, CertificateVerify)
+  DskChecksum *csum = dsk_checksum_new (&dsk_checksum_type_sha256);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_client_hello_data) - 1, (uint8_t *)rfc8448_sec3_client_hello_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_hello_data) - 1, (uint8_t *)rfc8448_sec3_server_hello_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_encrypted_extensions_data) - 1, (uint8_t *)rfc8448_sec3_server_encrypted_extensions_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_certificate_data) - 1, (uint8_t *)rfc8448_sec3_server_certificate_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_certificate_verify_data) - 1, (uint8_t *)rfc8448_sec3_server_certificate_verify_data);
+  uint8_t transcript_hash[32];
+  dsk_checksum_done (csum);
+  dsk_checksum_get (csum, transcript_hash);
+  dsk_checksum_destroy (csum);
+
+  //compute verify-data == HMAC(finished_key, transcript-hash)
+  uint8_t verify_data[32];
+  dsk_hmac_digest (&dsk_checksum_type_sha256,
+                   32, finished_key,
+                   32, transcript_hash,
+                   verify_data);
+   
+  assert(memcmp(shake->finished.verify_data, verify_data, 32) == 0);
+}
+
+static void
 test_server_handshake_encryption (void)
 {
   // compute plaintext length
@@ -594,6 +651,166 @@ test_server_handshake_encryption (void)
   dsk_free (ciphertext);
 }
 
+static void
+test_server_secret_calculations_2 (void)
+{
+  DskTlsKeySchedule *schedule = dsk_tls_key_schedule_alloc (&dsk_checksum_type_sha256);
+  // TODO test dsk_curve25519_private_to_public
+  const uint8_t *client_curve25519_private =
+                 (uint8_t *)  "\x49\xaf\x42\xba\x7f\x79\x94\x85"
+                              "\x2d\x71\x3e\xf2\x78\x4b\xcb\xca"
+                              "\xa7\x91\x1d\xe2\x6a\xdc\x56\x42"
+                              "\xcb\x63\x45\x40\xe7\xea\x50\x05";
+  const uint8_t *client_curve25519_public =
+                 (uint8_t *)  "\x99\x38\x1d\xe5\x60\xe4\xbd\x43"
+                              "\xd2\x3d\x8e\x43\x5a\x7d\xba\xfe"
+                              "\xb3\xc0\x6e\x51\xc1\x3c\xae\x4d"
+                              "\x54\x13\x69\x1e\x52\x9a\xaf\x2c";
+  const uint8_t *server_curve25519_private =
+                 (uint8_t *)  "\xb1\x58\x0e\xea\xdf\x6d\xd5\x89"
+                              "\xb8\xef\x4f\x2d\x56\x52\x57\x8c"
+                              "\xc8\x10\xe9\x98\x01\x91\xec\x8d"
+                              "\x05\x83\x08\xce\xa2\x16\xa2\x1e";
+  const uint8_t *server_curve25519_public =
+                 (uint8_t *)  "\xc9\x82\x88\x76\x11\x20\x95\xfe"
+                              "\x66\x76\x2b\xdb\xf7\xc6\x72\xe1"
+                              "\x56\xd6\xcc\x25\x3b\x83\x3d\xf1"
+                              "\xdd\x69\xb1\xb0\x4e\x75\x1f\x0f";
+  const uint8_t *expected_curve25519_shared =
+                 (uint8_t *)  "\x8b\xd4\x05\x4f\xb5\x5b\x9d\x63"
+                              "\xfd\xfb\xac\xf9\xf0\x4b\x9f\x0d"
+                              "\x35\xe6\xd6\x3f\x53\x75\x63\xef"
+                              "\xd4\x62\x72\x90\x0f\x89\x49\x2d";
+
+  uint8_t client_hello_th[32];
+  uint8_t server_hello_th[32];
+  uint8_t certverify_th[32];
+  uint8_t finished_th[32];
+
+  //
+  // Compute Transcript-Hashes.
+  //
+  DskChecksum *csum = dsk_checksum_new (&dsk_checksum_type_sha256);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_client_hello_data) - 1, (uint8_t *)rfc8448_sec3_client_hello_data);
+  dsk_checksum_get_current (csum, client_hello_th);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_hello_data) - 1, (uint8_t *)rfc8448_sec3_server_hello_data);
+  dsk_checksum_get_current (csum, server_hello_th);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_encrypted_extensions_data) - 1, (uint8_t *)rfc8448_sec3_server_encrypted_extensions_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_certificate_data) - 1, (uint8_t *)rfc8448_sec3_server_certificate_data);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_certificate_verify_data) - 1, (uint8_t *)rfc8448_sec3_server_certificate_verify_data);
+  dsk_checksum_get_current (csum, certverify_th);
+  dsk_checksum_feed (csum, sizeof (rfc8448_sec3_server_finished_data) - 1, (uint8_t *)rfc8448_sec3_server_finished_data);
+  dsk_checksum_get_current (csum, finished_th);
+  dsk_checksum_destroy (csum);
+
+
+  /* {server} extract secret "early". */
+  dsk_tls_key_schedule_compute_early_secrets (schedule, false,
+                                              client_hello_th, NULL);
+  assert (memcmp (schedule->early_secret,
+              "\x33\xad\x0a\x1c\x60\x7e\xc0\x3b"
+              "\x09\xe6\xcd\x98\x93\x68\x0c\xe2"
+              "\x10\xad\xf3\x00\xaa\x1f\x26\x60"
+              "\xe1\xb2\x2e\x10\xf1\x70\xf9\x2a",
+              32) == 0);
+
+  /* {server} derive secret for handshake "tls13 derived" */
+  assert (memcmp (client_hello_th,
+                  "\xe3\xb0\xc4\x42\x98\xfc\x1c\x14"
+                  "\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24"
+                  "\x27\xae\x41\xe4\x64\x9b\x93\x4c"
+                  "\xa4\x95\x99\x1b\x78\x52\xb8\x55",
+                  32) == 0);
+
+  assert (memcmp (schedule->early_derived_secret, 
+                  "\x6f\x26\x15\xa1\x08\xc7\x02\xc5"
+                  "\x67\x8f\x54\xfc\x9d\xba\xb6\x97"
+                  "\x16\xc0\x76\x18\x9c\x48\x25\x0c"
+                  "\xeb\xea\xc3\x57\x6c\x36\x11\xba",
+                  32) == 0);
+
+
+  /* curve25519 */
+  uint8_t curve25519_shared[32];
+  dsk_curve25519_private_to_shared (
+                 server_curve25519_private, client_curve25519_public,
+                 curve25519_shared);
+  assert(memcmp (expected_curve25519_shared, curve25519_shared, 32) == 0);
+  dsk_curve25519_private_to_shared (
+                 client_curve25519_private, server_curve25519_public,
+                 curve25519_shared);
+  assert(memcmp (expected_curve25519_shared, curve25519_shared, 32) == 0);
+
+
+  dsk_tls_key_schedule_compute_handshake_secrets (schedule, 
+                       server_hello_th,
+                       32, curve25519_shared);
+  assert(memcmp (schedule->handshake_secret,
+                 "\x1d\xc8\x26\xe9\x36\x06\xaa\x6f"
+                 "\xdc\x0a\xad\xc1\x2f\x74\x1b\x01"
+                 "\x04\x6a\xa6\xb9\x9f\x69\x1e\xd2"
+                 "\x21\xa9\xf0\xca\x04\x3f\xbe\xac",
+                 32) == 0);
+
+  // {server} derive secret "tls13 c hs traffic"
+  assert (memcmp (schedule->client_handshake_traffic_secret,
+                  "\xb3\xed\xdb\x12\x6e\x06\x7f\x35"
+                  "\xa7\x80\xb3\xab\xf4\x5e\x2d\x8f"
+                  "\x3b\x1a\x95\x07\x38\xf5\x2e\x96"
+                  "\x00\x74\x6a\x0e\x27\xa5\x5a\x21",
+                  32) == 0);
+
+  // {server} derive secret "tls13 s hs traffic"
+  assert (memcmp (schedule->server_handshake_traffic_secret,
+                  "\xb6\x7b\x7d\x69\x0c\xc1\x6c\x4e"
+                  "\x75\xe5\x42\x13\xcb\x2d\x37\xb4"
+                  "\xe9\xc9\x12\xbc\xde\xd9\x10\x5d"
+                  "\x42\xbe\xfd\x59\xd3\x91\xad\x38",
+                  32) == 0);
+
+  // {server} derive secret for master "tls13 derived"
+  assert (memcmp (schedule->handshake_derived_secret,
+                  "\x43\xde\x77\xe0\xc7\x77\x13\x85"
+                  "\x9a\x94\x4d\xb9\xdb\x25\x90\xb5"
+                  "\x31\x90\xa6\x5b\x3e\xe2\xe4\xf1"
+                  "\x2d\xd7\xa0\xbb\x7c\xe2\x54\xb4",
+                  32) == 0);
+
+  // {server} extract secret "master"
+  assert (memcmp (schedule->master_secret,
+                  "\x18\xdf\x06\x84\x3d\x13\xa0\x8b"
+                  "\xf2\xa4\x49\x84\x4c\x5f\x8a\x47"
+                  "\x80\x01\xbc\x4d\x4c\x62\x79\x84"
+                  "\xd5\xa4\x1d\xa8\xd0\x40\x29\x19",
+                  32) == 0);
+  
+#if 0   /// TODO fixme traffic keying should be handled by KeyScedule
+  // {server} derive write traffic keys for handshake data
+  uint8_t server_write_traffic_key[16],
+          server_write_traffic_iv[12];
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            tls13_s_hs_traffic,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            sizeof(server_write_traffic_key),
+                            server_write_traffic_key);
+  assert (memcmp (server_write_traffic_key,
+                  "\x3f\xce\x51\x60\x09\xc2\x17\x27\xd0\xf2\xe4\xe8\x6e\xe4\x03\xbc",
+                  sizeof(server_write_traffic_key)) == 0);
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            tls13_s_hs_traffic,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            sizeof(server_write_traffic_iv),
+                            server_write_traffic_iv);
+  assert (memcmp (server_write_traffic_iv,
+                  "\x5d\x31\x3e\xb2\x67\x12\x76\xee\x13\x00\x0b\x30",
+                  sizeof(server_write_traffic_iv)) == 0);
+#endif
+
+
+}
+
 static struct 
 {
   const char *name;
@@ -606,7 +823,9 @@ static struct
   { "EncryptedExtensions parsing", test_encrypted_extensions },
   { "Certificate (handshake-message) parsing", test_certificate_handshake_message_parsing },
   { "Certificate Verify (handshake-message) parsing", test_certificate_verify_handshake_message_parsing },
+  { "Server Finished (handshake-message)", test_server_finished_handshake_message_parsing },
   { "Server Handshake Encryption", test_server_handshake_encryption },
+  { "Server secret calculations (using KeySchedule)", test_server_secret_calculations_2 },
 };
 
 
