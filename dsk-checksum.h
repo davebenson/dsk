@@ -7,6 +7,7 @@ struct DskChecksumType
   size_t instance_size;
   size_t hash_size;
   size_t block_size_in_bits;
+  const uint8_t *empty_hash;
   void (*init)(void *instance);
   void (*feed)(void *instance, size_t len, const uint8_t *data);
   void (*end)(void *instance, uint8_t *hash_out);

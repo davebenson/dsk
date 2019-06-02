@@ -301,6 +301,7 @@ dsk_checksum_sha512_end (void               *instance,
   sha512_ctx_final (ctx, hash_out, 512/64);
 }
 
+static const uint8_t sha512_empty[] = "\xbe\x68\x88\x38\xca\x86\x86\xe5\xc9\x06\x89\xbf\x2a\xb5\x85\xce\xf1\x13\x7c\x99\x9b\x48\xc7\x0b\x92\xf6\x7a\x5c\x34\xdc\x15\x69\x7b\x5d\x11\xc9\x82\xed\x6d\x71\xbe\x1e\x1e\x7f\x7b\x4e\x07\x33\x88\x4a\xa9\x7c\x3f\x7a\x33\x9a\x8e\xd0\x35\x77\xcf\x74\xbe\x09";
 
 DskChecksumType dsk_checksum_type_sha512_224 =
 {
@@ -308,6 +309,7 @@ DskChecksumType dsk_checksum_type_sha512_224 =
   sizeof(SHA512_CTX),
   224/8,
   128,
+  sha512_empty,
   dsk_checksum_sha512_init,
   dsk_checksum_sha512_feed,
   dsk_checksum_sha512_224_end
@@ -318,6 +320,7 @@ DskChecksumType dsk_checksum_type_sha512_256 =
   sizeof(SHA512_CTX),
   256/8,
   128,
+  sha512_empty,
   dsk_checksum_sha512_init,
   dsk_checksum_sha512_feed,
   dsk_checksum_sha512_256_end
@@ -328,6 +331,7 @@ DskChecksumType dsk_checksum_type_sha384 =
   sizeof(SHA512_CTX),
   384/8,
   128,
+  sha512_empty,
   dsk_checksum_sha512_init,
   dsk_checksum_sha512_feed,
   dsk_checksum_sha384_end
@@ -338,6 +342,7 @@ DskChecksumType dsk_checksum_type_sha512 =
   sizeof(SHA512_CTX),
   512/8,
   128,
+  sha512_empty,
   dsk_checksum_sha512_init,
   dsk_checksum_sha512_feed,
   dsk_checksum_sha512_end

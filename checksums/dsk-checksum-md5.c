@@ -439,7 +439,7 @@ static void
 dsk_checksum_md5_end (void *instance, uint8_t *hash)
 {
   MD5_CTX *ctx = instance;
-  MD5Final (ctx, hash);
+  MD5Final (hash, ctx);
 }
 
 DskChecksumType dsk_checksum_type_md5 =
@@ -448,6 +448,7 @@ DskChecksumType dsk_checksum_type_md5 =
   sizeof(MD5_CTX),
   16,
   64,
+  (const uint8_t *) "\x68\xb3\x29\xda\x98\x93\xe3\x40\x99\xc7\xd8\xad\x5c\xb9\xc9\x40",
   dsk_checksum_md5_init,
   dsk_checksum_md5_feed,
   dsk_checksum_md5_end

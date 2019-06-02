@@ -126,6 +126,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-hmac.o \
           tls/dsk-hkdf.o \
           tls/dsk-asn1.o \
+          tls/dsk-chacha20.o \
           tls/dsk-tls-object-id.o \
           tls/dsk-tls-object-ids.o \
           tls/dsk-tls-x509.o \
@@ -136,6 +137,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-tls-ffdhe.o \
           tls/dsk-tls-ffdhe-groups.o \
           tls/dsk-tls-key-share.o \
+          tls/dsk-tls-cipher-suite.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \

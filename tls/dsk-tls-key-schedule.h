@@ -14,8 +14,7 @@ struct DskTlsKeySchedule
   unsigned has_master_secrets : 1;
   unsigned has_finish_data : 1;
 
-  DskChecksumType *hash_type;
-  unsigned hash_length;
+  DskTlsCipherSuite *cipher;
 
   //
   // Early Secrets (those derived before Key-Sharing)
@@ -44,15 +43,26 @@ struct DskTlsKeySchedule
   // Master Secrets
   //
   uint8_t *master_secret;
-  uint8_t *client_application_traffic_secret_0;
-  uint8_t *server_application_traffic_secret_0;
+  uint8_t *client_application_traffic_secret;
+  uint8_t *server_application_traffic_secret;
   uint8_t *exporter_master_secret;
   uint8_t *resumption_master_secret;
 
+  //
+  // Traffic Keys
+  //
+  uint8_t *server_handshake_write_key;
+  uint8_t *server_handshake_write_iv;
+  uint8_t *client_handshake_write_key;
+  uint8_t *client_handshake_write_iv;
+  uint8_t *server_application_write_key;
+  uint8_t *server_application_write_iv;
+  uint8_t *client_application_write_key;
+  uint8_t *client_application_write_iv;
 };
 
 
-DskTlsKeySchedule *dsk_tls_key_schedule_alloc (DskChecksumType *hash_type);
+DskTlsKeySchedule *dsk_tls_key_schedule_new (DskTlsCipherSuite *cipher);
 void               dsk_tls_key_schedule_free  (DskTlsKeySchedule *schedule);
 
 //

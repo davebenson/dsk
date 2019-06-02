@@ -1137,6 +1137,101 @@ test_hkdf (void)
 
 }
 
+static void
+test_chacha20 (void)
+{
+  static const uint32_t key[8] = {
+    0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c,
+    0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c,
+  };
+  static const uint32_t nonce[3] = {
+    0x09000000, 0x4a000000, 0x00000000
+  };
+  uint8_t out[64];
+  dsk_chacha20_block_256 (key, 1, nonce, out);
+  assert(memcmp (out,
+                 "\x10\xf1\xe7\xe4\xd1\x3b\x59\x15"
+                 "\x50\x0f\xdd\x1f\xa3\x20\x71\xc4"
+                 "\xc7\xd1\xf4\xc7\x33\xc0\x68\x03"
+                 "\x04\x22\xaa\x9a\xc3\xd4\x6c\x4e"
+                 "\xd2\x82\x64\x46\x07\x9f\xaa\x09"
+                 "\x14\xc2\xd7\x05\xd9\x8b\x02\xa2"
+                 "\xb5\x12\x9c\xd1\xde\x16\x4e\xb9"
+                 "\xcb\xd0\x83\xe8\xa2\x50\x3c\x4e",
+                 64) == 0);
+
+  //
+  // Test vector from 2.4.2
+  //
+  static const uint32_t nonce2[3] = {
+    0x00000000, 0x4a000000, 0x00000000
+  };
+  const char plaintext[] =
+    "Ladies and Gentlemen of the class of '99: "
+    "If I could offer you only one tip for the future, sunscreen would be it.";
+  unsigned plaintext_len = sizeof(plaintext) - 1;
+  assert(plaintext_len == 114);
+  uint8_t io[114];
+  memcpy(io, plaintext, plaintext_len);
+  dsk_chacha20_crypt_256 (key, 1, nonce2, plaintext_len, io);
+  assert(memcmp(io,
+                "\x6e\x2e\x35\x9a\x25\x68\xf9\x80"
+                "\x41\xba\x07\x28\xdd\x0d\x69\x81"
+                "\xe9\x7e\x7a\xec\x1d\x43\x60\xc2"
+                "\x0a\x27\xaf\xcc\xfd\x9f\xae\x0b"
+                "\xf9\x1b\x65\xc5\x52\x47\x33\xab"
+                "\x8f\x59\x3d\xab\xcd\x62\xb3\x57"
+                "\x16\x39\xd6\x24\xe6\x51\x52\xab"
+                "\x8f\x53\x0c\x35\x9f\x08\x61\xd8"
+                "\x07\xca\x0d\xbf\x50\x0d\x6a\x61"
+                "\x56\xa3\x8e\x08\x8a\x22\xb6\x5e"
+                "\x52\xbc\x51\x4d\x16\xcc\xf8\x06"
+                "\x81\x8c\xe9\x1a\xb7\x79\x37\x36"
+                "\x5a\xf9\x0b\xbf\x74\xa3\x5b\xe6"
+                "\xb4\x0b\x8e\xed\xf2\x78\x5e\x42"
+                "\x87\x4d",
+                114) == 0);
+}
+
+static void
+test_poly1305_mac (void)
+{
+  static const uint32_t key[8] = {
+    0x78bed685, 0x336d5557, 0xfe52447f, 0xa806d542,
+    0x8a800301, 0xfdb20dfb, 0xaff6bf4a, 0x1bf54941,
+  };
+  static const char message[] = "Cryptographic Forum Research Group";
+  unsigned message_len = sizeof(message) - 1;
+  assert (message_len == 34);
+  uint8_t mac[16];
+  dsk_poly1305_mac (key, message_len, (const uint8_t *) message, mac);
+  assert (memcmp (mac,
+                  "\xa8\x06\x1d\xc1\x30\x51\x36\xc6"
+                  "\xc2\x2b\x8b\xaf\x0c\x01\x27\xa9",
+                  16) == 0);
+}
+static void
+test_poly1305_keygen (void)
+{
+  static const uint32_t key[8] = {
+    //0xq3q2q1q0, 0xq7q6q5q4, 0xqbqaq9q8, 0xqfqeqdqc,
+    0x83828180, 0x87868584, 0x8b8a8988, 0x8f8e8d8c,
+    0x93929190, 0x97969594, 0x9b9a9998, 0x9f9e9d9c,
+  };
+  static const uint32_t nonce[3] = {
+    0x00000000, 0x03020100, 0x07060504,
+  };
+  uint32_t out[8];
+  dsk_poly1305_key_gen (key, nonce, out);
+  static const uint32_t expected[8] = {
+    0x8ba0d58a, 0xcc815f90, 0x27405081, 0x7194b24a,
+    0x37b633a8, 0xa50dfde3, 0xe2b8db08, 0x46a6d1fd,
+  };
+  assert (memcmp (out, expected, 32) == 0);
+}
+
+
+
 static struct 
 {
   const char *name;
@@ -1153,6 +1248,9 @@ static struct
   { "HMAC Tests (from RFC 2104 Appendix)", test_hmac },
   { "HMAC Tests (SHA-256, from RFC 4231)", test_hmac_rfc4231 },
   { "HKDF Tests (from RFC 5869 Appendix A)", test_hkdf },
+  { "Chacha-20 Tests (from RFC 8439 2.3.2, 2.4.2)", test_chacha20 },
+  { "Poly1305 MAC Tests (from RFC 8439 2.5.2)", test_poly1305_mac },
+  { "Poly1305 key-gen Tests (from RFC 8439 2.6.2)", test_poly1305_keygen },
 };
 
 

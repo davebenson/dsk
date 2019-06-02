@@ -378,6 +378,7 @@ dsk_checksum_type_sha1 =
   sizeof(SHA1_CTX),
   20,
   64,
+  (uint8_t *) "\xad\xc8\x3b\x19\xe7\x93\x49\x1b\x1c\x6e\xa0\xfd\x8b\x46\xcd\x9f\x32\xe5\x92\xfc",
   dsk_checksum_sha1_init,
   dsk_checksum_sha1_feed,
   dsk_checksum_sha1_end

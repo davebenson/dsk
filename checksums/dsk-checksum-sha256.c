@@ -296,6 +296,12 @@ dsk_checksum_sha224_end (void *instance,
   sha256_done (ctx, hash_out, 224/32);
 }
 
+static const uint8_t sha256_empty[32] = {
+  0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+  0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+  0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+  0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
+};
 
 DskChecksumType
 dsk_checksum_type_sha224 =
@@ -304,6 +310,7 @@ dsk_checksum_type_sha224 =
   sizeof(SHA256_CTX),
   28,
   64,
+  sha256_empty,
   dsk_checksum_sha256_init,
   dsk_checksum_sha256_feed,
   dsk_checksum_sha224_end
@@ -316,6 +323,7 @@ dsk_checksum_type_sha256 =
   sizeof(SHA256_CTX),
   32,
   64,
+  sha256_empty,
   dsk_checksum_sha256_init,
   dsk_checksum_sha256_feed,
   dsk_checksum_sha256_end

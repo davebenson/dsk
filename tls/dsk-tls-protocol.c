@@ -788,7 +788,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       unsigned n_cipher_suites = cipher_suites_size / 2;
       rv->client_hello.n_cipher_suites = n_cipher_suites;
-      rv->client_hello.cipher_suites = dsk_mem_pool_alloc (pool, n_cipher_suites * sizeof(DskTlsCipherSuite));
+      rv->client_hello.cipher_suites = dsk_mem_pool_alloc (pool, n_cipher_suites * sizeof(DskTlsCipherSuiteCode));
       for (unsigned i = 0; i < n_cipher_suites; i++)
         {
           rv->client_hello.cipher_suites[i] = dsk_uint16be_parse (at);

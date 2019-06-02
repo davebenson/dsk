@@ -654,7 +654,7 @@ test_server_handshake_encryption (void)
 static void
 test_server_secret_calculations_2 (void)
 {
-  DskTlsKeySchedule *schedule = dsk_tls_key_schedule_alloc (&dsk_checksum_type_sha256);
+  DskTlsKeySchedule *schedule = dsk_tls_key_schedule_new (&dsk_tls_cipher_suite_aes128_gcm_sha256);
   // TODO test dsk_curve25519_private_to_public
   const uint8_t *client_curve25519_private =
                  (uint8_t *)  "\x49\xaf\x42\xba\x7f\x79\x94\x85"
@@ -716,10 +716,10 @@ test_server_secret_calculations_2 (void)
 
   /* {server} derive secret for handshake "tls13 derived" */
   assert (memcmp (client_hello_th,
-                  "\xe3\xb0\xc4\x42\x98\xfc\x1c\x14"
-                  "\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24"
-                  "\x27\xae\x41\xe4\x64\x9b\x93\x4c"
-                  "\xa4\x95\x99\x1b\x78\x52\xb8\x55",
+                  "\x4d\xb2\x55\xf3\x0d\xa0\x9a\x40"
+                  "\x7c\x84\x17\x20\xbe\x83\x1a\x06"
+                  "\xa5\xaa\x9b\x36\x62\xa5\xf4\x42"
+                  "\x67\xd3\x77\x06\xb7\x3c\x2b\x8c",
                   32) == 0);
 
   assert (memcmp (schedule->early_derived_secret, 
@@ -776,7 +776,10 @@ test_server_secret_calculations_2 (void)
                   "\x2d\xd7\xa0\xbb\x7c\xe2\x54\xb4",
                   32) == 0);
 
+  dsk_tls_key_schedule_compute_finished_data (schedule, certverify_th);
   // {server} extract secret "master"
+  dsk_tls_key_schedule_compute_master_secrets (schedule, 
+                       finished_th);
   assert (memcmp (schedule->master_secret,
                   "\x18\xdf\x06\x84\x3d\x13\xa0\x8b"
                   "\xf2\xa4\x49\x84\x4c\x5f\x8a\x47"

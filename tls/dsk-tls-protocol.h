@@ -324,7 +324,7 @@ struct DskTlsHandshake
       unsigned legacy_session_id_length;
       uint8_t legacy_session_id[32];
       unsigned n_cipher_suites;
-      DskTlsCipherSuite *cipher_suites;
+      DskTlsCipherSuiteCode *cipher_suites;
       unsigned n_compression_methods;   /* legacy */
       uint8_t *compression_methods;     /* legacy */
       unsigned n_extensions;
@@ -335,7 +335,7 @@ struct DskTlsHandshake
       uint8_t random[32];
       unsigned legacy_session_id_echo_length;
       uint8_t *legacy_session_id_echo;
-      DskTlsCipherSuite cipher_suite;
+      DskTlsCipherSuiteCode cipher_suite;
       uint8_t compression_method;       /* must be 0 for tls 1.3 */
       unsigned n_extensions;
       DskTlsExtension **extensions;

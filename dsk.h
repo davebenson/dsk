@@ -124,6 +124,7 @@
 
 /* --- crypto --- */
 #include "tls/dsk-aes.h"
+#include "tls/dsk-chacha20.h"
 #include "tls/dsk-block-cipher.h"
 #include "tls/dsk-aead-gcm.h"
 #include "tls/dsk-aead-ccm.h"
@@ -138,6 +139,7 @@
 #include "tls/dsk-tls-x509.h"
 #include "tls/dsk-tls-bignum.h"
 #include "tls/dsk-tls-ffdhe.h"
+#include "tls/dsk-tls-cipher-suite.h"
 #include "tls/dsk-tls-key-schedule.h"
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"

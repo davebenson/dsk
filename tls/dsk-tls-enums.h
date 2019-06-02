@@ -39,8 +39,8 @@ typedef enum
   DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256   = 0x1303,  /*rfc8439*/
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256         = 0x1304,  /*rfc5116*/
   DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256       = 0x1305,  /*rfc6655*/
-} DskTlsCipherSuite;
-const char *dsk_tls_cipher_suite_name (DskTlsCipherSuite cipher);
+} DskTlsCipherSuiteCode;
+const char *dsk_tls_cipher_suite_name (DskTlsCipherSuiteCode cipher);
 
 typedef enum
 {

@@ -147,6 +147,7 @@ DskChecksumType dsk_checksum_type_crc32 =
   4,
   4,
   0,
+  (const uint8_t *) "\0\0\0\0",
   dsk_checksum_crc32_init,
   dsk_checksum_crc32_feed,
   dsk_checksum_crc32_end

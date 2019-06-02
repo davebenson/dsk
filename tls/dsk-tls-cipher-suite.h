@@ -1,15 +1,14 @@
 
+typedef struct DskTlsCipherSuite DskTlsCipherSuite;
 struct DskTlsCipherSuite
 {
   const char *name;
+  DskTlsCipherSuiteCode code;
 
-  unsigned key_length;
-  unsigned min_iv_length;
-  unsigned max_iv_length;
-  unsigned min_auth_tag_length;
-  unsigned max_auth_tag_length;
-  unsigned tls_iv_length;               // MAX(8, min_iv_length)
-  unsigned tls_auth_tag_length;
+  unsigned key_size;
+  unsigned iv_size;
+  unsigned auth_tag_size;
+  unsigned hash_size;
   size_t instance_size;
   DskChecksumType *hash_type;    // only used for key-schedule computation
 
@@ -20,19 +19,20 @@ struct DskTlsCipherSuite
                      const uint8_t  *plaintext,
                      size_t          associated_data_len,
                      const uint8_t  *associated_data,
-                     size_t          iv_len,
                      const uint8_t  *iv,
                      uint8_t        *ciphertext,
-                     size_t          authentication_tag_len,
                      uint8_t        *authentication_tag);
   bool (*decrypt)   (void           *instance,
                      size_t          ciphertext_len,
                      const uint8_t  *ciphertext,
                      size_t          associated_data_len,
                      const uint8_t  *associated_data,
-                     size_t          iv_len,
                      const uint8_t  *iv,
                      uint8_t        *plaintext,
-                     size_t          authentication_tag_len,
                      const uint8_t  *authentication_tag);
 };
+
+extern DskTlsCipherSuite dsk_tls_cipher_suite_aes128_gcm_sha256;
+extern DskTlsCipherSuite dsk_tls_cipher_suite_aes256_gcm_sha384;
+extern DskTlsCipherSuite dsk_tls_cipher_suite_aes128_ccm_sha256;
+extern DskTlsCipherSuite dsk_tls_cipher_suite_aes128_ccm_8_sha256;
