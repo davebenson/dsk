@@ -1277,6 +1277,13 @@ test_chachapoly_aead (void)
                   "\xe5\x76\xd2\x65\x86\xce\xc6\x4b"
                   "\x61\x16",
                   plaintext_len) == 0);
+  uint8_t *rt_plaintext = alloca (plaintext_len);
+  if (!dsk_aead_chacha20_poly1305_decrypt (key, plaintext_len, ciphertext,
+                                           assoc_data_len, assoc_data,
+                                           iv,
+                                           rt_plaintext, tag))
+    assert(false);
+  assert(memcmp (rt_plaintext, plaintext, plaintext_len) == 0);
 }
 
 
