@@ -86,7 +86,6 @@ dsk_tls_key_schedule_compute_early_secrets (DskTlsKeySchedule *schedule,
                     hash_size, zero_salt,
                     hash_size, psk,
                     schedule->early_secret);
-printf("early secret:");for(unsigned i = 0; i < 32; i++)printf(" %02x", schedule->early_secret[i]);printf("\n");
 
   dsk_tls_derive_secret (schedule->cipher->hash_type,
                          schedule->early_secret,
@@ -171,7 +170,6 @@ dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
   unsigned hash_size = schedule->cipher->hash_size;
   uint8_t *zero_salt = alloca (hash_size);
   memset (zero_salt, 0, hash_size);
-  printf("handshake_derived_secret: "); for (unsigned i = 0; i < 32;i++)printf(" %02x",schedule->handshake_derived_secret[i]);printf("\n");
   dsk_hkdf_extract (schedule->cipher->hash_type,
                     hash_size, schedule->handshake_derived_secret,
                     hash_size, zero_salt,

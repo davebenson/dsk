@@ -368,7 +368,7 @@ dsk_checksum_sha1_end (void *instance,
                        uint8_t *hash_out)
 {
   SHA1_CTX *ctx = instance;
-  SHA1Final (ctx, hash_out);
+  SHA1Final (hash_out, ctx);
 }
 
 DskChecksumType

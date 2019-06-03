@@ -242,6 +242,8 @@ ghash_step_bytes_zero_padded (uint32_t *y_inout,
       ghash_step (y_inout, b.u32, precompute);
     }
 }
+
+#if 0
 static void
 ghash (unsigned n_blocks_in_x,
        const uint32_t *x,
@@ -252,6 +254,7 @@ ghash (unsigned n_blocks_in_x,
   for (unsigned i = 0; i < n_blocks_in_x; i++)
     ghash_step (out, x + 4 * i, precompute);
 }
+#endif
 
 /* Section 6.5 GCTR function */
 static void

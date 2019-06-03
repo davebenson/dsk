@@ -15,24 +15,17 @@ struct DskTlsKeyShareMethod_FFDHE
 };
 
 static bool 
-ffdhe__make_private_key  (DskTlsKeyShareMethod *method,
-                          uint8_t              *private_key_inout)
+ffdhe__make_key_pair  (DskTlsKeyShareMethod *method,
+                       uint8_t              *private_key_inout,
+                       uint8_t              *public_key_out)
 {
   DskTlsKeyShareMethod_FFDHE *f = (DskTlsKeyShareMethod_FFDHE *) method;
   dsk_tls_ffdhe_gen_private_key (f->ffdhe, private_key_inout);
+  dsk_tls_ffdhe_compute_public_key (f->ffdhe, private_key_inout, public_key_out);
   return true;
 }
 
-static void 
-ffdhe__make_public_key   (DskTlsKeyShareMethod *method,
-                          const uint8_t        *private_key,
-                          uint8_t              *public_key_out)
-{
-  DskTlsKeyShareMethod_FFDHE *f = (DskTlsKeyShareMethod_FFDHE *) method;
-  dsk_tls_ffdhe_compute_public_key (f->ffdhe, private_key, public_key_out);
-}
-
-static void
+static bool
 ffdhe__make_shared_key   (DskTlsKeyShareMethod *method,
                           const uint8_t        *private_key,
                           const uint8_t        *peer_public_key,
@@ -40,6 +33,7 @@ ffdhe__make_shared_key   (DskTlsKeyShareMethod *method,
 {
   DskTlsKeyShareMethod_FFDHE *f = (DskTlsKeyShareMethod_FFDHE *) method;
   dsk_tls_ffdhe_compute_shared_key (f->ffdhe, private_key, peer_public_key, shared_key_out);
+  return true;
 }
 
 //
@@ -55,8 +49,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe2048 =
     (225+7)/8,
     256,
     256,
-    ffdhe__make_private_key,
-    ffdhe__make_public_key,
+    ffdhe__make_key_pair,
     ffdhe__make_shared_key
   },
   &dsk_tls_ffdhe2048
@@ -70,8 +63,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe3072 =
     (275+7)/8,
     384,
     384,
-    ffdhe__make_private_key,
-    ffdhe__make_public_key,
+    ffdhe__make_key_pair,
     ffdhe__make_shared_key
   },
   &dsk_tls_ffdhe3072
@@ -84,8 +76,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe4096 =
     (325+7)/8,
     512,
     512,
-    ffdhe__make_private_key,
-    ffdhe__make_public_key,
+    ffdhe__make_key_pair,
     ffdhe__make_shared_key
   },
   &dsk_tls_ffdhe4096
@@ -98,8 +89,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe6144 =
     (375+7)/8,
     768,
     768,
-    ffdhe__make_private_key,
-    ffdhe__make_public_key,
+    ffdhe__make_key_pair,
     ffdhe__make_shared_key
   },
   &dsk_tls_ffdhe6144
@@ -112,8 +102,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe8192 =
     (400+7)/8,
     1024,
     1024,
-    ffdhe__make_private_key,
-    ffdhe__make_public_key,
+    ffdhe__make_key_pair,
     ffdhe__make_shared_key
   },
   &dsk_tls_ffdhe8192
@@ -123,24 +112,17 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe8192 =
 // Curve 25519 support.
 //
 static bool 
-curve25519__make_private_key  (DskTlsKeyShareMethod *method,
-                               uint8_t              *private_key_inout)
-{
-  (void) method;
-  dsk_curve25519_random_to_private (private_key_inout);
-  return true;
-}
-
-static void 
-curve25519__make_public_key   (DskTlsKeyShareMethod *method,
-                               const uint8_t        *private_key,
+curve25519__make_key_pair     (DskTlsKeyShareMethod *method,
+                               uint8_t              *private_key_inout,
                                uint8_t              *public_key_out)
 {
   (void) method;
-  dsk_curve25519_private_to_public (private_key, public_key_out);
+  dsk_curve25519_random_to_private (private_key_inout);
+  dsk_curve25519_private_to_public (private_key_inout, public_key_out);
+  return true;
 }
 
-static void
+static bool
 curve25519__make_shared_key   (DskTlsKeyShareMethod *method,
                                const uint8_t        *private_key,
                                const uint8_t        *peer_public_key,
@@ -148,6 +130,7 @@ curve25519__make_shared_key   (DskTlsKeyShareMethod *method,
 {
   (void) method;
   dsk_curve25519_private_to_shared (private_key, peer_public_key, shared_key_out);
+  return true;
 }
 
 static DskTlsKeyShareMethod key_share_method__curve25519 =
@@ -157,8 +140,7 @@ static DskTlsKeyShareMethod key_share_method__curve25519 =
   32,
   32,
   32,
-  curve25519__make_private_key,
-  curve25519__make_public_key,
+  curve25519__make_key_pair,
   curve25519__make_shared_key
 };
 
