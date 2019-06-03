@@ -1,4 +1,5 @@
 #include "../dsk.h"
+#include <string.h>
 
 //
 //                      -------------------------------
@@ -280,5 +281,98 @@ DskTlsCipherSuite dsk_tls_cipher_suite_aes128_ccm_8_sha256 =
   aes128_ccm_init,
   aes128_ccm_8_encrypt,
   aes128_ccm_8_decrypt,
+};
+
+//
+//                      -------------------------------
+//                         CHACHA20 POLY1305 SHA-256
+//                      -------------------------------
+//
+
+typedef struct CHACHA20_POLY1305_CTX CHACHA20_POLY1305_CTX;
+struct CHACHA20_POLY1305_CTX
+{
+  uint32_t key[8];
+};
+
+static void
+chacha20_poly1305_init (void *instance, const uint8_t *key)
+{
+  CHACHA20_POLY1305_CTX *ctx = (CHACHA20_POLY1305_CTX *) instance;
+#if DSK_IS_BIG_ENDIAN
+  for (unsigned i = 0; i < 8; i++)
+    ctx->key[i] = dsk_uint32le_parse (key + 4*i);
+#else
+  memcpy (ctx->key, key, 32);
+#endif
+}
+
+
+static void
+chacha20_poly1305_encrypt   (void           *instance,
+                             size_t          plaintext_len,
+                             const uint8_t  *plaintext,
+                             size_t          associated_data_len,
+                             const uint8_t  *associated_data,
+                             const uint8_t  *iv,
+                             uint8_t        *ciphertext,
+                             uint8_t        *authentication_tag)
+{
+  CHACHA20_POLY1305_CTX *ctx = instance;
+  uint32_t nonce[3];
+#if DSK_IS_BIG_ENDIAN
+  nonce[0] = dsk_uint32le_parse (iv + 0);
+  nonce[1] = dsk_uint32le_parse (iv + 4);
+  nonce[2] = dsk_uint32le_parse (iv + 8);
+#else
+  memcpy (nonce, iv, 12);
+#endif
+  dsk_aead_chacha20_poly1305_encrypt (ctx->key,
+                                      plaintext_len, plaintext,
+                                      associated_data_len, associated_data,
+                                      nonce,
+                                      ciphertext, authentication_tag);
+}
+
+static bool
+chacha20_poly1305_decrypt   (void           *instance,
+                             size_t          ciphertext_len,
+                             const uint8_t  *ciphertext,
+                             size_t          associated_data_len,
+                             const uint8_t  *associated_data,
+                             const uint8_t  *iv,
+                             uint8_t        *plaintext,
+                             const uint8_t  *authentication_tag)
+{
+  CHACHA20_POLY1305_CTX *ctx = instance;
+  uint32_t nonce[3];
+#if DSK_IS_BIG_ENDIAN
+  nonce[0] = dsk_uint32le_parse (iv + 0);
+  nonce[1] = dsk_uint32le_parse (iv + 4);
+  nonce[2] = dsk_uint32le_parse (iv + 8);
+#else
+  memcpy (nonce, iv, 12);
+#endif
+  return dsk_aead_chacha20_poly1305_decrypt (ctx->key,
+                                      ciphertext_len, ciphertext,
+                                      associated_data_len, associated_data,
+                                      nonce,
+                                      plaintext, authentication_tag);
+}
+
+
+DskTlsCipherSuite dsk_tls_cipher_suite_chacha20_poly1305_sha256 =
+{
+  "CHACHA20_POLY1305_SHA256",
+  DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
+  32,
+  DSK_AEAD_CHACHA20_POLY1305_IV_LEN,
+  DSK_AEAD_CHACHA20_POLY1305_AUTH_TAG_LEN,
+  32,
+  sizeof(CHACHA20_POLY1305_CTX),
+  &dsk_checksum_type_sha256,
+  chacha20_poly1305_init,
+  chacha20_poly1305_encrypt,
+  chacha20_poly1305_decrypt,
 };
 

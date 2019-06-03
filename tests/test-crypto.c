@@ -1171,10 +1171,9 @@ test_chacha20 (void)
     "If I could offer you only one tip for the future, sunscreen would be it.";
   unsigned plaintext_len = sizeof(plaintext) - 1;
   assert(plaintext_len == 114);
-  uint8_t io[114];
-  memcpy(io, plaintext, plaintext_len);
-  dsk_chacha20_crypt_256 (key, 1, nonce2, plaintext_len, io);
-  assert(memcmp(io,
+  uint8_t ciphertext[114];
+  dsk_chacha20_crypt_256 (key, 1, nonce2, plaintext_len, (uint8_t *) plaintext, ciphertext);
+  assert(memcmp(ciphertext,
                 "\x6e\x2e\x35\x9a\x25\x68\xf9\x80"
                 "\x41\xba\x07\x28\xdd\x0d\x69\x81"
                 "\xe9\x7e\x7a\xec\x1d\x43\x60\xc2"
@@ -1230,6 +1229,55 @@ test_poly1305_keygen (void)
   assert (memcmp (out, expected, 32) == 0);
 }
 
+static void
+test_chachapoly_aead (void)
+{
+  static const char plaintext[] =
+    "Ladies and Gentlemen of the class of '99: "
+    "If I could offer you only one tip for the future, sunscreen would be it.";
+  unsigned plaintext_len = sizeof(plaintext) - 1;
+
+  static const uint8_t assoc_data[] = {
+    0x50, 0x51, 0x52, 0x53, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7 
+  };
+  unsigned assoc_data_len = sizeof(assoc_data);
+
+  static const uint32_t key[] = {
+    0x83828180, 0x87868584, 0x8b8a8988, 0x8f8e8d8c,
+    0x93929190, 0x97969594, 0x9b9a9998, 0x9f9e9d9c
+
+  };
+  static const uint32_t iv[] = {
+    0x00000007, 0x43424140, 0x47464544
+  };
+  uint8_t ciphertext[sizeof(plaintext)-1];
+  uint8_t tag[16];
+  dsk_aead_chacha20_poly1305_encrypt (key, plaintext_len, (uint8_t *) plaintext,
+                                      assoc_data_len, assoc_data,
+                                      iv,
+                                      ciphertext, tag);
+  assert (memcmp (tag, 
+                  "\x1a\xe1\x0b\x59\x4f\x09\xe2\x6a"
+                  "\x7e\x90\x2e\xcb\xd0\x60\x06\x91",
+                  16) == 0);
+  assert (memcmp (ciphertext, 
+                  "\xd3\x1a\x8d\x34\x64\x8e\x60\xdb"
+                  "\x7b\x86\xaf\xbc\x53\xef\x7e\xc2"
+                  "\xa4\xad\xed\x51\x29\x6e\x08\xfe"
+                  "\xa9\xe2\xb5\xa7\x36\xee\x62\xd6"
+                  "\x3d\xbe\xa4\x5e\x8c\xa9\x67\x12"
+                  "\x82\xfa\xfb\x69\xda\x92\x72\x8b"
+                  "\x1a\x71\xde\x0a\x9e\x06\x0b\x29"
+                  "\x05\xd6\xa5\xb6\x7e\xcd\x3b\x36"
+                  "\x92\xdd\xbd\x7f\x2d\x77\x8b\x8c"
+                  "\x98\x03\xae\xe3\x28\x09\x1b\x58"
+                  "\xfa\xb3\x24\xe4\xfa\xd6\x75\x94"
+                  "\x55\x85\x80\x8b\x48\x31\xd7\xbc"
+                  "\x3f\xf4\xde\xf0\x8e\x4b\x7a\x9d"
+                  "\xe5\x76\xd2\x65\x86\xce\xc6\x4b"
+                  "\x61\x16",
+                  plaintext_len) == 0);
+}
 
 
 static struct 
@@ -1251,6 +1299,7 @@ static struct
   { "Chacha-20 Tests (from RFC 8439 2.3.2, 2.4.2)", test_chacha20 },
   { "Poly1305 MAC Tests (from RFC 8439 2.5.2)", test_poly1305_mac },
   { "Poly1305 key-gen Tests (from RFC 8439 2.6.2)", test_poly1305_keygen },
+  { "Chacha20-Poly1305 AEAD test (from RFC 8439 2.8.2)", test_chachapoly_aead },
 };
 
 

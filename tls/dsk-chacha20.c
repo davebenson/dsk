@@ -126,14 +126,15 @@ dsk_chacha20_crypt_128 (const uint32_t *key,                  // length 4
                         uint32_t        counter,
                         const uint32_t *nonce,                // length 3
                         size_t          length,
-                        uint8_t        *in_out)
+                        const uint8_t  *in,
+                        uint8_t        *out)
 {
   uint8_t block[64];
   for (unsigned j = 0; j < length / 64; j++)
     {
       dsk_chacha20_block_128 (key, counter+j, nonce, block);
       for (unsigned k = 0; k < 64; k++)
-        in_out[64 * j + k] ^= block[k];
+        *out++ = *in++ ^ block[k];
     }
   if (length % 64)
     {
@@ -141,7 +142,7 @@ dsk_chacha20_crypt_128 (const uint32_t *key,                  // length 4
       dsk_chacha20_block_128 (key, counter+j, nonce, block);
       unsigned rem = length - j * 64;
       for (unsigned k = 0; k < rem; k++)
-        in_out[64 * j + k] ^= block[k];
+        *out++ = *in++ ^ block[k];
     }
 }
 void
@@ -149,14 +150,15 @@ dsk_chacha20_crypt_256 (const uint32_t *key,                  // length 8
                         uint32_t        counter,
                         const uint32_t *nonce,                // length 3
                         size_t          length,
-                        uint8_t        *in_out)
+                        const uint8_t  *in,
+                        uint8_t        *out)
 {
   uint8_t block[64];
   for (unsigned j = 0; j < length / 64; j++)
     {
       dsk_chacha20_block_256 (key, counter+j, nonce, block);
       for (unsigned k = 0; k < 64; k++)
-        in_out[64 * j + k] ^= block[k];
+        *out++ = *in++ ^ block[k];
     }
   if (length % 64)
     {
@@ -164,36 +166,11 @@ dsk_chacha20_crypt_256 (const uint32_t *key,                  // length 8
       dsk_chacha20_block_256 (key, counter+j, nonce, block);
       unsigned rem = length - j * 64;
       for (unsigned k = 0; k < rem; k++)
-        in_out[64 * j + k] ^= block[k];
+        *out++ = *in++ ^ block[k];
     }
 }
 
-#if 0                                   //unneeded
-static void
-mul_by_P (const uint32_t *input,                // length 4
-          uint32_t       *output)               // length 8
-{
-  uint32_t input4[8] = {
-    input[0] << 2,
-    (input[0] >> 30) | (input[1] << 2),
-    (input[1] >> 30) | (input[2] << 2),
-    (input[2] >> 30) | (input[3] << 2),
-    (input[3] >> 30),                           // note: always 0
-    0,0,0
-  };
-  // P = 2**130 - 5
-  output[0] = 0;
-  output[1] = 0;
-  output[2] = 0;
-  output[3] = 0;
-  memcpy (output + 4, input4, 32);
-  dsk_tls_bignum_subtract(8, output, input4, output);
-
-  if (dsk_tls_bignum_subtract_with_borrow(4, output, input, 0, output))
-    dsk_tls_bignum_subtract_word_inplace (4, output + 4, 1);
-}
-#endif
-
+// P = (1<<130) - 5
 static uint32_t P[5] = {
   0xfffffffb,
   0xffffffff,
@@ -286,6 +263,92 @@ dsk_poly1305_mac     (const uint32_t *key,                    // length 8
   dsk_uint32le_pack (a[3], mac_out + 12);
 }
 
+typedef struct DskPoly1305Context DskPoly1305Context;
+struct DskPoly1305Context
+{
+  uint32_t r[4], s[4], a[5];
+};
+
+static inline void
+dsk_poly1305_context_init (DskPoly1305Context *ctx,
+                           const uint32_t     *key)
+{
+  ctx->r[0] = key[0] & 0x0fffffff;
+  ctx->r[1] = key[1] & 0x0ffffffc;
+  ctx->r[2] = key[2] & 0x0ffffffc;
+  ctx->r[3] = key[3] & 0x0ffffffc;
+  ctx->s[0] = key[4];
+  ctx->s[1] = key[5];
+  ctx->s[2] = key[6];
+  ctx->s[3] = key[7];
+  ctx->a[0] = ctx->a[1] = ctx->a[2] = ctx->a[3] = ctx->a[4] = 0;
+}
+
+static inline void
+dsk_poly1305_context_feed_block (DskPoly1305Context *ctx,
+                                 const uint8_t      *input)
+{
+  uint32_t n[5] = {
+    dsk_uint32le_parse (input + 0),
+    dsk_uint32le_parse (input + 4),
+    dsk_uint32le_parse (input + 8),
+    dsk_uint32le_parse (input + 12),
+    1
+  };
+  poly1305_handle_n(ctx->a, ctx->r, n);
+}
+static void
+dsk_poly1305_context_feed_padded (DskPoly1305Context *ctx,
+                                  size_t              input_len,
+                                  const uint8_t      *input)
+{
+  for (unsigned i = 0; i + 16 <= input_len; i += 16)
+    dsk_poly1305_context_feed_block(ctx, input + i);
+  if (input_len & 0xf)
+    {
+      uint8_t tmp[16];
+      unsigned rem = input_len & 0xf;
+      memcpy (tmp, input + input_len - rem, rem);
+      memset (tmp + rem, 0, 16 - rem);
+      dsk_poly1305_context_feed_block (ctx, tmp);
+    }
+}
+static void
+dsk_poly1305_context_feed_2lengths (DskPoly1305Context *ctx,
+                                    size_t              len1,
+                                    size_t              len2)
+{
+#if DSK_SIZEOF_SIZE_T == 4
+  uint32_t n[5] = {
+    len1,
+    0,
+    len2,
+    0,
+    1
+  };
+#else
+  uint32_t n[5] = {
+    len1,
+    len1 >> 32,
+    len2,
+    len2 >> 32,
+    1
+  };
+#endif
+  poly1305_handle_n(ctx->a, ctx->r, n);
+}
+
+static void
+dsk_poly1305_context_finish (DskPoly1305Context *ctx,
+                             uint8_t            *mac_out)
+{
+  dsk_tls_bignum_add (4, ctx->a, ctx->s, ctx->a);
+  dsk_uint32le_pack (ctx->a[0], mac_out + 0);
+  dsk_uint32le_pack (ctx->a[1], mac_out + 4);
+  dsk_uint32le_pack (ctx->a[2], mac_out + 8);
+  dsk_uint32le_pack (ctx->a[3], mac_out + 12);
+}
+
 void
 dsk_poly1305_key_gen (const uint32_t *key,                    // length 8
                       const uint32_t *nonce,                  // length 3
@@ -304,19 +367,51 @@ dsk_poly1305_key_gen (const uint32_t *key,                    // length 8
 #endif
 }
 
-void dsk_aead_chacha20_poly1305_encrypt (size_t                     plaintext_len,
+void dsk_aead_chacha20_poly1305_encrypt (const uint32_t            *key,
+                                         size_t                     plaintext_len,
                                          const uint8_t             *plaintext,
                                          size_t                     associated_data_len,
                                          const uint8_t             *associated_data,
-                                         const uint8_t             *iv,
+                                         const uint32_t            *iv,
                                          uint8_t                   *ciphertext,
-                                         uint8_t                   *authentication_tag);
+                                         uint8_t                   *authentication_tag)
+{
+  dsk_chacha20_crypt_256 (key, 1, iv, plaintext_len, plaintext, ciphertext);
+  
+  uint32_t one_time_key[8];
+  DskPoly1305Context poly1305_ctx;
+  dsk_poly1305_key_gen (key, iv, one_time_key);
+  dsk_poly1305_context_init (&poly1305_ctx, one_time_key);
+  dsk_poly1305_context_feed_padded (&poly1305_ctx, associated_data_len, associated_data);
+  dsk_poly1305_context_feed_padded (&poly1305_ctx, plaintext_len, ciphertext);
+  dsk_poly1305_context_feed_2lengths (&poly1305_ctx, associated_data_len, plaintext_len);
+  dsk_poly1305_context_finish (&poly1305_ctx, authentication_tag);
+}
 
-bool dsk_aead_chacha20_poly1305_decrypt (size_t                     ciphertext_len,
+bool dsk_aead_chacha20_poly1305_decrypt (const uint32_t            *key,
+                                         size_t                     ciphertext_len,
                                          const uint8_t             *ciphertext,
                                          size_t                     associated_data_len,
                                          const uint8_t             *associated_data,
-                                         const uint8_t             *iv,
+                                         const uint32_t             *iv,
                                          uint8_t                   *plaintext,
-                                         const uint8_t             *authentication_tag);
+                                         const uint8_t             *authentication_tag)
+{
+  uint32_t one_time_key[8];
+  dsk_poly1305_key_gen (key, iv, one_time_key);
+  DskPoly1305Context poly1305_ctx;
+  dsk_poly1305_context_init (&poly1305_ctx, one_time_key);
+  dsk_poly1305_context_feed_padded (&poly1305_ctx, associated_data_len, associated_data);
+  dsk_poly1305_context_feed_padded (&poly1305_ctx, ciphertext_len, ciphertext);
+  dsk_poly1305_context_feed_2lengths (&poly1305_ctx, associated_data_len, ciphertext_len);
+  uint8_t tmp_authentication_tag[16];
+  dsk_poly1305_context_finish (&poly1305_ctx, tmp_authentication_tag);
+
+  // TODO: replace with constant-time (ie data-independent) memcmp()
+  if (memcmp (tmp_authentication_tag, authentication_tag, 16) != 0)
+    return false;
+
+  dsk_chacha20_crypt_256 (key, 1, iv, ciphertext_len, ciphertext, plaintext);
+  return true;
+}
 
