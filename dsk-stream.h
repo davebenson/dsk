@@ -45,27 +45,27 @@ void dsk_stream_set_last_error       (DskStream       *stream,
 void dsk_stream_set_error            (DskStream       *stream,
                                       DskError        *error);
 
-DSK_INLINE_FUNC DskIOResult dsk_stream_read (void         *stream,
+DSK_INLINE DskIOResult dsk_stream_read (void         *stream,
                                                    unsigned      max_len,
                                                    void         *data_out,
                                                    unsigned     *n_read_out,
                                                    DskError    **error);
-DSK_INLINE_FUNC DskIOResult dsk_stream_read_buffer (void           *stream,
+DSK_INLINE DskIOResult dsk_stream_read_buffer (void           *stream,
                                                   DskBuffer      *read_buffer,
                                                   DskError      **error);
-DSK_INLINE_FUNC void dsk_stream_shutdown_read   (void           *stream);
-DSK_INLINE_FUNC DskIOResult dsk_stream_write (void           *stream,
+DSK_INLINE void dsk_stream_shutdown_read   (void           *stream);
+DSK_INLINE DskIOResult dsk_stream_write (void           *stream,
                                                   unsigned        max_len,
                                                   const void     *data,
                                                   unsigned       *n_written_out,
                                                   DskError      **error);
-DSK_INLINE_FUNC DskIOResult dsk_stream_write_buffer  (void           *stream,
+DSK_INLINE DskIOResult dsk_stream_write_buffer  (void           *stream,
                                                   DskBuffer      *write_buffer,
                                                   DskError      **error);
-DSK_INLINE_FUNC void dsk_stream_shutdown_write     (void           *stream);
+DSK_INLINE void dsk_stream_shutdown_write     (void           *stream);
 
-DSK_INLINE_FUNC bool dsk_stream_is_readable       (void           *stream);
-DSK_INLINE_FUNC bool dsk_stream_is_writable       (void           *stream);
+DSK_INLINE bool dsk_stream_is_readable       (void           *stream);
+DSK_INLINE bool dsk_stream_is_writable       (void           *stream);
 
 
 int64_t dsk_stream_get_length (DskStream *stream); /* BIG HACK; may return -1 */
@@ -108,7 +108,7 @@ struct _DskStreamConnectionOptions
   true                      /* shutdown_on_write_error */   \
 }
 
-DSK_INLINE_FUNC void dsk_stream_connect       (DskStream *source,
+DSK_INLINE void dsk_stream_connect       (DskStream *source,
                                               DskStream   *sink,
                                               DskStreamConnectionOptions *opt);
 
@@ -132,7 +132,7 @@ void          dsk_pipe_new (unsigned       pipe_buffer_size,
 extern const DskStreamClass dsk_stream_class;
 extern const DskStreamConnectionClass dsk_stream_connection_class;
 
-DSK_INLINE_FUNC DskIOResult dsk_stream_read (void         *stream,
+DSK_INLINE DskIOResult dsk_stream_read (void         *stream,
                                            unsigned      max_len,
                                            void         *data_out,
                                            unsigned     *n_read_out,
@@ -141,20 +141,20 @@ DSK_INLINE_FUNC DskIOResult dsk_stream_read (void         *stream,
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   return c->read (stream, max_len, data_out, n_read_out, error);
 }
-DSK_INLINE_FUNC DskIOResult dsk_stream_read_buffer (void           *stream,
+DSK_INLINE DskIOResult dsk_stream_read_buffer (void           *stream,
                                                   DskBuffer      *read_buffer,
                                                   DskError      **error)
 {
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   return c->read_buffer (stream, read_buffer, error);
 }
-DSK_INLINE_FUNC void dsk_stream_shutdown_read (void           *stream)
+DSK_INLINE void dsk_stream_shutdown_read (void           *stream)
 {
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   if (c->shutdown_read != NULL)
     c->shutdown_read (stream);
 }
-DSK_INLINE_FUNC DskIOResult dsk_stream_write (void           *stream,
+DSK_INLINE DskIOResult dsk_stream_write (void           *stream,
                                                   unsigned        max_len,
                                                   const void     *data,
                                                   unsigned       *n_written_out,
@@ -163,31 +163,31 @@ DSK_INLINE_FUNC DskIOResult dsk_stream_write (void           *stream,
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   return c->write (stream, max_len, data, n_written_out, error);
 }
-DSK_INLINE_FUNC DskIOResult dsk_stream_write_buffer  (void           *stream,
+DSK_INLINE DskIOResult dsk_stream_write_buffer  (void           *stream,
                                                   DskBuffer      *write_buffer,
                                                   DskError      **error)
 {
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   return c->write_buffer (stream, write_buffer, error);
 }
-DSK_INLINE_FUNC void dsk_stream_shutdown_write     (void           *stream)
+DSK_INLINE void dsk_stream_shutdown_write     (void           *stream)
 {
   DskStreamClass *c = DSK_STREAM_GET_CLASS (stream);
   if (c->shutdown_write != NULL)
     c->shutdown_write (stream);
 }
-DSK_INLINE_FUNC void dsk_stream_connect       (DskStream *source,
+DSK_INLINE void dsk_stream_connect       (DskStream *source,
                                                DskStream   *sink,
                                                DskStreamConnectionOptions *opt)
 {
   dsk_object_unref (dsk_stream_connection_new (source, sink, opt));
 }
-DSK_INLINE_FUNC bool dsk_stream_is_readable       (void           *stream)
+DSK_INLINE bool dsk_stream_is_readable       (void           *stream)
 {
   return !dsk_hook_is_cleared (&DSK_STREAM (stream)->readable_hook);
 }
-DSK_INLINE_FUNC bool dsk_stream_is_writable       (void           *stream)
+DSK_INLINE bool dsk_stream_is_writable       (void           *stream)
 {
   return !dsk_hook_is_cleared (&DSK_STREAM (stream)->writable_hook);
 }
-DSK_INLINE_FUNC bool dsk_stream_is_writable       (void           *stream);
+DSK_INLINE bool dsk_stream_is_writable       (void           *stream);

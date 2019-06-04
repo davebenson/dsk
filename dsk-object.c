@@ -1,6 +1,4 @@
-#include "dsk-common.h"
-#include "dsk-object.h"
-#include "dsk-mem-pool.h"
+#include "dsk.h"
 #include "debug.h"
 
 #if DSK_ENABLE_DEBUGGING
@@ -11,6 +9,31 @@ bool dsk_debug_object_lifetimes;
   dsk_assert ((class)->object_class_magic == DSK_OBJECT_CLASS_MAGIC)
 
 static DskMemPoolFixed weak_pointer_pool = DSK_MEM_POOL_FIXED_STATIC_INIT(sizeof (DskWeakPointer));
+void dsk_weak_pointer_unref (DskWeakPointer *weak_pointer)
+{
+  if (--(weak_pointer->ref_count) == 0)
+    {
+      dsk_assert (weak_pointer->object == NULL);
+      dsk_mem_pool_fixed_free (&weak_pointer_pool, weak_pointer);
+    }
+}
+DskWeakPointer * dsk_weak_pointer_ref (DskWeakPointer *weak_pointer)
+{
+  ++(weak_pointer->ref_count);
+  return weak_pointer;
+}
+DskWeakPointer * dsk_object_get_weak_pointer (DskObject *object)
+{
+  if (object->weak_pointer)
+    ++(object->weak_pointer->ref_count);
+  else
+    {
+      object->weak_pointer = dsk_mem_pool_fixed_alloc (&weak_pointer_pool);
+      object->weak_pointer->ref_count = 2;
+      object->weak_pointer->object = object;
+    }
+  return object->weak_pointer;
+}
 
 static void
 dsk_object_init (DskObject *object)
@@ -265,30 +288,4 @@ dsk_object_untrap_finalize (DskObject      *object,
       pf = &((*pf)->next);
     }
   dsk_return_if_reached ("no matching finalizer");
-}
-
-void dsk_weak_pointer_unref (DskWeakPointer *weak_pointer)
-{
-  if (--(weak_pointer->ref_count) == 0)
-    {
-      dsk_assert (weak_pointer->object == NULL);
-      dsk_mem_pool_fixed_free (&weak_pointer_pool, weak_pointer);
-    }
-}
-DskWeakPointer * dsk_weak_pointer_ref (DskWeakPointer *weak_pointer)
-{
-  ++(weak_pointer->ref_count);
-  return weak_pointer;
-}
-DskWeakPointer * dsk_object_get_weak_pointer (DskObject *object)
-{
-  if (object->weak_pointer)
-    ++(object->weak_pointer->ref_count);
-  else
-    {
-      object->weak_pointer = dsk_mem_pool_fixed_alloc (&weak_pointer_pool);
-      object->weak_pointer->ref_count = 2;
-      object->weak_pointer->object = object;
-    }
-  return object->weak_pointer;
 }

@@ -200,6 +200,7 @@ poly1305_handle_n (uint32_t *a,    // length 5
   a[4] += n[4];
   uint32_t tmp[9];
   dsk_tls_bignum_multiply (5, a, 4, r, tmp);
+
   assert(tmp[8] == 0);
 
   // XXX: do we need to verify the tmp <= P<<128 ?

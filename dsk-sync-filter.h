@@ -36,7 +36,7 @@ class_static ClassName##Class class_name ## _class = { {                      \
   class_name ## _finish                                                       \
 } }
 extern const DskSyncFilterClass dsk_sync_filter_class;
-DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -47,7 +47,7 @@ bool          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
                                                       DskBuffer      *in,
                                                       bool     discard,
                                                       DskError      **error);
-DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error);
 
@@ -76,7 +76,7 @@ uint8_t    *dsk_filter_to_data    (unsigned length,
                                    unsigned  *output_string_length_out,
                                    DskError **error);
 
-DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -86,7 +86,7 @@ DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
   return c->process (filter, out, in_length, in_data, error);
 }
 
-DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error)
 {

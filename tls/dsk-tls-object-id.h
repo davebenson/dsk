@@ -12,19 +12,19 @@ struct DskTlsObjectID
 extern const uint32_t dsk_tls_object_id_heap[];
 
 
-DSK_INLINE_FUNC size_t dsk_tls_object_id_size_by_n_subids (unsigned n_subidentifiers);
+DSK_INLINE size_t dsk_tls_object_id_size_by_n_subids (unsigned n_subidentifiers);
 
-DSK_INLINE_FUNC bool dsk_tls_object_ids_equal (const DskTlsObjectID *a, 
+DSK_INLINE bool dsk_tls_object_ids_equal (const DskTlsObjectID *a, 
                                                const DskTlsObjectID *b);
 char *dsk_tls_object_id_to_string(const DskTlsObjectID *oid);
 
 
-DSK_INLINE_FUNC size_t
+DSK_INLINE size_t
 dsk_tls_object_id_size_by_n_subids (unsigned n_subidentifiers)
 {
   return sizeof(DskTlsObjectID) + sizeof(uint32_t) * n_subidentifiers;
 }
-DSK_INLINE_FUNC bool
+DSK_INLINE bool
 dsk_tls_object_ids_equal (const DskTlsObjectID *a, 
                           const DskTlsObjectID *b)
 {

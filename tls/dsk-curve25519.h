@@ -16,7 +16,7 @@
 /* inputs and outputs all have length 32 (bytes) */
 
 
-DSK_INLINE_FUNC void dsk_curve25519_random_to_private (uint8_t *random_to_private);
+DSK_INLINE void dsk_curve25519_random_to_private (uint8_t *random_to_private);
 
 void dsk_curve25519_private_to_public (const uint8_t *private_key,
                                        uint8_t       *public_key_out);
@@ -25,7 +25,7 @@ void dsk_curve25519_private_to_shared (const uint8_t *private_key,
                                        uint8_t       *shared_key_out);
 
 
-DSK_INLINE_FUNC void
+DSK_INLINE void
 dsk_curve25519_random_to_private (uint8_t *random_to_private)
 {
   random_to_private[0] &= 248;

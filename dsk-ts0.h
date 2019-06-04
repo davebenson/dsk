@@ -64,8 +64,8 @@ struct _DskTs0Function
   unsigned cachable : 1;
 };
 
-DSK_INLINE_FUNC DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
-DSK_INLINE_FUNC void            dsk_ts0_function_unref (DskTs0Function *);
+DSK_INLINE DskTs0Function *dsk_ts0_function_ref   (DskTs0Function *);
+DSK_INLINE void            dsk_ts0_function_unref (DskTs0Function *);
 
 bool dsk_ts0_expr_evaluate (DskTs0Expr *expr,
                                    DskTs0Namespace *ns,
@@ -85,8 +85,8 @@ struct _DskTs0Tag
   unsigned cachable : 1;
 };
 
-DSK_INLINE_FUNC DskTs0Tag      *dsk_ts0_tag_ref   (DskTs0Tag *);
-DSK_INLINE_FUNC void            dsk_ts0_tag_unref (DskTs0Tag *);
+DSK_INLINE DskTs0Tag      *dsk_ts0_tag_ref   (DskTs0Tag *);
+DSK_INLINE void            dsk_ts0_tag_unref (DskTs0Tag *);
 
 
 
@@ -146,8 +146,8 @@ const char    *  dsk_ts0_namespace_get_variable (DskTs0Namespace *ns,
                                                  const char      *dotted_name,
                                                  DskError       **error);
 
-DSK_INLINE_FUNC void            dsk_ts0_namespace_unref (DskTs0Namespace *);
-DSK_INLINE_FUNC DskTs0Namespace*dsk_ts0_namespace_ref   (DskTs0Namespace *);
+DSK_INLINE void            dsk_ts0_namespace_unref (DskTs0Namespace *);
+DSK_INLINE DskTs0Namespace*dsk_ts0_namespace_ref   (DskTs0Namespace *);
 
 /* This can be casted to a DskTs0NamespaceWritable, but usually use the
    dsk_ts0_global_* helper functions instead. */
@@ -292,7 +292,7 @@ void _dsk_ts0_namespace_destroy (DskTs0Namespace *ns);
 
 
 /* --- inlines --- */
-DSK_INLINE_FUNC DskTs0Function *
+DSK_INLINE DskTs0Function *
 dsk_ts0_function_ref   (DskTs0Function *function)
 {
   _dsk_inline_assert (function->ref_count > 0);
@@ -300,7 +300,7 @@ dsk_ts0_function_ref   (DskTs0Function *function)
   return function;
 }
 
-DSK_INLINE_FUNC void
+DSK_INLINE void
 dsk_ts0_function_unref (DskTs0Function *function)
 {
   _dsk_inline_assert (function->ref_count > 0);
@@ -308,7 +308,7 @@ dsk_ts0_function_unref (DskTs0Function *function)
     function->destroy (function);
 }
 
-DSK_INLINE_FUNC DskTs0Tag *
+DSK_INLINE DskTs0Tag *
 dsk_ts0_tag_ref   (DskTs0Tag *tag)
 {
   _dsk_inline_assert (tag->ref_count > 0);
@@ -316,7 +316,7 @@ dsk_ts0_tag_ref   (DskTs0Tag *tag)
   return tag;
 }
 
-DSK_INLINE_FUNC void
+DSK_INLINE void
 dsk_ts0_tag_unref (DskTs0Tag *tag)
 {
   _dsk_inline_assert (tag->ref_count > 0);
@@ -326,14 +326,14 @@ dsk_ts0_tag_unref (DskTs0Tag *tag)
         tag->destroy (tag);
     }
 }
-DSK_INLINE_FUNC void
+DSK_INLINE void
 dsk_ts0_namespace_unref (DskTs0Namespace *ns)
 {
   _dsk_inline_assert (ns->ref_count > 0);
   if (--(ns->ref_count) == 0)
     _dsk_ts0_namespace_destroy (ns);
 }
-DSK_INLINE_FUNC DskTs0Namespace *
+DSK_INLINE DskTs0Namespace *
 dsk_ts0_namespace_ref (DskTs0Namespace *ns)
 {
   _dsk_inline_assert (ns->ref_count > 0);

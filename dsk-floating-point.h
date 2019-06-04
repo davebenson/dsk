@@ -8,7 +8,7 @@
 // mantissa has 52 bits;
 // there is an implied one in front of the mantissa
 // for a normalized floating point number.
-DSK_INLINE_FUNC uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
+DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
                                                int16_t exponent,
                                                uint64_t mantissa);
 
@@ -18,13 +18,13 @@ DSK_INLINE_FUNC uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
 
 // exponent goes from -127 to 128.
 // mantissa is 23 bits with an implied 1 in front.
-DSK_INLINE_FUNC uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
+DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
                                                int16_t exponent,
                                                uint32_t mantissa);
 
 
 
-DSK_INLINE_FUNC uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
+DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
                                                int16_t exponent,
                                                uint64_t mantissa)
 {
@@ -34,7 +34,7 @@ DSK_INLINE_FUNC uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
   return sign | exp | mant;
 }
 
-DSK_INLINE_FUNC uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
+DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
                                                int16_t exponent,
                                                uint32_t mantissa)
 {

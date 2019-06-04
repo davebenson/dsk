@@ -11,7 +11,7 @@ struct _DskTableBuffer
   unsigned alloced;
 };
 #define DSK_TABLE_BUFFER_INIT {0,NULL,0}
-DSK_INLINE_FUNC uint8_t *
+DSK_INLINE uint8_t *
 dsk_table_buffer_set_size (DskTableBuffer *buffer,
                            unsigned        length);
 
@@ -144,7 +144,7 @@ DskTableReader *dsk_table_reader_new_merge2 (DskTable       *table,
                                              DskTableReader *b,
                                              DskError      **error);
 
-DSK_INLINE_FUNC uint8_t *
+DSK_INLINE uint8_t *
 dsk_table_buffer_set_size (DskTableBuffer *buffer,
                            unsigned        length)
 {

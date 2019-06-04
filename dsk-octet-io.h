@@ -82,26 +82,26 @@ void dsk_octet_stream_set_error      (DskOctetStream  *stream,
 #define DSK_OCTET_STREAM_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskOctetStream, object, &dsk_octet_stream_class)
 #define DSK_OCTET_FILTER_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskSyncFilter, object, &dsk_sync_filter_class)
 
-DSK_INLINE_FUNC DskIOResult dsk_octet_source_read (void         *octet_source,
+DSK_INLINE DskIOResult dsk_octet_source_read (void         *octet_source,
                                                    unsigned      max_len,
                                                    void         *data_out,
                                                    unsigned     *n_read_out,
                                                    DskError    **error);
-DSK_INLINE_FUNC DskIOResult dsk_octet_source_read_buffer (void           *octet_source,
+DSK_INLINE DskIOResult dsk_octet_source_read_buffer (void           *octet_source,
                                                   DskBuffer      *read_buffer,
                                                   DskError      **error);
-DSK_INLINE_FUNC void dsk_octet_source_shutdown   (void           *octet_source);
-DSK_INLINE_FUNC void dsk_octet_source_detach       (DskOctetSource *source);
-DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write (void           *octet_sink,
+DSK_INLINE void dsk_octet_source_shutdown   (void           *octet_source);
+DSK_INLINE void dsk_octet_source_detach       (DskOctetSource *source);
+DSK_INLINE DskIOResult dsk_octet_sink_write (void           *octet_sink,
                                                   unsigned        max_len,
                                                   const void     *data,
                                                   unsigned       *n_written_out,
                                                   DskError      **error);
-DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write_buffer  (void           *octet_sink,
+DSK_INLINE DskIOResult dsk_octet_sink_write_buffer  (void           *octet_sink,
                                                   DskBuffer      *write_buffer,
                                                   DskError      **error);
-DSK_INLINE_FUNC void dsk_octet_sink_shutdown     (void           *octet_sink);
-DSK_INLINE_FUNC void dsk_octet_sink_detach       (DskOctetSink   *sink);
+DSK_INLINE void dsk_octet_sink_shutdown     (void           *octet_sink);
+DSK_INLINE void dsk_octet_sink_detach       (DskOctetSink   *sink);
 
 
 int64_t dsk_octet_source_get_length (DskOctetSource *source); /* BIG HACK; may return -1 */
@@ -144,7 +144,7 @@ struct _DskOctetConnectionOptions
   true                      /* shutdown_on_write_error */   \
 }
 
-DSK_INLINE_FUNC void dsk_octet_connect       (DskOctetSource *source,
+DSK_INLINE void dsk_octet_connect       (DskOctetSource *source,
                                               DskOctetSink   *sink,
                                               DskOctetConnectionOptions *opt);
 
@@ -184,7 +184,7 @@ struct _DskSyncFilter
 {
   DskObject base_instance;
 };
-DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -195,7 +195,7 @@ bool          dsk_sync_filter_process_buffer (DskSyncFilter *filter,
                                                       DskBuffer      *in,
                                                       bool     discard,
                                                       DskError      **error);
-DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error);
 
@@ -243,7 +243,7 @@ extern const DskOctetStreamClass dsk_octet_stream_class;
 extern const DskOctetConnectionClass dsk_octet_connection_class;
 extern const DskSyncFilterClass dsk_sync_filter_class;
 
-DSK_INLINE_FUNC DskIOResult dsk_octet_source_read (void         *octet_source,
+DSK_INLINE DskIOResult dsk_octet_source_read (void         *octet_source,
                                            unsigned      max_len,
                                            void         *data_out,
                                            unsigned     *n_read_out,
@@ -252,20 +252,20 @@ DSK_INLINE_FUNC DskIOResult dsk_octet_source_read (void         *octet_source,
   DskOctetSourceClass *c = DSK_OCTET_SOURCE_GET_CLASS (octet_source);
   return c->read (octet_source, max_len, data_out, n_read_out, error);
 }
-DSK_INLINE_FUNC DskIOResult dsk_octet_source_read_buffer (void           *octet_source,
+DSK_INLINE DskIOResult dsk_octet_source_read_buffer (void           *octet_source,
                                                   DskBuffer      *read_buffer,
                                                   DskError      **error)
 {
   DskOctetSourceClass *c = DSK_OCTET_SOURCE_GET_CLASS (octet_source);
   return c->read_buffer (octet_source, read_buffer, error);
 }
-DSK_INLINE_FUNC void dsk_octet_source_shutdown (void           *octet_source)
+DSK_INLINE void dsk_octet_source_shutdown (void           *octet_source)
 {
   DskOctetSourceClass *c = DSK_OCTET_SOURCE_GET_CLASS (octet_source);
   if (c->shutdown != NULL)
     c->shutdown (octet_source);
 }
-DSK_INLINE_FUNC void dsk_octet_source_detach     (DskOctetSource *source)
+DSK_INLINE void dsk_octet_source_detach     (DskOctetSource *source)
 {
   if (source->stream)
     {
@@ -275,7 +275,7 @@ DSK_INLINE_FUNC void dsk_octet_source_detach     (DskOctetSource *source)
       dsk_object_unref (stream);
     }
 }
-DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write (void           *octet_sink,
+DSK_INLINE DskIOResult dsk_octet_sink_write (void           *octet_sink,
                                                   unsigned        max_len,
                                                   const void     *data,
                                                   unsigned       *n_written_out,
@@ -284,20 +284,20 @@ DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write (void           *octet_sink,
   DskOctetSinkClass *c = DSK_OCTET_SINK_GET_CLASS (octet_sink);
   return c->write (octet_sink, max_len, data, n_written_out, error);
 }
-DSK_INLINE_FUNC DskIOResult dsk_octet_sink_write_buffer  (void           *octet_sink,
+DSK_INLINE DskIOResult dsk_octet_sink_write_buffer  (void           *octet_sink,
                                                   DskBuffer      *write_buffer,
                                                   DskError      **error)
 {
   DskOctetSinkClass *c = DSK_OCTET_SINK_GET_CLASS (octet_sink);
   return c->write_buffer (octet_sink, write_buffer, error);
 }
-DSK_INLINE_FUNC void dsk_octet_sink_shutdown     (void           *octet_sink)
+DSK_INLINE void dsk_octet_sink_shutdown     (void           *octet_sink)
 {
   DskOctetSinkClass *c = DSK_OCTET_SINK_GET_CLASS (octet_sink);
   if (c->shutdown != NULL)
     c->shutdown (octet_sink);
 }
-DSK_INLINE_FUNC void dsk_octet_sink_detach     (DskOctetSink *sink)
+DSK_INLINE void dsk_octet_sink_detach     (DskOctetSink *sink)
 {
   if (sink->stream)
     {
@@ -307,13 +307,13 @@ DSK_INLINE_FUNC void dsk_octet_sink_detach     (DskOctetSink *sink)
       dsk_object_unref (stream);
     }
 }
-DSK_INLINE_FUNC void dsk_octet_connect       (DskOctetSource *source,
+DSK_INLINE void dsk_octet_connect       (DskOctetSource *source,
                                               DskOctetSink   *sink,
                                               DskOctetConnectionOptions *opt)
 {
   dsk_object_unref (dsk_octet_connection_new (source, sink, opt));
 }
-DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_process (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       unsigned        in_length,
                                                       const uint8_t  *in_data,
@@ -323,7 +323,7 @@ DSK_INLINE_FUNC bool dsk_sync_filter_process (DskSyncFilter *filter,
   return c->process (filter, out, in_length, in_data, error);
 }
 
-DSK_INLINE_FUNC bool dsk_sync_filter_finish  (DskSyncFilter *filter,
+DSK_INLINE bool dsk_sync_filter_finish  (DskSyncFilter *filter,
                                                       DskBuffer      *out,
                                                       DskError      **error)
 {

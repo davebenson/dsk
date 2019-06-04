@@ -16,7 +16,7 @@ bool dsk_utf8_decode_unichar (unsigned    buf_len,
                                      unsigned   *bytes_used_out,
                                      uint32_t   *unicode_value_out);
 
-DSK_INLINE_FUNC int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte);
+DSK_INLINE int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte);
 
 typedef enum
 {
@@ -37,7 +37,7 @@ DskUtf8ValidationResult
 
 
 
-DSK_INLINE_FUNC int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte)
+DSK_INLINE int8_t      dsk_utf8_n_bytes_from_initial (uint8_t initial_byte)
 {
   return DSK_UTF8_LENGTH_FROM_INIT_BYTE_DIV_8_STR[initial_byte/8];
 }

@@ -385,14 +385,14 @@ struct DskTlsHandshake
 };
 
 // type==SERVER_HELLO && !is_retry_request
-DSK_INLINE_FUNC bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake);
+DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake);
 
 // type==SERVER_HELLO && is_retry_request
 //
 // However, in the future,
 // this may return true if a new HandshakeType==HELLO_RETRY_REQUEST
 // (which is reserved) is created.
-DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake);
+DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake);
 
 
 /* --- Parsing --- */
@@ -436,13 +436,13 @@ void dsk_tls_handshake_to_buffer (const DskTlsHandshake *handshake,
                                   DskBuffer *out);
 
 
-DSK_INLINE_FUNC bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake)
+DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake)
 {
   return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
       && !handshake->server_hello.is_retry_request;
 }
 
-DSK_INLINE_FUNC bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake)
+DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake)
 {
   return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
       && handshake->server_hello.is_retry_request;

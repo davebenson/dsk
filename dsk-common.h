@@ -64,9 +64,9 @@ typedef enum
 
 // C99 inline handling
 #if DSK_IMPLEMENT_INLINES
-#  define DSK_INLINE_FUNC extern inline
+#  define DSK_INLINE extern inline
 #else
-#  define DSK_INLINE_FUNC inline
+#  define DSK_INLINE inline
 #endif
 #define _dsk_inline_assert(condition)  dsk_assert(condition)
 

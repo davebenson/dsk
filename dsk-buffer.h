@@ -55,12 +55,12 @@ void     dsk_buffer_append              (DskBuffer    *buffer,
                                          unsigned      length,
                                          const void   *data);
 
-DSK_INLINE_FUNC void dsk_buffer_append_small(DskBuffer    *buffer, 
+DSK_INLINE void dsk_buffer_append_small(DskBuffer    *buffer, 
                                          unsigned      length,
                                          const void   *data);
 void     dsk_buffer_append_string       (DskBuffer    *buffer, 
                                          const char   *string);
-DSK_INLINE_FUNC void dsk_buffer_append_byte(DskBuffer    *buffer, 
+DSK_INLINE void dsk_buffer_append_byte(DskBuffer    *buffer, 
                                          uint8_t       byte);
 void      dsk_buffer_append_byte_f      (DskBuffer    *buffer, 
                                          uint8_t       byte);
@@ -199,7 +199,7 @@ void dsk_buffer_fragment_free (DskBufferFragment *fragment);
 // Inline Functions
 //
 
-DSK_INLINE_FUNC void dsk_buffer_append_small(DskBuffer    *buffer, 
+DSK_INLINE void dsk_buffer_append_small(DskBuffer    *buffer, 
                                          unsigned      length,
                                          const void   *data)
 {
@@ -218,7 +218,7 @@ DSK_INLINE_FUNC void dsk_buffer_append_small(DskBuffer    *buffer,
   else
     dsk_buffer_append (buffer, length, data);
 }
-DSK_INLINE_FUNC void dsk_buffer_append_byte(DskBuffer    *buffer, 
+DSK_INLINE void dsk_buffer_append_byte(DskBuffer    *buffer, 
                                             uint8_t       byte)
 {
   DskBufferFragment *f = buffer->last_frag;

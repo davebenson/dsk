@@ -20,12 +20,6 @@
 /* Shorthands for using the default DskDispatch. */
 #include "dsk-main.h"
 
-/* Base-class for the object system. */
-#include "dsk-object.h"
-
-/* Base-class for the error system. */
-#include "dsk-error.h"
-
 /* DskMemPoolFixed is for a pool of fixed-length allocations that can
    be allocated and freed (which means returning them to a free-list
    that will be returned at next alloc.)
@@ -33,6 +27,12 @@
    DskMemPool is a alloc-only pool that can be freed all-at-once,
    which is a typical situation at the end of a function impl. */
 #include "dsk-mem-pool.h"
+
+/* Base-class for the object system. */
+#include "dsk-object.h"
+
+/* Base-class for the error system. */
+#include "dsk-error.h"
 
 /* DskHook is a lightweight notification system. */
 #include "dsk-hook.h"

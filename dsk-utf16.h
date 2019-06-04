@@ -4,11 +4,11 @@
 #define DSK_UTF16_LO_SURROGATE_START    0xdc00
 #define DSK_UTF16_LO_SURROGATE_END      (0xdc00 + 1023)
 
-DSK_INLINE_FUNC void dsk_utf16_to_surrogate_pair (uint32_t  unicode,
+DSK_INLINE void dsk_utf16_to_surrogate_pair (uint32_t  unicode,
                                                   uint16_t *pair_out);
 
 
-DSK_INLINE_FUNC void
+DSK_INLINE void
 dsk_utf16_to_surrogate_pair (uint32_t  unicode,
                              uint16_t *pair_out)
 {
@@ -19,7 +19,7 @@ dsk_utf16_to_surrogate_pair (uint32_t  unicode,
   pair_out[1] = DSK_UTF16_LO_SURROGATE_START
               + (unicode & 0x3ff);
 }
-DSK_INLINE_FUNC uint32_t
+DSK_INLINE uint32_t
 dsk_utf16_surrogate_pair_to_codepoint (uint16_t surrogate_a,
                                        uint16_t surrogate_b)
 {
