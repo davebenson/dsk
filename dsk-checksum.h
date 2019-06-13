@@ -1,6 +1,21 @@
 
 typedef struct DskChecksum DskChecksum;
 typedef struct DskChecksumType DskChecksumType;
+
+// Direct use of DskChecksumType is recommended
+// for performance-critical code.
+//
+// To use it, allocate an aligned block B of size DskChecksumType.instance_size.
+// Call checksum_type->init(B).
+// Feed it data incrementally using checksum_type->feed(B, length, data).
+//
+// Checksum "instances" (the thing initialized by init)
+// must have several properties:
+//   * it must be of size instance_size and aligned per instance_alignment
+//   * they are movable (ie you can replace "init" with
+//     a memcpy of a valid instance (of the same type, of course)).
+//   * they have no destructor - they must not do memory allocation, etc
+//
 struct DskChecksumType
 {
   const char *name;
@@ -26,7 +41,7 @@ extern DskChecksumType dsk_checksum_type_sha512;
 
 extern DskChecksumType dsk_checksum_type_crc32;      // always big-endian(!)
 
-/* --- public interface --- */
+/* --- easy-to-interface which is performant enough for most users --- */
 DskChecksum   *dsk_checksum_new        (DskChecksumType *type);
 void           dsk_checksum_destroy    (DskChecksum    *checksum);
 
@@ -42,6 +57,7 @@ void           dsk_checksum_get        (DskChecksum    *checksum,
 void           dsk_checksum_get_hex    (DskChecksum    *checksum,
                                         char           *hex_out);
 
+// Return the result of calling done+get without altering the csum state.
 void           dsk_checksum_get_current (DskChecksum *csum,
                                         uint8_t        *data_out);
 
@@ -58,3 +74,5 @@ void           dsk_checksum            (DskChecksumType*type,
  * This is used for computing HMACs (see RFC 2104, RFC 4868).
  */
 unsigned       dsk_checksum_type_get_block_size (DskChecksumType type);
+
+DskChecksumType *dsk_checksum_type_by_name (const char *str);

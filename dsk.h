@@ -40,6 +40,9 @@
 /* DskBuffer: Binary-Data queue. */
 #include "dsk-buffer.h"
 
+/* DskFlatBuffer: Binary-Data queue implemented with a single buffer. */
+#include "dsk-flat-buffer.h"
+
 /* Input/output stream halves. */
 #include "dsk-stream.h"
 #include "dsk-sync-filter.h"

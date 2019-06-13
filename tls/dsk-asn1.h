@@ -1,3 +1,10 @@
+//
+// ASN.1 is a much-hated serialization format
+// which is used by X509 Certificates,
+// which is why DSK includes an implementation of it.
+//
+
+//
 // For a quick-start overview, which includes a fairly full example
 // with x509 certs:
 //
@@ -21,8 +28,31 @@
 // that would probably explain the quirks.
 //
 //     http://www.oss.com/asn1/resources/books-whitepapers-pubs/dubuisson-asn1-book.PDF
+//
 
-
+//
+//                               *** TAGS ***
+//
+// One things that is very poorly described, generally,
+// is the notion of "tags".
+// Basically, they provide a way of extending the system
+// by providing named aliases for various types.
+//
+// Tags are divided into "Tag Classes" based on their 2 highest bits.
+// The main tag-class is "Univeral" which has all the builtin types.
+//
+// "Internal Tags" do not provide type information
+// about the contained type: they expect you to look at the schema.
+// They are slightly more efficient because they don't include those bytes,
+// but they are less self-describing.
+//
+// "External Tags" do include a type (tag) prefix.
+// 
+// This library initially leaves Tags unprocessed,
+// and you can call dsk_asn1_value_expand_tag()
+// to parse the raw bytes which
+// are given by 'value_start'/'value_end'.
+//
 
 #define DSK_ASN1_TAG_CLASS_UNIVERSAL            0x00
 #define DSK_ASN1_TAG_CLASS_APPLICATION          0x40
@@ -117,12 +147,15 @@ struct DskASN1Value
       double double_value;
       bool overflowed;
 
+      // defined for all types -- whether the number is negative.
+      // but it also includes "-0" as a decimal number.
+      bool is_signed;
+
       // For REAL_TYPE_BINARY.
       uint8_t log2_base;
       uint8_t binary_scaling_factor;
       const uint8_t *exp_start;         // exp continues to num_start
       const uint8_t *num_start;         // num continues to value_end
-      bool is_signed;
 
       // For REAL_TYPE_DECIMAL
       const char *as_string;
@@ -174,8 +207,8 @@ bool           dsk_asn1_value_expand_tag(DskASN1Value   *value,
                                          bool            is_explicit,
                                          DskError      **error);
 
-void dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
-                                    DskBuffer *buffer);
+void      dsk_asn1_value_dump_to_buffer (const DskASN1Value *value,
+                                         DskBuffer *buffer);
 
 
 char * dsk_asn1_primitive_value_to_string (const DskASN1Value *value);

@@ -52,8 +52,14 @@ struct DskTlsCertificate
   DskTlsCertificateType type;
   union {
     DskTlsX509SubjectPublicKeyInfo raw_public_key;
-    DskTlsX509Certificate x509;
+    struct {
+      size_t chain_length;
+      DskTlsX509Certificate **chain;
+    } x509;
   };
+
+  size_t cert_data_length;
+  const uint8_t *cert_data;
 };
 
 /* RFC 6066. Section 8 */
@@ -107,18 +113,12 @@ struct DskTlsExtension_Heartbeat
 
 
 /* --- Application Layer Protocol Negotiation RFC 7301 --- */
-typedef struct DskTlsExtension_ProtocolName DskTlsExtension_ProtocolName;
-struct DskTlsExtension_ProtocolName
-{
-  uint8_t length;
-  char *name;
-};
-typedef struct DskTlsExtension_ApplicationLayerProtocolNegotiation DskTlsExtension_ApplicationLayerProtocolNegotiation;
-struct DskTlsExtension_ApplicationLayerProtocolNegotiation
+typedef struct DskTlsExtension_ALPN DskTlsExtension_ALPN;
+struct DskTlsExtension_ALPN
 {
   DskTlsExtensionBase base;
   uint16_t n_protocols;
-  DskTlsExtension_ProtocolName *protocols;
+  const char **protocols;
 };
 
 /* NOTE: client_certificate_type and server_certificate_type
@@ -150,8 +150,6 @@ struct DskTlsExtension_KeyShare
   // for ClientHello message
   unsigned n_key_shares;
   DskTlsKeyShareEntry *key_shares;
-  unsigned n_supported_groups;
-  DskTlsNamedGroup *supported_groups;
 
   // for HelloRetryRequest message
   DskTlsNamedGroup selected_group;
@@ -161,26 +159,20 @@ struct DskTlsExtension_KeyShare
 };
 
 /* --- Pre Shared Key Extension (RFC 8446, 4.2.11) --- */
-typedef struct DskTlsExtension_PresharedKeyIdentity DskTlsExtension_PresharedKeyIdentity;
-struct DskTlsExtension_PresharedKeyIdentity
+typedef struct DskTlsPresharedKeyIdentity DskTlsPresharedKeyIdentity;
+struct DskTlsPresharedKeyIdentity
 {
   unsigned identity_length;
   const uint8_t *identity;
   uint32_t obfuscated_ticket_age;
+  uint8_t binder_length;
+  const uint8_t *binder_data;
 };
-typedef struct DskTlsExtension_PresharedKeyBinderEntry DskTlsExtension_PresharedKeyBinderEntry;
-struct DskTlsExtension_PresharedKeyBinderEntry
-{
-  uint8_t length;
-  const uint8_t *data;
-};
-typedef struct DskTlsExtension_OfferedPresharedKeys DskTlsExtension_OfferedPresharedKeys;
-struct DskTlsExtension_OfferedPresharedKeys
+typedef struct DskTlsOfferedPresharedKeys DskTlsOfferedPresharedKeys;
+struct DskTlsOfferedPresharedKeys
 {
   unsigned n_identities;
-  DskTlsExtension_PresharedKeyIdentity *identities;
-  unsigned n_binder_entries;
-  DskTlsExtension_PresharedKeyBinderEntry *binder_entries;
+  DskTlsPresharedKeyIdentity *identities;
 };
 typedef struct DskTlsExtension_PreSharedKey DskTlsExtension_PreSharedKey;
 struct DskTlsExtension_PreSharedKey
@@ -188,7 +180,7 @@ struct DskTlsExtension_PreSharedKey
   DskTlsExtensionBase base;
 
   /* for ClientHello */
-  DskTlsExtension_OfferedPresharedKeys offered_psks;
+  DskTlsOfferedPresharedKeys offered_psks;
 
   /* for ServerHello */
   unsigned selected_identity;
@@ -292,7 +284,7 @@ typedef union {
   DskTlsExtension_SupportedVersions supported_versions;
   DskTlsExtension_SignatureAlgorithms signature_algorithms;
   DskTlsExtension_Heartbeat heartbeat;
-  DskTlsExtension_ApplicationLayerProtocolNegotiation alpn;
+  DskTlsExtension_ALPN alpn;
   DskTlsExtension_PreSharedKey pre_shared_key;
   // TODO: client_certificate_type server_certificate_type
   DskTlsExtension_Padding padding;
@@ -314,9 +306,8 @@ struct DskTlsHandshake
   DskTlsHandshakeType type;
   unsigned data_length;
   const uint8_t *data;
-  const uint8_t *transcript_hash;       /* hash of all handshakes up to this point */
   DskTlsHandshake *next;
-  bool is_outgoing;                     /* are we the sender or recipient of this message? */
+  bool is_outgoing;   /* are we the sender or recipient of this message? */
   union {
     struct {
       uint16_t legacy_version;

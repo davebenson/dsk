@@ -1,3 +1,4 @@
+typedef struct DskTlsConnection DskTlsConnection;
 typedef enum DskTlsConnectionState
 {
   DSK_TLS_CONNECTION_CLIENT_START = 0x100,
@@ -26,64 +27,37 @@ typedef enum DskTlsConnectionState
 #define DSK_TLS_CONNECTION_STATE_IS_CLIENT(st)   (((st) >> 8) == 1)
 #define DSK_TLS_CONNECTION_STATE_IS_SERVER(st)   (((st) >> 8) == 2)
 
-//
-// Information used only when handshaking.
-//
-// All memory allocated here should come out
-// of DskTlsConnectionHandshakeInfo.mem_pool.
-//
-// The final result of handshaking must be stored
-// in the DskTlsConnection since the entire handshake
-// will be freed once handshaking is complete.
-//
-typedef struct DskTlsPublicPrivateKeyShare DskTlsPublicPrivateKeyShare;
-struct DskTlsPublicPrivateKeyShare
-{
-  DskTlsKeyShareMethod *method;
-  uint8_t *private_key;
-  uint8_t *public_key;
-};
-typedef struct DskTlsConnectionHandshakeInfo DskTlsConnectionHandshakeInfo;
-struct DskTlsConnectionHandshakeInfo
-{
-  DskTlsHandshake *first_handshake;
-  DskTlsHandshake *last_handshake;
-  DskMemPool mem_pool;
-
-  const char *server_hostname;
-
-  //
-  // Only one key-share will be used in server mode;
-  // client may offer multiple key-shares,
-  // but that is probably rare.
-  //
-  unsigned n_key_shares;
-  DskTlsPublicPrivateKeyShare *key_shares;
-};
-
 typedef struct DskTlsContext DskTlsContext;
 typedef struct DskTlsConnectionClass DskTlsConnectionClass;
+typedef struct DskTlsHandshakeNegotiation DskTlsHandshakeNegotiation;
 struct DskTlsConnectionClass
 {
   DskStreamClass base_class;
 };
-typedef struct DskTlsConnection DskTlsConnection;
 struct DskTlsConnection
 {
   DskStream base_instance;
   DskStream *underlying;
   DskTlsContext *context;
-  DskTlsConnectionHandshakeInfo *handshake_info;
+
+  // This object is deleted after handshaking.
+  DskTlsHandshakeNegotiation *handshake_info;
+
+  // State-Machine State.
   DskTlsConnectionState state;
+
+  // Negotiated state.
   DskTlsProtocolVersion version;
+
+  // Incoming/Outgoing raw data, and 
   DskBuffer incoming_raw, outgoing_raw;
-  DskBuffer incoming_plaintext, outgoing_plaintext;
+  DskFlatBuffer incoming_plaintext, outgoing_plaintext;
 
-  uint8_t *incoming_message;
-  size_t incoming_record_len;
-
-  unsigned shared_key_length;
-  uint8_t *shared_key;
+  // If cipher_suite != NULL, then we send
+  // records encrypted.
+  DskTlsCipherSuite *cipher_suite;
+  void *cipher_suite_read_instance;
+  void *cipher_suite_write_instance;
 };
 
 DskTlsConnection *dsk_tls_connection_new (DskStream     *underlying,

@@ -15,7 +15,11 @@ struct DskTlsContextOptions
   const char *unsupported_groups;
 
   size_t n_certificates;
-  DskTlsCertificate *certificates;
+  DskTlsCertificate **certificates;
+
+  size_t n_application_layer_protocols;
+  const char **application_layer_protocols;
+  bool application_layer_protocol_negotiation_required;
 
   // Setup for server/client specific options.
   DskTlsServerContextOptions *server_options;

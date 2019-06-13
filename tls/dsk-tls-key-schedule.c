@@ -139,6 +139,34 @@ dsk_tls_key_schedule_compute_handshake_secrets (DskTlsKeySchedule *schedule,
                          schedule->cipher->hash_type->empty_hash,
                          schedule->handshake_derived_secret);
 
+  //
+  // Client and Server Keys and IVs.
+  //
+  dsk_tls_hkdf_expand_label(schedule->cipher->hash_type,
+                            schedule->client_handshake_traffic_secret,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            schedule->cipher->key_size,
+                            schedule->client_handshake_write_key);
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            schedule->client_handshake_traffic_secret,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            schedule->cipher->iv_size,
+                            schedule->client_handshake_write_iv);
+  dsk_tls_hkdf_expand_label(schedule->cipher->hash_type,
+                            schedule->server_handshake_traffic_secret,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            schedule->cipher->key_size,
+                            schedule->server_handshake_write_key);
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            schedule->server_handshake_traffic_secret,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            schedule->cipher->iv_size,
+                            schedule->server_handshake_write_iv);
+
   schedule->has_handshake_secrets = true;
 }
 
@@ -194,5 +222,33 @@ dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
                          10, (uint8_t *) "res master",
                          finished_hash,
                          schedule->resumption_master_secret);
+
+  //
+  // Server and Client Keys and IVs (for application traffic).
+  //
+  dsk_tls_hkdf_expand_label(schedule->cipher->hash_type,
+                            schedule->client_application_traffic_secret,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            schedule->cipher->key_size,
+                            schedule->client_application_write_key);
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            schedule->client_application_traffic_secret,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            schedule->cipher->iv_size,
+                            schedule->client_application_write_iv);
+  dsk_tls_hkdf_expand_label(schedule->cipher->hash_type,
+                            schedule->server_application_traffic_secret,
+                            3, (const uint8_t *) "key",
+                            0, NULL,
+                            schedule->cipher->key_size,
+                            schedule->server_application_write_key);
+  dsk_tls_hkdf_expand_label(&dsk_checksum_type_sha256,
+                            schedule->server_application_traffic_secret,
+                            2, (const uint8_t *) "iv",
+                            0, NULL,
+                            schedule->cipher->iv_size,
+                            schedule->server_application_write_iv);
   schedule->has_master_secrets = true;
 }

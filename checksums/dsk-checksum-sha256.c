@@ -243,6 +243,8 @@ sha256_done (SHA256_CTX *ctx,
   sha256_feed (ctx, padn, sha256_padding);
   sha256_feed (ctx, 8, msglen);
 
+  // In practice, n_words is either 7 (for SHA-224) or 8 (for SHA-256)
+  // So this could be heavily unrolled.
   for (unsigned i = 0; i < n_words; i++)
     PUT_UINT32 (ctx->state[i], hash_out,  4 * i);
 }

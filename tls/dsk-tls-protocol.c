@@ -407,17 +407,16 @@ parse_extension (DskTlsHandshake    *under_construction,
             n++;
           }
         at = ext_payload + 2;
-        DskTlsExtension_ApplicationLayerProtocolNegotiation *alpn = &ext->alpn;
+        DskTlsExtension_ALPN *alpn = &ext->alpn;
         alpn->n_protocols = n;
-        alpn->protocols = dsk_mem_pool_alloc (pool, n * sizeof (DskTlsExtension_ProtocolName));
+        alpn->protocols = dsk_mem_pool_alloc (pool, n * sizeof (char *));
         for (unsigned i = 0; i < n; i++)
           {
             unsigned name_len = *at++;
-            alpn->protocols[i].length = name_len;
             char *name = dsk_mem_pool_alloc_unaligned (pool, name_len + 1);
             memcpy (name, at, name_len);
             name[name_len] = 0;
-            alpn->protocols[i].name = name;
+            alpn->protocols[i] = name;
           }
         break;
       }
@@ -481,6 +480,15 @@ parse_extension (DskTlsHandshake    *under_construction,
           tmp_end = at + dsk_uint16be_parse (at) + 2;
           at += 2;
 
+          //
+          // Bindings and Identities are actually parallel arrays.
+          //
+          if (n_binders != n_identities)
+            {
+              *error = dsk_error_new ("malformed PreSharedKey extension: n_binders must equal n_identities");
+              return NULL;
+            }
+
           // scan bindings
           while (at < tmp_end)
             {
@@ -494,12 +502,12 @@ parse_extension (DskTlsHandshake    *under_construction,
             }
 
           // Allocate and parse identities.
-          DskTlsExtension_OfferedPresharedKeys *offered = &ext->pre_shared_key.offered_psks;
+          DskTlsOfferedPresharedKeys *offered = &ext->pre_shared_key.offered_psks;
           offered->n_identities = n_identities;
           at = ext_payload;
           tmp_end = at + dsk_uint16be_parse (at) + 2;
           at += 2;
-          offered->identities = dsk_mem_pool_alloc(pool, n_identities*sizeof(DskTlsExtension_PresharedKeyIdentity));
+          offered->identities = dsk_mem_pool_alloc(pool, n_identities*sizeof(DskTlsPresharedKeyIdentity));
           for (unsigned i = 0; i < n_identities; i++)
             {
               unsigned ilen = dsk_uint16be_parse (at);
@@ -510,14 +518,12 @@ parse_extension (DskTlsHandshake    *under_construction,
               offered->identities[i].obfuscated_ticket_age = dsk_uint32be_parse (at);
               at += 4;
             }
-          offered->n_binder_entries = n_binders;
-          offered->binder_entries = dsk_mem_pool_alloc (pool, n_binders * sizeof(DskTlsExtension_PresharedKeyBinderEntry));
           at += 2;
           for (unsigned i = 0; i < n_binders; i++)
             {
               unsigned blen = *at++;
-              offered->binder_entries[i].length = blen;
-              offered->binder_entries[i].data = at;
+              offered->identities[i].binder_length = blen;
+              offered->identities[i].binder_data = at;
               at += blen;
             }
         }

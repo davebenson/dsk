@@ -37,3 +37,5 @@ extern DskTlsCipherSuite dsk_tls_cipher_suite_aes256_gcm_sha384;
 extern DskTlsCipherSuite dsk_tls_cipher_suite_aes128_ccm_sha256;
 extern DskTlsCipherSuite dsk_tls_cipher_suite_aes128_ccm_8_sha256;
 extern DskTlsCipherSuite dsk_tls_cipher_suite_chacha20_poly1305_sha256;
+
+DskTlsCipherSuite *dsk_tls_cipher_suite_by_code (uint16_t code);
