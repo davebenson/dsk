@@ -146,7 +146,9 @@
 #include "tls/dsk-tls-key-schedule.h"
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"
+#include "tls/dsk-tls-ec-prime.h"
 #include "tls/dsk-tls-connection.h"
+#include "tls/dsk-tls-context.h"
 #include "tls/dsk-tls-oid-mappings.h"
 
 // TODO: remove!

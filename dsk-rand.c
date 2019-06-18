@@ -8,11 +8,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+DskRand *dsk_rand_new (DskRandType *type)
+{
+  DskRand *rv = dsk_malloc (sizeof(DskRandType *) + type->sizeof_instance);
+  rv->type = type;
+  return rv;
+}
 void     dsk_rand_seed_array     (DskRand* rand,
                                   size_t seed_length,
                                   const uint32_t *seed)
 {
-  DSK_RAND_GET_CLASS (rand)->seed (rand, seed_length, seed);
+  rand->type->seed (rand + 1, seed_length, seed);
 }
 
 void
@@ -134,7 +140,7 @@ uint64_t
 dsk_rand_uint64 (DskRand* rand)
 {
   uint32_t rv[2];
-  rand->generate32 (rand, 2, rv);
+  rand->type->generate32 (rand + 1, 2, rv);
   return (((uint64_t)rv[0] << 32)) | ((uint64_t)rv[1]);
 }
 
@@ -142,7 +148,7 @@ uint32_t
 dsk_rand_uint32 (DskRand* rand)
 {
   uint32_t rv[1];
-  rand->generate32 (rand, 1, rv);
+  rand->type->generate32 (rand + 1, 1, rv);
   return rv[0];
 }
 
@@ -209,19 +215,12 @@ dsk_rand_double_range (DskRand* rand, double begin, double end)
 }
 
 
-DSK_OBJECT_CLASS_DEFINE_CACHE_DATA (DskRand);
-DskRandClass dsk_rand_class =
-{
-  DSK_OBJECT_CLASS_DEFINE (DskRand, &dsk_object_class, NULL, NULL),
-  NULL,                 /* no default seed impl */
-};
-
 DskRand *dsk_rand_get_global     (void)
 {
   static DskRand *rv = NULL;
   if (rv == NULL)
     {
-      rv = dsk_rand_new_xorshift1024 ();
+      rv = dsk_rand_new (&dsk_rand_type_xorshift1024);
     }
   return rv;
 }

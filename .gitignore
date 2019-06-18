@@ -14,3 +14,4 @@ tests/test-tls-bignum
 tests/test-tls-protocol
 tests/test-strv
 tls/dsk-tls-object-ids.[ch]
+external

@@ -1,6 +1,15 @@
 #include "dsk.h"
 
-static inline uint64_t gen64 (DskRandXorshift1024 *rand)
+typedef struct Xorshift1024 Xorshift1024;
+struct Xorshift1024
+{
+  uint64_t s[16];
+  unsigned p;
+  bool has_extra;
+  uint32_t extra;
+};
+
+static inline uint64_t gen64 (Xorshift1024 *rand)
 {
   uint64_t s0 = rand->s[rand->p];
   rand->p += 1;
@@ -15,9 +24,9 @@ static inline uint64_t gen64 (DskRandXorshift1024 *rand)
 }
 
 static void
-dsk_rand_xorshift1024_generate32(DskRand *rand, size_t N, uint32_t *out)
+xorshift1024_generate32(void *instance, size_t N, uint32_t *out)
 {
-  DskRandXorshift1024 *xs = (DskRandXorshift1024 *) rand;
+  Xorshift1024 *xs = instance;
   if (N <= 0)
     return;
   if (xs->has_extra)
@@ -45,24 +54,19 @@ dsk_rand_xorshift1024_generate32(DskRand *rand, size_t N, uint32_t *out)
     xs->has_extra = 0;
 }
 static void
-dsk_rand_xorshift1024_seed(DskRand *rand, size_t N, const uint32_t *seed)
+xorshift1024_seed(void *instance, size_t N, const uint32_t *seed)
 {
-  DskRandXorshift1024 *xs = (DskRandXorshift1024 *) rand;
+  Xorshift1024 *xs = instance;
   xs->p = 0;
   xs->has_extra = false;
   dsk_rand_protected_seed_array (N, seed, 32, (uint32_t *) xs->s);
 }
 
-static void
-dsk_rand_xorshift1024_init (DskRandXorshift1024 *r)
+DskRandType
+dsk_rand_type_xorshift1024 =
 {
-  r->base_instance.generate32 = dsk_rand_xorshift1024_generate32;
-}
-#define dsk_rand_xorshift1024_finalize NULL
-DSK_RAND_SUBCLASS_DEFINE(, DskRandXorshift1024, dsk_rand_xorshift1024);
-
-DskRand *
-dsk_rand_new_xorshift1024 (void)
-{
-  return dsk_object_new (&dsk_rand_xorshift1024_class);
-}
+  "XORSHIFT 1024",
+  sizeof(Xorshift1024),
+  xorshift1024_seed,
+  xorshift1024_generate32,
+};

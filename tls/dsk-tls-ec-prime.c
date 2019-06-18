@@ -207,3 +207,46 @@ void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
   // Last bit is always high (1).
   dsk_tls_ec_prime_add (group, xans, yans, xcur, ycur, x_out, y_out);
 }
+
+bool
+dsk_tls_ec_prime_y_from_x (DskTls_ECPrime_Group *group,
+                                    const uint32_t *x,
+                                    uint32_t *y_out)
+{
+  // Compute x^3 (mod p)
+  unsigned N = group->len;
+  uint32_t *x_tmp = alloca (N * 4 * 2);
+  dsk_tls_bignum_multiply (N, x, N, x, x_tmp);
+  uint32_t *x_squared_mod_p = alloca (N * 4);
+  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_tmp,
+                                          N, group->p,
+                                          group->barrett_mu,
+                                          x_squared_mod_p);
+
+  dsk_tls_bignum_multiply (N, x, N, x_squared_mod_p, x_tmp);
+  uint32_t *x_cubed_mod_p = alloca (N * 4);
+  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_squared,
+                                          N, group->p,
+                                          group->barrett_mu,
+                                          x_cubed_mod_p);
+
+  // Compute a*x mod p.
+  dsk_tls_bignum_multiply (N, x, N, group->a, x_tmp);
+  uint32_t *ax_mod_p = alloca (N * 4);
+  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_squared,
+                                          N, group->p,
+                                          group->barrett_mu,
+                                          ax_mod_p);
+
+
+  // Compute y^2 = x^3 + a*x + b (mod p)
+  uint32_t *y_squared = alloca (N * 4);
+  uint32_t *x3_ax_mod_p = alloca (N * 4);
+  dsk_tls_bignum_modular_add (N, x_cubed_mod_p, ax_mod_p, group->p, x3_ax_mod_p);
+  dsk_tls_bignum_modular_add (N, x3_ax_mod_p, group->b, group->p, y_squared);
+
+  if (!dsk_tls_bignum_modular_sqrt (N, y_squared, group->p, y_out))
+    return false;
+  return true;
+}
+

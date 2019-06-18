@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 /* Period parameters */  
 #define N DSK_MERSENNE_TWISTER_N
 #define M 397
@@ -24,12 +23,21 @@
 #define TEMPERING_SHIFT_T(y)  (y << 15)
 #define TEMPERING_SHIFT_L(y)  (y >> 18)
 
-static void
-dsk_rand_mersenne_twister_generate32 (DskRand* rand,
-                                      size_t count,
-                                      uint32_t *out)
+#define DSK_MERSENNE_TWISTER_N 624
+typedef struct MersenneTwister MersenneTwister;
+struct MersenneTwister
 {
-  DskRandMersenneTwister *mt = (DskRandMersenneTwister *) rand;
+  uint32_t mt[DSK_MERSENNE_TWISTER_N]; /* the array for the state vector  */
+  unsigned mt_index; 
+};
+
+static void
+mersenne_twister_generate32 (void     *instance,
+                             size_t    count,
+                             uint32_t *out)
+{
+  MersenneTwister *mt = instance;
+
   static const uint32_t mag01[2]={0x0, MATRIX_A};
   /* mag01[x] = x * MATRIX_A  for x=0,1 */
   uint32_t *mt_arr = mt->mt;
@@ -73,16 +81,20 @@ dsk_rand_mersenne_twister_generate32 (DskRand* rand,
 }
 
 static void
-dsk_rand_mersenne_twister_seed (DskRand *rand,
-                                size_t count,
-                                const uint32_t *seed)
+mersenne_twister_seed (void           *instance,
+                       size_t          count,
+                       const uint32_t *seed)
 {
-  DskRandMersenneTwister *mt = (DskRandMersenneTwister *) rand;
-  rand->generate32 = dsk_rand_mersenne_twister_generate32;
+  MersenneTwister *mt = instance;
   mt->mt_index = 0;
   dsk_rand_protected_seed_array (count, seed, DSK_MERSENNE_TWISTER_N, mt->mt);
 }
 
-#define dsk_rand_mersenne_twister_init NULL
-#define dsk_rand_mersenne_twister_finalize NULL
-DSK_RAND_SUBCLASS_DEFINE(, DskRandMersenneTwister, dsk_rand_mersenne_twister);
+DskRandType
+dsk_rand_type_mersenne_twister =
+{
+  "MersenneTwister",
+  sizeof(MersenneTwister),
+  mersenne_twister_seed,
+  mersenne_twister_generate32
+};

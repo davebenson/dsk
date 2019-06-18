@@ -16,12 +16,12 @@ struct DskTlsExtensionBase
 /* RFC 6066. Section 3 */
 typedef enum
 {
-  DSK_TLS_EXTENSION_SERVER_NAME_TYPE_HOSTNAME = 0
-} DskTlsExtensionServerNameType;
-typedef struct DskTlsExtension_ServerNameList_Entry DskTlsExtension_ServerNameList_Entry;
-struct DskTlsExtension_ServerNameList_Entry
+  DSK_TLS_SERVER_NAME_TYPE_HOSTNAME = 0
+} DskTlsServerNameType;
+typedef struct DskTlsServerNameListEntry DskTlsServerNameListEntry;
+struct DskTlsServerNameListEntry
 {
-  DskTlsExtensionServerNameType type;
+  DskTlsServerNameType type;
   unsigned name_length;
   const char *name;
 };
@@ -33,7 +33,7 @@ struct DskTlsExtension_ServerNameList
   // This will always be 0 for ServerHello messages.
   // In that case, it merely means that the server used the ServerName extension's value.
   unsigned n_entries;
-  DskTlsExtension_ServerNameList_Entry *entries;
+  DskTlsServerNameListEntry *entries;
 };
 
 /* RFC 6066. Section 4 */
@@ -186,17 +186,21 @@ struct DskTlsExtension_PreSharedKey
   unsigned selected_identity;
 };
 
-/* Pre Shared Key Exchange Modes (RFC 8446, 4.???) */
+/* Pre-Shared-Key Exchange Modes (RFC 8446, 4.???) */
 typedef enum {
-  DSK_TLS_EXTENSION_PSK_EXCHANGE_MODE_KE = 0,
-  DSK_TLS_EXTENSION_PSK_EXCHANGE_MODE_DHE_KE = 1,
-} DskTlsExtension_PSKKeyExchangeMode;
+  // Use the PSK without KeyShare (less roundtrips)
+  DSK_TLS_PSK_EXCHANGE_MODE_KE = 0,
+
+  // Use the PSK with KeyShare (more secure)
+  DSK_TLS_PSK_EXCHANGE_MODE_DHE_KE = 1,
+} DskTlsPSKKeyExchangeMode;
+
 typedef struct DskTlsExtension_PSKKeyExchangeModes DskTlsExtension_PSKKeyExchangeModes;
 struct DskTlsExtension_PSKKeyExchangeModes
 {
   DskTlsExtensionBase base;
   unsigned n_modes;
-  DskTlsExtension_PSKKeyExchangeMode *modes;
+  DskTlsPSKKeyExchangeMode *modes;
 };
 
 /* --- Early Data Indication (RFC 8446, 4.???) --- */
@@ -300,13 +304,23 @@ typedef struct {
   DskTlsExtension **extensions;
 } DskTlsCertificateEntry;
 
-typedef struct DskTlsHandshake DskTlsHandshake;
-struct DskTlsHandshake
+
+//
+// This structure is designed to map to
+// what PDF 8446 calls "Handshake".
+//
+// But we use DskTlsHandshake to refer to the
+// whole sequence of message-flights,
+// and call the RFC8446/Handshake HandshakeMessage,
+// which seems more accurate.
+// 
+typedef struct DskTlsHandshakeMessage DskTlsHandshakeMessage;
+struct DskTlsHandshakeMessage
 {
-  DskTlsHandshakeType type;
+  DskTlsHandshakeMessageType type;
   unsigned data_length;
   const uint8_t *data;
-  DskTlsHandshake *next;
+  DskTlsHandshakeMessage *next;
   bool is_outgoing;   /* are we the sender or recipient of this message? */
   union {
     struct {
@@ -376,14 +390,14 @@ struct DskTlsHandshake
 };
 
 // type==SERVER_HELLO && !is_retry_request
-DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake);
+DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshakeMessage *handshake);
 
 // type==SERVER_HELLO && is_retry_request
 //
 // However, in the future,
 // this may return true if a new HandshakeType==HELLO_RETRY_REQUEST
 // (which is reserved) is created.
-DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake);
+DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshakeMessage *handshake);
 
 
 /* --- Parsing --- */
@@ -394,7 +408,7 @@ DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *hands
 //
 // In order to do this you'll have to pre-frame the handshake,
 // which is why we take these inputs.
-DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
+DskTlsHandshakeMessage *dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
                                            unsigned            len,
                                            const uint8_t      *data,
                                            DskMemPool         *pool,
@@ -423,19 +437,19 @@ DskTlsRecordHeaderParseResult dsk_tls_parse_record_header (DskBuffer *buffer);
 
 
 /* --- Serializing --- */
-void dsk_tls_handshake_to_buffer (const DskTlsHandshake *handshake,
+void dsk_tls_handshake_to_buffer (const DskTlsHandshakeMessage *handshake,
                                   DskBuffer *out);
 
 
-DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshake *handshake)
+DSK_INLINE bool dsk_tls_handshake_is_server_hello (DskTlsHandshakeMessage *handshake)
 {
-  return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+  return handshake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO
       && !handshake->server_hello.is_retry_request;
 }
 
-DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshake *handshake)
+DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshakeMessage *handshake)
 {
-  return handshake->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
+  return handshake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO
       && handshake->server_hello.is_retry_request;
 }
 

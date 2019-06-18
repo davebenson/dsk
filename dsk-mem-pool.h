@@ -26,6 +26,9 @@ DSK_INLINE void    *dsk_mem_pool_alloc_unaligned(DskMemPool *pool,
                                            size_t          size);
            char    *dsk_mem_pool_strdup   (DskMemPool      *pool,
                                            const char      *str);
+           uint8_t *dsk_mem_pool_memdup   (DskMemPool      *pool,
+                                           size_t           size,
+                                           const uint8_t   *src);
            char    *dsk_mem_pool_strcut   (DskMemPool      *pool,
                                            const char      *start,
                                            const char      *past_end);

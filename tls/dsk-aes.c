@@ -77,6 +77,10 @@ static inline uint8_t xtime(uint8_t x)
     (arr)[2], (arr)[6], (arr)[10], (arr)[14], \
     (arr)[3], (arr)[7], (arr)[11], (arr)[15]);
 
+
+//
+// This function is hard-coded into dsk_aes{128,192,224,256}_init().
+//
 #if 0
 /* Figure 11, from FIPS 197. */
 static void

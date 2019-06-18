@@ -149,7 +149,7 @@ typedef struct HandshakeParseResult
 {
   ParseResultCode code;
   union {
-    DskTlsHandshake *handshake;      // if code==PARSE_RESULT_CODE_OK
+    DskTlsHandshakeMessage *handshake;      // if code==PARSE_RESULT_CODE_OK
     DskError *error;                 // if code==PARSE_RESULT_CODE_ERROR
   };
 } HandshakeParseResult;
@@ -176,7 +176,7 @@ count_extensions (const uint8_t *at,
 
 
 static DskTlsExtension *
-parse_extension (DskTlsHandshake    *under_construction,
+parse_extension (DskTlsHandshakeMessage    *under_construction,
                  DskTlsExtensionType type,
                  unsigned            ext_payload_len,
                  const uint8_t      *ext_payload,
@@ -214,8 +214,8 @@ parse_extension (DskTlsHandshake    *under_construction,
         //    } ServerNameList;
         //
         // extension_data is a ServerNameList.
-        if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO
-         || under_construction->type == DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS)
+        if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO
+         || under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS)
           {
             if (at != end)
               {
@@ -263,9 +263,9 @@ parse_extension (DskTlsHandshake    *under_construction,
             n_names++;
           }
         ext->server_name.n_entries = n_names;
-        DskTlsExtension_ServerNameList_Entry *entries;
+        DskTlsServerNameListEntry *entries;
         entries = dsk_mem_pool_alloc (pool,
-                n_names * sizeof (DskTlsExtension_ServerNameList_Entry));
+                n_names * sizeof (DskTlsServerNameListEntry));
         ext->server_name.entries = entries;
         at = names_start;
         for (unsigned i = 0; i < n_names; i++)
@@ -331,7 +331,7 @@ parse_extension (DskTlsHandshake    *under_construction,
       return ext;
 
     case DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS:
-      if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO)
+      if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO)
         {
 	  if (ext_payload_len < 2)
 	    {
@@ -448,7 +448,7 @@ parse_extension (DskTlsHandshake    *under_construction,
      //  } PreSharedKeyExtension;
 
     case DSK_TLS_EXTENSION_TYPE_PRE_SHARED_KEY:
-      if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO)
+      if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO)
         {
           unsigned n_identities = 0, n_binders = 0;
           const uint8_t *at = ext_payload;
@@ -527,7 +527,7 @@ parse_extension (DskTlsHandshake    *under_construction,
               at += blen;
             }
         }
-      else if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO)
+      else if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO)
         {
           if (ext_payload_len != 2)
             {
@@ -546,7 +546,7 @@ parse_extension (DskTlsHandshake    *under_construction,
     case DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS:
       switch (under_construction->type)
         {
-          case DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO:
+          case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO:
             if (ext_payload_len < 3)
               {
                 *error = dsk_error_new ("too short in SupportedVersions extension");
@@ -564,7 +564,7 @@ parse_extension (DskTlsHandshake    *under_construction,
             for (unsigned i = 0; i < n_versions; i++)
               ext->supported_versions.supported_versions[i] = dsk_uint16be_parse (ext_payload + 1 + 2 * i);
             break;
-          case DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO:
+          case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO:
             if (ext_payload_len != 2)
               {
                 *error = dsk_error_new ("malformed SupportedVersions extension in ServerHello");
@@ -587,7 +587,7 @@ parse_extension (DskTlsHandshake    *under_construction,
     //TODO:case DSK_TLS_EXTENSION_TYPE_POST_HANDSHAKE_AUTH:
     //TODO:case DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS_CERT:
     case DSK_TLS_EXTENSION_TYPE_KEY_SHARE:
-      if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO)
+      if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO)
         {
           if (ext_payload_len < 4)
             {
@@ -638,7 +638,7 @@ parse_extension (DskTlsHandshake    *under_construction,
             }
           ext->key_share.selected_group = dsk_uint16be_parse (ext_payload);
         }
-      else if (under_construction->type == DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO)
+      else if (under_construction->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO)
         {
           if (ext_payload_len < 4)
             {
@@ -665,7 +665,7 @@ parse_extension (DskTlsHandshake    *under_construction,
 }
 
 static bool
-parse_length_prefixed_extensions (DskTlsHandshake *under_construction,
+parse_length_prefixed_extensions (DskTlsHandshakeMessage *under_construction,
                                   const uint8_t **at_inout,
                                   const uint8_t *end,
                                   unsigned *n_extensions_out,
@@ -714,19 +714,19 @@ parse_length_prefixed_extensions (DskTlsHandshake *under_construction,
   return true;
 }
 
-DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
+DskTlsHandshakeMessage *dsk_tls_handshake_parse  (DskTlsHandshakeMessageType type,
                                            unsigned            len,
                                            const uint8_t      *data,
                                            DskMemPool         *pool,
                                            DskError          **error)
 {
-  DskTlsHandshake *rv;
+  DskTlsHandshakeMessage *rv;
   if (len < 1)
     {
       *error = dsk_error_new ("too short- 0 length handshake");
       return NULL;
     }
-  rv = dsk_mem_pool_alloc (pool, sizeof (DskTlsHandshake));
+  rv = dsk_mem_pool_alloc (pool, sizeof (DskTlsHandshakeMessage));
   rv->type = type;
   rv->data_length = len;
   rv->data = data;
@@ -736,7 +736,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
 
   switch (rv->type)
   {
-  case DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO:
     {
       if (at + 35 > end)
         {
@@ -834,7 +834,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         return NULL;
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO:
     {
       if (at + 35 > end)
         {
@@ -906,7 +906,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         return NULL;
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS:
     {
       if (!parse_length_prefixed_extensions (rv,
                                              &at, end,
@@ -917,7 +917,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         return NULL;
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE:
     {
       if (at + 6 > end)
         {
@@ -1005,7 +1005,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_VERIFY:
     {
       if (at + 4 > end)
         {
@@ -1028,7 +1028,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       return rv;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_FINISHED:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED:
     {
       // recipient must verify verify_data_length==hash-length
       rv->finished.verify_data_length = end - at;
@@ -1036,7 +1036,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
       return rv;
     }
 
-  case DSK_TLS_HANDSHAKE_TYPE_NEW_SESSION_TICKET:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_NEW_SESSION_TICKET:
     {
       //UNTESTED
       if (at + 13 > end)
@@ -1069,7 +1069,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         return NULL;
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_END_OF_EARLY_DATA:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_END_OF_EARLY_DATA:
     {
       if (at != end)
         {
@@ -1078,7 +1078,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       break;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_REQUEST:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_REQUEST:
     {
       if (at + 3 > end)
         {
@@ -1103,7 +1103,7 @@ DskTlsHandshake *dsk_tls_handshake_parse  (DskTlsHandshakeType type,
         }
       return rv;
     }
-  case DSK_TLS_HANDSHAKE_TYPE_KEY_UPDATE:
+  case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE:
     if (at + 1 != end)
       {
         *error = dsk_error_new ("KeyUpdate message must be a single byte");

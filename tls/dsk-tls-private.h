@@ -12,6 +12,12 @@ struct DskTlsContext
 
   size_t n_certificates;
   DskTlsCertificate **certificates;
+
+  DskTlsClientFindPSKsFunc client_find_psks;
+  void * client_find_psks_data;
+
+  DskTlsServerSelectPSKFunc server_select_psk;
+  void * server_select_psk_data;
 };
 
 
@@ -34,8 +40,8 @@ struct DskTlsPublicPrivateKeyShare
 };
 struct DskTlsHandshakeNegotiation
 {
-  DskTlsHandshake *first_handshake;
-  DskTlsHandshake *last_handshake;
+  DskTlsHandshakeMessage *first_handshake;
+  DskTlsHandshakeMessage *last_handshake;
   DskMemPool mem_pool;
   DskTlsConnection *conn;
 
@@ -65,10 +71,15 @@ struct DskTlsHandshakeNegotiation
   DskTlsKeySchedule *key_schedule;
   uint8_t *shared_key;
 
+  // PSKs shared, if client.
+  unsigned n_psks;
+  DskTlsPresharedKeyInfo *psks;
+
   // Was a Pre-Shared Key successfully negotiated?
   // The other fields should only be used of has_psk is true.
+  const DskTlsOfferedPresharedKeys *offered_psks;
   bool has_psk;
-  DskTlsExtension_PSKKeyExchangeMode psk_key_exchange_mode;
+  DskTlsPSKKeyExchangeMode psk_key_exchange_mode;
   const DskTlsPresharedKeyIdentity *psk_identity;
   int psk_index; // index in PreSharedKey extension of ClientHello
 
@@ -77,10 +88,10 @@ struct DskTlsHandshakeNegotiation
   //
   // Used transiently to handle handshakes.
   //
-  DskTlsHandshake  *received_handshake;
+  DskTlsHandshakeMessage  *received_handshake;
 
   // Handshake currently begin constructed.
-  DskTlsHandshake  *currently_under_construction;
+  DskTlsHandshakeMessage  *currently_under_construction;
   unsigned          n_extensions;
   DskTlsExtension **extensions;
   unsigned          max_extensions;
@@ -88,11 +99,17 @@ struct DskTlsHandshakeNegotiation
   DskTlsExtension_KeyShare *keyshare_response;
 
   // Handshakes as they are available.
-  DskTlsHandshake  *client_hello;
-  DskTlsHandshake  *server_hello;
-  DskTlsHandshake  *certificate;
+  DskTlsHandshakeMessage  *client_hello;
+  DskTlsHandshakeMessage  *server_hello;
+  DskTlsHandshakeMessage  *certificate;
   DskTlsSignatureScheme certificate_scheme;
 };
+
+bool dsk_tls_handshake_serialize (DskTlsHandshakeNegotiation *hs_info,
+                                  DskTlsHandshakeMessage     *message,
+                                  DskError                  **error);
+void dsk_tls_record_layer_send_handshake (DskTlsHandshakeNegotiation *hs_info,
+                                          unsigned msg_len, const uint8_t *msg_data);
 
 
 void dsk_tls_connection_fail (DskTlsConnection *connection,
