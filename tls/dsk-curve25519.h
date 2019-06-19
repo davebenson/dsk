@@ -1,6 +1,6 @@
 /*
  * Library for generating public/private/shared keys
- * for use with Dixie-Hellman Key Exchange.
+ * for use with Diffie-Hellman Key Exchange.
  *
  * The original work was done by Dan Bernstein here: http://cr.yp.to/ecdh.html
  *

@@ -888,6 +888,7 @@ maybe_calculate_key_share (DskTlsHandshakeNegotiation *hs_info,
         generate_key_pair (hs_info, method);
 
         // compute shared secret.
+        hs_info->shared_key_length = method->shared_key_bytes;
         hs_info->shared_key = dsk_mem_pool_alloc (&hs_info->mem_pool,
                                                   method->shared_key_bytes);
         method->make_shared_key (method,
@@ -1219,6 +1220,7 @@ send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   DskTlsConnection *conn = hs_info->conn;
   DskMemPool *pool = &hs_info->mem_pool;
   DskChecksumType *hash_type = conn->cipher_suite->hash_type;
+  DskTlsKeySchedule *key_schedule = hs_info->key_schedule;
   void *th_instance;
   if (hs_info->sent_hello_retry_request)
     {
@@ -1247,45 +1249,51 @@ send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   uint8_t *client_hello_transcript_hash = alloca (hash_type->hash_size);
   hash_type->end (instance_copy, client_hello_transcript_hash);
 
-  dsk_tls_key_schedule_compute_early_secrets (handshake_info->key_schedule,
+  size_t psk_size = 0;
+  const uint8_t *psk = NULL;
+  if (hs_info->has_psk)
+    {
+      psk_size = hs_info->psk_identity->identity_length;
+      psk = hs_info->psk_identity->identity;
+    }
+  dsk_tls_key_schedule_compute_early_secrets (key_schedule,
                                               false,    // externally shared
-                                              client_hello_transcript_hash
-                                              psk);
+                                              client_hello_transcript_hash,
+                                              psk_size, psk);
 
-  server_hello = dsk_mem_pool_alloc (pool, sizeof (DskTlsHandshakeMessage));
+  DskTlsHandshakeMessage *server_hello;
+  server_hello = create_handshake (hs_info, DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO, 16);
   hs_info->server_hello = server_hello;
-  ... send server-hello
-  server_hello->server_hello.legacy_version = shake->client_hello.legacy_version;
+  //... send server-hello
+  server_hello->server_hello.legacy_version = hs_info->client_hello->client_hello.legacy_version;
   memcpy (server_hello->server_hello.random,
-          shake->client_hello.random,
+          hs_info->client_hello->client_hello.random,
           32);
   server_hello->server_hello.legacy_session_id_echo_length
-    = shake->client_hello.legacy_session_id_length;
+    = hs_info->client_hello->client_hello.legacy_session_id_length;
   server_hello->server_hello.legacy_session_id_echo
-    = shake->client_hello.legacy_session_id;
+    = hs_info->client_hello->client_hello.legacy_session_id;
   server_hello->server_hello.cipher_suite
     = conn->cipher_suite->code;
   server_hello->server_hello.compression_method = 0;
-  server_hello->server_hello.n_extensions
-    = ...
-  server_hello->server_hello.extensions
-    = ...
   server_hello->server_hello.is_retry_request = false;
-  dsk_tls_handshake_serialize (server_hello, pool);
+  if (!dsk_tls_handshake_serialize (hs_info, server_hello, error))
+    return false;
+  dsk_tls_record_layer_send_handshake (hs_info, server_hello->data_length, server_hello->data);
 
-  hash_type->feed (handshake_info->transcript_hash_instance,
-                   server_hello_shake->data_length,
-                   server_hello_shake->data);
-  uint8_t *server_hello_transcript_hash = alloca (hash_type->size);
+  hash_type->feed (hs_info->transcript_hash_instance,
+                   server_hello->data_length,
+                   server_hello->data);
+  uint8_t *server_hello_transcript_hash = alloca (hash_type->hash_size);
   memcpy(instance_copy,
-         handshake_info->transcript_hash_instance,
+         hs_info->transcript_hash_instance,
          hash_type->instance_size);
-  hash_type->finish (instance_copy, server_hello_transcript_hash);
+  hash_type->end (instance_copy, server_hello_transcript_hash);
 
-  dsk_tls_key_schedule_compute_handshake_secrets (conn->handshake_info->key_schedule,
+  dsk_tls_key_schedule_compute_handshake_secrets (key_schedule,
                                                   server_hello_transcript_hash,
-                                                  key_shared_data_length,
-                                                  key_shared_data);
+                                                  hs_info->shared_key_length,
+                                                  hs_info->shared_key);
 
 
   // set decryptor, encryptor
@@ -1294,8 +1302,20 @@ send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   conn->cipher_suite->init (conn->cipher_suite_write_instance,
                             key_schedule->server_handshake_write_key);
 
-  ... send_handshake encrypted_extensions
-  ... optional send_handshake CertificateRequest
+  // send_handshake encrypted_extensions
+  DskTlsHandshakeMessage *ee = create_handshake (hs_info, DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS, 0);
+  ee->encrypted_extensions.n_extensions = 0;
+  ee->encrypted_extensions.extensions = NULL;
+  if (!dsk_tls_handshake_serialize (hs_info, ee, error))
+    return false;
+  dsk_tls_record_layer_send_handshake (hs_info, ee->data_length, ee->data);
+
+  // Optional:  send_handshake CertificateRequest.
+  if (...)
+    {
+      ...
+    }
+
   ... send_handshake (conn, cert_hs);
   ... send_handshake (conn, cert_verify_hs);
 }
@@ -1484,6 +1504,48 @@ handle_new_session_ticket  (DskTlsConnection *conn,
     }
   ...
 }
+static bool
+handle_end_of_early_data   (DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
+static bool
+handle_encrypted_extensions(DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
+static bool
+handle_certificate         (DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
+static bool
+handle_certificate_request (DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
+static bool
+handle_certificate_verify  (DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
+static bool
+handle_finished            (DskTlsConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  ...
+}
 
 
 static bool
@@ -1513,8 +1575,9 @@ handle_handshake_message (DskTlsConnection *conn,
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_VERIFY:
       return handle_certificate_verify (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED:
-      return handle_certificate_finished (conn, shake, error);
+      return handle_finished (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE:
+      *error = ...
       return handle_certificate_key_update (conn, shake, error);
     default:
       assert(0);
@@ -1522,8 +1585,7 @@ handle_handshake_message (DskTlsConnection *conn,
   return true;
 }
 
-static bool
-handle_underlying_readable (DskStream *underlying,
+static bool handle_underlying_readable (DskStream *underlying,
                             DskTlsConnection *conn)
 {
   RecordHeaderParseResult header_result;

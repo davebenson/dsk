@@ -714,11 +714,12 @@ parse_length_prefixed_extensions (DskTlsHandshakeMessage *under_construction,
   return true;
 }
 
-DskTlsHandshakeMessage *dsk_tls_handshake_parse  (DskTlsHandshakeMessageType type,
-                                           unsigned            len,
-                                           const uint8_t      *data,
-                                           DskMemPool         *pool,
-                                           DskError          **error)
+DskTlsHandshakeMessage *
+dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
+                                  unsigned            len,
+                                  const uint8_t      *data,
+                                  DskMemPool         *pool,
+                                  DskError          **error)
 {
   DskTlsHandshakeMessage *rv;
   if (len < 1)

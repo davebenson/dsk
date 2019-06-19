@@ -315,7 +315,7 @@ compute_j0 (size_t iv_len,
     }
   else
     {
-      // 1/32th the algorithm's s
+      // s_words := s/32 (the algorithm's s)
       //size_t s_words = (iv_len_in_words + 3) / 4 * 4 - iv_len_in_words;
       size_t iv_blocks = iv_len / 16;
       ghash_init (J0_out);

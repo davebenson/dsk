@@ -888,7 +888,7 @@ test_curve25519 (void)
 {
   uint8_t alice_private[32], alice_public[32], alice_shared[32];
   uint8_t bob_private[32], bob_public[32], bob_shared[32];
-  DskRand *rng = dsk_rand_new_xorshift1024();
+  DskRand *rng = dsk_rand_new (&dsk_rand_type_xorshift1024);
   dsk_rand_seed (rng);
   for (unsigned i = 0; i < 32; i++)
     {
@@ -1286,6 +1286,94 @@ test_chachapoly_aead (void)
   assert(memcmp (rt_plaintext, plaintext, plaintext_len) == 0);
 }
 
+static void
+test_ecprime (void)
+{
+  //
+  // Following Exercise 4.1 from 
+  //
+  //    Lawrence Washington, Elliptic Curve:  Number Theory and Cryptography, 2nd Ed,  2008.
+  //
+  //    the elliptic curve's equation is:
+  //            y^2=x^3+x+1 and p=5, and base-point=(0,1).
+  //    the book gives: 3*(0,1) == (2,1).
+  //
+  static uint32_t ex41_A[] = {1};
+  static uint32_t ex41_B[] = {1};
+  static uint32_t ex41_p[] = {5};
+  static uint32_t ex41_x[] = {0};
+  static uint32_t ex41_y[] = {1};
+  static uint32_t ex41_barrett_mu[2] = { 0x33333333, 0x33333333 };
+  static DskTls_ECPrime_Group g5 = { 1, ex41_p, ex41_barrett_mu, ex41_A, ex41_B, ex41_x, ex41_y };
+  static uint32_t k = 3;
+  ...
+}
+
+
+
+
+
+
+static void
+parse_big_decimal (const char *str, unsigned out_len, uint32_t *out)
+{
+  memset (out, 0, out_len * 4);
+  for (unsigned at = strlen (str); at--; )
+    {
+      dsk_tls_bignum_multiply_word (out_len, out, 10, out);
+      dsk_tls_bignum_add_word_inplace (out_len, out, str[at] - '0');
+    }
+}
+static void
+parse_hex_exact (const char *str, unsigned out_len, uint32_t *out)
+{
+  char hex[9];
+  for (unsigned i = 0; i < out_len; i++)
+    {
+      memcpy (hex, str + (out_len - 1 - i) * 8, 8);
+      hex[8] = 0;
+      unsigned tmp;
+      sscanf (hex, "%u", &tmp);
+      out[i] = tmp;
+    }
+}
+static void
+test_secp256r1 (void)
+{
+  static struct TestEC {
+    const char *k;
+    const char *x;
+    const char *y;
+  } tests[] = {
+    {
+      "1",
+      "6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296",
+      "4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5",
+    },
+    {
+      "2",
+      "7CF27B188D034F7E8A52380304B51AC3C08969E277F21B35A60B48FC47669978",
+      "07775510DB8ED040293D9AC69F7430DBBA7DADE63CE982299E04B79D227873D1",
+    }
+  };
+  uint32_t k[8], x[8], y[8];
+
+  for (unsigned i = 0; i < DSK_N_ELEMENTS(tests); i++)
+    {
+      uint32_t xout[8], yout[8];
+      parse_big_decimal (tests[i].k, 8, k);
+      unsigned k_len = dsk_tls_bignum_actual_len (8, k);
+      dsk_tls_ec_prime_multiply_int (&dsk_tls_ecprime_group_secp256r1,
+                                     dsk_tls_ecprime_group_secp256r1.x,
+                                     dsk_tls_ecprime_group_secp256r1.y,
+                                     k_len, k,
+                                     xout, yout);
+      parse_hex_exact (tests[i].x, 8, x);
+      parse_hex_exact (tests[i].y, 8, y);
+      assert (memcmp (x, xout, 8*4) == 0);
+      assert (memcmp (y, yout, 8*4) == 0);
+    }
+}
 
 static struct 
 {
@@ -1307,6 +1395,8 @@ static struct
   { "Poly1305 MAC Tests (from RFC 8439 2.5.2)", test_poly1305_mac },
   { "Poly1305 key-gen Tests (from RFC 8439 2.6.2)", test_poly1305_keygen },
   { "Chacha20-Poly1305 AEAD test (from RFC 8439 2.8.2)", test_chachapoly_aead },
+  { "Elliptic-Curves over F_p", test_ecprime },
+  { "SECP256R1", test_secp256r1 },
 };
 
 

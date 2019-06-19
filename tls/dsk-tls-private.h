@@ -69,6 +69,7 @@ struct DskTlsHandshakeNegotiation
 
   DskTlsCipherSuite *cipher_suite;
   DskTlsKeySchedule *key_schedule;
+  size_t shared_key_length;
   uint8_t *shared_key;
 
   // PSKs shared, if client.

@@ -76,15 +76,22 @@ void
 dsk_tls_key_schedule_compute_early_secrets (DskTlsKeySchedule *schedule,
                                             bool               externally_shared,
                                             const uint8_t     *client_hello_hash,
+                                            size_t             opt_pre_shared_key_size,
                                             const uint8_t     *opt_pre_shared_key)
 {
   unsigned hash_size = schedule->cipher->hash_size;
   uint8_t *zero_salt = alloca (hash_size);
   memset (zero_salt, 0, hash_size);
-  const uint8_t *psk = opt_pre_shared_key != NULL ? opt_pre_shared_key : zero_salt;
+  unsigned psk_size = hash_size;
+  const uint8_t *psk = zero_salt;
+  if (opt_pre_shared_key != NULL)
+    {
+      psk_size = opt_pre_shared_key_size;
+      psk = opt_pre_shared_key;
+    }
   dsk_hkdf_extract (schedule->cipher->hash_type,
                     hash_size, zero_salt,
-                    hash_size, psk,
+                    psk_size, psk,
                     schedule->early_secret);
 
   dsk_tls_derive_secret (schedule->cipher->hash_type,

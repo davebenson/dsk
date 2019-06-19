@@ -166,6 +166,21 @@ void dsk_tls_bignum_multiply_truncated (unsigned a_len,
     }
 }
 
+uint32_t dsk_tls_bignum_multiply_word        (unsigned len,
+                                              const uint32_t *in,
+                                              uint32_t word,
+                                              uint32_t *out)
+{
+  uint32_t carry = 0;
+  for (unsigned i = 0; i < len; i++)
+    {
+      uint64_t prod = (uint64_t) in[i] * word + carry;
+      *out = (uint32_t) prod;
+      carry = prod >> 32;
+    }
+  return carry;
+}
+
 int
 dsk_tls_bignum_compare (unsigned len,
                         const uint32_t *a,
@@ -184,6 +199,28 @@ dsk_tls_bignum_compare (unsigned len,
     }
   return 0;
 }
+void     dsk_tls_bignum_modular_add          (unsigned        len,
+                                              const uint32_t *a_words,
+                                              const uint32_t *b_words,
+                                              const uint32_t *modulus_words,
+                                              uint32_t       *out)
+{
+  if (dsk_tls_bignum_add_with_carry (len, a_words, b_words, 0, out))
+    dsk_tls_bignum_subtract (len, out, modulus_words, out);
+  else if (dsk_tls_bignum_compare (len, out, modulus_words) >= 0)
+    dsk_tls_bignum_subtract (len, out, modulus_words, out);
+}
+
+void     dsk_tls_bignum_modular_subtract     (unsigned        len,
+                                              const uint32_t *a_words,
+                                              const uint32_t *b_words,
+                                              const uint32_t *modulus_words,
+                                              uint32_t       *out)
+{
+  if (dsk_tls_bignum_subtract_with_borrow (len, a_words, b_words, 0, out))
+    dsk_tls_bignum_add (len, out, modulus_words, out);
+}
+
 
 uint32_t dsk_tls_bignum_add_word_inplace (unsigned len, uint32_t *v, uint32_t carry)
 {
@@ -524,6 +561,60 @@ dsk_tls_bignum_actual_len (unsigned len, const uint32_t *v)
   while (len > 0 && v[len-1] == 0)
     len--;
   return len;
+}
+
+// Precondition: v != 0
+static unsigned
+highbit32 (uint32_t v)
+{
+  static unsigned highbits_per_nibble[16] = {
+    0, 0, 1, 1, 2, 2, 2, 2,
+    3, 3, 3, 3, 3, 3, 3, 3
+  };
+  if (v >= 0x10000)
+    {
+      if (v >= 0x1000000)
+       {
+         if (v >= 0x10000000)
+           return highbits_per_nibble[v >> 28] + 28;
+         else
+           return highbits_per_nibble[v >> 24] + 24;
+       }
+     else
+       {
+         if (v >= 0x100000)
+           return highbits_per_nibble[v >> 20] + 20;
+         else
+           return highbits_per_nibble[v >> 16] + 16;
+       }
+    }
+  else
+    {
+      if (v >= 0x100)
+       {
+         if (v >= 0x1000)
+           return highbits_per_nibble[v >> 12] + 12;
+         else
+           return highbits_per_nibble[v >> 8] + 8;
+       }
+     else
+       {
+         if (v >= 0x10)
+           return highbits_per_nibble[v >> 4] + 4;
+         else
+           return highbits_per_nibble[v];
+       }
+    }
+} 
+
+// highest bit that's one, or -1 if v is zero.
+int      dsk_tls_bignum_max_bit              (unsigned len,
+                                              const uint32_t *v)
+{
+  for (unsigned k = len; k--; )
+    if (v[k])
+      return k * 32 + highbit32 (v[k]);
+  return -1;
 }
 
 void
@@ -964,6 +1055,8 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
                                         const uint32_t *barrett_mu,
                                         uint32_t       *mod_value_out)
 {
+  assert(len == 2 * modulus_len);
+
   const uint32_t *q1 = value + (modulus_len - 1);
   unsigned q1len = len - (modulus_len - 1);
   unsigned q2len = q1len + modulus_len + 1;

@@ -98,14 +98,14 @@ test_client_hello ()
   // RFC 8448.  Section 3.
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO,
                                                     sizeof (rfc8448_sec3_client_hello_data) - 4 - 1,
                                                     (uint8_t*) rfc8448_sec3_client_hello_data + 4,
                                                     &pool,
                                                     &error);
   if (shake == NULL)
     dsk_die ("error parsing client-hello: %s", error->message);
-  assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_CLIENT_HELLO);
+  assert(shake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO);
   bool has_supported_groups = false;
   bool has_server_name = false;
   bool has_supported_versions = false;
@@ -136,7 +136,7 @@ test_client_hello ()
 	    DskTlsExtension_ServerNameList *sn = (DskTlsExtension_ServerNameList *) ext;
             assert(!has_server_name);
 	    assert(sn->n_entries == 1);
-	    assert(sn->entries[0].type == DSK_TLS_EXTENSION_SERVER_NAME_TYPE_HOSTNAME);
+	    assert(sn->entries[0].type == DSK_TLS_SERVER_NAME_TYPE_HOSTNAME);
 	    assert(sn->entries[0].name_length == 6);
 	    assert(strcmp (sn->entries[0].name, "server") == 0);
             has_server_name = true;
@@ -377,7 +377,7 @@ test_server_hello (void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_SERVER_HELLO,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_SERVER_HELLO,
                                                     sizeof (rfc8448_sec3_server_hello_data) - 4 -1,
                                                     (uint8_t*) rfc8448_sec3_server_hello_data + 4,
                                                     &pool,
@@ -418,7 +418,7 @@ test_encrypted_extensions (void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS,
                                                     sizeof (rfc8448_sec3_server_encrypted_extensions_data) - 4 -1,
                                                     (uint8_t*) rfc8448_sec3_server_encrypted_extensions_data + 4,
                                                     &pool,
@@ -452,14 +452,14 @@ test_certificate_handshake_message_parsing(void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE,
                                                     sizeof (rfc8448_sec3_server_certificate_data) - 4 -1,
                                                     (uint8_t*) rfc8448_sec3_server_certificate_data + 4,
                                                     &pool,
                                                     &error);
   if (shake == NULL)
     dsk_die ("error parsing Certificate: %s", error->message);
-  assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE);
+  assert(shake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE);
   assert(shake->certificate.certificate_request_context_len == 0);
   assert(shake->certificate.n_entries == 1);
   assert(shake->certificate.entries[0].n_extensions == 0);
@@ -473,7 +473,7 @@ test_certificate_verify_handshake_message_parsing (void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_CERTIFICATE_VERIFY,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_VERIFY,
                                                     sizeof (rfc8448_sec3_server_certificate_verify_data) - 4 -1,
                                                     (uint8_t*) rfc8448_sec3_server_certificate_verify_data + 4,
                                                     &pool,
@@ -489,14 +489,14 @@ test_server_finished_handshake_message_parsing(void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshake *shake = dsk_tls_handshake_parse (DSK_TLS_HANDSHAKE_TYPE_FINISHED,
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED,
                                                     sizeof (rfc8448_sec3_server_finished_data) - 4 -1,
                                                     (uint8_t*) rfc8448_sec3_server_finished_data + 4,
                                                     &pool,
                                                     &error);
   if (shake == NULL)
     dsk_die ("error parsing Finished: %s", error->message);
-  assert(shake->type == DSK_TLS_HANDSHAKE_TYPE_FINISHED);
+  assert(shake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED);
   assert(shake->finished.verify_data_length == 32);
 
   //
@@ -706,7 +706,8 @@ test_server_secret_calculations_2 (void)
 
   /* {server} extract secret "early". */
   dsk_tls_key_schedule_compute_early_secrets (schedule, false,
-                                              client_hello_th, NULL);
+                                              client_hello_th,
+                                              0, NULL);
   assert (memcmp (schedule->early_secret,
               "\x33\xad\x0a\x1c\x60\x7e\xc0\x3b"
               "\x09\xe6\xcd\x98\x93\x68\x0c\xe2"

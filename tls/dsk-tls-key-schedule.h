@@ -78,6 +78,7 @@ void dsk_tls_key_schedule_compute_early_secrets
                                         (DskTlsKeySchedule *schedule,
                                          bool               externally_shared,
                                          const uint8_t     *client_hello_hash,
+                                         size_t             opt_pre_shared_key_size,
                                          const uint8_t     *opt_pre_shared_key);
 void dsk_tls_key_schedule_compute_handshake_secrets (DskTlsKeySchedule *schedule,
                                          const uint8_t     *server_hello_hash,

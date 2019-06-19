@@ -70,11 +70,19 @@ void     dsk_tls_bignum_multiply_truncated   (unsigned a_len,
                                               const uint32_t *b_words,
                                               unsigned out_len,
                                               uint32_t *product_words_out);
+uint32_t dsk_tls_bignum_multiply_word        (unsigned len,
+                                              const uint32_t *in,
+                                              uint32_t word,
+                                              uint32_t *out);
 void     dsk_tls_bignum_square               (unsigned len,
                                               const uint32_t *words,
                                               uint32_t *out);
 
 unsigned dsk_tls_bignum_actual_len           (unsigned len,
+                                              const uint32_t *v);
+
+// highest bit that's one, or -1 if v is zero.
+int      dsk_tls_bignum_max_bit              (unsigned len,
                                               const uint32_t *v);
 
 void     dsk_tls_bignum_shiftleft_truncated  (unsigned len,
@@ -112,6 +120,11 @@ int      dsk_tls_bignum_compare              (unsigned len,
 
 
 void     dsk_tls_bignum_modular_add          (unsigned        len,
+                                              const uint32_t *a_words,
+                                              const uint32_t *b_words,
+                                              const uint32_t *modulus_words,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_modular_subtract     (unsigned        len,
                                               const uint32_t *a_words,
                                               const uint32_t *b_words,
                                               const uint32_t *modulus_words,

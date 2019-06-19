@@ -4,6 +4,8 @@
  *
  * Points on the curve satisfy:
  *          y^2 = x^3 + a*x + b
+ * It is also required that the right-hand side not have
+ * any multiple roots, meaning the discriminant := 27*a*a*a + 27*b*b != 0 (mod p).
  *
  * Similar to the case for real numbers, y^2 = k has either
  * no solutions, or 1 solution for k==0 (the additive identity)
@@ -17,12 +19,12 @@ typedef struct DskTls_ECPrime_Group DskTls_ECPrime_Group;
 struct DskTls_ECPrime_Group
 {
   unsigned len;
-  uint32_t *p;
-  uint32_t *barrett_mu;
-  uint32_t *a;          // coeff of x in curve formula
-  uint32_t *b;          // constant in curve formula
-  uint32_t *x;          // base point (x)
-  uint32_t *y;          // base point (y)
+  const uint32_t *p;
+  const uint32_t *barrett_mu;
+  const uint32_t *a;          // coeff of x in curve formula
+  const uint32_t *b;          // constant in curve formula
+  const uint32_t *x;          // base point (x)
+  const uint32_t *y;          // base point (y)
 };
 
 extern const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp192r1;
@@ -31,7 +33,7 @@ extern const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp256r1;
 extern const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp384r1;
 extern const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp512r1;
 
-void dsk_tls_ec_prime_add (DskTls_ECPrime_Group *group,
+void dsk_tls_ecprime_add (const DskTls_ECPrime_Group *group,
                            const uint32_t *x1,
                            const uint32_t *y1,
                            const uint32_t *x2,
@@ -40,7 +42,7 @@ void dsk_tls_ec_prime_add (DskTls_ECPrime_Group *group,
                            uint32_t *y_out);
     
 
-void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
+void dsk_tls_ecprime_multiply_int (const DskTls_ECPrime_Group *group,
                                     const uint32_t *x,
                                     const uint32_t *y,
                                     unsigned factor_len,
@@ -50,7 +52,7 @@ void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
 
 // Needed for decompressing points.
 bool
-dsk_tls_ec_prime_y_from_x (DskTls_ECPrime_Group *group,
+dsk_tls_ecprime_y_from_x (const DskTls_ECPrime_Group *group,
                                     const uint32_t *x,
                                     uint32_t *y_out);
 

@@ -88,7 +88,7 @@ int main(int argc, char** argv)
   char buf[1024];
   char *str;
 
-  rng = dsk_rand_new_xorshift1024 ();
+  rng = dsk_rand_new (&dsk_rand_type_xorshift1024);
   dsk_assert (rng != NULL);
   dsk_cmdline_init ("test dsk-buffer code", "test DskBuffer", NULL, 0);
   dsk_cmdline_process_args (&argc, &argv);

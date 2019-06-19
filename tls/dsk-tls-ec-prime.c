@@ -3,8 +3,12 @@
    
    For point compression:
         https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
- */
 
+   For test vectors: http://point-at-infinity.org/ecc/nisttv
+ */
+#include "../dsk.h"
+#include <alloca.h>
+#include <string.h>
 
 static uint32_t secp256r1__p[] = {
   0xFFFFFFFF,
@@ -69,10 +73,10 @@ static const uint32_t secp256r1__barrett_mu[] = {
   0x00000001,
 };
 
-static DskTls_ECPrime_Group secp256r1_params = {
+const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp256r1 = {
   8,
   secp256r1__p,
-  secp256r1__barrett_mu
+  secp256r1__barrett_mu,
   secp256r1__a,
   secp256r1__b,
   secp256r1__x,
@@ -121,7 +125,7 @@ void dsk_tls_ec_prime_add (DskTls_ECPrime_Group *group,
           // Compute s = ----------   (mod p)
           //                2*y1
           dsk_tls_bignum_square (len, x1, tmp);
-          dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->mont.barrett_mu, tmp);
+          dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->barrett_mu, tmp);
           tmp[len] = 0;
           dsk_tls_bignum_multiply_word (len + 1, tmp, 3, tmp);
           while (tmp[len] > 0 || dsk_tls_bignum_compare (len, tmp, p) >= 0)
@@ -147,26 +151,30 @@ void dsk_tls_ec_prime_add (DskTls_ECPrime_Group *group,
       // Compute s = -------   = (y2 - y1) * (x2 - x1)^{-1}    (mod p)
       //             x2 - x1
       //
+      uint32_t *x21_inv = alloca (4 * len);
       dsk_tls_bignum_modular_subtract (len, y2, y1, p, y21);
       dsk_tls_bignum_modular_subtract (len, x2, x1, p, x21);
       if (!dsk_tls_bignum_modular_inverse (len, x21, p, x21_inv))
         assert(false);
       dsk_tls_bignum_multiply (len, y21, len, x21_inv, tmp);
-      dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->mont.barrett_mu, s);
+      dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->barrett_mu, s);
     }
 
   // Compute x_out := s^2 - x1 - x2 (mod p)
   dsk_tls_bignum_square (len, s, tmp);
-  dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->mont.barrett_mu, x_out);
+  dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->barrett_mu, x_out);
   dsk_tls_bignum_modular_subtract (len, x_out, x1, p, x_out);
   dsk_tls_bignum_modular_subtract (len, x_out, x2, p, x_out);
 
   // Compute y_out := s*(x1 - x3) - y1
   dsk_tls_bignum_modular_subtract(len, x1, x_out, p, tmp);
   dsk_tls_bignum_multiply(len, tmp, len, s, tmp);
-  dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->mont.barrett_mu, y_out);
+  dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->barrett_mu, y_out);
   dsk_tls_bignum_modular_subtract(len, y_out, y1, p, y_out);
 }
+
+#define dsk_tls_ec_prime_double(group, x, y, xout, yout) \
+  dsk_tls_ec_prime_add(group, x, y, x, y, xout, yout)
 
 void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
                                     const uint32_t *x,
@@ -176,6 +184,7 @@ void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
                                     uint32_t *x_out,
                                     uint32_t *y_out)
 {
+  unsigned len = group->len;
   uint32_t *xans = alloca(len * 4);
   uint32_t *yans = alloca(len * 4);
   uint32_t *xans_tmp = alloca(len * 4);
@@ -191,15 +200,28 @@ void dsk_tls_ec_prime_multiply_int (DskTls_ECPrime_Group *group,
       memset (y_out, 0, 4*len);
       return;
     }
+  memcpy (xcur, x, 4 * len);
+  memcpy (ycur, y, 4 * len);
+  bool has_ans = false;
   for (unsigned i = 0; i < (unsigned) bit; i++)
     {
+      uint32_t *swap;
       if ((factor[i/32] >> (i % 32)) & 1)
         {
-          dsk_tls_ec_prime_add (group, xans, yans, xcur, ycur, xans_tmp, yans_tmp);
-          swap = xans; xans = xans_tmp; xans_tmp = swap;
-          swap = yans; yans = yans_tmp; yans_tmp = swap;
+          if (has_ans)
+            {
+              dsk_tls_ec_prime_add (group, xans, yans, xcur, ycur, xans_tmp, yans_tmp);
+              swap = xans; xans = xans_tmp; xans_tmp = swap;
+              swap = yans; yans = yans_tmp; yans_tmp = swap;
+            }
+          else
+            {
+              memcpy (xans, xcur, 4 * len);
+              memcpy (yans, ycur, 4 * len);
+              has_ans = true;
+            }
         }
-      dsk_tls_ec_prime_add (group, xcur, ycur, xcur, ycur, xcur_tmp, ycur_tmp);
+      dsk_tls_ec_prime_double (group, xcur, ycur, xcur_tmp, ycur_tmp);
       swap = xcur; xcur = xcur_tmp; xcur_tmp = swap;
       swap = ycur; ycur = ycur_tmp; ycur_tmp = swap;
     }
@@ -225,7 +247,7 @@ dsk_tls_ec_prime_y_from_x (DskTls_ECPrime_Group *group,
 
   dsk_tls_bignum_multiply (N, x, N, x_squared_mod_p, x_tmp);
   uint32_t *x_cubed_mod_p = alloca (N * 4);
-  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_squared,
+  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_tmp,
                                           N, group->p,
                                           group->barrett_mu,
                                           x_cubed_mod_p);
@@ -233,7 +255,7 @@ dsk_tls_ec_prime_y_from_x (DskTls_ECPrime_Group *group,
   // Compute a*x mod p.
   dsk_tls_bignum_multiply (N, x, N, group->a, x_tmp);
   uint32_t *ax_mod_p = alloca (N * 4);
-  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_squared,
+  dsk_tls_bignum_modulus_with_barrett_mu (N * 2, x_tmp,
                                           N, group->p,
                                           group->barrett_mu,
                                           ax_mod_p);
