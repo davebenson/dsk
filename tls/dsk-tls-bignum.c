@@ -175,7 +175,7 @@ uint32_t dsk_tls_bignum_multiply_word        (unsigned len,
   for (unsigned i = 0; i < len; i++)
     {
       uint64_t prod = (uint64_t) in[i] * word + carry;
-      *out = (uint32_t) prod;
+      out[i] = (uint32_t) prod;
       carry = prod >> 32;
     }
   return carry;
@@ -1075,6 +1075,8 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
       if (dsk_tls_bignum_subtract_with_borrow (modulus_len, r, modulus, 0, r))
         r[modulus_len] -= 1;
     }
+  //printf("r:");for(unsigned i = 0; i < modulus_len; i++)printf(" %08x", r[i]);printf("\n");
+  //printf("mod:");for(unsigned i = 0; i < modulus_len; i++)printf(" %08x", modulus[i]);printf("\n");
   while (dsk_tls_bignum_compare (modulus_len, r, modulus) >= 0)
     dsk_tls_bignum_subtract_with_borrow (modulus_len, r, modulus, 0, r);
   memcpy (mod_value_out, r, modulus_len * 4);

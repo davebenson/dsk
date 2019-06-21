@@ -123,6 +123,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-aead-gcm.o \
           tls/dsk-aead-ccm.o \
           tls/dsk-curve25519.o \
+          tls/dsk-curve448.o \
           tls/dsk-hmac.o \
           tls/dsk-hkdf.o \
           tls/dsk-asn1.o \

@@ -132,6 +132,7 @@
 #include "tls/dsk-aead-gcm.h"
 #include "tls/dsk-aead-ccm.h"
 #include "tls/dsk-curve25519.h"
+#include "tls/dsk-curve448.h"
 #include "tls/dsk-hmac.h"
 #include "tls/dsk-hkdf.h"
 #include "tls/dsk-tls-object-id.h"

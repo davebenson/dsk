@@ -198,13 +198,14 @@ poly1305_handle_n (uint32_t *a,    // length 5
 {
   a[4] += dsk_tls_bignum_add_with_carry (4, a, n, 0, a);
   a[4] += n[4];
-  uint32_t tmp[9];
+  uint32_t tmp[10];
   dsk_tls_bignum_multiply (5, a, 4, r, tmp);
 
   assert(tmp[8] == 0);
+  tmp[9] = 0;
 
   // XXX: do we need to verify the tmp <= P<<128 ?
-  dsk_tls_bignum_modulus_with_barrett_mu (8, tmp, 5, P, P_barrett_mu, a);
+  dsk_tls_bignum_modulus_with_barrett_mu (10, tmp, 5, P, P_barrett_mu, a);
 }
 
 // Portable version.  Probably want to optimize this?

@@ -199,6 +199,9 @@ void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
 void dsk_tls_bignum_word_to_montgomery (DskTlsMontgomeryInfo *info,
                                         uint32_t              word,
                                         uint32_t             *out);
+
+// NOTE: if one of a_mont or b_mont is not in montgomery form,
+// then this outputs a non-montgomery form.
 void dsk_tls_bignum_multiply_montgomery
                                   (DskTlsMontgomeryInfo *info,
                                    const uint32_t       *a_mont,
