@@ -17,8 +17,9 @@
  * or 2 solutions which are negations of each other (mod p).
  */
 
-// http://www.secg.org/sec2-v2.pdf
-// https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html
+// References:
+//   curve definitions: http://www.secg.org/sec2-v2.pdf
+//   point compression: https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html
 // 
 typedef struct DskTls_ECPrime_Group DskTls_ECPrime_Group;
 struct DskTls_ECPrime_Group
@@ -95,8 +96,6 @@ dsk_tls_ecprime_y_from_x (const DskTls_ECPrime_Group *group,
                                     uint32_t *y_out);
 
 
-extern const DskTlsKeyShareMethod dsk_tls_key_share_secp192r1;
-extern const DskTlsKeyShareMethod dsk_tls_key_share_secp224r1;
-extern const DskTlsKeyShareMethod dsk_tls_key_share_secp256r1;
-extern const DskTlsKeyShareMethod dsk_tls_key_share_secp384r1;
-extern const DskTlsKeyShareMethod dsk_tls_key_share_secp521r1;
+extern const DskTlsKeyShareMethod *dsk_tls_key_share_secp256r1;
+extern const DskTlsKeyShareMethod *dsk_tls_key_share_secp384r1;
+extern const DskTlsKeyShareMethod *dsk_tls_key_share_secp521r1;

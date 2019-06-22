@@ -38,21 +38,21 @@ static const uint32_t p[] = {
   0xffffffff,
 };
 static const uint32_t x448__barrett_mu[] = {
-  0x00000002,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000001,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000001,
+  0x00000002,    //0
+  0x00000000,    //1
+  0x00000000,    //2
+  0x00000000,    //3
+  0x00000000,    //4
+  0x00000000,    //5
+  0x00000000,    //6
+  0x00000001,    //7
+  0x00000000,    //8
+  0x00000000,    //9
+  0x00000000,    //10
+  0x00000000,    //11
+  0x00000000,    //12
+  0x00000000,    //13
+  0x00000001,    //14
 };
 static DskTlsMontgomeryInfo x448__mont = {
   14,
@@ -77,6 +77,51 @@ static const uint32_t p_minus_2[] = {
   0xffffffff,
   0xffffffff,
 };
+
+static void
+x448_modulus (const uint32_t *value,
+              uint32_t       *mod_value_out)
+{
+  uint32_t q2[29];
+  const uint32_t *q1 = value + 13;
+
+  //
+  // Compute q2 = mu * value >> (13*8)
+  //
+  q2[15] = dsk_tls_bignum_add_with_carry (15, q1, q1, 0, q2);
+  unsigned carry = dsk_tls_bignum_add_with_carry (9, q2 + 7, q1, 0, q2 + 7);
+  memcpy (q2 + 16, q1 + 9, 6*4);
+  q2[22] = dsk_tls_bignum_add_word (6, q1 + 9, carry, q2 + 16);
+  carry = dsk_tls_bignum_add_with_carry (9, q2 + 14, q1, 0, q2 + 14);
+  carry = dsk_tls_bignum_add_word (6, q1 + 23, carry, q2 + 23);
+  assert(carry == 0);
+
+  uint32_t *q3 = q2 + 15;
+  unsigned q3_len = 14;
+
+  //
+  // Comput the LSB of q3 * modulus == q3 * (B^14 - B^7 - 1) where B=2**32.
+  //
+  uint32_t r[15];
+  r[14] = q3[0];
+  memset (r, 0, 14*4);
+  dsk_tls_bignum_subtract_with_borrow (8, r + 7, q3, 0, r + 7);
+  r[14] -= dsk_tls_bignum_subtract_with_borrow (14, r, q3, 0, r);
+  dsk_tls_bignum_subtract_with_borrow (15, value, r, 0, r);  //now r is the algorithm's r
+
+  while (r[14] != 0)
+    {
+      if (dsk_tls_bignum_subtract_with_borrow (14, r, p, 0, r))
+        r[14] -= 1;
+    }
+  //printf("r:");for(unsigned i = 0; i < modulus_len; i++)printf(" %08x", r[i]);printf("\n");
+  //printf("mod:");for(unsigned i = 0; i < modulus_len; i++)printf(" %08x", modulus[i]);printf("\n");
+  if (dsk_tls_bignum_compare (14, r, p) >= 0)
+    dsk_tls_bignum_subtract_with_borrow (14, r, p, 0, mod_value_out);
+  else
+    memcpy (mod_value_out, r, 56);
+}
+
 
 static void
 x448_multiply_karatsuba (const uint32_t *in0,
@@ -180,10 +225,14 @@ x448(const uint32_t *k,
   z_2 = (uint32_t *) ((intptr_t) z_2 ^ mask); \
   z_3 = (uint32_t *) ((intptr_t) z_3 ^ mask); \
 }
+#if 0
+#define MOD_TMP(out) x448_modulus (tmp, (out))
+#else
 #define MOD_TMP(out) \
   dsk_tls_bignum_modulus_with_barrett_mu (14 * 2, tmp, 14, p, \
                                           x448__barrett_mu, \
                                           (out))
+#endif
 
   uint32_t A[14], AA[14], B[14], BB[14], E[14], C[14], D[14], DA[14], CB[14];
   uint32_t tmp[28];

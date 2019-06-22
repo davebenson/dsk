@@ -777,3 +777,237 @@ void dsk_tls_ecprime_prj_to_xy (const DskTls_ECPrime_Group *group,
   dsk_tls_bignum_multiply (len, zinv, len, xyz_prj + len, tmp);
   MOD_TMP (y);
 }
+
+
+//
+// Implement ..
+//
+bool
+dsk_tls_ecprime_group_is_valid (const DskTls_ECPrime_Group *group,
+                                const uint32_t *x,
+                                const uint32_t *y)
+{
+  unsigned len = group->len;
+  
+  // fail if x,y is the identity==point-at-infinity
+  if (memcmp (group->xy0, x, group->len*4) == 0
+   && memcmp (group->xy0 + group->len, y, group->len*4) == 0)
+    return false;
+
+  // invalid coordinates.
+  if (dsk_tls_bignum_compare (len, x, group->p) >= 0
+   || dsk_tls_bignum_compare (len, y, group->p) >= 0)
+    return false;
+
+
+  //
+  // Remainder of this function is to check
+  // that (x,y) satisfies the elliptic curve constraint.
+  //
+  uint32_t *tmp = alloca(len * 4 * 2);
+  uint32_t *yy = alloca(len * 4);
+  dsk_tls_bignum_square (len, y, tmp);
+  MOD_TMP (yy);
+
+  // Compute rhs := x*x*x
+  uint32_t *rhs = alloca(len * 4);
+  dsk_tls_bignum_square (len, x, tmp);
+  MOD_TMP (rhs);
+  dsk_tls_bignum_multiply (len, x, len, rhs, tmp);
+  MOD_TMP (rhs);
+
+  // TODO: small 'a' optimization
+  uint32_t *ax = alloca(len * 4);
+  dsk_tls_bignum_multiply (len, group->a, len, x, tmp);
+  MOD_TMP (ax);
+
+  // rhs += a*x
+  dsk_tls_bignum_modular_add (len, rhs, ax, group->p, rhs);
+
+  // rhs += b
+  dsk_tls_bignum_modular_add (len, rhs, group->b, group->p, rhs);
+
+  if (memcmp (rhs, yy, 4*len) != 0)
+    return false;
+
+  return true;
+}
+
+typedef struct KeyShareMethod_SECP KeyShareMethod_SECP;
+struct KeyShareMethod_SECP
+{
+  DskTlsKeyShareMethod method;
+  const DskTls_ECPrime_Group *group;
+};
+static bool
+secp__make_key_pair (DskTlsKeyShareMethod *method,
+                     uint8_t              *private_key_inout,
+                     uint8_t              *public_key_out)
+{
+  const KeyShareMethod_SECP *s = (KeyShareMethod_SECP *) method;
+  const DskTls_ECPrime_Group *group = s->group;
+  unsigned len = group->len;
+  uint32_t *scalar = alloca(4 * len);
+
+  // Number of bytes in the representation of a single coordinate.
+  unsigned coord_bytes = method->private_key_bytes;
+
+  // Number of full words in the representation
+  unsigned word_len = coord_bytes / 4;
+
+  uint8_t *at = private_key_inout + coord_bytes;
+  for (unsigned i = 0; i < word_len; i++)
+    {
+      at -= 4;
+      scalar[i] = dsk_uint32be_parse (at);
+    }
+
+  // NOTE: the only choices are 0 and 2, where 2 is only used for SECP521.
+  if (coord_bytes % 4 == 2)
+    {
+      at -= 2;
+      scalar[word_len] = dsk_uint16be_parse (at);
+    }
+
+  uint32_t *xout = alloca(4*len), *yout = alloca(4*len);
+  dsk_tls_ecprime_multiply_int (group,
+                                group->x, group->y,
+                                len, scalar,
+                                xout, yout);
+  public_key_out[0] = 4;
+  uint8_t *xpack = public_key_out + 1 + coord_bytes;
+  uint8_t *ypack = xpack + coord_bytes;
+  for (unsigned i = 0; i < word_len; i++)
+    {
+      xpack -= 4;
+      dsk_uint32be_pack (xout[i], xpack);
+      ypack -= 4;
+      dsk_uint32be_pack (yout[i], ypack);
+    }
+  if (coord_bytes % 4 == 2)
+    {
+      xpack -= 2;
+      dsk_uint16be_pack (xout[word_len], xpack);
+      ypack -= 2;
+      dsk_uint16be_pack (yout[word_len], ypack);
+    }
+  return true;
+}
+
+static bool
+secp__make_shared_key  (DskTlsKeyShareMethod *method,
+                        const uint8_t        *private_key,
+                        const uint8_t        *peer_public_key,
+                        uint8_t              *shared_key_out)
+{
+  const KeyShareMethod_SECP *s = (KeyShareMethod_SECP *) method;
+  const DskTls_ECPrime_Group *group = s->group;
+  unsigned len = group->len;
+  uint32_t *x = alloca(len * 4);
+  uint32_t *y = alloca(len * 4);
+  uint32_t *scalar = alloca(len * 4);
+  if (peer_public_key[0] != 4)
+    return false;
+  unsigned coord_bytes = method->private_key_bytes;
+  unsigned word_len = coord_bytes / 4;
+  const uint8_t *ppk_x_in = peer_public_key + 1 + coord_bytes;
+  const uint8_t *ppk_y_in = ppk_x_in + coord_bytes;
+  const uint8_t *privkey_in = private_key + coord_bytes;
+
+  for (unsigned i = 0; i < word_len; i++)
+    {
+      ppk_x_in -= 4;
+      x[i] = dsk_uint32be_parse (ppk_x_in);
+      ppk_y_in -= 4;
+      y[i] = dsk_uint32be_parse (ppk_y_in);
+
+      privkey_in -= 4;
+      scalar[i] = dsk_uint32be_parse (privkey_in);
+    }
+  if (coord_bytes % 4 == 2)
+    {
+      ppk_x_in -= 2;
+      x[word_len] = dsk_uint16be_parse (ppk_x_in);
+      ppk_y_in -= 2;
+      y[word_len] = dsk_uint16be_parse (ppk_y_in);
+
+      privkey_in -= 2;
+      scalar[word_len] = dsk_uint16be_parse (privkey_in);
+    }
+
+  // Must validate that x,y fulfills EC equation.
+  if (!dsk_tls_ecprime_group_is_valid (group, x, y))
+    return false;
+
+  uint32_t *xout = alloca(len * 4);
+  uint32_t *yout = alloca(len * 4);
+  dsk_tls_ecprime_multiply_int (group,
+                                x, y,
+                                len, scalar,
+                                xout, yout);
+  shared_key_out[0] = 4;
+  uint8_t *sk_x = shared_key_out + 1 + coord_bytes;
+  uint8_t *sk_y = sk_x + coord_bytes;
+  for (unsigned i = 0; i < word_len; i++)
+    {
+      sk_x -= 4;
+      dsk_uint32be_pack (xout[i], sk_x);
+      sk_y -= 4;
+      dsk_uint32be_pack (yout[i], sk_y);
+    }
+  if (coord_bytes % 4 == 2)
+    {
+      sk_x -= 2;
+      dsk_uint16be_pack (xout[word_len], sk_x);
+      sk_y -= 2;
+      dsk_uint16be_pack (yout[word_len], sk_y);
+    }
+  return true;
+}
+
+static const KeyShareMethod_SECP key_share_secp256r1 =
+{
+  {
+    DSK_TLS_NAMED_GROUP_SECP256R1,
+    "SECP256R1",
+    32, 
+    65,
+    65,
+    secp__make_key_pair,
+    secp__make_shared_key
+  },
+  &dsk_tls_ecprime_group_secp256r1
+};
+static const KeyShareMethod_SECP key_share_secp384r1 =
+{
+  {
+    DSK_TLS_NAMED_GROUP_SECP384R1,
+    "SECP384R1",
+    48,
+    97,
+    97,
+    secp__make_key_pair,
+    secp__make_shared_key
+  },
+  &dsk_tls_ecprime_group_secp384r1
+};
+
+static const KeyShareMethod_SECP key_share_secp521r1 =
+{
+  {
+    DSK_TLS_NAMED_GROUP_SECP521R1,
+    "SECP521R1",
+    66,
+    133,
+    133,
+    secp__make_key_pair,
+    secp__make_shared_key,
+  },
+  &dsk_tls_ecprime_group_secp521r1
+};
+
+
+const DskTlsKeyShareMethod *dsk_tls_key_share_secp256r1 = (const DskTlsKeyShareMethod *) &key_share_secp256r1;
+const DskTlsKeyShareMethod *dsk_tls_key_share_secp384r1 = (const DskTlsKeyShareMethod *) &key_share_secp384r1;
+const DskTlsKeyShareMethod *dsk_tls_key_share_secp521r1 = (const DskTlsKeyShareMethod *) &key_share_secp521r1;
+

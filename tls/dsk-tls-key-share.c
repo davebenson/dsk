@@ -41,7 +41,7 @@ ffdhe__make_shared_key   (DskTlsKeyShareMethod *method,
 //   - RFC 7919 gives the key-lengths in bits L;
 //     we round up to bits using the formula (L+7)/8.
 //
-static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe2048 =
+const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe2048 =
 {
   {
     DSK_TLS_NAMED_GROUP_FFDHE2048,
@@ -55,7 +55,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe2048 =
   &dsk_tls_ffdhe2048
 };
 
-static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe3072 =
+const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe3072 =
 {
   {
     DSK_TLS_NAMED_GROUP_FFDHE3072,
@@ -68,7 +68,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe3072 =
   },
   &dsk_tls_ffdhe3072
 };
-static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe4096 =
+const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe4096 =
 {
   {
     DSK_TLS_NAMED_GROUP_FFDHE4096,
@@ -81,7 +81,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe4096 =
   },
   &dsk_tls_ffdhe4096
 };
-static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe6144 =
+const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe6144 =
 {
   {
     DSK_TLS_NAMED_GROUP_FFDHE6144,
@@ -94,7 +94,7 @@ static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe6144 =
   },
   &dsk_tls_ffdhe6144
 };
-static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe8192 =
+const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe8192 =
 {
   {
     DSK_TLS_NAMED_GROUP_FFDHE8192,
@@ -133,7 +133,7 @@ curve25519__make_shared_key   (DskTlsKeyShareMethod *method,
   return true;
 }
 
-static DskTlsKeyShareMethod key_share_method__curve25519 =
+const static DskTlsKeyShareMethod key_share_method__curve25519 =
 {
   DSK_TLS_NAMED_GROUP_X25519,
   "CURVE-25519",
@@ -144,8 +144,41 @@ static DskTlsKeyShareMethod key_share_method__curve25519 =
   curve25519__make_shared_key
 };
 
+static bool 
+curve448__make_key_pair     (DskTlsKeyShareMethod *method,
+                               uint8_t              *private_key_inout,
+                               uint8_t              *public_key_out)
+{
+  (void) method;
+  dsk_curve448_random_to_private (private_key_inout);
+  dsk_curve448_private_to_public (private_key_inout, public_key_out);
+  return true;
+}
 
-DskTlsKeyShareMethod *
+static bool
+curve448__make_shared_key   (DskTlsKeyShareMethod *method,
+                             const uint8_t        *private_key,
+                             const uint8_t        *peer_public_key,
+                             uint8_t              *shared_key_out)
+{
+  (void) method;
+  dsk_curve448_private_to_shared (private_key, peer_public_key, shared_key_out);
+  return true;
+}
+
+const static DskTlsKeyShareMethod key_share_method__curve448 =
+{
+  DSK_TLS_NAMED_GROUP_X448,
+  "CURVE-448",
+  56,
+  56,
+  56,
+  curve448__make_key_pair,
+  curve448__make_shared_key
+};
+
+
+const DskTlsKeyShareMethod *
 dsk_tls_key_share_method_by_group (DskTlsNamedGroup group)
 { 
   switch (group)
@@ -168,7 +201,18 @@ dsk_tls_key_share_method_by_group (DskTlsNamedGroup group)
       case DSK_TLS_NAMED_GROUP_X25519:
         return &key_share_method__curve25519;
 
-      case DSK_TLS_NAMED_GROUP_X448:              // TODO
+      case DSK_TLS_NAMED_GROUP_X448:
+        return &key_share_method__curve448;
+
+      case DSK_TLS_NAMED_GROUP_SECP256R1:
+        return dsk_tls_key_share_secp256r1;
+
+      case DSK_TLS_NAMED_GROUP_SECP384R1:
+        return dsk_tls_key_share_secp384r1;
+
+      case DSK_TLS_NAMED_GROUP_SECP521R1:
+        return dsk_tls_key_share_secp521r1;
+
       default:
         return NULL;
     }

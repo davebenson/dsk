@@ -44,7 +44,7 @@ struct DskTlsKeyShareMethod
 
 };
 
-DskTlsKeyShareMethod *
+const DskTlsKeyShareMethod *
 dsk_tls_key_share_method_by_group (DskTlsNamedGroup group);
 
 

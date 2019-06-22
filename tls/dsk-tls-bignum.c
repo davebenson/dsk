@@ -234,6 +234,22 @@ uint32_t dsk_tls_bignum_add_word_inplace (unsigned len, uint32_t *v, uint32_t ca
     }
   return carry;
 }
+uint32_t dsk_tls_bignum_add_word             (unsigned len,
+                                              const uint32_t *in,
+                                              uint32_t carry,
+                                              uint32_t *out)
+{
+  for (unsigned i = 0; i < len; i++)
+    {
+      *out = *in + carry;
+      if (*out >= carry)
+        return 0;
+      out++;
+      in++;
+      carry = 1;
+    }
+  return carry;
+}
 
 void
 dsk_tls_bignum_divide_1 (unsigned x_len,
