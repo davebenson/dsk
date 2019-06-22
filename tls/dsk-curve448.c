@@ -3,6 +3,12 @@
 #include <stdio.h>
 
 // Some optimizations from https://eprint.iacr.org/2015/625.pdf
+//
+// One key point is that p is
+//
+//         448     224
+//  p :=  2    -  2     - 1
+//
 
 
 static const uint32_t base_point_u[] = {
@@ -78,6 +84,13 @@ static const uint32_t p_minus_2[] = {
   0xffffffff,
 };
 
+//
+// Given a number in [0, p<<448),
+// (a number requiring 28 32-bit words),
+// return the number modulo p.
+//
+// This routine only works for p=(1<<448)-(1<<<224)-1.
+//
 static void
 x448_modulus (const uint32_t *value,
               uint32_t       *mod_value_out)
@@ -97,7 +110,7 @@ x448_modulus (const uint32_t *value,
   assert(carry == 0);
 
   uint32_t *q3 = q2 + 15;
-  unsigned q3_len = 14;
+  //unsigned q3_len = 14;
 
   //
   // Comput the LSB of q3 * modulus == q3 * (B^14 - B^7 - 1) where B=2**32.
@@ -159,26 +172,24 @@ x448_square_karatsuba (const uint32_t *in0,
 {
   const uint32_t *a = in0;
   const uint32_t *b = in0 + 7;
-  //const uint32_t *c = a;
-  //const uint32_t *d = b;
-  uint32_t ac[14], bd[14];
+  uint32_t aa[14], bb[14];
   uint32_t ab[14];
   //(a+b)^2 = aa+bb+2ab
-  dsk_tls_bignum_square (7, a, ac);
-  dsk_tls_bignum_square (7, b, bd);
+  dsk_tls_bignum_square (7, a, aa);
+  dsk_tls_bignum_square (7, b, bb);
   dsk_tls_bignum_multiply (7, a, 7, b, ab);
   // (a+b)^2-a^2 = 2ab + b^2
   unsigned carry = 0;
   uint32_t ab2ma2[15];
   for (unsigned i = 0; i < 14; i++)
     {
-      uint64_t v = (uint64_t) ab[i] * 2 + bd[i] + carry;
+      uint64_t v = (uint64_t) ab[i] * 2 + bb[i] + carry;
       ab2ma2[i] = v;
       carry = v >> 32;
     }
   ab2ma2[14] = carry;
 
-  out[14] = dsk_tls_bignum_add_with_carry (14, ac, bd, 0, out);
+  out[14] = dsk_tls_bignum_add_with_carry (14, aa, bb, 0, out);
   out[15] = out[16] = out[16] = out[17] = out[18] = out[19] = out[20] = out[21] = 0;
   out[22] = dsk_tls_bignum_add_with_carry (15, ab2ma2, out + 7, 0, out + 7);
   out[23] = out[24] = out[25] = out[26] = out[27] = 0;
