@@ -64,8 +64,12 @@ full: all extra
 #CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
 
 # For standard initial size:
-CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
+CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS) -DDSK_ASM_MODE=DSK_ASM_AMD64
 LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS) $(DEP_LIBS)
+
+ASM_FILES = \
+        tls/amd64/dsk_tls_bignum_add_with_carry.asm \
+        tls/amd64/dsk_tls_bignum_multiply_2x2.asm
 
 tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
@@ -150,6 +154,7 @@ libdsk.a: dsk-inlines.o \
 	  codepages/codepage-ISO-8859-5.o codepages/codepage-ISO-8859-6.o \
 	  codepages/codepage-ISO-8859-7.o codepages/codepage-ISO-8859-8.o \
 	  codepages/codepage-ISO-8859-9.o codepages/codepage-latin1.o \
+          $(ASM_FILES) \
 	  dsk-utf8-to-utf16.o
 	ar cru $@ $^
 

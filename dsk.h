@@ -1,6 +1,9 @@
 #ifndef DSK_H__INCLUDED
 #define DSK_H__INCLUDED
 
+#define DSK_ASM_NONE        0
+#define DSK_ASM_AMD64       1
+
 /* Univerisally needed functions and typedefs (like the int## types) */
 #include "dsk-common.h"
 

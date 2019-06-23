@@ -128,6 +128,66 @@ void dsk_tls_bignum_multiply_samesize (unsigned len,
 }
 #endif
 
+#if ASM_MODE != DSK_ASM_AMD64
+void
+dsk_tls_bignum_multiply_2x2 (const uint32_t *a_words,
+                             const uint32_t *b_words,
+                             uint32_t *product_words_out)
+{
+  uint64_t tmp = (uint64_t) a_words[0] * b_words[0];
+  product_words_out[0] = tmp;
+
+  // (2^32-1)^2 = 2^64 - 2^33 + 1
+  tmp = (uint64_t) a_words[0] * b_words[1] + (tmp >> 32);
+  uint64_t tmp2 = (uint64_t) a_words[1] * b_words[0];
+  tmp2 += (uint32_t) tmp;
+  uint64_t tmp3 = (tmp >> 32) + (tmp2 >> 32);   // tmp <= 2^33 - 2
+  product_words_out[1] = tmp2;
+
+  tmp = (uint64_t) a_words[1] * b_words[1] + tmp3;
+  product_words_out[2] = tmp;
+  product_words_out[3] = tmp >> 32;
+}
+#endif
+
+void
+dsk_tls_bignum_multiply_4x4 (const uint32_t *a_words,
+                             const uint32_t *b_words,
+                             uint32_t *product_words_out)
+{
+  uint32_t z2[4];
+  dsk_tls_bignum_multiply_2x2(a_words + 2, b_words + 2, z2);
+  uint32_t z0[4];
+  dsk_tls_bignum_multiply_2x2(a_words, b_words, z0);
+
+  uint32_t asum[2], bsum[2];
+  unsigned c1 = dsk_tls_bignum_add_with_carry (2, a_words, a_words+2, 0, asum);
+  unsigned c2 = dsk_tls_bignum_add_with_carry (2, b_words, b_words+2, 0, bsum);
+  uint32_t z1[4];
+  dsk_tls_bignum_multiply_2x2(asum, bsum, z1);
+  uint32_t mask, add, carry;
+
+  mask = -((int32_t)c1);
+  add = mask & bsum[0];
+  z1[2] += add;
+  carry = (z1[2] < add);
+  add = (mask & bsum[1]) + carry;
+  z1[3] += add;
+
+  mask = -((int32_t)c2);
+  add = mask & asum[0];
+  z1[2] += add;
+  carry = (z1[2] < add);
+  add = (mask & asum[1]) + carry;
+  z1[3] += add;
+
+  unsigned borrow = dsk_tls_bignum_subtract_with_borrow (2, z1, z2, 0, z1)
+                  + dsk_tls_bignum_subtract_with_borrow (2, z1, z0, 0, z1);
+  dsk_tls_bignum_subtract_word_inplace (2, z1 + 2, borrow);
+}
+
+
+
 void dsk_tls_bignum_multiply_truncated (unsigned a_len,
                                        const uint32_t *a_words,
                                        unsigned b_len,
@@ -222,6 +282,19 @@ void     dsk_tls_bignum_modular_subtract     (unsigned        len,
 }
 
 
+uint32_t dsk_tls_bignum_subtract_word_inplace (unsigned len, uint32_t *v, uint32_t borrow)
+{
+  for (unsigned i = 0; i < len; i++)
+    {
+      uint32_t oldv = *v;
+      *v -= borrow;
+      if (*v <= oldv)
+        return 0;
+      v++;
+      borrow = 1;
+    }
+  return borrow;
+}
 uint32_t dsk_tls_bignum_add_word_inplace (unsigned len, uint32_t *v, uint32_t carry)
 {
   for (unsigned i = 0; i < len; i++)
