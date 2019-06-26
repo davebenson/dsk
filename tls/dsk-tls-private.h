@@ -34,7 +34,7 @@ struct DskTlsContext
 typedef struct DskTlsPublicPrivateKeyShare DskTlsPublicPrivateKeyShare;
 struct DskTlsPublicPrivateKeyShare
 {
-  DskTlsKeyShareMethod *method;
+  const DskTlsKeyShareMethod *method;
   uint8_t *private_key;
   uint8_t *public_key;
 };

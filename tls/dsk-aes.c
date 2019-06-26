@@ -363,6 +363,7 @@ dsk_aes128_decryptor_init(DskAES128Decryptor   *s,
     }
 }
 
+#if DSK_ASM_MODE != DSK_ASM_AMD64
 void
 dsk_aes128_decrypt_inplace(const DskAES128Decryptor     *s,
                            uint8_t              *in_out)   /* length 16 */
@@ -379,6 +380,7 @@ dsk_aes128_decrypt_inplace(const DskAES128Decryptor     *s,
   INVSUBBYTES(in_out);
   ADDROUNDKEY(in_out, s->w, 10);
 }
+#endif
 
 // Nr=num_rounds=12;  Nk=6 (6 32-bit words = 192-bits)
 void
@@ -453,6 +455,8 @@ dsk_aes192_decryptor_init(DskAES192Decryptor   *s,
       memcpy (s->w + 16 * (12-i), buf, 16);
     }
 }
+
+#if DSK_ASM_MODE != DSK_ASM_AMD64
 void
 dsk_aes192_decrypt_inplace(const DskAES192Decryptor *s,
                            uint8_t         *in_out)      /* length 16 */
@@ -469,6 +473,7 @@ dsk_aes192_decrypt_inplace(const DskAES192Decryptor *s,
   INVSUBBYTES(in_out);
   ADDROUNDKEY(in_out, s->w, 12);
 }
+#endif
 
 // Nr=num_rounds=14;  Nk=8 (8 32-bit words = 256-bits)
 void

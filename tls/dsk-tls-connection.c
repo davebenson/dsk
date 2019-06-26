@@ -335,7 +335,8 @@ client_continue_post_psks (DskTlsHandshakeNegotiation *hs_info,
   hs_info->key_shares = HS_ALLOC_ARRAY (hs_info, n_key_shares, DskTlsPublicPrivateKeyShare);
   for (unsigned i = 0; i < n_key_shares; i++)
     {
-      DskTlsKeyShareMethod *share_method = dsk_tls_key_share_method_by_group (client_key_share_groups[i]);
+    DskTlsNamedGroup group = client_key_share_groups[i];
+      const DskTlsKeyShareMethod *share_method = dsk_tls_key_share_method_by_group (group);
       DskTlsKeyShareEntry *entry = ks->key_shares + i;
       entry->named_group = client_key_share_groups[i];
       unsigned priv_key_size = share_method->private_key_bytes;
@@ -823,7 +824,7 @@ do_cipher_suite_negotiation (DskTlsHandshakeNegotiation *hs_info,
 // ---------------------------------------------------------------------
 static void
 generate_key_pair (DskTlsHandshakeNegotiation *hs_info,
-                   DskTlsKeyShareMethod *method)
+                   const DskTlsKeyShareMethod *method)
 {
   DskMemPool *pool = &hs_info->mem_pool;
   uint8_t *priv_key = dsk_mem_pool_alloc (pool, method->private_key_bytes);
@@ -875,7 +876,7 @@ maybe_calculate_key_share (DskTlsHandshakeNegotiation *hs_info,
         DskTlsKeyShareEntry *remote_share = hs_info->remote_key_share;
         DskTlsKeyShareEntry *server_share = &keyshare_response->server_share;
         DskTlsNamedGroup group = server_share->named_group;
-        DskTlsKeyShareMethod *method
+        const DskTlsKeyShareMethod *method
                   = dsk_tls_key_share_method_by_group (group);
         assert(method != NULL);
         if (remote_share->key_exchange_length != method->public_key_bytes)

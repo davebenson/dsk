@@ -74,7 +74,9 @@ ASM_FILES = \
         tls/amd64/dsk_tls_bignum_multiply.o \
         tls/amd64/dsk_tls_bignum_multiply64.o \
         tls/amd64/dsk_tls_bignum_multiply_2x2.o \
+        tls/amd64/dsk_aes128_decrypt_inplace.o  \
         tls/amd64/dsk_aes128_encrypt_inplace.o  \
+        tls/amd64/dsk_aes192_decrypt_inplace.o  \
         tls/amd64/dsk_aes192_encrypt_inplace.o  \
         tls/amd64/dsk_aes256_encrypt_inplace.o 
 
@@ -151,6 +153,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-tls-key-share.o \
           tls/dsk-tls-ec-prime.o \
           tls/dsk-tls-cipher-suite.o \
+          tls/dsk-tls-connection.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \
