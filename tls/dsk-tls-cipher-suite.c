@@ -15,7 +15,7 @@
 typedef struct AES128_GCM_CTX AES128_GCM_CTX;
 struct AES128_GCM_CTX
 {
-  DskAES128 cipher;
+  DskAES128Encryptor cipher;
   Dsk_AEAD_GCM_Precomputation gcm_precompute;
 };
 
@@ -24,7 +24,7 @@ aes128_gcm_init     (void           *instance,
                      const uint8_t  *key)
 {
   AES128_GCM_CTX *ctx = instance;
-  dsk_aes128_init (&ctx->cipher, key);
+  dsk_aes128_encryptor_init (&ctx->cipher, key);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace,
                            &ctx->cipher, &ctx->gcm_precompute);
 }
@@ -89,7 +89,7 @@ DskTlsCipherSuite dsk_tls_cipher_suite_aes128_gcm_sha256 =
 typedef struct AES256_GCM_CTX AES256_GCM_CTX;
 struct AES256_GCM_CTX
 {
-  DskAES256 cipher;
+  DskAES256Encryptor cipher;
   Dsk_AEAD_GCM_Precomputation gcm_precompute;
 };
 
@@ -98,7 +98,7 @@ aes256_gcm_init     (void           *instance,
                      const uint8_t  *key)
 {
   AES256_GCM_CTX *ctx = instance;
-  dsk_aes256_init (&ctx->cipher, key);
+  dsk_aes256_encryptor_init (&ctx->cipher, key);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes256_encrypt_inplace,
                            &ctx->cipher, &ctx->gcm_precompute);
 }
@@ -169,7 +169,7 @@ DskTlsCipherSuite dsk_tls_cipher_suite_aes256_gcm_sha384 =
 typedef struct AES128_CCM_CTX AES128_CCM_CTX;
 struct AES128_CCM_CTX
 {
-  DskAES128 cipher;
+  DskAES128Encryptor cipher;
 };
 
 static void
@@ -177,7 +177,7 @@ aes128_ccm_init     (void           *instance,
                      const uint8_t  *key)
 {
   AES128_CCM_CTX *ctx = instance;
-  dsk_aes128_init (&ctx->cipher, key);
+  dsk_aes128_encryptor_init (&ctx->cipher, key);
 }
 static void
 aes128_ccm_encrypt  (void           *instance,

@@ -43,6 +43,7 @@ dsk_tls_bignum_add_with_carry (unsigned   len,
   return carry;
 }
 
+#if ASM_MODE != DSK_ASM_AMD64
 void dsk_tls_bignum_multiply (unsigned p_len,
                               const uint32_t *p_words,
                               unsigned q_len,
@@ -68,6 +69,8 @@ void dsk_tls_bignum_multiply (unsigned p_len,
     }
   assert (carry == 0);
 }
+#endif
+
 void dsk_tls_bignum_square (unsigned len,
                               const uint32_t *words,
                               uint32_t *out)

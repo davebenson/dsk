@@ -584,8 +584,8 @@ test_server_handshake_encryption (void)
   uint8_t iv_data[12];
   memcpy (iv_data, "\x5d\x31\x3e\xb2\x67\x12\x76\xee\x13\x00\x0b\x30", 12);
 
-  DskAES128 aes128;
-  dsk_aes128_init (&aes128, 
+  DskAES128Encryptor aes128;
+  dsk_aes128_encryptor_init (&aes128, 
                   (const uint8_t *) "\x3f\xce\x51\x60\x09\xc2\x17\x27\xd0\xf2\xe4\xe8\x6e\xe4\x03\xbc");
   Dsk_AEAD_GCM_Precomputation precompute;
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace, &aes128, &precompute);

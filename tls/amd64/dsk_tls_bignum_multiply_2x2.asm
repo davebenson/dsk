@@ -8,10 +8,9 @@ _dsk_tls_bignum_multiply_2x2:
         # b=%rsi
         # out=%rdx
         movq (%rdi), %rax
-        movq %rdx, %r10
-        mulq (%rsi),
-        movq %rdx, 
-        movq %rax, (%r10)
-        movq %rdx, 8(%r10)
+        movq %rdx, %r8    # about to clobber rdx
+        mulq (%rsi)
+        movq %rax, (%r8)
+        movq %rdx, 8(%r8)
         ret
 

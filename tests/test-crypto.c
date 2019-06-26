@@ -13,9 +13,10 @@ test_aes128 (void)
    0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
    0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
   };
-  DskAES128 aes128;
-  dsk_aes128_init (&aes128, cipher_key);
-  assert (memcmp (aes128.w, 
+  DskAES128Encryptor aes128e;
+  DskAES128Decryptor aes128d;
+  dsk_aes128_encryptor_init (&aes128e, cipher_key);
+  assert (memcmp (aes128e.w, 
                             "\x2b\x7e\x15\x16"             //w0
                             "\x28\xae\xd2\xa6"             //w1
                             "\xab\xf7\x15\x88"             //w2
@@ -66,54 +67,63 @@ test_aes128 (void)
   uint8_t tmp[16];
 
   memcpy (tmp, plaintext, 16);
-  dsk_aes128_encrypt_inplace (&aes128, tmp);
+  dsk_aes128_encrypt_inplace (&aes128e, tmp);
   assert (memcmp (tmp, ciphertext, 16) == 0);
 
+  dsk_aes128_decryptor_init (&aes128d, cipher_key);
   memcpy (tmp, ciphertext, 16);
-  dsk_aes128_decrypt_inplace (&aes128, tmp);
+  dsk_aes128_decrypt_inplace (&aes128d, tmp);
   assert (memcmp (tmp, plaintext, 16) == 0);
 }
 
 static void
 test_aes192 (void)
 {
-  DskAES192 aes192;
-  dsk_aes192_init (&aes192,
-        (uint8_t*) "\x00\x01\x02\x03\x04\x05\x06\x07"
-                   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-                   "\x10\x11\x12\x13\x14\x15\x16\x17");
+  DskAES192Encryptor aes192e;
+  DskAES192Decryptor aes192d;
+  const uint8_t cipher_key[24] = {
+    0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,
+    0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,
+    0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17
+  };
   const uint8_t plaintext[16] = "\x00\x11\x22\x33\x44\x55\x66\x77"
                                 "\x88\x99\xaa\xbb\xcc\xdd\xee\xff";
   const uint8_t ciphertext[16]= "\xdd\xa9\x7c\xa4\x86\x4c\xdf\xe0"
                                 "\x6e\xaf\x70\xa0\xec\x0d\x71\x91";
   uint8_t tmp[16];
   memcpy (tmp, plaintext, 16);
-  dsk_aes192_encrypt_inplace (&aes192, tmp);
+  dsk_aes192_encryptor_init (&aes192e, cipher_key);
+  dsk_aes192_encrypt_inplace (&aes192e, tmp);
   assert (memcmp (tmp, ciphertext, 16) == 0);
   memcpy (tmp, ciphertext, 16);
-  dsk_aes192_decrypt_inplace (&aes192, tmp);
+  dsk_aes192_decryptor_init (&aes192d, cipher_key);
+  dsk_aes192_decrypt_inplace (&aes192d, tmp);
   assert (memcmp (tmp, plaintext, 16) == 0);
 }
 
 static void
 test_aes256 (void)
 {
-  DskAES256 aes256;
-  dsk_aes256_init (&aes256,
-        (uint8_t*) "\x00\x01\x02\x03\x04\x05\x06\x07"
-                   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-                   "\x10\x11\x12\x13\x14\x15\x16\x17"
-                   "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f");
+  DskAES256Encryptor aes256e;
+  DskAES256Decryptor aes256d;
+  const uint8_t cipher_key[32] = {
+    0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,
+    0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,
+    0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,
+    0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,
+  };
+  dsk_aes256_encryptor_init (&aes256e, cipher_key);
   const uint8_t plaintext[16] = "\x00\x11\x22\x33\x44\x55\x66\x77"
                                 "\x88\x99\xaa\xbb\xcc\xdd\xee\xff";
   const uint8_t ciphertext[16]= "\x8e\xa2\xb7\xca\x51\x67\x45\xbf"
                                 "\xea\xfc\x49\x90\x4b\x49\x60\x89";
   uint8_t tmp[16];
   memcpy (tmp, plaintext, 16);
-  dsk_aes256_encrypt_inplace (&aes256, tmp);
+  dsk_aes256_encrypt_inplace (&aes256e, tmp);
   assert (memcmp (tmp, ciphertext, 16) == 0);
   memcpy (tmp, ciphertext, 16);
-  dsk_aes256_decrypt_inplace (&aes256, tmp);
+  dsk_aes256_decryptor_init (&aes256d, cipher_key);
+  dsk_aes256_decrypt_inplace (&aes256d, tmp);
   assert (memcmp (tmp, plaintext, 16) == 0);
 }
 
@@ -123,8 +133,12 @@ https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf
 static void
 test_aes_from_ecb_examples (void)
 {
-  DskAES128 aes128;
-  dsk_aes128_init (&aes128, (uint8_t *) "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c");
+  const uint8_t * cipherkey_128 = (uint8_t *) "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
+  DskAES128Encryptor aes128e;
+  DskAES128Decryptor aes128d;
+  dsk_aes128_encryptor_init (&aes128e, cipherkey_128);
+  dsk_aes128_decryptor_init (&aes128d, cipherkey_128);
+   
   uint8_t tmp[16];
 
   //
@@ -156,18 +170,21 @@ test_aes_from_ecb_examples (void)
   for (int b = 0; b < 4; b++)
     {
       memcpy (tmp, blocks_aes128[b].p, 16);
-      dsk_aes128_encrypt_inplace (&aes128, tmp);
+      dsk_aes128_encrypt_inplace (&aes128e, tmp);
       assert(memcmp(tmp, blocks_aes128[b].c, 16) == 0);
-      dsk_aes128_decrypt_inplace (&aes128, tmp);
+      dsk_aes128_decrypt_inplace (&aes128d, tmp);
       assert(memcmp(tmp, blocks_aes128[b].p, 16) == 0);
     }
 
   //
   // Tests from 880-38a F.1.3 (equiv to F.1.4). [for AES-192]
   //
-  DskAES192 aes192;
-  dsk_aes192_init (&aes192, (uint8_t *) "\x8e\x73\xb0\xf7\xda\x0e\x64\x52\xc8\x10\xf3\x2b\x80\x90\x79\xe5\x62\xf8\xea\xd2\x52\x2c\x6b\x7b");
-    static struct {
+  DskAES192Encryptor aes192e;
+  DskAES192Decryptor aes192d;
+  const uint8_t * cipherkey_192 = (uint8_t *) "\x8e\x73\xb0\xf7\xda\x0e\x64\x52\xc8\x10\xf3\x2b\x80\x90\x79\xe5\x62\xf8\xea\xd2\x52\x2c\x6b\x7b";
+  dsk_aes192_encryptor_init (&aes192e, cipherkey_192);
+  dsk_aes192_decryptor_init (&aes192d, cipherkey_192);
+  static struct {
     const uint8_t p[16];
     const uint8_t c[16];
   } blocks_aes192[4] = {
@@ -191,21 +208,24 @@ test_aes_from_ecb_examples (void)
   for (int b = 0; b < 4; b++)
     {
       memcpy (tmp, blocks_aes192[b].p, 16);
-      dsk_aes192_encrypt_inplace (&aes192, tmp);
+      dsk_aes192_encrypt_inplace (&aes192e, tmp);
       assert(memcmp(tmp, blocks_aes192[b].c, 16) == 0);
-      dsk_aes192_decrypt_inplace (&aes192, tmp);
+      dsk_aes192_decrypt_inplace (&aes192d, tmp);
       assert(memcmp(tmp, blocks_aes192[b].p, 16) == 0);
     }
 
   //
   // Tests from 880-38a F.1.5 (equiv to F.1.6). [for AES-256]
   //
-  DskAES256 aes256;
-  dsk_aes256_init (&aes256,
+  DskAES256Encryptor aes256e;
+  DskAES256Decryptor aes256d;
+  const uint8_t * cipherkey_256 =
          (uint8_t *) "\x60\x3d\xeb\x10\x15\xca\x71\xbe"
                      "\x2b\x73\xae\xf0\x85\x7d\x77\x81"
                      "\x1f\x35\x2c\x07\x3b\x61\x08\xd7"
-                     "\x2d\x98\x10\xa3\x09\x14\xdf\xf4");
+                     "\x2d\x98\x10\xa3\x09\x14\xdf\xf4";
+  dsk_aes256_encryptor_init (&aes256e, cipherkey_256);
+  dsk_aes256_decryptor_init (&aes256d, cipherkey_256);
   static struct {
     const uint8_t p[16];
     const uint8_t c[16];
@@ -230,9 +250,9 @@ test_aes_from_ecb_examples (void)
   for (int b = 0; b < 4; b++)
     {
       memcpy (tmp, blocks_aes256[b].p, 16);
-      dsk_aes256_encrypt_inplace (&aes256, tmp);
+      dsk_aes256_encrypt_inplace (&aes256e, tmp);
       assert(memcmp(tmp, blocks_aes256[b].c, 16) == 0);
-      dsk_aes256_decrypt_inplace (&aes256, tmp);
+      dsk_aes256_decrypt_inplace (&aes256d, tmp);
       assert(memcmp(tmp, blocks_aes256[b].p, 16) == 0);
     }
 }
@@ -246,7 +266,7 @@ test_aes_from_ecb_examples (void)
 static void
 test_aes_gcm (void)
 {
-  DskAES128 aes128;
+  DskAES128Encryptor aes128;
   Dsk_AEAD_GCM_Precomputation precompute;
   uint8_t auth_tag[16];
   uint8_t ciphertext_out[16*4];
@@ -256,7 +276,7 @@ test_aes_gcm (void)
   //
   // Test Case 1.
   //
-  dsk_aes128_init (&aes128, (uint8_t *) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+  dsk_aes128_encryptor_init (&aes128, (uint8_t *) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace,
                            &aes128,
                            &precompute);
@@ -298,7 +318,7 @@ test_aes_gcm (void)
   //
   // Test Case 3.
   //
-  dsk_aes128_init (&aes128, (uint8_t *) "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08");
+  dsk_aes128_encryptor_init (&aes128, (uint8_t *) "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08");
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace,
                            &aes128,
                            &precompute);
@@ -336,7 +356,7 @@ test_aes_gcm (void)
   //
   // Test Case 4.  Adds associated_data.
   //
-  dsk_aes128_init (&aes128, (uint8_t *) "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08");
+  dsk_aes128_encryptor_init (&aes128, (uint8_t *) "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08");
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace,
                            &aes128,
                            &precompute);
@@ -436,8 +456,8 @@ test_aes_gcm (void)
   //
   // Test Case 7:   192-bit keys
   //
-  DskAES192 aes192;
-  dsk_aes192_init (&aes192, (uint8_t *) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+  DskAES192Encryptor aes192;
+  dsk_aes192_encryptor_init (&aes192, (uint8_t *) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes192_encrypt_inplace,
                            &aes192,
                            &precompute);
@@ -490,7 +510,7 @@ test_aes_gcm (void)
                                     "\xfe\xff\xe9\x92\x86\x65\x73\x1c";
   const uint8_t *iv_case_9 = iv_case_4;
 
-  dsk_aes192_init (&aes192, key_case_9);
+  dsk_aes192_encryptor_init (&aes192, key_case_9);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes192_encrypt_inplace,
                            &aes192, &precompute);
   dsk_aead_gcm_encrypt (&precompute, 
@@ -605,8 +625,8 @@ test_aes_gcm (void)
   //
   // Test case 13: trivial 256-bit key
   //
-  DskAES256 aes256;
-  dsk_aes256_init (&aes256, (uint8_t*) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+  DskAES256Encryptor aes256;
+  dsk_aes256_encryptor_init (&aes256, (uint8_t*) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes256_encrypt_inplace,
                            &aes256, &precompute);
   dsk_aead_gcm_encrypt (&precompute, 
@@ -652,7 +672,7 @@ test_aes_gcm (void)
   const uint8_t *key_case_15 = (uint8_t *)
                                     "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08"
                                     "\xfe\xff\xe9\x92\x86\x65\x73\x1c\x6d\x6a\x8f\x94\x67\x30\x83\x08";
-  dsk_aes256_init (&aes256, key_case_15);
+  dsk_aes256_encryptor_init (&aes256, key_case_15);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes256_encrypt_inplace,
                            &aes256, &precompute);
   const uint8_t *plaintext_case_15 = plaintext_case_3;
@@ -772,8 +792,8 @@ static void
 test_aes_ccm (void)
 {
   // All examples use the same key.
-  DskAES128 aes128;
-  dsk_aes128_init (&aes128, (uint8_t *) "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f");
+  DskAES128Encryptor aes128;
+  dsk_aes128_encryptor_init (&aes128, (uint8_t *) "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f");
 
   //
   // Example 1.

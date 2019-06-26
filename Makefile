@@ -68,8 +68,15 @@ CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTR
 LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS) $(DEP_LIBS)
 
 ASM_FILES = \
-        tls/amd64/dsk_tls_bignum_add_with_carry.asm \
-        tls/amd64/dsk_tls_bignum_multiply_2x2.asm
+        tls/amd64/dsk_tls_bignum_add_with_carry.o \
+        tls/amd64/dsk_tls_bignum_mul64word.o \
+        tls/amd64/dsk_tls_bignum_mul64word_addto.o \
+        tls/amd64/dsk_tls_bignum_multiply.o \
+        tls/amd64/dsk_tls_bignum_multiply64.o \
+        tls/amd64/dsk_tls_bignum_multiply_2x2.o \
+        tls/amd64/dsk_aes128_encrypt_inplace.o  \
+        tls/amd64/dsk_aes192_encrypt_inplace.o  \
+        tls/amd64/dsk_aes256_encrypt_inplace.o 
 
 tests/%: tests/%.c libdsk.a
 	gcc $(CC_FLAGS) -o $@ $^ -lm $(LINK_FLAGS)
@@ -163,6 +170,8 @@ codepages/%.o: codepages/%.c
 %.o: %.c
 	gcc $(CC_FLAGS) -o $@ -c $^
 
+%.o: %.asm
+	gcc -o $@ -c $^
 dsk-ascii-chartable.inc: mk-ascii-chartable.pl
 	./mk-ascii-chartable.pl > dsk-ascii-chartable.inc
 dsk-digit-chartables.inc: mk-digit-chartables.pl

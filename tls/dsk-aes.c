@@ -180,8 +180,8 @@ static const uint8_t Rcon[11] = {
 
 // Nr=num_rounds=10;  Nk=4 (4 32-bit words = 128-bits)
 void
-dsk_aes128_init(DskAES128            *s,
-                const uint8_t        *key)
+dsk_aes128_encryptor_init(DskAES128Encryptor   *s,
+                          const uint8_t        *key)
 {
   unsigned i;
 
@@ -216,8 +216,9 @@ dsk_aes128_init(DskAES128            *s,
     }
 }
 
+#if DSK_ASM_MODE != DSK_ASM_AMD64
 void
-dsk_aes128_encrypt_inplace(const DskAES128 *s,
+dsk_aes128_encrypt_inplace(const DskAES128Encryptor *s,
                            uint8_t         *in_out)      /* length 16 */
 {
   ADDROUNDKEY(in_out, s->w, 0);
@@ -232,6 +233,7 @@ dsk_aes128_encrypt_inplace(const DskAES128 *s,
   SHIFTROWS(in_out);
   ADDROUNDKEY(in_out, s->w, 10);
 }
+#endif
 
 #define INVSHIFTROWS(state) \
     do{ uint8_t tmp; \
@@ -344,27 +346,43 @@ do{                                                \
     INVMIXCOLUMNS_1(state + 12);                   \
   }while(0)
 
+void
+dsk_aes128_decryptor_init(DskAES128Decryptor   *s,
+                          const uint8_t        *key)
+{
+  DskAES128Encryptor tmp;
+  dsk_aes128_encryptor_init (&tmp, key);
+  memcpy (s->w, tmp.w + 16*10, 16);
+  memcpy (s->w + 16 * 10, tmp.w, 16);
+  for (unsigned i = 1; i <= 9; i++)
+    {
+      uint8_t buf[16];
+      memcpy (buf, tmp.w + 16*i, 16);
+      INVMIXCOLUMNS(buf);
+      memcpy (s->w + 16 * (10-i), buf, 16);
+    }
+}
 
 void
-dsk_aes128_decrypt_inplace(const DskAES128      *s,
+dsk_aes128_decrypt_inplace(const DskAES128Decryptor     *s,
                            uint8_t              *in_out)   /* length 16 */
 {
-  ADDROUNDKEY(in_out, s->w, 10);
-  for (unsigned round = 9; round >= 1; round--)
+  ADDROUNDKEY(in_out, s->w, 0);
+  for (unsigned round = 1; round <= 9; round++)
     {
       INVSHIFTROWS(in_out);
       INVSUBBYTES(in_out);
-      ADDROUNDKEY(in_out, s->w, round);
       INVMIXCOLUMNS(in_out);
+      ADDROUNDKEY(in_out, s->w, round);
     }
   INVSHIFTROWS(in_out);
   INVSUBBYTES(in_out);
-  ADDROUNDKEY(in_out, s->w, 0);
+  ADDROUNDKEY(in_out, s->w, 10);
 }
 
 // Nr=num_rounds=12;  Nk=6 (6 32-bit words = 192-bits)
 void
-dsk_aes192_init(DskAES192            *s,
+dsk_aes192_encryptor_init(DskAES192Encryptor          *s,
                 const uint8_t        *key)
 {
   unsigned i;
@@ -400,6 +418,7 @@ dsk_aes192_init(DskAES192            *s,
     }
 }
 
+#if DSK_ASM_MODE != DSK_ASM_AMD64
 void
 dsk_aes192_encrypt_inplace(const DskAES192 *s,
                            uint8_t         *in_out)      /* length 16 */
@@ -416,28 +435,44 @@ dsk_aes192_encrypt_inplace(const DskAES192 *s,
   SHIFTROWS(in_out);
   ADDROUNDKEY(in_out, s->w, 12);
 }
-
+#endif
 
 void
-dsk_aes192_decrypt_inplace(const DskAES192 *s,
+dsk_aes192_decryptor_init(DskAES192Decryptor   *s,
+                          const uint8_t        *key)
+{
+  DskAES192Encryptor tmp;
+  dsk_aes192_encryptor_init (&tmp, key);
+  memcpy (s->w, tmp.w + 16*12, 16);
+  memcpy (s->w + 16 * 12, tmp.w, 16);
+  for (unsigned i = 1; i <= 11; i++)
+    {
+      uint8_t buf[16];
+      memcpy (buf, tmp.w + 16*i, 16);
+      INVMIXCOLUMNS(buf);
+      memcpy (s->w + 16 * (12-i), buf, 16);
+    }
+}
+void
+dsk_aes192_decrypt_inplace(const DskAES192Decryptor *s,
                            uint8_t         *in_out)      /* length 16 */
 {
-  ADDROUNDKEY(in_out, s->w, 12);
-  for (unsigned round = 11; round >= 1; round--)
+  ADDROUNDKEY(in_out, s->w, 0);
+  for (unsigned round = 1; round <= 11; round++)
     {
       INVSHIFTROWS(in_out);
       INVSUBBYTES(in_out);
-      ADDROUNDKEY(in_out, s->w, round);
       INVMIXCOLUMNS(in_out);
+      ADDROUNDKEY(in_out, s->w, round);
     }
   INVSHIFTROWS(in_out);
   INVSUBBYTES(in_out);
-  ADDROUNDKEY(in_out, s->w, 0);
+  ADDROUNDKEY(in_out, s->w, 12);
 }
 
 // Nr=num_rounds=14;  Nk=8 (8 32-bit words = 256-bits)
 void
-dsk_aes256_init(DskAES256            *s,
+dsk_aes256_encryptor_init(DskAES256Encryptor *s,
                 const uint8_t        *key)
 {
   unsigned i;
@@ -481,7 +516,7 @@ dsk_aes256_init(DskAES256            *s,
 }
 
 void
-dsk_aes256_encrypt_inplace(const DskAES256 *s,
+dsk_aes256_encrypt_inplace(const DskAES256Encryptor *s,
                            uint8_t         *in_out)      /* length 16 */
 {
   ADDROUNDKEY(in_out, s->w, 0);
@@ -497,21 +532,36 @@ dsk_aes256_encrypt_inplace(const DskAES256 *s,
   ADDROUNDKEY(in_out, s->w, 14);
 }
 
-
 void
-dsk_aes256_decrypt_inplace(const DskAES256 *s,
+dsk_aes256_decryptor_init(DskAES256Decryptor   *s,
+                          const uint8_t        *key)
+{
+  DskAES256Encryptor tmp;
+  dsk_aes256_encryptor_init (&tmp, key);
+  memcpy (s->w, tmp.w + 16*14, 16);
+  memcpy (s->w + 16 * 14, tmp.w, 16);
+  for (unsigned i = 1; i <= 13; i++)
+    {
+      uint8_t buf[16];
+      memcpy (buf, tmp.w + 16*i, 16);
+      INVMIXCOLUMNS(buf);
+      memcpy (s->w + 16 * (14-i), buf, 16);
+    }
+}
+void
+dsk_aes256_decrypt_inplace(const DskAES256Decryptor *s,
                            uint8_t         *in_out)      /* length 16 */
 {
-  ADDROUNDKEY(in_out, s->w, 14);
-  for (unsigned round = 13; round >= 1; round--)
+  ADDROUNDKEY(in_out, s->w, 0);
+  for (unsigned round = 1; round <= 13; round++)
     {
       INVSHIFTROWS(in_out);
       INVSUBBYTES(in_out);
-      ADDROUNDKEY(in_out, s->w, round);
       INVMIXCOLUMNS(in_out);
+      ADDROUNDKEY(in_out, s->w, round);
     }
   INVSHIFTROWS(in_out);
   INVSUBBYTES(in_out);
-  ADDROUNDKEY(in_out, s->w, 0);
+  ADDROUNDKEY(in_out, s->w, 14);
 }
 
