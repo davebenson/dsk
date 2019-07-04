@@ -75,11 +75,19 @@ typedef struct DskTlsX509SubjectPublicKeyInfo
   uint8_t *public_key;
 } DskTlsX509SubjectPublicKeyInfo;
 
+#define DSK_TLS_X509_CERTIFICATE(o) \
+  DSK_OBJECT_CAST(DskTlsX509Certificate, o, &dsk_tls_x509_certificate_class)
+#define DSK_IS_TLS_X509_CERTIFICATE(o) \
+  dsk_object_is_a ((o), &dsk_tls_x509_certificate_class)
+
+extern DskTlsKeyPair dsk_tls_x509_certificate_class;
+
 //
 // Handles unsigned ("TBS") and signed Certificates.
 //
 struct DskTlsX509Certificate
 {
+  DskTlsKeyPair base_instance;
   unsigned version;             // 1 is v1, etc
   uint8_t serial_number[20];
   DskTlsX509SignatureAlgorithm signature_algorithm;
@@ -99,10 +107,12 @@ struct DskTlsX509Certificate
   unsigned n_extensions;
   // TODO extensions not handled yet
 
-
   bool is_signed;
   size_t signature_length;
   uint8_t *signature_data;
+
+  unsigned cert_data_length;
+  uint8_t *cert_data;
 };
 DskTlsX509Certificate *
 dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,

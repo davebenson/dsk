@@ -44,6 +44,7 @@ struct DskTlsConnection
   DskHookTrap *write_trap;
   DskHookTrap *read_trap;
 
+
   // This object is deleted after handshaking.
   DskTlsHandshakeNegotiation *handshake_info;
 
@@ -59,7 +60,7 @@ struct DskTlsConnection
 
   // If cipher_suite != NULL, then we send
   // records encrypted.
-  DskTlsCipherSuite *cipher_suite;
+  const DskTlsCipherSuite *cipher_suite;
   void *cipher_suite_read_instance;
   void *cipher_suite_write_instance;
 
@@ -70,3 +71,4 @@ DskTlsConnection *dsk_tls_connection_new (DskStream     *underlying,
                                           bool           is_server,
                                           DskTlsContext *context,
                                           DskError     **error);
+

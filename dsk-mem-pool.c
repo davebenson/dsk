@@ -62,7 +62,7 @@
  * @pool: area to allocate memory from.
  * @size: number of bytes to allocate.
  *
- * private
+ * private: called when a call to malloc() is needed.
  *
  * returns: the slab of memory allocated from the pool.
  */
@@ -163,22 +163,6 @@ char    *dsk_mem_pool_strcut   (DskMemPool      *pool,
  *
  * Destroy all chunk associated with the given mem-pool.
  */
-#if 0           /* inlined */
-void
-dsk_mem_pool_destruct     (DskMemPool     *pool)
-{
-  void * slab = pool->all_chunk_list;
-  while (slab)
-    {
-      void * new_slab = SLAB_GET_NEXT_PTR (slab);
-      dsk_free (slab);
-      slab = new_slab;
-    }
-#ifdef DSK_DEBUG
-  memset (pool, 0xea, sizeof (DskMemPool));
-#endif
-}
-#endif
 
 /* === Fixed-Size MemPool's === */
 /**

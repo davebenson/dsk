@@ -11,13 +11,15 @@ struct DskTlsContext
   bool alpn_required;
 
   size_t n_certificates;
-  DskTlsCertificate **certificates;
+  DskTlsKeyPair **certificates;
 
   DskTlsClientFindPSKsFunc client_find_psks;
   void * client_find_psks_data;
 
   DskTlsServerSelectPSKFunc server_select_psk;
   void * server_select_psk_data;
+
+  bool always_request_client_certificate;
 };
 
 
@@ -47,8 +49,10 @@ struct DskTlsHandshakeNegotiation
 
   const char *server_hostname;
 
+  unsigned must_send_hello_retry_request : 1;
   unsigned sent_hello_retry_request : 1;
   unsigned allow_early_data : 1;
+  unsigned request_client_certificate : 1;
 
   uint8_t ks_result;    // key-share negotiation result, or 0
 
@@ -67,7 +71,7 @@ struct DskTlsHandshakeNegotiation
   // Set if ks_result==KS_RESULT_MUST_MAKE_RETRY_REQUEST
   DskTlsNamedGroup best_supported_group;
 
-  DskTlsCipherSuite *cipher_suite;
+  const DskTlsCipherSuite *cipher_suite;
   DskTlsKeySchedule *key_schedule;
   size_t shared_key_length;
   uint8_t *shared_key;
@@ -85,6 +89,7 @@ struct DskTlsHandshakeNegotiation
   int psk_index; // index in PreSharedKey extension of ClientHello
 
   void *transcript_hash_instance;
+  DskTlsHandshakeMessageType transcript_hash_last_message_type;
 
   //
   // Used transiently to handle handshakes.
@@ -102,8 +107,11 @@ struct DskTlsHandshakeNegotiation
   // Handshakes as they are available.
   DskTlsHandshakeMessage  *client_hello;
   DskTlsHandshakeMessage  *server_hello;
-  DskTlsHandshakeMessage  *certificate;
+  DskTlsHandshakeMessage  *certificate_hs;
   DskTlsSignatureScheme certificate_scheme;
+  DskTlsX509Certificate *certificate;
+  DskTlsHandshakeMessage *cert_req_hs;
+  DskTlsHandshakeMessage *cert_hs;
 };
 
 bool dsk_tls_handshake_serialize (DskTlsHandshakeNegotiation *hs_info,
@@ -115,3 +123,8 @@ void dsk_tls_record_layer_send_handshake (DskTlsHandshakeNegotiation *hs_info,
 
 void dsk_tls_connection_fail (DskTlsConnection *connection,
                               DskError        **error);
+
+#define DSK_ERROR_SET_TLS(error, level_short, description_short)           \
+  dsk_error_set_tls_alert((error),                                         \
+                          DSK_TLS_ALERT_LEVEL_##level_short,               \
+                          DSK_TLS_ALERT_DESCRIPTION_##description_short)

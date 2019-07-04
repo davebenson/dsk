@@ -4,6 +4,26 @@
 #include <string.h>
 
 //
+// Supported stuff.
+//
+static DskTlsSignatureScheme global_sig_schemes[] = {
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256,
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384,
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512,
+  DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP256R1_SHA256,
+  DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP384R1_SHA384,
+  DSK_TLS_SIGNATURE_SCHEME_ECDSA_SECP521R1_SHA512,
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256,
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384,
+  DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512,
+  DSK_TLS_SIGNATURE_SCHEME_ED25519,
+  DSK_TLS_SIGNATURE_SCHEME_ED448,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384,
+  DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512
+};
+
+//
 // Allocate memory and objects from the handshke-pool.
 //
 #define HS_ALLOC(hs_info, type) \
@@ -727,7 +747,9 @@ static void server_continue_post_psk_negotiation (DskTlsHandshakeNegotiation *hs
 void
 dsk_tls_handshake_server_chose_psk (DskTlsHandshakeNegotiation *hs_info,
                                     DskTlsPSKKeyExchangeMode exchange_mode,
-                                    unsigned                    which_psk)
+                                    unsigned                    which_psk,
+                                    const DskTlsCipherSuite    *cipher
+                                    )
 {
   // Simply return true without setting anything up
   // if no PSK was valid.
@@ -736,6 +758,7 @@ dsk_tls_handshake_server_chose_psk (DskTlsHandshakeNegotiation *hs_info,
   hs_info->has_psk = true;
   hs_info->psk_key_exchange_mode = exchange_mode;
   hs_info->psk_index = which_psk;
+  hs_info->cipher_suite = cipher;
 
   server_continue_post_psk_negotiation (hs_info);
 }
@@ -802,7 +825,9 @@ do_cipher_suite_negotiation (DskTlsHandshakeNegotiation *hs_info,
   //
   if (hs_info->cipher_suite != NULL)
     return true;
-    
+  if (hs_info->has_psk)
+    return true;
+
   DskTlsHandshakeMessage *shake = hs_info->client_hello;
   unsigned n_cipher_suites = shake->client_hello.n_cipher_suites;
   DskTlsCipherSuiteCode *cipher_suites = shake->client_hello.cipher_suites;
@@ -919,7 +944,7 @@ typedef struct {
   CertificateNegotiationResultCode code;
   union {
     struct {
-      DskTlsCertificate *certificate;
+      DskTlsKeyPair *certificate;
       DskTlsSignatureScheme scheme;
     } success;
     DskError *error;
@@ -964,30 +989,12 @@ x509_signature_algorithm_matches_tls_scheme
 }
 
 static bool
-scheme_valid_for_certificate (DskTlsSignatureScheme scheme,
-                              DskTlsCertificate    *cert)
-{
-  switch (cert->type)
-    {
-      case DSK_TLS_CERTIFICATE_TYPE_X509:
-        {
-          DskTlsX509SignatureAlgorithm algo = cert->x509.chain[0]->signature_algorithm;
-          return x509_signature_algorithm_matches_tls_scheme (algo, scheme);
-        }
-      case DSK_TLS_CERTIFICATE_TYPE_RAW_PUBLIC_KEY:
-        {
-          //TODO
-          return false;
-        }
-      default:
-        return false;
-    }
-}
-
-static bool
 do_certificate_selection (DskTlsHandshakeNegotiation *hs_info,
                           DskError **error)
 {
+  if (hs_info->has_psk)
+    return true;
+
   //
   // Perform Certificate Selection
   //
@@ -1001,20 +1008,20 @@ do_certificate_selection (DskTlsHandshakeNegotiation *hs_info,
   DskTlsConnection *conn = hs_info->conn;
   DskTlsContext *context = conn->context;
   size_t n_certs = context->n_certificates;
-  DskTlsCertificate **certs = context->certificates;
+  DskTlsKeyPair **certs = context->certificates;
   for (size_t i = 0; i < n_certs; i++)
     {
       // TODO: handle RAW_PUBLIC_KEY
-      if (certs[i]->type != DSK_TLS_CERTIFICATE_TYPE_X509)
+      if (!DSK_IS_TLS_X509_CERTIFICATE (certs[i]))
         continue;
-
+      DskTlsX509Certificate *cert = DSK_TLS_X509_CERTIFICATE (certs[i]);
       //
       // Filter out certificates whose
       // name doesn't match the server_name extension value.
       //
       if (hs_info->server_hostname != NULL)
         {
-          DskTlsX509Name *subject_name = &certs[i]->x509.chain[0]->subject;
+          DskTlsX509Name *subject_name = &cert->subject;
           const char *domain_name = dsk_tls_x509_name_get_component (subject_name,
                                       DSK_TLS_X509_DN_DOMAIN_COMPONENT);
           if (domain_name == NULL
@@ -1029,11 +1036,18 @@ do_certificate_selection (DskTlsHandshakeNegotiation *hs_info,
       unsigned n_sig_schemes = sig_algos->n_schemes;
       const DskTlsSignatureScheme *sig_schemes = sig_algos->schemes;
       for (size_t j = 0; j < n_sig_schemes; j++)
-        if (scheme_valid_for_certificate (sig_schemes[j], certs[i]))
+        if (dsk_tls_key_pair_supports_scheme (certs[i], sig_schemes[j]))
           {
-            DskTlsCertificate *cert = certs[i];
             hs_info->certificate_scheme = sig_schemes[j];
 
+            //
+            // RFC 8446 4.2.2: "Valid extensions for server certificates at
+            // present include the OCSP Status extension [RFC6066]
+            // and the SignedCertificateTimestamp extension [RFC6962];
+            // future extensions may be defined for this message as well.
+            // Extensions in the Certificate message from the server MUST
+            // correspond to ones from the ClientHello message."
+            //
             DskTlsHandshakeMessage *cert_hs = create_handshake (hs_info, DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE, 0);
             cert_hs->certificate.n_entries = 1;
             DskTlsCertificateEntry *entry = HS_ALLOC0 (hs_info, DskTlsCertificateEntry);
@@ -1043,7 +1057,8 @@ do_certificate_selection (DskTlsHandshakeNegotiation *hs_info,
             entry[0].n_extensions = 0;
             entry[0].extensions = NULL;
             assert(hs_info->n_extensions < hs_info->max_extensions);
-            hs_info->certificate = cert_hs;
+            hs_info->certificate_hs = cert_hs;
+            hs_info->certificate = cert;
             return true;
           }
     }
@@ -1090,6 +1105,8 @@ do_application_level_protocol_negotiation (DskTlsHandshakeNegotiation *hs_info,
   DskTlsHandshakeMessage *shake = hs_info->received_handshake;
   DskMemPool *pool = &hs_info->mem_pool;
   DskTlsContext *context = conn->context;
+  if (hs_info->has_psk)
+    return true;
   if (context->n_alps > 0)
     {
       DskTlsExtension_ALPN *alpn = FIND_EXT_ALPN(shake);
@@ -1214,6 +1231,60 @@ send_hello_retry_request (DskTlsHandshakeNegotiation *hs_info,
   return true;
 }
 
+//
+
+static DskTlsHandshakeMessage *
+compute_certificate_verify (DskTlsHandshakeNegotiation *hs_info)
+{
+  DskTlsHandshakeMessage *cert_ver = HS_ALLOC0 (hs_info, DskTlsHandshakeMessage);
+  DskTlsX509Certificate *cert = hs_info->certificate;
+  cert_ver->type = DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_VERIFY;
+  cert_ver->certificate_verify.algorithm = hs_info->certificate_scheme;
+  unsigned sig_length = dsk_tls_key_pair_get_signature_length (&cert->base_instance, hs_info->certificate_scheme);
+  cert_ver->certificate_verify.signature_length = sig_length;
+  uint8_t *sig_data = dsk_mem_pool_alloc (&hs_info->mem_pool, sig_length);
+  cert_ver->certificate_verify.signature_data = sig_data;
+
+  // RFC 8446, Section 4.4.3:
+  //
+  //      The digital signature is then computed over the concatenation of:
+  //        -  A string that consists of octet 32 (0x20) repeated 64 times
+  //        -  The context string
+  //           - for servers: "TLS 1.3, server CertificateVerify"
+  //           - for clients: "TLS 1.3, client CertificateVerify"
+  //        -  A single 0 byte which serves as the separator
+  //        -  The content to be signed == Transcript-Hash(Handshake-Context, Certificate)
+  //
+  // The length of each of these components is 64, 33, 1, hashlen.
+  const DskChecksumType *hash_type = hs_info->cipher_suite->hash_type;
+  unsigned hash_size = hash_type->hash_size;
+  unsigned content_to_sign_len = 98 + hash_size;
+  uint8_t *content_to_sign = alloca (content_to_sign_len);
+  bool is_server = DSK_TLS_CONNECTION_STATE_IS_SERVER(hs_info->conn->state);
+  memset(content_to_sign, 32, 64);
+  memcpy (content_to_sign + 64, 
+                 // 012345678901234567890123456789012 (33 bytes w/o nul; 34 bytes w/ nul)
+          is_server ? "TLS 1.3, server CertificateVerify"
+                    : "TLS 1.3, client CertificateVerify",
+          34 // includes NUL
+          );
+  assert(hs_info->transcript_hash_last_message_type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE);
+  uint8_t *transcript_hash = alloca (hash_size);
+  void *instance_copy = alloca(hash_type->instance_size);
+  memcpy (instance_copy, hs_info->transcript_hash_instance, hash_type->instance_size);
+  hash_type->end(instance_copy, transcript_hash);
+  memcpy (content_to_sign + 98,
+          transcript_hash,
+          hash_size);
+
+  dsk_tls_key_pair_sign (&cert->base_instance,
+                         hs_info->certificate_scheme,
+                         content_to_sign_len,
+                         content_to_sign,
+                         sig_data);
+  return cert_ver;
+}
+
 static bool
 send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
                           DskError **error)
@@ -1298,8 +1369,8 @@ send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
 
 
   // set decryptor, encryptor
-  conn->cipher_suite->init (conn->cipher_suite_read_instance,
-                            key_schedule->client_handshake_write_key);
+//  conn->cipher_suite->init (conn->cipher_suite_read_instance,
+//                            key_schedule->client_handshake_write_key);
   conn->cipher_suite->init (conn->cipher_suite_write_instance,
                             key_schedule->server_handshake_write_key);
 
@@ -1312,13 +1383,74 @@ send_server_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   dsk_tls_record_layer_send_handshake (hs_info, ee->data_length, ee->data);
 
   // Optional:  send_handshake CertificateRequest.
-  if (...)
+  //
+  // RFC 8446 4.3.2:
+  //    Servers which are authenticating with a PSK MUST NOT send the
+  //    CertificateRequest message in the main handshake, though they MAY
+  //    send it in post-handshake authentication (see Section 4.6.2) provided
+  //    that the client has sent the "post_handshake_auth" extension (see
+  //    Section 4.2.6).
+  //
+  if (hs_info->request_client_certificate
+   && !hs_info->has_psk)
     {
-      ...
+      //
+      // RFC 8446 4.3.2.  The "signature_algorithms" extension
+      // MUST be specified, and other extensions may optionally be included
+      // if defined for this message.  Clients MUST ignore unrecognized
+      // extensions.
+      //
+      // In prior versions of TLS, the CertificateRequest message carried a
+      // list of signature algorithms and certificate authorities which the
+      // server would accept.  In TLS 1.3, the former is expressed by sending
+      // the "signature_algorithms" and optionally "signature_algorithms_cert"
+      // extensions.  The latter is expressed by sending the
+      // "certificate_authorities" extension (see Section 4.2.4).
+      //
+      hs_info->cert_req_hs = HS_ALLOC0 (hs_info, DskTlsHandshakeMessage);
+      hs_info->cert_req_hs->type = DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_REQUEST;
+
+      DskTlsExtension *exts[6];
+      unsigned n_exts = 0;
+      DskTlsExtension_SignatureAlgorithms *ext_sa = HS_ALLOC0 (hs_info, DskTlsExtension_SignatureAlgorithms);
+      ext_sa->n_schemes = DSK_N_ELEMENTS (global_sig_schemes);
+      ext_sa->schemes = (DskTlsSignatureScheme *) global_sig_schemes;
+      ext_sa->base.type = DSK_TLS_EXTENSION_TYPE_SIGNATURE_ALGORITHMS;
+      exts[n_exts++] = (DskTlsExtension *) ext_sa;
+
+      // TODO: CA extension
+
+      assert(n_exts <= DSK_N_ELEMENTS(exts));
+      hs_info->cert_req_hs->certificate_request.n_extensions = n_exts;
+      hs_info->cert_req_hs->certificate_request.extensions = HS_ALLOC_ARRAY (hs_info, n_exts, DskTlsExtension *);
+      memcpy (hs_info->cert_req_hs->certificate_request.extensions, exts, n_exts * sizeof(DskTlsExtension*));
+
+      if (!dsk_tls_handshake_serialize (hs_info, hs_info->cert_req_hs, error))
+        return false;
+      dsk_tls_record_layer_send_handshake (hs_info,
+                                           hs_info->cert_req_hs->data_length,
+                                           hs_info->cert_req_hs->data);
     }
 
-  ... send_handshake (conn, cert_hs);
-  ... send_handshake (conn, cert_verify_hs);
+  //
+  // Send Certificate handshake. (obtained earlier from do_certificate_selection())
+  //
+  if (!dsk_tls_handshake_serialize (hs_info, hs_info->cert_hs, error))
+    return false;
+  dsk_tls_record_layer_send_handshake (hs_info,
+                                       hs_info->cert_hs->data_length,
+                                       hs_info->cert_hs->data);
+
+  //
+  // Compute Certificate Verify.
+  //
+  DskTlsHandshakeMessage *cert_ver = compute_certificate_verify (hs_info);
+  if (!dsk_tls_handshake_serialize (hs_info, cert_ver, error))
+    return false;
+  dsk_tls_record_layer_send_handshake (hs_info,
+                                       cert_ver->data_length,
+                                       cert_ver->data);
+  return true;
 }
 
 typedef struct NegotiationStep NegotiationStep;
@@ -1327,6 +1459,7 @@ struct NegotiationStep
   const char *name;
   bool (*func)(DskTlsHandshakeNegotiation *hs_info, DskError **error);
 };
+#define NEGOTIATION_STEP(f) { #f, f }
 
 //
 // This is where the server handles the ClientHello message.
@@ -1336,7 +1469,6 @@ struct NegotiationStep
 // (and thus of the whole connection),
 // unless it is a response to a HelloRetryRequest.
 // 
-//
 // The client offers its preferences and requirements,
 // and an initial key-share so that the server can
 // start encrypting as soon as it
@@ -1365,9 +1497,7 @@ handle_client_hello (DskTlsConnection *conn,
 
 
   DskTlsExtension *response_exts[MAX_RESPONSE_EXTENSIONS];
-  bool need_client_key_share = false;
   DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
-  DskMemPool *pool = &hs_info->mem_pool;
   hs_info->received_handshake = shake;
   hs_info->client_hello = shake;
   hs_info->n_extensions = 0;
@@ -1385,20 +1515,23 @@ handle_client_hello (DskTlsConnection *conn,
        step < DSK_N_ELEMENTS(ch_negotation_steps);
        step++)
     {
-      if (!ch_negotation_steps[step].func (handshake_info, error))
+      if (!ch_negotation_steps[step].func (hs_info, error))
         {
-          dsk_add_error_prefix (&error, ch_negotation_steps[step].name);
+          dsk_add_error_prefix (error, "%s (%s:%u)",
+                                ch_negotation_steps[step].name,
+                                __FILE__, __LINE__);
           return false;
         }
     }
 
-
   return true;
 }
 
-static 
+static void
 server_continue_post_psk_negotiation (DskTlsHandshakeNegotiation *hs_info)
 {
+  DskError *error = NULL;
+
   static const NegotiationStep server_post_psk_steps[] = {
     NEGOTIATION_STEP(combine_psk_and_keyshare),
     NEGOTIATION_STEP(do_cipher_suite_negotiation),
@@ -1408,18 +1541,33 @@ server_continue_post_psk_negotiation (DskTlsHandshakeNegotiation *hs_info)
     NEGOTIATION_STEP(do_application_level_protocol_negotiation),
   };
 
-  //
-  ...
-
-  if (hs_info->need_hello_retry_request)
+  for (unsigned i = 0; i < DSK_N_ELEMENTS (server_post_psk_steps); i++)
     {
-      if (!send_hello_retry_request (hs_info, error))
-        return false;
+      if (!(server_post_psk_steps[i].func (hs_info, &error)))
+        {
+          dsk_tls_connection_failed (hs_info->conn, error);
+          dsk_error_unref (error);
+          return;
+        }
+    }
+
+  if (hs_info->must_send_hello_retry_request)
+    {
+      if (!send_hello_retry_request (hs_info, &error))
+        {
+          dsk_tls_connection_failed (hs_info->conn, error);
+          dsk_error_unref (error);
+          return;
+        }
     }
   else
     {
-      if (!send_server_hello_flight (hs_info, error))
-        return false;
+      if (!send_server_hello_flight (hs_info, &error))
+        {
+          dsk_tls_connection_failed (hs_info->conn, error);
+          dsk_error_unref (error);
+          return;
+        }
     }
 
 }
@@ -1433,18 +1581,49 @@ handle_server_hello (DskTlsConnection *conn,
                      DskTlsHandshakeMessage  *shake,
                      DskError        **error)
 {
-  DskTlsHandshakeNegotiation *handshake_info = conn->handshake_info;
+  DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
+
+  bool requires_key_share = true;
+
+  if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
+    {
+      *error = dsk_error_new ("ServerHello not allowed in %s state",
+                              dsk_tls_connection_state_name (conn->state));
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return false;
+    }
 
   //
-  // Compute shared secret, use pre-shared-key, or fail.
+  // Compute shared secret, use pre-shared-key, or both, or fail.
   //
-  ...
+  DskTlsExtension_PreSharedKey *psk = FIND_EXT_PSK (shake);
+  DskTlsExtension_PSKKeyExchangeModes *pskm = FIND_EXT_PSK_KEY_EXCHANGE_MODE (shake);
+  if (psk != NULL)
+    {
+      //
+      // Clients MUST verify that the server's selected_identity is within the
+      // range supplied by the client, that the server selected a cipher suite
+      // indicating a Hash associated with the PSK, and that a server
+      // "key_share" extension is present if required by the ClientHello
+      // "psk_key_exchange_modes" extension.  If these values are not
+      // consistent, the client MUST abort the handshake with an
+      // "illegal_parameter" alert.
+      //
+      unsigned selected_identity = psk->selected_identity;
+      if (selected_identity >= hs_info->n_psks)
+        {
+          *error = dsk_error_new ("invalid PSK selection from server");
+          DSK_ERROR_SET_TLS (*error, FATAL, ILLEGAL_PARAMETER);
+          return false;
+        }
+      hs_info->has_psk = true;
+    }
 
   //
   // Find which CipherSuite was agreed upon.
   //
   DskTlsCipherSuiteCode cs_code = shake->server_hello.cipher_suite;
-  DskTlsCipherSuite *cs = dsk_tls_cipher_suite_by_code (cs_code);
+  const DskTlsCipherSuite *cs = dsk_tls_cipher_suite_by_code (cs_code);
   if (cs == NULL)
     {
       *error = dsk_error_new ("server selected unavailable cipher-suite (0x%04x)", cs_code);
@@ -1452,30 +1631,40 @@ handle_server_hello (DskTlsConnection *conn,
     }
   conn->cipher_suite = cs;
 
-  // optional: [Send EndOfEarlyData]
-  ...
-
-  // optional: send Certificate [opt CertificateVerify]
-  ..
-
-  // send Finished
-  ...
-  dsk_tls_key_schedule_compute_finished_data (...);
-  ...
+  DskTlsExtension_KeyShare *ks = FIND_EXT_KEY_SHARE (shake);
+  if (ks == NULL)
+    {
+      if (!hs_info->has_psk)
+        {
+          *error = dsk_error_new ("PSK required if no KeyShare present");
+          return false;
+        }
+    }
+  else
+    {
+      // Compute shared-secret.
+      ..
+    }
   
   //
   // Compute read/write instances (which use different keys).
   //
+  // note: We won't use the write_instance until WAIT_FINISHED,
+  // but it seems weird to have it uninitialized;
+  // but it does cause us to differ with state transition diagram
+  // on page 119 of RFC 8446 (Appendix A.1).
+  //
   DskTlsKeySchedule *schedule = handshake_info->key_schedule;
   assert(conn->shared_key_length == cs->key_size);
-  // write instance
   conn->cipher_suite_write_instance = dsk_malloc (cs->instance_size);
   cs->init (conn->cipher_suite_write_instance,
             key_schedule->client_application_write_key);
-  // read instance
   conn->cipher_suite_read_instance = dsk_malloc (cs->instance_size);
   cs->init (conn->cipher_suite_read_instance,
             key_schedule->server_application_write_key);
+
+  conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_ENCRYPTED_EXTENSIONS;
+  return true;
 }
 
 //
@@ -1487,6 +1676,14 @@ handle_hello_retry_request (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
+    {
+      ...
+    }
+  if (had_hrr)
+    {
+      ...
+    }
   switch (conn->state)
     {
     ...
@@ -1499,6 +1696,11 @@ handle_new_session_ticket  (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
+
   if (conn->context->store_session_tickets (...))
     {
       ...
@@ -1517,6 +1719,10 @@ handle_encrypted_extensions(DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
   ...
 }
 static bool
@@ -1524,6 +1730,10 @@ handle_certificate         (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
   ...
 }
 static bool
@@ -1531,6 +1741,10 @@ handle_certificate_request (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
   ...
 }
 static bool
@@ -1538,6 +1752,10 @@ handle_certificate_verify  (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
   ...
 }
 static bool
@@ -1545,6 +1763,10 @@ handle_finished            (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  if (conn->state != ...)
+    {
+      ...
+    }
   ...
 }
 
@@ -1567,7 +1789,8 @@ handle_handshake_message (DskTlsConnection *conn,
       return handle_new_session_ticket (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_END_OF_EARLY_DATA:
       return handle_end_of_early_data (conn, shake, error);
-    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS:
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS:xml-parser-0.c libdsk.a -lm -g -lz  
+gcc -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64   -DDSK_ASM_MODE=DSK_ASM_AMD64 -o tests/test-pattern-0 tests/test-pat
       return handle_encrypted_extensions (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE:
       return handle_certificate (conn, shake, error);
@@ -1612,7 +1835,8 @@ try_parse_record_header:
       return true;
     }
 
-  // throw away header
+  /xml-parser-0.c libdsk.a -lm -g -lz  
+gcc -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64   -DDSK_ASM_MODE=DSK_ASM_AMD64 -o tests/test-pattern-0 tests/test-pat/ throw away header
   dsk_buffer_discard (&conn->incoming_raw, header_result.header_length);
 
   ensure_record_data_capacity (conn, header_result.payload_length);
@@ -1635,6 +1859,7 @@ try_parse_record_header:
     case DSK_TLS_RECORD_CONTENT_TYPE_ALERT:
       {
         ...
+        break;
       }
     case DSK_TLS_RECORD_CONTENT_TYPE_HANDSHAKE:
       {
@@ -1662,7 +1887,7 @@ try_parse_record_header:
                 return false;
               }
           }
-        goto try_parse_record_header;
+        break;
       }
 
     case DSK_TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA:
@@ -1678,13 +1903,13 @@ try_parse_record_header:
       {
         //...
       }
-      goto try_parse_record_header;
+      break;
 
     case DSK_TLS_RECORD_CONTENT_TYPE_HEARTBEAT:
       {
         ...
       }
-      goto try_parse_record_header;
+      break;
 
     default:
       error = dsk_error_new ("unknown ContentType 0x%02x", 
@@ -1693,6 +1918,8 @@ try_parse_record_header:
       dsk_error_unref (err);
       return false;
     }
+
+  goto try_parse_record_header;
 }
 
 DskTlsConnection *

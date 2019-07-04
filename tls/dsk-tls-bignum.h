@@ -7,7 +7,7 @@
 //
 // Various operations:
 //    * Diffie-Hellman Finite-Field Key Enchange
-//    * Elliptic Curve Point Addition
+//    * Elliptic Curve Point Addition/Doubling
 //    * RSA-style key-generation (ie generating primes)
 //
 // Modular Square-Root:
@@ -74,6 +74,27 @@ uint32_t dsk_tls_bignum_multiply_word        (unsigned len,
                                               const uint32_t *in,
                                               uint32_t word,
                                               uint32_t *out);
+void     dsk_tls_bignum_multiply_2x2         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_3x3         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_4x4         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_5x5         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_6x6         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_7x7         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
+void     dsk_tls_bignum_multiply_8x8         (const uint32_t *a,
+                                              const uint32_t *b,
+                                              uint32_t       *out);
 void     dsk_tls_bignum_square               (unsigned len,
                                               const uint32_t *words,
                                               uint32_t *out);

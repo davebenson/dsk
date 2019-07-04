@@ -4,6 +4,8 @@
  * or decrypt and verify the signature.  In addition to a plaintext,
  * which will be fully encrypted, there's also associated data that will
  * be signed but not encrypted.
+ *
+ * This functions are for the Galois Counter Mode (GCM) implementation of AEAD.
  */
 
 /* Although the algorithm doesn't restrict IV-length,
@@ -19,13 +21,15 @@ typedef struct {
 
   uint32_t h_v_table[128 * 4];
 } Dsk_AEAD_GCM_Precomputation;
-void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc cipher_func,
-                              void *cipher_object,
-                              Dsk_AEAD_GCM_Precomputation *out);
-
 /*
- * inplace_cipher_func: a cipher with block-size of 128-bits==16 bytes.
+ * inplace_cipher_func: a cipher with block-size of 128-bits==16 bytes,
+ *   this is the encrypt function.
  * inplace_cipher_object: first param to inplace_cipher_func.
+ */
+void dsk_aead_gcm_precompute (DskBlockCipherInplaceFunc block_cipher_func,
+                              void *block_cipher_object,
+                              Dsk_AEAD_GCM_Precomputation *out);
+/* cipher_precomputation: ...
  * plaintext_len: length of plaintext in bytes
  * plaintext: unencrypted plaintext
  * associated_data_len:

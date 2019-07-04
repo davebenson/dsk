@@ -78,6 +78,7 @@ ASM_FILES = \
         tls/amd64/dsk_aes128_encrypt_inplace.o  \
         tls/amd64/dsk_aes192_decrypt_inplace.o  \
         tls/amd64/dsk_aes192_encrypt_inplace.o  \
+        tls/amd64/dsk_aes256_decrypt_inplace.o  \
         tls/amd64/dsk_aes256_encrypt_inplace.o 
 
 tests/%: tests/%.c libdsk.a

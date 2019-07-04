@@ -111,8 +111,9 @@
  *     _Introduction to Algorithms_. Thomas Cormen, Charles Leiserson,
  *     and Donald Rivest.  MIT Press.  1990.
  * Citations appears as Algorithms:300 indicating page 300 (for example).
+ *
  * The "rbctree" is my name for this idea (daveb),
- * which i suspect has been thought of and implemented before.
+ * which has been thought of and implemented before.
  */
 #define DSK_RBTREE_INSERT(tree, node, collision_node)                         \
   DSK_RBTREE_INSERT_(tree, node, collision_node)
@@ -1001,7 +1002,7 @@ DSK_STMT_START{                                                                 
    }DSK_STMT_END
 
 #define DSK_RBCTREE_GET_NODE_INDEX_(top,type,is_red,set_is_red,get_count,set_count,parent,left,right,comparator, node,index_out) \
-   DSK_STMT_START{                                                               \
+   DSK_STMT_START{                                                             \
      type _dsk_at = (node);                                                    \
      size_t _dsk_rv = _dsk_at->left ? get_count (_dsk_at->left) : 0;           \
      while (_dsk_at->parent != NULL)                                           \
@@ -1077,7 +1078,8 @@ DSK_STMT_START{                                                                 
   set_count((node), _dsk_fixcount_count);                                     \
 }DSK_STMT_END
 
- /* utility: recompute node's count, based on count of its children */
+ /* utility: recompute node's count, based on count of its children;
+             propagate to ancestors. */
 #define _DSK_RBCTREE_FIX_COUNT_AND_UP(type,parent,left,right,get_count,set_count, node)   \
 DSK_STMT_START{                                                                 \
   type _tmp_fix_count_up;                                                     \

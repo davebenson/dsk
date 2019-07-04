@@ -7,7 +7,8 @@
  */
 
 /*
- * inplace_cipher_func: a cipher with block-size of 128-bits==16 bytes.
+ * inplace_cipher_func: a cipher with block-size of 128-bits==16 bytes;
+ *   this is the encryption block cipher.
  * inplace_cipher_object: first param to inplace_cipher_func.
  * plaintext_len: length of plaintext in bytes
  * plaintext: unencrypted plaintext

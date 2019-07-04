@@ -34,10 +34,20 @@ typedef void (*DskTlsServerSelectPSKFunc) (DskTlsHandshakeNegotiation *handshake
                                            void *server_find_psk_data);
 void dsk_tls_handshake_server_chose_psk          (DskTlsHandshakeNegotiation *hs_info,
                                                   DskTlsPSKKeyExchangeMode exchange_mode,
-                                                  unsigned                    which_psk);
+                                                  unsigned                    which_psk,
+                                                  const DskTlsCipherSuite    *cipher);
 void dsk_tls_handshake_server_chose_no_psk       (DskTlsHandshakeNegotiation *hs_info);
 void dsk_tls_handshake_server_error_choosing_psk (DskTlsHandshakeNegotiation *hs_info,
                                                   DskError                    *error);
+
+typedef void (*DskTlsServerFindCertificateFunc) (DskTlsHandshakeNegotiation *handshake,
+                                                 void *server_find_certificate_data);
+void dsk_tls_handshake_server_request_client_cert(DskTlsHandshakeNegotiation *handshake);
+void dsk_tls_handshake_server_chose_certs        (DskTlsHandshakeNegotiation *hs_info,
+                                                  ...);
+void dsk_tls_handshake_server_error_choosing_certs(DskTlsHandshakeNegotiation *hs_info,
+                                                  ...);
+
 struct DskTlsContextOptions
 {
   // A comma-sep list of groups
@@ -50,7 +60,7 @@ struct DskTlsContextOptions
   const char *unsupported_groups;
 
   size_t n_certificates;
-  DskTlsCertificate **certificates;
+  DskTlsKeyPair **certificates;
 
   size_t n_application_layer_protocols;
   const char **application_layer_protocols;
@@ -78,6 +88,11 @@ struct DskTlsServerContextOptions
 
   DskTlsServerSelectPSKFunc select_psk;
   void * select_psk_data;
+
+  DskTlsServerFindCertificateFunc find_certificate;
+  void * find_certificate_data;
+
+  bool always_request_client_certificate;
 };
 
 

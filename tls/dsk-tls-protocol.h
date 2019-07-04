@@ -1,7 +1,7 @@
 
 /* Implementation of TLS 1.3 RFC 8446. */
 
-typedef struct DskTlsCertificate DskTlsCertificate;
+//typedef struct DskTlsCertificate DskTlsCertificate;
 
 typedef struct DskTlsExtensionBase DskTlsExtensionBase;
 struct DskTlsExtensionBase
@@ -47,6 +47,7 @@ struct DskTlsExtension_MaxFragmentLength
 
 /* Certificate, signed or unsigned depending on the context.
  */
+#if 0
 struct DskTlsCertificate
 {
   DskTlsCertificateType type;
@@ -61,6 +62,7 @@ struct DskTlsCertificate
   size_t cert_data_length;
   const uint8_t *cert_data;
 };
+#endif
 
 /* RFC 6066. Section 8 */
 //typedef struct

@@ -1,6 +1,10 @@
 //
 // See http://cacr.uwaterloo.ca/hac/about/chap14.pdf
 //
+// Probably the best discussion i know of is:
+//
+//     Handbook of Elliptic and Hyperelliptic Curves, CRC Press.
+//
 #include "../dsk.h"
 #include <stdlib.h>
 #include <string.h>
@@ -153,41 +157,42 @@ dsk_tls_bignum_multiply_2x2 (const uint32_t *a_words,
 }
 #endif
 
-void
-dsk_tls_bignum_multiply_4x4 (const uint32_t *a_words,
-                             const uint32_t *b_words,
-                             uint32_t *product_words_out)
-{
-  uint32_t z2[4];
-  dsk_tls_bignum_multiply_2x2(a_words + 2, b_words + 2, z2);
-  uint32_t z0[4];
-  dsk_tls_bignum_multiply_2x2(a_words, b_words, z0);
-
-  uint32_t asum[2], bsum[2];
-  unsigned c1 = dsk_tls_bignum_add_with_carry (2, a_words, a_words+2, 0, asum);
-  unsigned c2 = dsk_tls_bignum_add_with_carry (2, b_words, b_words+2, 0, bsum);
-  uint32_t z1[4];
-  dsk_tls_bignum_multiply_2x2(asum, bsum, z1);
-  uint32_t mask, add, carry;
-
-  mask = -((int32_t)c1);
-  add = mask & bsum[0];
-  z1[2] += add;
-  carry = (z1[2] < add);
-  add = (mask & bsum[1]) + carry;
-  z1[3] += add;
-
-  mask = -((int32_t)c2);
-  add = mask & asum[0];
-  z1[2] += add;
-  carry = (z1[2] < add);
-  add = (mask & asum[1]) + carry;
-  z1[3] += add;
-
-  unsigned borrow = dsk_tls_bignum_subtract_with_borrow (2, z1, z2, 0, z1)
-                  + dsk_tls_bignum_subtract_with_borrow (2, z1, z0, 0, z1);
-  dsk_tls_bignum_subtract_word_inplace (2, z1 + 2, borrow);
+#define EMIT_KARATSUBA_CODE(halflen, len)                                                      \
+void                                                                                           \
+dsk_tls_bignum_multiply_##len##x##len (const uint32_t *a_words,                                \
+                                       const uint32_t *b_words,                                \
+                                       uint32_t *product_words_out)                            \
+{                                                                                              \
+  uint32_t z2[len];                                                                            \
+  dsk_tls_bignum_multiply_##halflen##x##halflen(a_words + 2, b_words + 2, z2);                 \
+  uint32_t z0[len];                                                                            \
+  dsk_tls_bignum_multiply_##halflen##x##halflen(a_words, b_words, z0);                         \
+                                                                                               \
+  /* Compute z1 = (a_lo + a_hi) * (b_lo + b_hi) - z_2 - z_0 */                                 \
+  uint32_t asum[halflen], bsum[halflen];                                                       \
+  unsigned c1 = dsk_tls_bignum_add_with_carry (halflen, a_words, a_words+halflen, 0, asum);    \
+  unsigned c2 = dsk_tls_bignum_add_with_carry (halflen, b_words, b_words+halflen, 0, bsum);    \
+  uint32_t z1[len];                                                                            \
+  dsk_tls_bignum_multiply_##halflen##x##halflen(asum, bsum, z1);                               \
+  if (c1)                                                                                      \
+    {                                                                                          \
+      /* Add bsum shifted left by halflen*32 */                                                \
+      dsk_tls_bignum_add (halflen, z1 + halflen, bsum, z1 + halflen);                          \
+    }                                                                                          \
+  if (c2)                                                                                      \
+    {                                                                                          \
+      /* Add asum shifted left by halflen*32 */                                                \
+      dsk_tls_bignum_add (halflen, z1 + halflen, asum, z1 + halflen);                          \
+    }                                                                                          \
+  dsk_tls_bignum_subtract (len, z1, z0, z1);                                                   \
+  dsk_tls_bignum_subtract (len, z2, z0, z2);                                                   \
+                                                                                               \
+  memcpy (product_words_out + len, z2, 4*len);                                                 \
+  memcpy (product_words_out, z0, 4*len);                                                       \
+  unsigned carry = dsk_tls_bignum_add_with_carry (len, product_words_out + halflen, z1, 0, product_words_out + halflen); \
+  dsk_tls_bignum_add_word_inplace (halflen, product_words_out + len + halflen, carry);         \
 }
+///EMIT_KARATSUBA_CODE(4, 8)
 
 
 
@@ -1481,12 +1486,6 @@ bool
 dsk_tls_bignum_is_probable_prime (unsigned len,
                                   const uint32_t *p)
 {
-  if (len == 1)
-    {
-      for (unsigned i = 0; i < DSK_N_ELEMENTS (miller_rabin_rounds); i++)
-        if (miller_rabin_rounds[i] == p[0])
-          return true;
-    }
   unsigned rounds = rounds_from_len_in_words (len);
   return is_probable_prime (len, p, rounds);
 }

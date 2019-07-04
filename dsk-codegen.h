@@ -15,6 +15,8 @@ char * dsk_codegen_lowercase_to_mixedcase_n  (unsigned    length,
                                               const char *lowercase);
 #endif
 
+// ---- C-only Codegen ----
+
 
 /* --- function prototype rendering --- */
 typedef struct _DskCodegenArg DskCodegenArg;
