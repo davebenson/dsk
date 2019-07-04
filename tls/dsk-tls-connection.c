@@ -1464,7 +1464,6 @@ struct NegotiationStep
 //
 // This is where the server handles the ClientHello message.
 //
-//
 // This the first message of the handshake 
 // (and thus of the whole connection),
 // unless it is a response to a HelloRetryRequest.
@@ -1789,8 +1788,7 @@ handle_handshake_message (DskTlsConnection *conn,
       return handle_new_session_ticket (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_END_OF_EARLY_DATA:
       return handle_end_of_early_data (conn, shake, error);
-    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS:xml-parser-0.c libdsk.a -lm -g -lz  
-gcc -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64   -DDSK_ASM_MODE=DSK_ASM_AMD64 -o tests/test-pattern-0 tests/test-pat
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_ENCRYPTED_EXTENSIONS:
       return handle_encrypted_extensions (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE:
       return handle_certificate (conn, shake, error);
@@ -1835,8 +1833,6 @@ try_parse_record_header:
       return true;
     }
 
-  /xml-parser-0.c libdsk.a -lm -g -lz  
-gcc -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64   -DDSK_ASM_MODE=DSK_ASM_AMD64 -o tests/test-pattern-0 tests/test-pat/ throw away header
   dsk_buffer_discard (&conn->incoming_raw, header_result.header_length);
 
   ensure_record_data_capacity (conn, header_result.payload_length);
