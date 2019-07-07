@@ -20,6 +20,9 @@ struct DskTlsContext
   void * server_select_psk_data;
 
   bool always_request_client_certificate;
+
+  DskTlsClientStoreSessionFunc client_store_session;
+  void *client_store_session_data;
 };
 
 
@@ -53,6 +56,7 @@ struct DskTlsHandshakeNegotiation
   unsigned sent_hello_retry_request : 1;
   unsigned allow_early_data : 1;
   unsigned request_client_certificate : 1;
+  unsigned received_hello_retry_request : 1;
 
   uint8_t ks_result;    // key-share negotiation result, or 0
 
@@ -107,6 +111,7 @@ struct DskTlsHandshakeNegotiation
   // Handshakes as they are available.
   DskTlsHandshakeMessage  *client_hello;
   DskTlsHandshakeMessage  *server_hello;
+  DskTlsHandshakeMessage  *old_client_hello;      // if HelloRetryRequest case
   DskTlsHandshakeMessage  *certificate_hs;
   DskTlsSignatureScheme certificate_scheme;
   DskTlsX509Certificate *certificate;

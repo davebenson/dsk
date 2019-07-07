@@ -48,6 +48,29 @@ void dsk_tls_handshake_server_chose_certs        (DskTlsHandshakeNegotiation *hs
 void dsk_tls_handshake_server_error_choosing_certs(DskTlsHandshakeNegotiation *hs_info,
                                                   ...);
 
+// This function may succeed or fail;
+// the implementation doesn't care.
+typedef void (*DskTlsClientStoreSessionFunc) (DskTlsHandshakeNegotiation *handshake,
+                                              size_t binder_length,
+                                              const uint8_t *binder_length,
+                                              size_t session_length,
+                                              const uint8_t *session_length,
+                                              size_t state_length,
+                                              const uint8_t *state_length,
+                                              void *client_store_session_data);
+
+typedef void (*DskTlsClientLookupSession)    (DskTlsHandshakeNegotiation *handshake,
+                                              const char *server_name,
+                                              void *client_lookup_session_data);
+void dsk_tls_handshake_client_found_session  (DskTlsHandshakeNegotiation *handshake,
+                                              size_t binder_length,
+                                              const uint8_t *binder_length,
+                                              size_t session_length,
+                                              const uint8_t *session_length,
+                                              size_t state_length,
+                                              const uint8_t *state_length);
+void dsk_tls_handshake_client_session_not_found  (DskTlsHandshakeNegotiation *handshake);
+
 struct DskTlsContextOptions
 {
   // A comma-sep list of groups

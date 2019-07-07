@@ -245,6 +245,157 @@ send_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   else
     return client_continue_post_psks (hs_info, error);
 }
+static const DskTlsCipherSuiteCode client_hello_supported_cipher_suites[] = {
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384,
+  DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
+  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256,
+};
+static const DskTlsNamedGroup client_hello_supported_groups[] = {
+  DSK_TLS_NAMED_GROUP_X25519,
+  DSK_TLS_NAMED_GROUP_X448,
+  DSK_TLS_NAMED_GROUP_FFDHE2048,
+  DSK_TLS_NAMED_GROUP_FFDHE3072,
+  DSK_TLS_NAMED_GROUP_FFDHE4096,
+  DSK_TLS_NAMED_GROUP_FFDHE6144,
+  DSK_TLS_NAMED_GROUP_FFDHE8192,
+  DSK_TLS_NAMED_GROUP_SECP256R1,
+  DSK_TLS_NAMED_GROUP_SECP384R1,
+  DSK_TLS_NAMED_GROUP_SECP521R1,
+};
+static DskTlsExtension_KeyShare *
+create_client_key_share_extension (DskTlsHandshakeNegotiation *hs_info,
+                                   unsigned n_groups,
+                                   const DskTlsNamedGroup *groups)
+{
+  DskTlsExtension_KeyShare *ks = HS_ALLOC (hs_info, DskTlsExtension_KeyShare);
+  ks->base.type = DSK_TLS_EXTENSION_TYPE_KEY_SHARE;
+  ks->n_key_shares = n_groups;
+  ks->key_shares = HS_ALLOC_ARRAY(hs_info, n_groups, DskTlsKeyShareEntry);
+  hs_info->n_key_shares = n_groups;
+  hs_info->key_shares = HS_ALLOC_ARRAY (hs_info, n_groups, DskTlsPublicPrivateKeyShare);
+  for (unsigned i = 0; i < n_groups; i++)
+    {
+      DskTlsNamedGroup group = groups[i];
+      const DskTlsKeyShareMethod *share_method = dsk_tls_key_share_method_by_group (group);
+      unsigned priv_key_size = share_method->private_key_bytes;
+      unsigned pub_key_size = share_method->public_key_bytes;
+      uint8_t *priv_key = dsk_mem_pool_alloc (&hs_info->mem_pool, priv_key_size + pub_key_size);
+      uint8_t *pub_key = priv_key + priv_key_size;
+      do
+        {
+          dsk_get_cryptorandom_data (priv_key_size, priv_key);
+        }
+      while (!share_method->make_key_pair (share_method, priv_key, pub_key));
+      hs_info->key_shares[i].method = share_method;
+      hs_info->key_shares[i].public_key = pub_key;
+      hs_info->key_shares[i].private_key = priv_key;
+
+      // Initialize public key-share entry.
+      DskTlsKeyShareEntry *entry = ks->key_shares + i;
+      entry->named_group = group;
+      entry->key_exchange_length = pub_key_size;
+      entry->key_exchange_data = pub_key;
+    }
+  return ks;
+}
+
+static bool
+send_second_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
+                                 DskTlsCipherSuiteCode cs_code,
+                                 bool modify_key_shares,
+                                 int use_key_share_index,
+                                 DskTlsNamedGroup key_share_generate,
+                                 DskError **error)
+{
+  DskTlsHandshakeMessage *orig_client_hello = hs_info->client_hello;
+  hs_info->old_client_hello = orig_client_hello;
+  DskTlsHandshakeMessage *ch = create_handshake (hs_info, DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO, 16);
+  hs_info->client_hello = ch;
+  ch->client_hello.legacy_version = 0x301;
+  memcpy (ch->client_hello.random,
+          orig_client_hello->client_hello.random,
+          32);
+  ch->client_hello.legacy_session_id_length = 32;
+  memcpy (ch->client_hello.legacy_session_id,
+          orig_client_hello->client_hello.legacy_session_id,
+          32);
+  ch->client_hello.n_cipher_suites = 1;
+  ch->client_hello.cipher_suites = HS_ALLOC_ARRAY (hs_info, 1, DskTlsCipherSuiteCode);
+  ch->client_hello.cipher_suites[0] = cs_code;
+  ch->client_hello.n_compression_methods = 0;
+  ch->client_hello.compression_methods = NULL;
+
+  // supported groups
+  DskTlsExtension_SupportedGroups *sg = HS_ALLOC (hs_info, DskTlsExtension_SupportedGroups);
+  sg->base.type = DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS;
+  sg->n_supported_groups = DSK_N_ELEMENTS (client_hello_supported_groups);
+  sg->supported_groups = (DskTlsNamedGroup *) client_hello_supported_groups;
+  hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) sg;
+
+  // supported versions
+  static const DskTlsProtocolVersion supported_versions[] = {
+    DSK_TLS_PROTOCOL_VERSION_1_3
+  };
+  DskTlsExtension_SupportedVersions *sv = HS_ALLOC (hs_info, DskTlsExtension_SupportedVersions);
+  sv->base.type = DSK_TLS_EXTENSION_TYPE_SUPPORTED_VERSIONS;
+  sv->n_supported_versions = DSK_N_ELEMENTS (supported_versions);
+  sv->supported_versions = (DskTlsProtocolVersion *) supported_versions;
+  hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) sv;
+
+  //
+  // Key-Share
+  //
+  DskTlsExtension_KeyShare *ks;
+  if (modify_key_shares)
+    {
+      if (use_key_share_index >= 0)
+        {
+          ks = FIND_EXT_KEY_SHARE (orig_client_hello);
+          if (ks->n_key_shares != 1)
+            {
+              DskTlsExtension_KeyShare *new_ks = HS_ALLOC0(hs_info, DskTlsExtension_KeyShare);
+              new_ks->base.type = DSK_TLS_EXTENSION_TYPE_KEY_SHARE;
+              new_ks->n_key_shares = 1;
+              new_ks->key_shares = ks->key_shares + use_key_share_index;
+              ks = new_ks;
+            }
+          else
+            {
+              // just use the same key-share.  nothing to do.
+            }
+        }
+      else
+        {
+          ks = create_client_key_share_extension (hs_info, 1, &key_share_generate);
+        }
+    }
+  else
+    {
+      ks = FIND_EXT_KEY_SHARE (orig_client_hello);
+    }
+  hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) ks;
+
+  DskTlsExtension_SignatureAlgorithms *sa = FIND_EXT_SIGNATURE_ALGORITHMS (orig_client_hello);
+  assert(sa != NULL);
+  hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) sa;
+
+  // finish extensions
+  hs_info->client_hello->client_hello.n_extensions = hs_info->n_extensions;
+  hs_info->client_hello->client_hello.extensions = hs_info->extensions;
+
+  // serialize
+  if (!dsk_tls_handshake_serialize (hs_info, hs_info->client_hello, error))
+    return false;
+
+  // send it!
+  dsk_tls_record_layer_send_handshake (hs_info, ch->data_length, ch->data);
+
+  hs_info->conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO;
+
+  return true;
+}
 
 void
 dsk_tls_handshake_client_error_finding_psks (DskTlsHandshakeNegotiation *hs_info,
@@ -305,27 +456,12 @@ client_continue_post_psks (DskTlsHandshakeNegotiation *hs_info,
   dsk_get_cryptorandom_data (32, ch->client_hello.random);
   ch->client_hello.legacy_session_id_length = 32;
   dsk_get_cryptorandom_data (32, ch->client_hello.legacy_session_id);
-  static const DskTlsCipherSuiteCode client_hello_supported_cipher_suites[] = {
-    DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
-    DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384,
-    DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
-    DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
-    DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256,
-  };
   ch->client_hello.n_cipher_suites = DSK_N_ELEMENTS (client_hello_supported_cipher_suites);
   ch->client_hello.cipher_suites = (DskTlsCipherSuiteCode *) client_hello_supported_cipher_suites;
   ch->client_hello.n_compression_methods = 0;
   ch->client_hello.compression_methods = NULL;
 
   // supported groups
-  static const DskTlsNamedGroup client_hello_supported_groups[] = {
-    DSK_TLS_NAMED_GROUP_X25519,
-    DSK_TLS_NAMED_GROUP_FFDHE2048,
-    DSK_TLS_NAMED_GROUP_FFDHE3072,
-    DSK_TLS_NAMED_GROUP_FFDHE4096,
-    DSK_TLS_NAMED_GROUP_FFDHE6144,
-    DSK_TLS_NAMED_GROUP_FFDHE8192,
-  };
   DskTlsExtension_SupportedGroups *sg = HS_ALLOC (hs_info, DskTlsExtension_SupportedGroups);
   sg->base.type = DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS;
   sg->n_supported_groups = DSK_N_ELEMENTS (client_hello_supported_groups);
@@ -346,34 +482,9 @@ client_continue_post_psks (DskTlsHandshakeNegotiation *hs_info,
   static DskTlsNamedGroup client_key_share_groups[] = {
     DSK_TLS_NAMED_GROUP_X25519
   };
-  DskTlsExtension_KeyShare *ks = HS_ALLOC (hs_info, DskTlsExtension_KeyShare);
-  ks->base.type = DSK_TLS_EXTENSION_TYPE_KEY_SHARE;
-  unsigned n_key_shares = DSK_N_ELEMENTS (client_key_share_groups);
-  ks->n_key_shares = n_key_shares;
-  ks->key_shares = HS_ALLOC_ARRAY(hs_info, n_key_shares, DskTlsKeyShareEntry);
-  hs_info->n_key_shares = n_key_shares;
-  hs_info->key_shares = HS_ALLOC_ARRAY (hs_info, n_key_shares, DskTlsPublicPrivateKeyShare);
-  for (unsigned i = 0; i < n_key_shares; i++)
-    {
-    DskTlsNamedGroup group = client_key_share_groups[i];
-      const DskTlsKeyShareMethod *share_method = dsk_tls_key_share_method_by_group (group);
-      DskTlsKeyShareEntry *entry = ks->key_shares + i;
-      entry->named_group = client_key_share_groups[i];
-      unsigned priv_key_size = share_method->private_key_bytes;
-      unsigned pub_key_size = share_method->public_key_bytes;
-      uint8_t *priv_key = dsk_mem_pool_alloc (&hs_info->mem_pool, priv_key_size + pub_key_size);
-      uint8_t *pub_key = priv_key + priv_key_size;
-      entry->key_exchange_length = pub_key_size;
-      entry->key_exchange_data = pub_key;
-      do
-        {
-          dsk_get_cryptorandom_data (priv_key_size, priv_key);
-        }
-      while (!share_method->make_key_pair (share_method, priv_key, pub_key));
-      hs_info->key_shares[i].method = share_method;
-      hs_info->key_shares[i].public_key = pub_key;
-      hs_info->key_shares[i].private_key = priv_key;
-    }
+
+
+  DskTlsExtension_KeyShare *ks = create_client_key_share_extension (hs_info, DSK_N_ELEMENTS (client_key_share_groups), client_key_share_groups);
   hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) ks;
 
   static const DskTlsSignatureScheme signature_schemes[] = {
@@ -1582,8 +1693,6 @@ handle_server_hello (DskTlsConnection *conn,
 {
   DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
 
-  bool requires_key_share = true;
-
   if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
     {
       *error = dsk_error_new ("ServerHello not allowed in %s state",
@@ -1597,16 +1706,25 @@ handle_server_hello (DskTlsConnection *conn,
   //
   DskTlsExtension_PreSharedKey *psk = FIND_EXT_PSK (shake);
   DskTlsExtension_PSKKeyExchangeModes *pskm = FIND_EXT_PSK_KEY_EXCHANGE_MODE (shake);
+  if (pskm != NULL)
+    {
+      *error = dsk_error_new ("PSK-ExchangeModes extension not allowed from server");
+      DSK_ERROR_SET_TLS (*error, FATAL, ILLEGAL_PARAMETER);
+      return false;
+    }
+      
   if (psk != NULL)
     {
       //
-      // Clients MUST verify that the server's selected_identity is within the
-      // range supplied by the client, that the server selected a cipher suite
-      // indicating a Hash associated with the PSK, and that a server
-      // "key_share" extension is present if required by the ClientHello
-      // "psk_key_exchange_modes" extension.  If these values are not
-      // consistent, the client MUST abort the handshake with an
-      // "illegal_parameter" alert.
+      // RFC 8446 Page 56:
+      //     Clients MUST verify that the server's selected_identity is 
+      //     within the range supplied by the client, that the server
+      //     selected a cipher suite indicating a Hash associated
+      //     with the PSK, and that a server "key_share" extension
+      //     is present if required by the ClientHello
+      //     "psk_key_exchange_modes" extension.  If these values are not
+      //     consistent, the client MUST abort the handshake with an
+      //     "illegal_parameter" alert.
       //
       unsigned selected_identity = psk->selected_identity;
       if (selected_identity >= hs_info->n_psks)
@@ -1642,7 +1760,31 @@ handle_server_hello (DskTlsConnection *conn,
   else
     {
       // Compute shared-secret.
-      ..
+      DskTlsKeyShareEntry *entry = &ks->server_share;
+      DskTlsNamedGroup g = entry->named_group;
+      unsigned ks_index;
+      DskTlsPublicPrivateKeyShare *shares = hs_info->key_shares;
+      for (ks_index = 0; ks_index < hs_info->n_key_shares; ks_index++)
+        if (shares[ks_index].method->named_group == g)
+          break;
+      if (ks_index == hs_info->n_key_shares)
+        {
+          *error = dsk_error_new ("invalid key-share");
+          return false;
+        }
+      const DskTlsKeyShareMethod *method = shares[ks_index].method;
+      DskTlsPublicPrivateKeyShare *pp_share = shares + ks_index;
+      unsigned shared_len = method->shared_key_bytes;
+      hs_info->shared_key_length = shared_len;
+      hs_info->shared_key = dsk_mem_pool_alloc (&hs_info->mem_pool, shared_len);
+      if (!method->make_shared_key (method,
+                                    pp_share->private_key,
+                                    entry->key_exchange_data,
+                                    hs_info->shared_key))
+        {
+          *error = dsk_error_new ("invalid key-share public data");
+          return false;
+        }
     }
   
   //
@@ -1653,14 +1795,14 @@ handle_server_hello (DskTlsConnection *conn,
   // but it does cause us to differ with state transition diagram
   // on page 119 of RFC 8446 (Appendix A.1).
   //
-  DskTlsKeySchedule *schedule = handshake_info->key_schedule;
-  assert(conn->shared_key_length == cs->key_size);
+  DskTlsKeySchedule *schedule = hs_info->key_schedule;
+  assert(hs_info->shared_key_length == cs->key_size);
   conn->cipher_suite_write_instance = dsk_malloc (cs->instance_size);
   cs->init (conn->cipher_suite_write_instance,
-            key_schedule->client_application_write_key);
+            schedule->client_application_write_key);
   conn->cipher_suite_read_instance = dsk_malloc (cs->instance_size);
   cs->init (conn->cipher_suite_read_instance,
-            key_schedule->server_application_write_key);
+            schedule->server_application_write_key);
 
   conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_ENCRYPTED_EXTENSIONS;
   return true;
@@ -1670,24 +1812,143 @@ handle_server_hello (DskTlsConnection *conn,
 // We need to either resolve the constraint failures,
 // or close the connection.
 //
+// The only real adjustments possible are:
+//
+//    - supply a KeyShare for a different NamedGroup.
+//      since the server can suggest a NamedGroup
+//      that was included in the SupportedGroups extension,
+//      but not in the KeyShare extension.
+//
+//    - Pre-Shared Keys. In principle, it's possible that
+//      you might wait until a CipherSuite is selected
+//      to lookup PSKs.  In practice, the server is likely
+//      to support the same cipher-suites as when the
+//      PSK was generated.  Furthermore there's no direct
+//      way for the client to indicate that it wants
+//      a HRR for this reason.
+//      (Instead, it must not send a KeyShare)
+//
+// The server has the freedom to choose among
+// all the available SignatureAlgorithms and CipherSuites,
+// so a HelloRetryRequest is not needed for those values.
+//
 static bool
 handle_hello_retry_request (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
+  DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
+  DskTlsHandshakeMessage *client_hello = hs_info->client_hello;
+  bool modify_key_shares = false;
+  int use_key_share_index = -1;
+  DskTlsNamedGroup key_share_generate;          // if modify_key_shares and use_key_share_index==-1
   if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
     {
-      ...
+      *error = dsk_error_new ("bad state for HelloRetryRequest message: %s",
+                              dsk_tls_connection_state_name (conn->state));
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return false;
     }
-  if (had_hrr)
+  if (hs_info->received_hello_retry_request)
     {
-      ...
+      // RFC 8446 Section 4.1.4, page 32:
+      //    If a client receives a second HelloRetryRequest in
+      //    the same connection (i.e., where the ClientHello
+      //    was itself in response to a HelloRetryRequest),
+      //    it MUST abort the handshake with an "unexpected_message" alert.
+      *error = dsk_error_new ("only one HelloRetryRequest allowed");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return false;
     }
-  switch (conn->state)
+  hs_info->received_hello_retry_request = true;
+
+  //
+  // Did the server select a named-group
+  // from the supported_groups extension?
+  //
+  DskTlsExtension_KeyShare *hrr_ks = FIND_EXT_KEY_SHARE(shake);
+  if (hrr_ks != NULL)
     {
-    ...
+      DskTlsExtension_KeyShare *ch_ks = FIND_EXT_KEY_SHARE(client_hello);
+      DskTlsExtension_SupportedGroups *ch_sg = FIND_EXT_SUPPORTED_GROUPS(client_hello);
+      unsigned sel = hrr_ks->selected_group;
+      if (ch_sg == NULL || sel >= ch_sg->n_supported_groups)
+        {
+          *error = dsk_error_new ("selected_group in HelloRetryRequest is out-of-bounds");
+          DSK_ERROR_SET_TLS (*error, FATAL, ILLEGAL_PARAMETER);
+          return false;
+        }
+      DskTlsNamedGroup group = ch_sg->supported_groups[sel];
+
+      // Did we already offer this as a KeyShare?
+      unsigned orig_ks_index;
+      for (orig_ks_index = 0;
+           orig_ks_index < ch_ks->n_key_shares;
+           orig_ks_index++)
+        if (ch_ks->key_shares[orig_ks_index].named_group == group)
+          break;
+      if (orig_ks_index == ch_ks->n_key_shares)
+        {
+          // will need to generate new KeyShare.
+          modify_key_shares = true;
+          key_share_generate = group;
+        }
+      else
+        {
+          // only need to emit this one KeyShare.
+          modify_key_shares = true;
+          use_key_share_index = orig_ks_index;
+        }
     }
-  ...
+  else
+    {
+      //
+      // If there's no KeyShare extension, then the
+      // client should just emit the same KeyShare it emitted the
+      // first time.  (If we didn't provide a KeyShare the first time,
+      // then abort.)
+      //
+      // (This will happen automatically below.)
+      //
+    }
+
+  //
+  // We should be able to use the selected cipher-suite,
+  // since the server is required to select one from the
+  // list in the original client-hello, but
+  // check just in case.
+  //
+  DskTlsCipherSuiteCode cs_code = shake->hello_retry_request.cipher_suite;
+  const DskTlsCipherSuite *csuite = dsk_tls_cipher_suite_by_code (cs_code);
+  if (csuite == NULL)
+    {
+      *error = dsk_error_new ("cannot support cipher-suite");
+      DSK_ERROR_SET_TLS (*error, FATAL, ILLEGAL_PARAMETER);
+      return false;
+    }
+  // verify that suite was in the original client-hello.
+  unsigned cs_index;
+  for (cs_index = 0;
+       cs_index < client_hello->client_hello.n_cipher_suites;
+       cs_index++)
+    if (client_hello->client_hello.cipher_suites[cs_index] == cs_code)
+      break;
+  if (cs_index == client_hello->client_hello.n_cipher_suites)
+    {
+      *error = dsk_error_new ("server selected disallowed cipher-suite");
+      DSK_ERROR_SET_TLS (*error, FATAL, ILLEGAL_PARAMETER);
+      return false;
+    }
+
+  //
+  // Send second ClientHello.
+  //
+  return send_second_client_hello_flight (hs_info,
+                                          cs_code,
+                                          modify_key_shares,
+                                          use_key_share_index,
+                                          key_share_generate,
+                                          error);
 }
 
 static bool
@@ -1695,9 +1956,11 @@ handle_new_session_ticket  (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
-  if (conn->state != ...)
+  if (conn->state != DSK_TLS_CONNECTION_CLIENT_CONNECTED)
     {
-      ...
+      *error = dsk_error_new ("got NewSessionTicket before client handshake finished");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return false;
     }
 
   if (conn->context->store_session_tickets (...))
@@ -1713,6 +1976,7 @@ handle_end_of_early_data   (DskTlsConnection *conn,
 {
   ...
 }
+
 static bool
 handle_encrypted_extensions(DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
@@ -1807,7 +2071,8 @@ handle_handshake_message (DskTlsConnection *conn,
   return true;
 }
 
-static bool handle_underlying_readable (DskStream *underlying,
+static bool
+handle_underlying_readable (DskStream *underlying,
                             DskTlsConnection *conn)
 {
   RecordHeaderParseResult header_result;
