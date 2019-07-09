@@ -15,7 +15,7 @@ struct DskTlsKeyShareMethod_FFDHE
 };
 
 static bool 
-ffdhe__make_key_pair  (DskTlsKeyShareMethod *method,
+ffdhe__make_key_pair  (const DskTlsKeyShareMethod *method,
                        uint8_t              *private_key_inout,
                        uint8_t              *public_key_out)
 {
@@ -26,7 +26,7 @@ ffdhe__make_key_pair  (DskTlsKeyShareMethod *method,
 }
 
 static bool
-ffdhe__make_shared_key   (DskTlsKeyShareMethod *method,
+ffdhe__make_shared_key   (const DskTlsKeyShareMethod *method,
                           const uint8_t        *private_key,
                           const uint8_t        *peer_public_key,
                           uint8_t              *shared_key_out)
@@ -112,7 +112,7 @@ const static DskTlsKeyShareMethod_FFDHE key_share_method__ffdhe8192 =
 // Curve 25519 support.
 //
 static bool 
-curve25519__make_key_pair     (DskTlsKeyShareMethod *method,
+curve25519__make_key_pair     (const DskTlsKeyShareMethod *method,
                                uint8_t              *private_key_inout,
                                uint8_t              *public_key_out)
 {
@@ -123,7 +123,7 @@ curve25519__make_key_pair     (DskTlsKeyShareMethod *method,
 }
 
 static bool
-curve25519__make_shared_key   (DskTlsKeyShareMethod *method,
+curve25519__make_shared_key   (const DskTlsKeyShareMethod *method,
                                const uint8_t        *private_key,
                                const uint8_t        *peer_public_key,
                                uint8_t              *shared_key_out)
@@ -145,7 +145,7 @@ const static DskTlsKeyShareMethod key_share_method__curve25519 =
 };
 
 static bool 
-curve448__make_key_pair     (DskTlsKeyShareMethod *method,
+curve448__make_key_pair     (const DskTlsKeyShareMethod *method,
                                uint8_t              *private_key_inout,
                                uint8_t              *public_key_out)
 {
@@ -156,7 +156,7 @@ curve448__make_key_pair     (DskTlsKeyShareMethod *method,
 }
 
 static bool
-curve448__make_shared_key   (DskTlsKeyShareMethod *method,
+curve448__make_shared_key   (const DskTlsKeyShareMethod *method,
                              const uint8_t        *private_key,
                              const uint8_t        *peer_public_key,
                              uint8_t              *shared_key_out)

@@ -4,28 +4,6 @@ typedef struct DskTlsServerContextOptions DskTlsServerContextOptions;
 typedef struct DskTlsContextOptions DskTlsContextOptions;
 
 
-typedef struct {
-  size_t identity_length;
-  const uint8_t *identity;
-
-  size_t master_key_length;
-  const uint8_t *master_key;
-} DskTlsPresharedKeyInfo;
-
-//
-// Called on the client-side to lookup which Pre-Shared-Keys are available.
-//
-// This function must eventually call either dsk_tls_handshake_client_found_psks()
-// or dsk_tls_handshake_client_error_finding_psks().
-//
-void dsk_tls_handshake_client_found_psks         (DskTlsHandshakeNegotiation *hs_info,
-                                                  size_t                      n_psks,
-                                                  DskTlsPresharedKeyInfo     *psks);
-void dsk_tls_handshake_client_error_finding_psks (DskTlsHandshakeNegotiation *hs_info,
-                                                  DskError                   *error);
-typedef void (*DskTlsClientFindPSKsFunc) (DskTlsHandshakeNegotiation *handshake,
-                                          void *client_find_psks_data);
-
 //
 // Called on the server-side to choose a client Pre-Shared-Key if any.
 //
@@ -47,29 +25,6 @@ void dsk_tls_handshake_server_chose_certs        (DskTlsHandshakeNegotiation *hs
                                                   ...);
 void dsk_tls_handshake_server_error_choosing_certs(DskTlsHandshakeNegotiation *hs_info,
                                                   ...);
-
-// This function may succeed or fail;
-// the implementation doesn't care.
-typedef void (*DskTlsClientStoreSessionFunc) (DskTlsHandshakeNegotiation *handshake,
-                                              size_t binder_length,
-                                              const uint8_t *binder_length,
-                                              size_t session_length,
-                                              const uint8_t *session_length,
-                                              size_t state_length,
-                                              const uint8_t *state_length,
-                                              void *client_store_session_data);
-
-typedef void (*DskTlsClientLookupSession)    (DskTlsHandshakeNegotiation *handshake,
-                                              const char *server_name,
-                                              void *client_lookup_session_data);
-void dsk_tls_handshake_client_found_session  (DskTlsHandshakeNegotiation *handshake,
-                                              size_t binder_length,
-                                              const uint8_t *binder_length,
-                                              size_t session_length,
-                                              const uint8_t *session_length,
-                                              size_t state_length,
-                                              const uint8_t *state_length);
-void dsk_tls_handshake_client_session_not_found  (DskTlsHandshakeNegotiation *handshake);
 
 struct DskTlsContextOptions
 {
@@ -96,14 +51,6 @@ struct DskTlsContextOptions
 
 struct DskTlsClientContextOptions
 {
-  // A comma-sep list of key-shares whose
-  // public/private keys should be computed
-  // before the initial handshake.
-  const char *offered_key_share_groups;
-
-  DskTlsClientFindPSKsFunc find_psks_func;
-  void *find_psks_data;
-
 };
 struct DskTlsServerContextOptions
 {
