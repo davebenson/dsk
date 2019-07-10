@@ -143,9 +143,13 @@ typedef enum {
   // remote_key_share is set
   KS_RESULT_SUCCESS,
 
+  // must make HRR: no allowed KeyShare or PSK.
+  // no PSK available.
+  KS_RESULT_MUST_MAKE_RETRY_REQUEST,
+
   // KeyShare not possible due to lack of SupportedGroups;
-  // must use PSK or abort connection.
-  KS_RESULT_NO_SUPPORT,
+  // no PSK available.
+  KS_RESULT_FAIL,
 } KSResult;
 
 
@@ -437,6 +441,21 @@ do_keyshare_negotiation (DskTlsServerHandshake *hs_info,
         }
     }
 
+  // Select best supported group.
+  int best_sg_quality = 0;
+  int best_sg_index = -1;
+  for (unsigned g = 0; g < n_supported_groups; g++)
+    {
+      int quality = dsk_tls_support_get_group_quality(supported_groups[g]);
+      if (quality > 0 && quality > best_sg_quality)
+        {
+          best_sg_quality = quality;
+          best_sg_index = supported_groups[g];
+        }
+    }
+  if (best_sg_index >= 0)
+    hs_info->best_supported_group = supported_groups[best_sg_index];
+
   DskTlsExtension_KeyShare *keyshare_response = NULL;
   if (n_key_shares == 0 && n_supported_groups == 0)
     {
@@ -445,23 +464,7 @@ do_keyshare_negotiation (DskTlsServerHandshake *hs_info,
     }
   else if (n_key_shares == 0)
     {
-      // client is requesting server to choose.
-      int best_sg_quality = 0;
-      int best_sg_index = -1;
-      for (unsigned g = 0; g < n_supported_groups; g++)
-        {
-          int quality = dsk_tls_support_get_group_quality(supported_groups[g]);
-          if (quality > 0 && quality > best_sg_quality)
-            {
-              best_sg_quality = quality;
-              best_sg_index = supported_groups[g];
-            }
-        }
-      if (best_sg_quality < 0)
-        {
-          *error = dsk_error_new ("key-share negotiation failed (client requested server choose)");
-          return false;
-        }
+      hs_info->ks_result = KS_RESULT_NO_SHARE;
     }
   else  // n_key_shares > 0
     {
@@ -482,29 +485,38 @@ do_keyshare_negotiation (DskTlsServerHandshake *hs_info,
 
       if (best_ks_index >= 0)
         {
-          ...  shouldn't make KeyShare until know the message type
-          ////keyshare_response = HS_ALLOC (hs_info, DskTlsExtension_KeyShare);
-          ////assert(hs_info->n_key_shares == 1);
-          ////keyshare_response->base.is_generic = false;
-          ////keyshare_response->base.type = DSK_TLS_EXTENSION_TYPE_KEY_SHARE;
-          ////keyshare_response->base.extension_data_length = 0;
-          ////keyshare_response->base.extension_data = NULL;
-          ////hs_info->ks_result = KS_RESULT_SUCCESS;
+          hs_info->found_keyshare = key_shares + best_ks_index;
+          hs_info->ks_result = KS_RESULT_SUCCESS;
         }
-      else // no allowed key-share, are there any supported-groups?
+      else if (best_sg_index >= 0)
         {
-          ...  shouldn't make KeyShare until know the message type
-          if (...)
-            {
-              *error = dsk_error_new ("key-share negotiation failed");
-              return false;
-            }
+          hs_info->ks_result = KS_RESULT_MUST_MAKE_RETRY_REQUEST;
         }
+      else
+        {
+          hs_info->ks_result = KS_RESULT_NO_SHARE;
+        }
+    }
+
+  if (best_sg_quality < 0)
+    {
+      *error = dsk_error_new ("key-share negotiation failed (client requested server choose)");
+      return false;
     }
 
   if (keyshare_response != NULL)
     hs_info->keyshare_response = keyshare_response;
   return true;
+}
+
+static int
+compare_ptr_cipher_suites_by_code (const void *a, const void *b)
+{
+  const DskTlsCipherSuite *A = * (const DskTlsCipherSuite * const *) a;
+  const DskTlsCipherSuite *B = * (const DskTlsCipherSuite * const *) b;
+  return A->code < B->code ? -1
+       : A->code > B->code ? 1
+       : 0;
 }
 
 //
@@ -604,8 +616,8 @@ do_psk_negotiation (DskTlsServerHandshake *hs_info,
   //
   const DskTlsOfferedPresharedKeys *offered = &psk->offered_psks;
   hs_info->offered_psks = offered;
-  DskTlsConnection *conn = hs_info->conn;
-  conn->state = DSK_TLS_CONNECTION_SERVER_SELECTING_PSK;
+  DskTlsServerConnection *conn = hs_info->conn;
+  conn->state = DSK_TLS_SERVER_CONNECTION_SELECTING_PSK;
   conn->context->server_select_psk (hs_info,
                                     offered,
                                     conn->context->server_select_psk_data);
@@ -674,7 +686,14 @@ combine_psk_and_keyshare (DskTlsServerHandshake *hs_info,
     }
   else if (hs_info->ks_result == KS_RESULT_NO_SHARE)
     {
-      ... HelloRetryRequest
+      if (hs_info->has_best_supported_group) 
+        {
+          hs_info->ks_result = KS_RESULT_MUST_MAKE_RETRY_REQUEST;
+        }
+      else
+        {
+          hs_info->ks_result = KS_RESULT_FAIL;
+        }
     }
   else if (hs_info->ks_result == KS_RESULT_NO_SUPPORT)
     {

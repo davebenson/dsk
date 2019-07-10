@@ -35,16 +35,6 @@ static DskTlsSignatureScheme global_sig_schemes[] = {
 #define HS_ALLOC_ARRAY0(hs_info, count, type) \
   ((type *) dsk_mem_pool_alloc (&((hs_info)->mem_pool), sizeof(type) * (count)))
 
-static int
-compare_ptr_cipher_suites_by_code (const void *a, const void *b)
-{
-  const DskTlsCipherSuite *A = * (const DskTlsCipherSuite * const *) a;
-  const DskTlsCipherSuite *B = * (const DskTlsCipherSuite * const *) b;
-  return A->code < B->code ? -1
-       : A->code > B->code ? 1
-       : 0;
-}
-
 static bool
 handle_certificate_verify  (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,

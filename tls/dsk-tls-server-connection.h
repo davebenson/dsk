@@ -103,7 +103,11 @@ struct DskTlsServerHandshake
 
   uint8_t ks_result;
   DskTlsExtension_KeyShare *keyshare_response;
+  DskTlsKeyShareEntry *found_keyshare;
+  bool has_best_supported_group;
   DskTlsNamedGroup best_supported_group;
+
+  const DskTlsOfferedPresharedKeys *offered_psks;
 
   // Handshakes as they are available.
   DskTlsHandshakeMessage  *client_hello;

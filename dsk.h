@@ -101,7 +101,8 @@
 #include "dsk-xml-parser.h"
 #include "dsk-xml-binding.h"
 
-#include "dsk-json.h"
+#include "json/dsk-json.h"
+#include "json/dsk-json-callback-parser.h"
 
 #include "dsk-ctoken.h"
 
