@@ -47,7 +47,7 @@ get_supported_group_quality (DskTlsNamedGroup group)
 }
 
 static DskTlsHandshakeMessage *
-create_handshake (DskTlsServerHandshake *hs_info,
+create_handshake (DskTlsClientHandshake *hs_info,
                   DskTlsHandshakeMessageType         type,
                   unsigned                    max_extensions)
 {
@@ -131,19 +131,19 @@ find_extension_by_type (DskTlsHandshakeMessage *shake, DskTlsExtensionType type)
 // ==============    Handshake Part 1:   Compute ClientHello    =============
 
 static bool
-client_continue_post_psks (DskTlsHandshakeNegotiation *hs_info,
+client_continue_post_psks (DskTlsClientHandshake *hs_info,
                            DskError **error);
 
 //
 // Compute the initial ClientHello message.
 //
 static bool
-send_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
+send_client_hello_flight (DskTlsClientHandshake *hs_info,
                           DskError **error)
 {
   DskTlsHandshakeMessage *ch = create_handshake (hs_info, DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO, 16);
-  DskTlsConnection *conn = hs_info->conn;
-  DskTlsContext *ctx = conn->context;
+  DskTlsClientConnection *conn = hs_info->conn;
+  DskTlsClientContext *ctx = conn->context;
   hs_info->client_hello = ch;
 
   // Offered client PSKs
@@ -157,27 +157,8 @@ send_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
   else
     return client_continue_post_psks (hs_info, error);
 }
-static const DskTlsCipherSuiteCode client_hello_supported_cipher_suites[] = {
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_GCM_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_256_GCM_SHA384,
-  DSK_TLS_CIPHER_SUITE_TLS_CHACHA20_POLY1305_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_SHA256,
-  DSK_TLS_CIPHER_SUITE_TLS_AES_128_CCM_8_SHA256,
-};
-static const DskTlsNamedGroup client_hello_supported_groups[] = {
-  DSK_TLS_NAMED_GROUP_X25519,
-  DSK_TLS_NAMED_GROUP_X448,
-  DSK_TLS_NAMED_GROUP_FFDHE2048,
-  DSK_TLS_NAMED_GROUP_FFDHE3072,
-  DSK_TLS_NAMED_GROUP_FFDHE4096,
-  DSK_TLS_NAMED_GROUP_FFDHE6144,
-  DSK_TLS_NAMED_GROUP_FFDHE8192,
-  DSK_TLS_NAMED_GROUP_SECP256R1,
-  DSK_TLS_NAMED_GROUP_SECP384R1,
-  DSK_TLS_NAMED_GROUP_SECP521R1,
-};
 static DskTlsExtension_KeyShare *
-create_client_key_share_extension (DskTlsHandshakeNegotiation *hs_info,
+create_client_key_share_extension (DskTlsClientHandshake *hs_info,
                                    unsigned n_groups,
                                    const DskTlsNamedGroup *groups)
 {
@@ -214,7 +195,7 @@ create_client_key_share_extension (DskTlsHandshakeNegotiation *hs_info,
 }
 
 static bool
-send_second_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
+send_second_client_hello_flight (DskTlsClientHandshake *hs_info,
                                  DskTlsCipherSuiteCode cs_code,
                                  bool modify_key_shares,
                                  int use_key_share_index,
@@ -310,7 +291,7 @@ send_second_client_hello_flight (DskTlsHandshakeNegotiation *hs_info,
 }
 
 void
-dsk_tls_handshake_client_error_finding_psks (DskTlsHandshakeNegotiation *hs_info,
+dsk_tls_handshake_client_error_finding_psks (DskTlsClientHandshake *hs_info,
                                              DskError *error)
 {
   DskTlsConnection *conn = hs_info->conn;
@@ -332,7 +313,7 @@ tls_preshared_key_info_copy_to (DskMemPool *pool,
 }
 
 void
-dsk_tls_handshake_client_found_psks (DskTlsHandshakeNegotiation *hs_info,
+dsk_tls_handshake_client_found_psks (DskTlsClientHandshake *hs_info,
                                      size_t                      n_psks,
                                      DskTlsPresharedKeyInfo     *psks)
 {
@@ -357,7 +338,7 @@ dsk_tls_handshake_client_found_psks (DskTlsHandshakeNegotiation *hs_info,
 }
 
 static bool
-client_continue_post_psks (DskTlsHandshakeNegotiation *hs_info,
+client_continue_post_psks (DskTlsClientHandshake *hs_info,
                            DskError **error)
 {
   DskTlsConnection *conn = hs_info->conn;
@@ -443,7 +424,7 @@ handle_server_hello (DskTlsConnection *conn,
                      DskTlsHandshakeMessage  *shake,
                      DskError        **error)
 {
-  DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
+  DskTlsClientHandshake *hs_info = conn->handshake_info;
 
   if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
     {
@@ -597,7 +578,7 @@ handle_hello_retry_request (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
-  DskTlsHandshakeNegotiation *hs_info = conn->handshake_info;
+  DskTlsClientHandshake *hs_info = conn->handshake_info;
   DskTlsHandshakeMessage *client_hello = hs_info->client_hello;
   bool modify_key_shares = false;
   int use_key_share_index = -1;

@@ -56,6 +56,58 @@ dsk_tls_server_connection_new (DskStream           *underlying,
                                DskTlsServerContext *context,
                                DskError           **error);
 
+typedef struct DskTlsStreamListener DskTlsStreamListener;
+struct DskTlsStreamListener
+{
+  DskStreamListener base_instance;
+
+  DskStreamListener *underlying;
+  DskTlsServerContext *context;
+};
+
+DskTlsStreamListener *
+dsk_tls_stream_listener_new   (DskStreamListener   *underlying,
+                               DskTlsServerContext *context,
+                               DskError           **error);
+
+
+//
+// User-Callbacks for Context.
+//
+typedef void (*DskTlsServerSelectPSKFunc) (DskTlsServerHandshake *handshake,
+                                           const DskTlsOfferedPresharedKeys *offered_keys,
+                                           void *server_find_psk_data);
+void dsk_tls_server_handshake_chose_psk   (DskTlsServerHandshake     *hs_info,
+                                           DskTlsPSKKeyExchangeMode   exchange_mode,
+                                           unsigned                   which_psk,
+                                           const DskTlsCipherSuite   *cipher);
+void dsk_tls_server_handshake_chose_no_psk(DskTlsServerHandshake     *hs_info);
+void dsk_tls_server_handshake_error_choosing_psk (DskTlsServerHandshake *hs_info,
+                                                  DskError              *error);
+
+//
+// DskTlsServerContext.
+//
+// Sort-of a factory for connections.
+//
+typedef struct DskTlsServerContextOptions DskTlsServerContextOptions;
+struct DskTlsServerContextOptions
+{
+  size_t n_certificates;
+  DskTlsKeyPair **certificates;
+
+  size_t n_application_layer_protocols;
+  const char **application_layer_protocols;
+  bool application_layer_protocol_negotiation_required;
+
+  DskTlsClientLookupSessionsFunc lookup_sessions_func;
+  void *lookup_sessions_data;
+};
+
+
+
+
+
 //
 // Information used only when handshaking.
 //
@@ -83,7 +135,10 @@ struct DskTlsServerHandshake
 
   const DskTlsCipherSuite *cipher_suite;
   DskTlsKeySchedule *key_schedule;
-  size_t shared_key_length;
+
+  const DskTlsKeyShareMethod *key_share_method;
+  uint8_t *public_key;
+  uint8_t *private_key;
   uint8_t *shared_key;
 
   void *transcript_hash_instance;
@@ -109,6 +164,10 @@ struct DskTlsServerHandshake
 
   const DskTlsOfferedPresharedKeys *offered_psks;
 
+  bool has_psk;
+  DskTlsPSKKeyExchangeMode psk_key_exchange_mode;
+  unsigned psk_index;           // in offered_psks
+
   // Handshakes as they are available.
   DskTlsHandshakeMessage  *client_hello;
   DskTlsHandshakeMessage  *server_hello;
@@ -119,4 +178,5 @@ struct DskTlsServerHandshake
   DskTlsHandshakeMessage *cert_req_hs;
   DskTlsHandshakeMessage *cert_hs;
 };
-
+  DskTlsServerSelectPSKFunc server_select_psk;
+  void * server_select_psk_data;

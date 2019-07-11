@@ -19,6 +19,14 @@
 ////  bool always_request_client_certificate;
 ////};
 
+extern size_t dsk_tls_n_named_groups;
+extern DskTlsNamedGroup dsk_tls_named_groups[];
+
+extern size_t dsk_tls_n_signature_schemes;
+extern DskTlsSignatureScheme dsk_tls_signature_schemes[];
+
+extern size_t dsk_tls_n_cipher_suite_codes;
+extern DskTlsCipherSuiteCode dsk_tls_cipher_suite_codes[];
 
 bool dsk_tls_handshake_message_serialize (DskTlsHandshakeMessage     *message,
                                           DskMemPool                 *pool,

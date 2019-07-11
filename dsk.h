@@ -4,6 +4,8 @@
 #define DSK_ASM_NONE        0
 #define DSK_ASM_AMD64       1
 
+#include "dsk-config.h"
+
 /* Univerisally needed functions and typedefs (like the int## types) */
 #include "dsk-common.h"
 
@@ -126,7 +128,6 @@
 
 #include "dsk-cleanup.h"
 
-#include "dsk-config.h"
 #include "dsk-logger.h"
 
 /* --- crypto --- */

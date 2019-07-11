@@ -59,6 +59,12 @@ dsk_codepage_to_utf8_finish (DskSyncFilter *filter,
 
 DSK_SYNC_FILTER_SUBCLASS_DEFINE(static, DskCodepageToUtf8, dsk_codepage_to_utf8);
 
+/**
+ * dsk_codepage_to_utf8_new:
+ *
+ * Create a sync-filter that converts each byte into a character,
+ * based on a DskCodepage.
+ */
 DskSyncFilter *
 dsk_codepage_to_utf8_new           (const DskCodepage *codepage)
 {
