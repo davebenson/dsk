@@ -1,6 +1,10 @@
 
 /* openat() and friends implemented in a portable way.
-   Systems without "atfile" support use normal system calls. */
+   Systems without "atfile" support use normal system calls.
+
+   These replace dsk-file-utils:  simply pass NULL as the DskDir
+   to achieve that behavior.
+ */
 
 #include <dirent.h>
 
@@ -45,7 +49,7 @@ DIR         *dsk_dir_sys_opendir             (DskDir         *dir,
                                               const char     *path);
 
 const char  *dsk_dir_get_str                 (DskDir         *dir);
-bool  dsk_dir_did_create              (DskDir         *dir);
+bool         dsk_dir_did_create              (DskDir         *dir);
 
 typedef enum
 {

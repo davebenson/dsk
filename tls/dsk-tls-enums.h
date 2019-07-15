@@ -1,4 +1,3 @@
-
 /* The outermost layer of TLS is the Record Layer.
  * This 5-byte header is sent unencrypted.
  */

@@ -19,13 +19,16 @@ typedef struct DskTlsServerConnection DskTlsServerConnection;
 typedef struct DskTlsServerContext DskTlsServerContext;
 typedef struct DskTlsServerHandshake DskTlsServerHandshake;
 
+#define DSK_TLS_SERVER_CONNECTION(o) DSK_OBJECT_CAST(DskTlsServerConnection, o, &dsk_tls_server_connection_class)
+extern DskTlsServerConnectionClass dsk_tls_server_connection_class;
+
 struct DskTlsServerConnectionClass
 {
-  DskStreamClass base_class;
+  DskTlsBaseConnectionClass base_class;
 };
 struct DskTlsServerConnection
 {
-  DskStream base_instance;
+  DskTlsBaseConnection base_instance;
   DskStream *underlying;
   DskTlsServerContext *context;
   DskHookTrap *write_trap;
@@ -85,6 +88,13 @@ void dsk_tls_server_handshake_chose_no_psk(DskTlsServerHandshake     *hs_info);
 void dsk_tls_server_handshake_error_choosing_psk (DskTlsServerHandshake *hs_info,
                                                   DskError              *error);
 
+typedef bool (*DskTlsServerValidateCertFunc) (DskTlsServerHandshake *handshake,
+
+                                           size_t n_certificates,
+                                           const DskTlsCertificateEntry *certificates,
+                                           void *server_validate_cert_data,
+                                           DskError           **error);
+
 //
 // DskTlsServerContext.
 //
@@ -100,8 +110,11 @@ struct DskTlsServerContextOptions
   const char **application_layer_protocols;
   bool application_layer_protocol_negotiation_required;
 
-  DskTlsClientLookupSessionsFunc lookup_sessions_func;
-  void *lookup_sessions_data;
+  DskTlsServerSelectPSKFunc server_select_psk;
+  void * server_select_psk_data;
+
+  DskTlsServerValidateCertFunc validate_cert_func;
+  void *validate_cert_data;
 };
 
 
@@ -129,7 +142,7 @@ struct DskTlsServerHandshake
 
   unsigned must_send_hello_retry_request : 1;
   unsigned sent_hello_retry_request : 1;
-  unsigned allow_early_data : 1;
+  unsigned receiving_early_data : 1;
   unsigned request_client_certificate : 1;
   unsigned received_hello_retry_request : 1;
 
@@ -174,9 +187,8 @@ struct DskTlsServerHandshake
   DskTlsHandshakeMessage  *old_client_hello;      // if HelloRetryRequest case
   DskTlsHandshakeMessage  *certificate_hs;
   DskTlsSignatureScheme certificate_scheme;
+  DskTlsKeyPair *certificate_key_pair;
   DskTlsX509Certificate *certificate;
   DskTlsHandshakeMessage *cert_req_hs;
   DskTlsHandshakeMessage *cert_hs;
 };
-  DskTlsServerSelectPSKFunc server_select_psk;
-  void * server_select_psk_data;

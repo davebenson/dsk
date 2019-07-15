@@ -9,8 +9,8 @@
 typedef struct DskTlsKeyPairClass DskTlsKeyPairClass;
 typedef struct DskTlsKeyPair DskTlsKeyPair;
 
-#define DSK_TLS_KEY_PAIR(object) DSK_OBJECT_CAST(DskKeyPair, object, &dsk_tls_key_pair_class)
-#define DSK_TLS_KEY_PAIR_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskKeyPair, object, &dsk_tls_key_pair_class)
+#define DSK_TLS_KEY_PAIR(object) DSK_OBJECT_CAST(DskTlsKeyPair, object, &dsk_tls_key_pair_class)
+#define DSK_TLS_KEY_PAIR_GET_CLASS(object) DSK_OBJECT_CAST_GET_CLASS(DskTlsKeyPair, object, &dsk_tls_key_pair_class)
 
 struct DskTlsKeyPairClass
 {
@@ -25,7 +25,7 @@ struct DskTlsKeyPairClass
                                   size_t             content_len,
                                   const uint8_t     *content_data,
                                   uint8_t           *signature_out);
-  void   (*verify)               (DskTlsKeyPair     *kp,
+  bool   (*verify)               (DskTlsKeyPair     *kp,
                                   DskTlsSignatureScheme algo,
                                   size_t             content_len,
                                   const uint8_t     *content_data,

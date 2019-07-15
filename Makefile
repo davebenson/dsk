@@ -61,7 +61,7 @@ extra: $(EXTRA_PROGRAMS)
 full: all extra
 
 # For minimum size:
-#CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS)
+#CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS) -DDSK_ASM_MODE=DSK_ASM_AMD64
 
 # For standard initial size:
 CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS) -DDSK_ASM_MODE=DSK_ASM_AMD64
@@ -154,7 +154,6 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-tls-key-share.o \
           tls/dsk-tls-ec-prime.o \
           tls/dsk-tls-cipher-suite.o \
-          tls/dsk-tls-client-connection.o \
           tls/dsk-tls-server-connection.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \

@@ -1425,7 +1425,9 @@ is_probable_prime  (unsigned       len,
         return true;
     }
   if ((n[0] & 1) == 0)
-    return false;
+    {
+      return false;
+    }
 
   DskTlsMontgomeryInfo info;
   dsk_tls_montgomery_info_init (&info, len, n);
@@ -1450,6 +1452,8 @@ is_probable_prime  (unsigned       len,
     {
       // pick a.
       uint32_t a = miller_rabin_rounds[i];
+      if (len == 1 && a >= n[0])
+        return true;
       if (miller_rabin_test_step_is_composite (&info,
                                                d_len, d, r,
                                                a, mont_1, mont_m1))

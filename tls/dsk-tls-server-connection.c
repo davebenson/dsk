@@ -3,9 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct DskTlsServerContextClass DskTlsServerContextClass;
+struct DskTlsServerContextClass
+{
+  DskObjectClass base_class;
+};
+
 struct DskTlsServerContext
 {
-  unsigned ref_count;
+  DskObject base_instance;
 
   unsigned server_allow_pre_shared_keys;
   //bool server_generate_psk_post_handshake;
@@ -21,7 +27,24 @@ struct DskTlsServerContext
   void * server_select_psk_data;
 
   bool always_request_client_certificate;
+
+  DskTlsServerValidateCertFunc validate_client_cert_func;
+  void *validate_client_cert_data;
 };
+
+static void dsk_tls_server_context_finalize (DskTlsServerContext *);
+
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskTlsServerContext);
+static DskTlsServerContextClass dsk_tls_server_context_class =
+{
+  DSK_OBJECT_CLASS_DEFINE(
+    DskTlsServerContext,
+    &dsk_object_class,
+    NULL,
+    dsk_tls_server_context_finalize
+  )
+};
+
 
 //
 // Adapted from RFC 8446 A.2, p120.
@@ -36,8 +59,8 @@ struct DskTlsServerContext
 //           |                    |               | (if PSKs present)
 //           |                    |               v
 //           |                    |           SELECTING_PSK
-//           |                    |               | user called selected_psk() or
-//           |                    |               | no_selected_psk()
+//           |                    |               | user called selected_psk()
+//           |                    |               |  or no_selected_psk()
 //           |                    |               v
 //           |                    | Determine CipherSuite
 //           |                    v
@@ -125,6 +148,15 @@ record_layer_send_handshake (DskTlsServerConnection *connection,
                              size_t                  length,
                              const uint8_t          *data);
 
+void
+update_transcript_hash      (DskTlsServerHandshake *hs_info,
+                             DskTlsHandshakeMessage *message);
+
+// Just frees conn->handshake and sets it to NULL;
+// doesn't perform any other state updates.
+void
+connection_clear_handshake (DskTlsServerConnection *conn);
+
 //
 // Allocate memory and objects from the handshke-pool.
 //
@@ -203,28 +235,28 @@ create_handshake_message (DskTlsServerHandshake *hs_info,
 }
 
 
-#define _FIND_EXT(shake, ext_type_suffix, code_suffix) \
-    (DskTlsExtension_##ext_type_suffix *) \
-     find_extension_by_type (shake, DSK_TLS_EXTENSION_TYPE_##code_suffix)
-
-#define FIND_EXT_KEY_SHARE(shake) \
-        _FIND_EXT(shake, KeyShare, KEY_SHARE)
-#define FIND_EXT_SUPPORTED_VERSIONS(shake) \
-        _FIND_EXT(shake, SupportedVersions, SUPPORTED_VERSIONS)
-#define FIND_EXT_SUPPORTED_GROUPS(shake) \
-        _FIND_EXT(shake, SupportedGroups, SUPPORTED_GROUPS)
-#define FIND_EXT_SERVER_NAME(shake) \
-        _FIND_EXT(shake, ServerNameList, SERVER_NAME)
-#define FIND_EXT_PSK(shake) \
-        _FIND_EXT(shake, PreSharedKey, PRE_SHARED_KEY)
-#define FIND_EXT_PSK_KEY_EXCHANGE_MODE(shake) \
-        _FIND_EXT(shake, PSKKeyExchangeModes, PSK_KEY_EXCHANGE_MODES)
-#define FIND_EXT_SIGNATURE_ALGORITHMS(shake) \
-        _FIND_EXT(shake, SignatureAlgorithms, SIGNATURE_ALGORITHMS)
-#define FIND_EXT_EARLY_DATA_INDICATION(shake) \
-        _FIND_EXT(shake, EarlyDataIndication, EARLY_DATA)
-#define FIND_EXT_ALPN(shake) \
-        _FIND_EXT(shake, ALPN, APPLICATION_LAYER_PROTOCOL_NEGOTIATION)
+//#define _FIND_EXT(shake, ext_type_suffix, code_suffix) \
+//    (DskTlsExtension_##ext_type_suffix *) \
+//     find_extension_by_type (shake, DSK_TLS_EXTENSION_TYPE_##code_suffix)
+//
+//#define FIND_EXT_KEY_SHARE(shake) \
+//        _FIND_EXT(shake, KeyShare, KEY_SHARE)
+//#define FIND_EXT_SUPPORTED_VERSIONS(shake) \
+//        _FIND_EXT(shake, SupportedVersions, SUPPORTED_VERSIONS)
+//#define FIND_EXT_SUPPORTED_GROUPS(shake) \
+//        _FIND_EXT(shake, SupportedGroups, SUPPORTED_GROUPS)
+//#define FIND_EXT_SERVER_NAME(shake) \
+//        _FIND_EXT(shake, ServerNameList, SERVER_NAME)
+//#define FIND_EXT_PSK(shake) \
+//        _FIND_EXT(shake, PreSharedKey, PRE_SHARED_KEY)
+//#define FIND_EXT_PSK_KEY_EXCHANGE_MODE(shake) \
+//        _FIND_EXT(shake, PSKKeyExchangeModes, PSK_KEY_EXCHANGE_MODES)
+//#define FIND_EXT_SIGNATURE_ALGORITHMS(shake) \
+//        _FIND_EXT(shake, SignatureAlgorithms, SIGNATURE_ALGORITHMS)
+//#define FIND_EXT_EARLY_DATA_INDICATION(shake) \
+//        _FIND_EXT(shake, EarlyDataIndication, EARLY_DATA)
+//#define FIND_EXT_ALPN(shake) \
+//        _FIND_EXT(shake, ALPN, APPLICATION_LAYER_PROTOCOL_NEGOTIATION)
 
 #define MAX_RESPONSE_EXTENSIONS    16
 
@@ -234,10 +266,10 @@ void
 dsk_tls_server_connection_failed (DskTlsServerConnection *conn,
                                   DskError               *error)
 {
-  if (conn->base_instance.latest_error != NULL)
+  if (conn->base_instance.base_instance.latest_error != NULL)
     {
       dsk_warning("failed after: %s\nprevious error:\n%s",
-                  conn->base_instance.latest_error->message,
+                  conn->base_instance.base_instance.latest_error->message,
                   error->message);
       return;
     }
@@ -995,7 +1027,8 @@ do_early_data_negotiation (DskTlsServerHandshake *hs_info,
    && hs_info->psk_key_exchange_mode == DSK_TLS_PSK_EXCHANGE_MODE_KE
    && hs_info->psk_index == 0)
     {
-      hs_info->allow_early_data = true;
+      // note: We must send an EarlyData extension in EncryptedExtensions.
+      hs_info->receiving_early_data = true;
     }
   if (edi != NULL)
     {
@@ -1397,7 +1430,7 @@ struct NegotiationStep
 //
 // This is where most of the negotiation happens.
 // 
-static bool
+static DskTlsBaseRecordResponseCode
 handle_client_hello (DskTlsServerConnection *conn,
                      DskTlsHandshakeMessage  *shake,
                      DskError        **error)
@@ -1406,7 +1439,7 @@ handle_client_hello (DskTlsServerConnection *conn,
     {
       *error = dsk_error_new ("ClientHello received in %s state: not allowed",
                               dsk_tls_server_connection_state_name (conn->state));
-      return false;
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
     }
 
 
@@ -1434,11 +1467,11 @@ handle_client_hello (DskTlsServerConnection *conn,
           dsk_add_error_prefix (error, "%s (%s:%u)",
                                 ch_negotation_steps[step].name,
                                 __FILE__, __LINE__);
-          return false;
+          return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
         }
     }
 
-  return true;
+  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
 }
 
 static void
@@ -1485,22 +1518,241 @@ server_continue_post_psk_negotiation (DskTlsServerHandshake *hs_info)
     }
 
 }
-static bool
+static DskTlsBaseRecordResponseCode
 handle_end_of_early_data   (DskTlsServerConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
-  ...
+  DskTlsServerHandshake *hs_info = conn->handshake;
+  (void) shake;
+  if (!hs_info->receiving_early_data)
+    {
+      *error = dsk_error_new ("End-of-Early-Data not expected");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+  hs_info->receiving_early_data = false;
+  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
 }
 
-static bool
+static DskTlsBaseRecordResponseCode
 handle_certificate         (DskTlsServerConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
-  if (conn->state != ...)
+  if (conn->state != DSK_TLS_SERVER_CONNECTION_WAIT_CERT)
     {
-      ...
+      *error = dsk_error_new ("received client Certificate in invalid state");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
     }
+  DskTlsServerHandshake *hs_info = conn->handshake;
+
+  hs_info->certificate_hs = shake;
+  DskTlsServerContext *ctx = conn->context;
+  if (shake->certificate.n_entries == 0
+   && !ctx->validate_client_cert_func (hs_info, 
+                                       0, NULL,
+                                       ctx->validate_client_cert_data,
+                                       error))
+    {
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+
+  conn->state = (shake->certificate.n_entries == 0)
+              ? DSK_TLS_SERVER_CONNECTION_WAIT_FINISHED
+              : DSK_TLS_SERVER_CONNECTION_WAIT_CERT_VERIFY;
+  update_transcript_hash (hs_info, shake);
+  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+}
+static DskTlsBaseRecordResponseCode
+handle_certificate_verify  (DskTlsServerConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  DskTlsServerHandshake *hs_info = conn->handshake;
+  (void) shake;
+
+  if (conn->state != DSK_TLS_SERVER_CONNECTION_WAIT_CERT_VERIFY)
+    {
+      *error = dsk_error_new ("received client CertificateVerify in invalid state");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+
+  //
+  // Verify the signature on the certs, before calling the user certificate
+  // validator.
+  //
+  const DskChecksumType *sig_hash = conn->cipher_suite->hash_type;
+  //                         0         1         2         3
+  //                         012345678901234567890123456789012
+  const char *sig_context = "TLS 1.3, client CertificateVerify"; //len=33
+  unsigned sig_context_len = 33;                // strlen(sig_context)
+  unsigned sig_subject_len = 64 + 33 + 1 + sig_hash->hash_size;
+  uint8_t *sig_subject = alloca (sig_subject_len);
+  memset (sig_subject, ' ', 64);
+  memcpy (sig_subject + 64, sig_context, sig_context_len + 1); // include NUL
+  void *transcript_hash_instance_copy = alloca (sig_hash->instance_size);
+  memcpy (transcript_hash_instance_copy,
+          hs_info->transcript_hash_instance,
+          sig_hash->instance_size);
+  sig_hash->end (transcript_hash_instance_copy,
+                 sig_subject + 64 + sig_context_len + 1);
+  DskTlsKeyPair *sig_scheme = hs_info->certificate_key_pair;
+  DskTlsKeyPairClass *sig_scheme_class = DSK_TLS_KEY_PAIR_GET_CLASS (sig_scheme);
+  DskTlsSignatureScheme sig_scheme_code = hs_info->certificate_scheme;
+  if (shake->certificate_verify.signature_length
+      != sig_scheme_class->get_signature_length (sig_scheme, sig_scheme_code))
+                                                 
+    {
+      *error = dsk_error_new ("invalid signature- wrong length for scheme");
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+  if (!sig_scheme_class->verify (sig_scheme, sig_scheme_code,
+                                 sig_subject_len, sig_subject,
+                                 shake->certificate_verify.signature_data))
+    {
+      *error = dsk_error_new ("certificate signature validation failed");
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+
+  //
+  // Certificates acceptable to user?
+  //
+  DskTlsServerContext *ctx = conn->context;
+  if (!ctx->validate_client_cert_func 
+             (hs_info, 
+              hs_info->certificate_hs->certificate.n_entries,
+              hs_info->certificate_hs->certificate.entries,
+              ctx->validate_client_cert_data,
+              error))
+    {
+      // Assert: client must set *error if validation failed.
+      assert(*error != NULL);
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+
+  conn->state = DSK_TLS_SERVER_CONNECTION_WAIT_FINISHED;
+  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+}
+
+static DskTlsBaseRecordResponseCode
+handle_finished    (DskTlsServerConnection  *conn,
+                    DskTlsHandshakeMessage  *shake,
+                    DskError               **error)
+{
+  (void) shake;
+
+  if (conn->state != DSK_TLS_SERVER_CONNECTION_WAIT_FINISHED)
+    {
+      *error = dsk_error_new ("received client Finished in invalid state");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+  conn->state = DSK_TLS_SERVER_CONNECTION_CONNECTED;
+  // XXX: switch to application master key.
+  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+}
+
+static DskTlsBaseRecordResponseCode
+dsk_tls_server_connection_handle_message (DskTlsServerConnection *conn,
+                                          DskTlsHandshakeMessage  *shake,
+                                          DskError               **error)
+{
+  switch (shake->type)
+    {
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO:
+      return handle_client_hello (conn, shake, error);
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_END_OF_EARLY_DATA:
+      return handle_end_of_early_data (conn, shake, error);
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE:
+      return handle_certificate (conn, shake, error);
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CERTIFICATE_VERIFY:
+      return handle_certificate_verify (conn, shake, error);
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED:
+      return handle_finished (conn, shake, error);
+//    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE:
+//      return handle_key_update (conn, shake, error);
+    default:
+      *error = dsk_error_new ("unexpected message received");
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return false;
+    }
+}
+
+static DskTlsBaseRecordResponseCode
+dsk_tls_server_connection_handle_record (DskTlsBaseConnection *connection,
+                                         DskTlsRecordContentType content_type,
+                                         size_t                length,
+                                         const uint8_t        *data,
+                                         DskError            **error)
+{
+  DskTlsServerConnection *c = DSK_TLS_SERVER_CONNECTION (connection);
+  switch (content_type)
+    {
+      case DSK_TLS_RECORD_CONTENT_TYPE_HANDSHAKE:
+        {
+          DskTlsServerHandshake *hs_info = c->handshake;
+          uint8_t *hs_data = dsk_mem_pool_alloc_unaligned (&hs_info->mem_pool, length);
+          memcpy (hs_data, data, length);
+          DskTlsHandshakeMessage *message;
+          message = dsk_tls_handshake_message_parse (message_type, 
+                                                     length, hs_data,
+                                                     &hs_info->mem_pool,
+                                                     error);
+          if (message == NULL)
+            {
+              return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+            }
+          return dsk_tls_server_connection_handle_message (c, message, error);
+        }
+      case DSK_TLS_RECORD_CONTENT_TYPE_ALERT:
+        ...
+      case DSK_TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA:
+        ... pass onto application layer
+      default:
+        *error = dsk_error_new ("unexpected TLS record-content-type for server");
+        return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+    }
+}
+
+static void
+dsk_tls_server_connection_finalize (DskTlsServerConnection *conn)
+{
+  if (conn->handshake != NULL)
+    connection_clear_handshake (conn);
+  .. untrap
+  .. unref underlying stream
+  dsk_object_unref (conn->context);
+}
+
+DskTlsServerConnectionClass dsk_tls_server_connection_class = {
+  { 
+     DSK_OBJECT_CLASS_DEFINE(
+      DskTlsServerConnection,
+      &dsk_tls_base_connection_class,
+      NULL,
+      dsk_tls_server_connection_finalize
+    ),
+    dsk_tls_server_connection_handle_record
+  }
+};
+
+//
+// A Single Connection from a server.
+//
+DskTlsServerConnection *
+dsk_tls_server_connection_new (DskStream           *underlying,
+                               DskTlsServerContext *context,
+                               DskError           **error)
+{
+  DskTlsServerConnection *rv;
+  rv = dsk_object_new (&dsk_tls_server_connection_class);
+  rv->handshake = DSK_NEW0 (DskTlsServerHandshake);
+  rv->handshake->conn = rv;
+  rv->underlying = dsk_object_ref (underlying);
+  rv->context = dsk_object_ref (context);
   ...
+  return rv;
 }

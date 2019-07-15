@@ -1,13 +1,17 @@
-/* A "pure" implementation of FIPS 197, Advanced Encryption Standard.
+/* An implementation of FIPS 197, Advanced Encryption Standard.
  *
  * This algorithm is usually known as simply AES,
- * or sometimes as a portmanteau of its inventors names, Rijndael.
+ * or sometimes as a portmanteau of its inventors' names, Rijndael.
  *
  * It is a block cipher that encrypts/decrypts blocks of length 128 bits.
  *
  * The original paper allowed for various key and block widths,
  * but FIPS only standardized three, all with a block-width of 128 bits.
  * The key-lengths are 128, 192 and 256, giving us AES128 AES192 AES256.
+ */
+
+/* On X86_64 platforms, this can use the AESENC and AESDEC family
+ * of functions.  TODO: convert the _init functions to use the relevant asm.
  */
 
 /* References:

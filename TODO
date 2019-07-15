@@ -6,10 +6,6 @@ _ out-of-fds should be fatal
 
 cmdline:
 _ wrapper programs where the first non-hyphen-prefixed argument stops processing
-x mode-based programs:
-  x modes may be wrappers
-  x modes may have submodes, etc
-
 STEAL:
 _ glib's timezone code
 
@@ -17,12 +13,6 @@ TIMERS:
 _ add boolean in DskDispatchTimer for whether it's keyed off
   wall-clock time (for absolute time timers)
   or unsettable timer (for relative timers)
-
-_ Get-If-Modified Server support 
-  _ On serving a file:
-    _ include modification time header (is that a Date header??)
-    _ Obey If-Modified-Since header (with a flag to suppress?)
-  _ A simple flag for non-file data
 
 _ content_type_kv_pairs
   _ in request-parser
@@ -37,12 +27,10 @@ _ HTTP Client implementation (search for TODO in dsk-http-client.h)
 _ client support for receiving trailers (and server too, on principle)
 _ remove DskObjectWeakPointer ?
 _ Authentication support in DskHttpServer.
-  _ support for HTTP auth
-  _ support for Cookie-based auth
-_ Authentication support in DskHttpClient.
-_ Cookie support in DskHttpClient
+  _ Basic-Auth
+  _ Bearer token
+_ remove dsk-client-stream retry support?
 _ dsk_utf16_to_utf8_converter_new
-_ remove persistency support from DskClientStream !?!
 _ dsk_buffer_transfer, dsk_buffer_drain: consolidate fragments
   if they are both small.
 _ figure out a way to tune buffer allocations
@@ -198,7 +186,7 @@ _ make XML parser:
     and so, adding both is redundant; maybe WHITESPACE_HANDLING_PRESERVE,
     WHITESPACE_HANDLING_SUPPRESS, WHITESPACE_HANDLING_CONDENSE is needed)
 
-_ SPDY protocol as an HTTP-like layer
+_ HTTP Framing Layer (to abstract diffs between HTTP 1 and 2)
 
 _ websocket support
   _ test computing response hash (in spec)
@@ -255,7 +243,8 @@ _ XML implementation
   _ printer / pretty-printer
 _ dsk_octet_filter_sink()
 
-_ SSL and HTTPS [see file TODO-SSL]
+_ Implement TLS 1.3
+
 
 DOCUMENTATION
 *everything needs docs, but just remind ourselves of subtle stuff*
@@ -267,7 +256,6 @@ CODING STANDARDS
 _ DOCUMENT: length (not abbreviated)
 _ size_t everywhere ?
 _ s/octet/byte/ ?????
-_ break apart dsk-octet-io.h
 _ DskClientStreamSource BUT DskOctetStreamSourceFd.
   Fix this inconsistency and come up with a policy for naming derived classes
 _ note that we use TYPE_INIT everywhere now instead of TYPE_DEFAULT 

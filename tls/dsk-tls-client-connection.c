@@ -147,11 +147,11 @@ send_client_hello_flight (DskTlsClientHandshake *hs_info,
   hs_info->client_hello = ch;
 
   // Offered client PSKs
-  if (ctx->client_find_psks != NULL)
+  if (ctx->lookup_psks != NULL)
     {
-      conn->state = DSK_TLS_CONNECTION_CLIENT_DOING_PSK_LOOKUP;
+      conn->state = DSK_TLS_CLIENT_CONNECTION_DOING_PSK_LOOKUP;
       dsk_object_ref (conn);
-      ctx->client_find_psks (hs_info, ctx->client_find_psks_data);
+      ctx->lookup_psks (hs_info, ctx->client_find_psks_data);
       return true;
     }
   else
@@ -285,7 +285,7 @@ send_second_client_hello_flight (DskTlsClientHandshake *hs_info,
   // send it!
   dsk_tls_record_layer_send_handshake (hs_info, ch->data_length, ch->data);
 
-  hs_info->conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO;
+  hs_info->conn->state = DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO;
 
   return true;
 }
@@ -295,7 +295,7 @@ dsk_tls_handshake_client_error_finding_psks (DskTlsClientHandshake *hs_info,
                                              DskError *error)
 {
   DskTlsConnection *conn = hs_info->conn;
-  assert(conn->state == DSK_TLS_CONNECTION_CLIENT_DOING_PSK_LOOKUP);
+  assert(conn->state == DSK_TLS_CLIENT_CONNECTION_DOING_PSK_LOOKUP);
 
   if (conn->failed_error == NULL)
     dsk_tls_connection_failed (conn, error);
@@ -342,7 +342,7 @@ client_continue_post_psks (DskTlsClientHandshake *hs_info,
                            DskError **error)
 {
   DskTlsConnection *conn = hs_info->conn;
-  conn->state = DSK_TLS_CONNECTION_CLIENT_START;
+  conn->state = DSK_TLS_CLIENT_CONNECTION_START;
 
   DskTlsHandshakeMessage *ch = hs_info->client_hello;
   ch->client_hello.legacy_version = 0x301;
@@ -409,7 +409,7 @@ client_continue_post_psks (DskTlsClientHandshake *hs_info,
   // send it!
   dsk_tls_record_layer_send_handshake (hs_info, ch->data_length, ch->data);
 
-  conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO;
+  conn->state = DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO;
 
   return true;
 }
@@ -426,7 +426,7 @@ handle_server_hello (DskTlsConnection *conn,
 {
   DskTlsClientHandshake *hs_info = conn->handshake_info;
 
-  if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
+  if (conn->state != DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO)
     {
       *error = dsk_error_new ("ServerHello not allowed in %s state",
                               dsk_tls_connection_state_name (conn->state));
@@ -537,7 +537,7 @@ handle_server_hello (DskTlsConnection *conn,
   cs->init (conn->cipher_suite_read_instance,
             schedule->server_application_write_key);
 
-  conn->state = DSK_TLS_CONNECTION_CLIENT_WAIT_ENCRYPTED_EXTENSIONS;
+  conn->state = DSK_TLS_CLIENT_CONNECTION_WAIT_ENCRYPTED_EXTENSIONS;
   return true;
 }
 
@@ -583,7 +583,7 @@ handle_hello_retry_request (DskTlsConnection *conn,
   bool modify_key_shares = false;
   int use_key_share_index = -1;
   DskTlsNamedGroup key_share_generate;          // if modify_key_shares and use_key_share_index==-1
-  if (conn->state != DSK_TLS_CONNECTION_CLIENT_WAIT_SERVER_HELLO)
+  if (conn->state != DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO)
     {
       *error = dsk_error_new ("bad state for HelloRetryRequest message: %s",
                               dsk_tls_connection_state_name (conn->state));
@@ -669,7 +669,7 @@ handle_new_session_ticket  (DskTlsConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
 {
-  if (conn->state != DSK_TLS_CONNECTION_CLIENT_CONNECTED)
+  if (conn->state != DSK_TLS_CLIENT_CONNECTION_CONNECTED)
     {
       *error = dsk_error_new ("got NewSessionTicket before client handshake finished");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);

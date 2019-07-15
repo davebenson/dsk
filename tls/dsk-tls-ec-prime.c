@@ -840,7 +840,7 @@ struct KeyShareMethod_SECP
   const DskTls_ECPrime_Group *group;
 };
 static bool
-secp__make_key_pair (DskTlsKeyShareMethod *method,
+secp__make_key_pair (const DskTlsKeyShareMethod *method,
                      uint8_t              *private_key_inout,
                      uint8_t              *public_key_out)
 {
@@ -895,7 +895,7 @@ secp__make_key_pair (DskTlsKeyShareMethod *method,
 }
 
 static bool
-secp__make_shared_key  (DskTlsKeyShareMethod *method,
+secp__make_shared_key  (const DskTlsKeyShareMethod *method,
                         const uint8_t        *private_key,
                         const uint8_t        *peer_public_key,
                         uint8_t              *shared_key_out)
