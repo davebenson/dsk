@@ -1430,7 +1430,7 @@ struct NegotiationStep
 //
 // This is where most of the negotiation happens.
 // 
-static DskTlsBaseRecordResponseCode
+static DskTlsBaseHandshakeMessageResponseCode
 handle_client_hello (DskTlsServerConnection *conn,
                      DskTlsHandshakeMessage  *shake,
                      DskError        **error)
@@ -1439,7 +1439,7 @@ handle_client_hello (DskTlsServerConnection *conn,
     {
       *error = dsk_error_new ("ClientHello received in %s state: not allowed",
                               dsk_tls_server_connection_state_name (conn->state));
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
 
 
@@ -1467,11 +1467,11 @@ handle_client_hello (DskTlsServerConnection *conn,
           dsk_add_error_prefix (error, "%s (%s:%u)",
                                 ch_negotation_steps[step].name,
                                 __FILE__, __LINE__);
-          return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+          return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
         }
     }
 
-  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
 }
 
 static void
@@ -1518,7 +1518,7 @@ server_continue_post_psk_negotiation (DskTlsServerHandshake *hs_info)
     }
 
 }
-static DskTlsBaseRecordResponseCode
+static DskTlsBaseHandshakeMessageResponseCode
 handle_end_of_early_data   (DskTlsServerConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
@@ -1529,13 +1529,13 @@ handle_end_of_early_data   (DskTlsServerConnection *conn,
     {
       *error = dsk_error_new ("End-of-Early-Data not expected");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
   hs_info->receiving_early_data = false;
-  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
 }
 
-static DskTlsBaseRecordResponseCode
+static DskTlsBaseHandshakeMessageResponseCode
 handle_certificate         (DskTlsServerConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
@@ -1544,7 +1544,7 @@ handle_certificate         (DskTlsServerConnection *conn,
     {
       *error = dsk_error_new ("received client Certificate in invalid state");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
   DskTlsServerHandshake *hs_info = conn->handshake;
 
@@ -1556,16 +1556,16 @@ handle_certificate         (DskTlsServerConnection *conn,
                                        ctx->validate_client_cert_data,
                                        error))
     {
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
 
   conn->state = (shake->certificate.n_entries == 0)
               ? DSK_TLS_SERVER_CONNECTION_WAIT_FINISHED
               : DSK_TLS_SERVER_CONNECTION_WAIT_CERT_VERIFY;
   update_transcript_hash (hs_info, shake);
-  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
 }
-static DskTlsBaseRecordResponseCode
+static DskTlsBaseHandshakeMessageResponseCode
 handle_certificate_verify  (DskTlsServerConnection *conn,
                             DskTlsHandshakeMessage  *shake,
                             DskError        **error)
@@ -1577,7 +1577,7 @@ handle_certificate_verify  (DskTlsServerConnection *conn,
     {
       *error = dsk_error_new ("received client CertificateVerify in invalid state");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
 
   //
@@ -1607,14 +1607,14 @@ handle_certificate_verify  (DskTlsServerConnection *conn,
                                                  
     {
       *error = dsk_error_new ("invalid signature- wrong length for scheme");
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
   if (!sig_scheme_class->verify (sig_scheme, sig_scheme_code,
                                  sig_subject_len, sig_subject,
                                  shake->certificate_verify.signature_data))
     {
       *error = dsk_error_new ("certificate signature validation failed");
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
 
   //
@@ -1630,14 +1630,14 @@ handle_certificate_verify  (DskTlsServerConnection *conn,
     {
       // Assert: client must set *error if validation failed.
       assert(*error != NULL);
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
 
   conn->state = DSK_TLS_SERVER_CONNECTION_WAIT_FINISHED;
-  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
 }
 
-static DskTlsBaseRecordResponseCode
+static DskTlsBaseHandshakeMessageResponseCode
 handle_finished    (DskTlsServerConnection  *conn,
                     DskTlsHandshakeMessage  *shake,
                     DskError               **error)
@@ -1648,18 +1648,20 @@ handle_finished    (DskTlsServerConnection  *conn,
     {
       *error = dsk_error_new ("received client Finished in invalid state");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
-      return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
     }
   conn->state = DSK_TLS_SERVER_CONNECTION_CONNECTED;
   // XXX: switch to application master key.
-  return DSK_TLS_BASE_RECORD_RESPONSE_OK;
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
 }
 
-static DskTlsBaseRecordResponseCode
-dsk_tls_server_connection_handle_message (DskTlsServerConnection *conn,
-                                          DskTlsHandshakeMessage  *shake,
-                                          DskError               **error)
+static DskTlsBaseHandshakeMessageResponseCode
+dsk_tls_server_connection_handle_handshake_message
+                               (DskTlsBaseConnection    *connection,
+                                DskTlsHandshakeMessage  *shake,
+                                DskError               **error)
 {
+  DskTlsServerConnection *conn = DSK_TLS_SERVER_CONNECTION (connection);
   switch (shake->type)
     {
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_CLIENT_HELLO:
@@ -1681,62 +1683,38 @@ dsk_tls_server_connection_handle_message (DskTlsServerConnection *conn,
     }
 }
 
-static DskTlsBaseRecordResponseCode
-dsk_tls_server_connection_handle_record (DskTlsBaseConnection *connection,
-                                         DskTlsRecordContentType content_type,
-                                         size_t                length,
-                                         const uint8_t        *data,
-                                         DskError            **error)
-{
-  DskTlsServerConnection *c = DSK_TLS_SERVER_CONNECTION (connection);
-  switch (content_type)
-    {
-      case DSK_TLS_RECORD_CONTENT_TYPE_HANDSHAKE:
-        {
-          DskTlsServerHandshake *hs_info = c->handshake;
-          uint8_t *hs_data = dsk_mem_pool_alloc_unaligned (&hs_info->mem_pool, length);
-          memcpy (hs_data, data, length);
-          DskTlsHandshakeMessage *message;
-          message = dsk_tls_handshake_message_parse (message_type, 
-                                                     length, hs_data,
-                                                     &hs_info->mem_pool,
-                                                     error);
-          if (message == NULL)
-            {
-              return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
-            }
-          return dsk_tls_server_connection_handle_message (c, message, error);
-        }
-      case DSK_TLS_RECORD_CONTENT_TYPE_ALERT:
-        ...
-      case DSK_TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA:
-        ... pass onto application layer
-      default:
-        *error = dsk_error_new ("unexpected TLS record-content-type for server");
-        return DSK_TLS_BASE_RECORD_RESPONSE_FAILED;
-    }
-}
+static void
+dsk_tls_server_connection_handle_application_data
+       (DskTlsBaseConnection *connection,
+        DskTlsHandshakeMessage *message,
+        DskError **error);
+static void 
+dsk_tls_server_connection_fatal_alert_received
+       (DskTlsBaseConnection *connection,
+        DskTlsAlertDescription description);
+static bool 
+dsk_tls_server_connection_warning_alert_received
+       (DskTlsBaseConnection *connection,
+        DskTlsAlertDescription description,
+        DskError **error);
 
 static void
 dsk_tls_server_connection_finalize (DskTlsServerConnection *conn)
 {
-  if (conn->handshake != NULL)
-    connection_clear_handshake (conn);
-  .. untrap
-  .. unref underlying stream
-  dsk_object_unref (conn->context);
+  if (conn->base_instance.handshake != NULL)
+    {
+      DskTlsServerHandshake *hs_info = conn->base_instance.handshake;
+      dsk_mem_pool_clear (&hs_info->mem_pool);
+      dsk_free (hs_info);
+    }
 }
 
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskTlsServerConnection);
 DskTlsServerConnectionClass dsk_tls_server_connection_class = {
-  { 
-     DSK_OBJECT_CLASS_DEFINE(
-      DskTlsServerConnection,
-      &dsk_tls_base_connection_class,
-      NULL,
-      dsk_tls_server_connection_finalize
-    ),
-    dsk_tls_server_connection_handle_record
-  }
+  DSK_TLS_BASE_CONNECTION_DEFINE_CLASS(
+    DskTlsServerConnection,
+    dsk_tls_server_connection
+  )
 };
 
 //
@@ -1751,8 +1729,11 @@ dsk_tls_server_connection_new (DskStream           *underlying,
   rv = dsk_object_new (&dsk_tls_server_connection_class);
   rv->handshake = DSK_NEW0 (DskTlsServerHandshake);
   rv->handshake->conn = rv;
-  rv->underlying = dsk_object_ref (underlying);
   rv->context = dsk_object_ref (context);
-  ...
+  if (!dsk_tls_base_connection_init_underlying (&rv->base_instance, underlying, error))
+    {
+      dsk_object_unref (rv);
+      return NULL;
+    }
   return rv;
 }
