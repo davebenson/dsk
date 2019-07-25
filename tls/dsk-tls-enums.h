@@ -165,4 +165,5 @@ typedef enum
   DSK_TLS_ALERT_DESCRIPTION_CERTIFICATE_REQUIRED = 116,
   DSK_TLS_ALERT_DESCRIPTION_NO_APPLICATION_PROTOCOL = 120,
 } DskTlsAlertDescription;
+const char * dsk_tls_alert_description_name (DskTlsAlertDescription desc);
 

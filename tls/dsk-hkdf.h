@@ -4,7 +4,7 @@
 // RFC 5869:  HMAC-based Key Derivation Function
 //
 // Build a secure key of any length
-// from of various keying materials,
+// from various keying materials,
 // and a cryptographic hash function (an HMAC).
 //
 

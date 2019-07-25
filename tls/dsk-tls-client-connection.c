@@ -1,5 +1,26 @@
 #include "../dsk.h"
+#include <string.h>
+#include "dsk-tls-private.h"
 
+struct DskTlsClientContext
+{
+  unsigned ref_count;
+
+  size_t n_certificates;
+  DskTlsKeyPair **certificates;
+
+  size_t n_application_layer_protocols;
+  const char **application_layer_protocols;
+  bool application_layer_protocol_negotiation_required;
+
+  // A comma-sep list of key-shares whose
+  // public/private keys should be computed
+  // in the initial ClientHello.
+  const char *offered_key_share_groups;
+
+  DskTlsClientLookupSessionsFunc lookup_sessions_func;
+  void *lookup_sessions_data;
+};
 //
 // Allocate memory and objects from the handshke-pool.
 //
@@ -147,11 +168,11 @@ send_client_hello_flight (DskTlsClientHandshake *hs_info,
   hs_info->client_hello = ch;
 
   // Offered client PSKs
-  if (ctx->lookup_psks != NULL)
+  if (ctx->lookup_sessions_func != NULL)
     {
       conn->state = DSK_TLS_CLIENT_CONNECTION_DOING_PSK_LOOKUP;
       dsk_object_ref (conn);
-      ctx->lookup_psks (hs_info, ctx->client_find_psks_data);
+      ctx->lookup_sessions_func (hs_info, ctx->lookup_sessions_data);
       return true;
     }
   else
@@ -223,8 +244,8 @@ send_second_client_hello_flight (DskTlsClientHandshake *hs_info,
   // supported groups
   DskTlsExtension_SupportedGroups *sg = HS_ALLOC (hs_info, DskTlsExtension_SupportedGroups);
   sg->base.type = DSK_TLS_EXTENSION_TYPE_SUPPORTED_GROUPS;
-  sg->n_supported_groups = DSK_N_ELEMENTS (client_hello_supported_groups);
-  sg->supported_groups = (DskTlsNamedGroup *) client_hello_supported_groups;
+  sg->n_supported_groups = dsk_tls_n_named_groups;
+  sg->supported_groups = dsk_tls_named_groups;
   hs_info->extensions[hs_info->n_extensions++] = (DskTlsExtension *) sg;
 
   // supported versions
@@ -279,11 +300,11 @@ send_second_client_hello_flight (DskTlsClientHandshake *hs_info,
   hs_info->client_hello->client_hello.extensions = hs_info->extensions;
 
   // serialize
-  if (!dsk_tls_handshake_serialize (hs_info, hs_info->client_hello, error))
+  if (!dsk_tls_handshake_message_serialize (hs_info->client_hello, &hs_info->mem_pool, error))
     return false;
 
   // send it!
-  dsk_tls_record_layer_send_handshake (hs_info, ch->data_length, ch->data);
+  dsk_tls_record_layer_send_handshake (&hs_info->conn->base_instance, ch->data_length, ch->data);
 
   hs_info->conn->state = DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO;
 
@@ -294,28 +315,27 @@ void
 dsk_tls_handshake_client_error_finding_psks (DskTlsClientHandshake *hs_info,
                                              DskError *error)
 {
-  DskTlsConnection *conn = hs_info->conn;
+  DskTlsClientConnection *conn = hs_info->conn;
   assert(conn->state == DSK_TLS_CLIENT_CONNECTION_DOING_PSK_LOOKUP);
 
-  if (conn->failed_error == NULL)
-    dsk_tls_connection_failed (conn, error);
+  dsk_tls_base_connection_fail (&conn->base_instance, error);
   dsk_object_unref (conn);
 }
 
 static void
 tls_preshared_key_info_copy_to (DskMemPool *pool,
-                                DskTlsPresharedKeyInfo *dst,
-                                const DskTlsPresharedKeyInfo *src)
+                                DskTlsClientSessionInfo *dst,
+                                const DskTlsClientSessionInfo *src)
 {
   *dst = *src;
-  dst->identity = dsk_mem_pool_memdup (pool, src->identity_length, src->identity);
+  dst->identity_data = dsk_mem_pool_memdup (pool, src->identity_length, src->identity_data);
   dst->master_key = dsk_mem_pool_memdup (pool, src->master_key_length, src->master_key);
 }
 
 void
 dsk_tls_handshake_client_found_psks (DskTlsClientHandshake *hs_info,
                                      size_t                      n_psks,
-                                     DskTlsPresharedKeyInfo     *psks)
+                                     DskTlsClientSessionInfo     *psks)
 {
   DskTlsConnection *conn = hs_info->conn;
   if (n_psks > 0)

@@ -1407,13 +1407,15 @@ test_ecprime (void)
   //            y^2=x^3+x+1 and p=5, and base-point=(0,1).
   //    the book gives: 3*(0,1) == (2,1).
   //
-  static uint32_t hecc_A[] = {1};
-  static uint32_t hecc_B[] = {1};
+  static uint32_t hecc_a[] = {1};
+  static uint32_t hecc_b[] = {1};
   static uint32_t hecc_p[] = {23};
   static uint32_t hecc_x[] = {3};
   static uint32_t hecc_y[] = {10};
   static uint32_t hecc_barrett_mu[2] = { 0x8590b216, 0x0b21642c };
   static uint32_t hecc_xy0[] = {0,0};
+  static uint32_t hecc_n[] = {26};
+  static uint32_t hecc_n_barrett_mu[2] = {  0xd89d89d8, 0x09d89d89 };
 
   static uint32_t xpow[] = {
      7,19,17, 9,12,11,13, 0, 6,18, 5, 1, 4, 1, 5,18, 6, 0,13,11,12, 9,17,19, 7, 3
@@ -1422,7 +1424,15 @@ test_ecprime (void)
     12, 5, 3,16, 4, 3,16, 1, 4,20, 4, 7, 0,16,19, 3,19,22, 7,20,19, 7,20,18,11,13
   };
 
-  static DskTls_ECPrime_Group g_hecc= { "t23", 1, hecc_p, hecc_barrett_mu, hecc_A, hecc_B, hecc_x, hecc_y, hecc_xy0, true, true, 22 };
+#define hecc_name "t23"
+#define hecc_len 1
+#define hecc_bitlen 5
+#define hecc_n_bitlen 5
+#define hecc_is_a_small true
+#define hecc_is_a_negative true
+#define hecc_small_a 22
+
+  static DskTls_ECPrime_Group g_hecc= DSK_TLS_ECPRIME_GROUP_DEF(hecc_);
   uint32_t xin[1] = {3}, yin[1] = {10};
   uint32_t xout[1], yout[1];
   for (unsigned i = 0; i < DSK_N_ELEMENTS (xpow); i++)

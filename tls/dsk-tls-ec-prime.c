@@ -64,6 +64,16 @@ static uint32_t secp256r1__y[] = {
   0x4FE342E2,
 };
 
+static uint32_t secp256r1__n[] = {
+  0xFC632551,
+  0xF3B9CAC2,
+  0xA7179E84,
+  0xBCE6FAAD,
+  0xFFFFFFFF,
+  0xFFFFFFFF,
+  0x00000000,
+  0xFFFFFFFF,
+};
 static const uint32_t secp256r1__barrett_mu[] = {
   0x00000003,
   0x00000000,
@@ -76,24 +86,32 @@ static const uint32_t secp256r1__barrett_mu[] = {
   0x00000001,
 };
 
+static const uint32_t secp256r1__n_barrett_mu[] = {
+ 0xeedf9bfe,
+ 0x012ffd85,
+ 0xdf1a6c21,
+ 0x43190552,
+ 0xffffffff,
+ 0xfffffffe,
+ 0xffffffff,
+ 0x00000000,
+ 0x00000001,
+};
+
+
 static uint32_t secp256r1__xy0[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
+#define secp256r1__name "SECP256R1"
+#define secp256r1__len 8
+#define secp256r1__bitlen 256
+#define secp256r1__n_bitlen 256
+#define secp256r1__is_a_small true
+#define secp256r1__is_a_negative true
+#define secp256r1__small_a 3
 
-const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp256r1 = {
-  "SECP256R1",
-  8,
-  secp256r1__p,
-  secp256r1__barrett_mu,
-  secp256r1__a,
-  secp256r1__b,
-  secp256r1__x,
-  secp256r1__y,
-  secp256r1__xy0,
-  true,                 // a is small
-  true,                 // a is negative
-  3                     // a = -3
-};
+const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp256r1 =
+  DSK_TLS_ECPRIME_GROUP_DEF(secp256r1__);
 
 static const uint32_t secp384r1__p[] = {
   0xFFFFFFFF,
@@ -153,6 +171,22 @@ static const uint32_t secp384r1__b[] = {
   0xE23EE7E4,
   0xB3312FA7,
 };
+
+static const uint32_t secp384r1__n[] = {
+  0xCCC52973,
+  0xECEC196A,
+  0x48B0A77A,
+  0x581A0DB2,
+  0xF4372DDF,
+  0xC7634D81,
+  0xFFFFFFFF,
+  0xFFFFFFFF,
+  0xFFFFFFFF,
+  0xFFFFFFFF,
+  0xFFFFFFFF,
+  0xFFFFFFFF
+};
+
 static const uint32_t secp384r1__x[] = {
   0x72760AB7,
   0x3A545E38,
@@ -181,23 +215,36 @@ static const uint32_t secp384r1__y[] = {
   0x96262C6F,
   0x3617DE4A,
 };
+static const uint32_t secp384r1__n_barrett_mu[] = {
+ 0x333ad68d,
+ 0x1313e695,
+ 0xb74f5885,
+ 0xa7e5f24d,
+ 0x0bc8d220,
+ 0x389cb27e,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000001,
+};
+
 static const uint32_t secp384r1__xy0[24] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
-const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp384r1 = {
-  "SECP384R1",
-  12,
-  secp384r1__p,
-  secp384r1__barrett_mu,
-  secp384r1__a,
-  secp384r1__b,
-  secp384r1__x,
-  secp384r1__y,
-  secp384r1__xy0,
-  true,                 // a is small
-  true,                 // a is negative
-  3                     // a = -3
-};
+
+#define secp384r1__name "SECP384R1"
+#define secp384r1__len 12
+#define secp384r1__bitlen 384
+#define secp384r1__n_bitlen 384
+#define secp384r1__is_a_small true
+#define secp384r1__is_a_negative true
+#define secp384r1__small_a 3
+
+const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp384r1 =
+  DSK_TLS_ECPRIME_GROUP_DEF(secp384r1__);
 
 static const uint32_t secp521r1__p[] = {
 0xFFFFFFFF,
@@ -277,6 +324,45 @@ static const uint32_t secp521r1__b[] = {
 0x953EB961,
 0x00000051,
 };
+static const uint32_t secp521r1__n[] = {
+0x91386409,
+0xBB6FB71E,
+0x899C47AE,
+0x3BB5C9B8,
+0xF709A5D0,
+0x7FCC0148,
+0xBF2F966B,
+0x51868783,
+0xFFFFFFFA,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0xFFFFFFFF,
+0x000001FF
+};
+static const uint32_t secp521r1__n_barrett_mu[] = {
+ 0xf501c8d1,
+ 0xe6fdc408,
+ 0x12385bb1,
+ 0xee145124,
+ 0x8d91dd98,
+ 0x968bf112,
+ 0xffadc23d,
+ 0x1a65200c,
+ 0x5e1f1034,
+ 0x00016b9e,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00800000,
+};
 static const uint32_t secp521r1__x[] = {
 0xC2E5BD66,
 0xF97E7E31,
@@ -318,20 +404,15 @@ static const uint32_t secp521r1__y[] = {
 static const uint32_t secp521r1__xy0[34] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
-const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp521r1 = {
-  "SECP521R1",
-  17,
-  secp521r1__p,
-  secp521r1__barrett_mu,
-  secp521r1__a,
-  secp521r1__b,
-  secp521r1__x,
-  secp521r1__y,
-  secp521r1__xy0,
-  true,                 // a is small
-  true,                 // a is negative
-  3                     // a = -3
-};
+#define secp521r1__name "SECP521R1"
+#define secp521r1__len 17
+#define secp521r1__bitlen 521
+#define secp521r1__n_bitlen 521
+#define secp521r1__is_a_small true
+#define secp521r1__is_a_negative true
+#define secp521r1__small_a 3
+const DskTls_ECPrime_Group dsk_tls_ecprime_group_secp521r1 =
+  DSK_TLS_ECPRIME_GROUP_DEF(secp521r1__);
 bool dsk_tls_ecprime_is_zero (const DskTls_ECPrime_Group *group,
                               const uint32_t *x,
                               const uint32_t *y)
@@ -345,12 +426,12 @@ bool dsk_tls_ecprime_is_zero (const DskTls_ECPrime_Group *group,
  * Page 244.
  */
 void dsk_tls_ecprime_add (const DskTls_ECPrime_Group *group,
-                           const uint32_t *x1,
-                           const uint32_t *y1,
-                           const uint32_t *x2,
-                           const uint32_t *y2,
-                           uint32_t *x_out,
-                           uint32_t *y_out)
+                          const uint32_t *x1,
+                          const uint32_t *y1,
+                          const uint32_t *x2,
+                          const uint32_t *y2,
+                          uint32_t *x_out,
+                          uint32_t *y_out)
 {
   unsigned len = group->len;
   const uint32_t *p = group->p;
@@ -442,9 +523,6 @@ void dsk_tls_ecprime_add (const DskTls_ECPrime_Group *group,
   dsk_tls_bignum_modulus_with_barrett_mu (len * 2, tmp, len, p, group->barrett_mu, y_out);
   dsk_tls_bignum_modular_subtract(len, y_out, y1, p, y_out);
 }
-
-#define dsk_tls_ecprime_double(group, x, y, xout, yout) \
-  dsk_tls_ecprime_add(group, x, y, x, y, xout, yout)
 
 
 // Factor must be less than the group size.

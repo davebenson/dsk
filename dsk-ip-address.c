@@ -60,6 +60,16 @@ is_not_ipv6:
   return false;
 }
 
+unsigned dsk_ip_address_type_get_length (DskIpAddressType type)
+{
+  switch (type)
+    {
+    case DSK_IP_ADDRESS_IPV4: return 4;
+    case DSK_IP_ADDRESS_IPV6: return 16;
+    }
+  return 0;
+}
+
 bool
 dsk_ip_address_parse_numeric (const char *str,
                                DskIpAddress *out)

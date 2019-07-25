@@ -19,11 +19,11 @@ typedef struct DskTlsClientContext DskTlsClientContext;
 typedef struct DskTlsClientHandshake DskTlsClientHandshake;
 struct DskTlsClientConnectionClass
 {
-  DskStreamClass base_class;
+  DskTlsBaseConnectionClass base_class;
 };
 struct DskTlsClientConnection
 {
-  DskStream base_instance;
+  DskTlsBaseConnection base_instance;
   DskStream *underlying;
   DskTlsClientContext *context;
   DskHookTrap *write_trap;
@@ -78,7 +78,6 @@ typedef void (*DskTlsClientStoreSessionFunc) (DskTlsClientHandshake *handshake,
                                               void *client_store_session_data);
 
 typedef void (*DskTlsClientLookupSessionsFunc)(DskTlsClientHandshake *handshake,
-                                              const char *server_name,
                                               void *client_lookup_session_data);
 void dsk_tls_handshake_client_found_sessions (DskTlsClientHandshake *handshake,
                                               size_t n_sessions_found,

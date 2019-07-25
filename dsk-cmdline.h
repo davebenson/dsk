@@ -19,14 +19,14 @@ typedef enum
 } DskCmdlineFlags;
 
 typedef bool (*DskCmdlineCallback) (const char *arg_name,
-                                           const char *arg_value,
-                                           void       *callback_data,
-                                           DskError  **error);
+                                    const char *arg_value,
+                                    void       *callback_data,
+                                    DskError  **error);
 #define DSK_CMDLINE_CALLBACK_DECLARE(name) \
         bool          name         (const char *arg_name, \
-                                           const char *arg_value, \
-                                           void       *callback_data, \
-                                           DskError  **error)
+                                    const char *arg_value, \
+                                    void       *callback_data, \
+                                    DskError  **error)
 
 void dsk_cmdline_init        (const char     *static_short_desc,
                               const char     *long_desc,

@@ -5,6 +5,7 @@ typedef enum
   DSK_IP_ADDRESS_IPV4,
   DSK_IP_ADDRESS_IPV6
 } DskIpAddressType;
+unsigned dsk_ip_address_type_get_length (DskIpAddressType type);
 
 struct _DskIpAddress
 {
@@ -16,7 +17,7 @@ struct _DskIpAddress
 bool    dsk_hostname_looks_numeric   (const char         *str);
 bool    dsk_ip_address_parse_numeric (const char         *str,
                                              DskIpAddress       *out);
-char          *dsk_ip_address_to_string     (const DskIpAddress *address);
+char   *dsk_ip_address_to_string     (const DskIpAddress *address);
 
 bool    dsk_ip_addresses_equal       (const DskIpAddress *a,
                                              const DskIpAddress *b);
@@ -25,14 +26,14 @@ bool    dsk_ip_addresses_equal       (const DskIpAddress *a,
 /* --- interfacing with system-level sockaddr structures --- */
 /* 'out' should be a pointer to a 'struct sockaddr_storage'.
  */
-void        dsk_ip_address_to_sockaddr (const DskIpAddress *address,
-                                        unsigned            port,
-                                        void               *out,
-                                        unsigned           *out_len);
-bool dsk_sockaddr_to_ip_address (unsigned            addr_len,
-                                        const void         *addr,
-                                        DskIpAddress       *out,
-                                        unsigned           *port_out);
+void    dsk_ip_address_to_sockaddr    (const DskIpAddress *address,
+                                       unsigned            port,
+                                       void               *out,
+                                       unsigned           *out_len);
+bool    dsk_sockaddr_to_ip_address    (unsigned            addr_len,
+                                       const void         *addr,
+                                       DskIpAddress       *out,
+                                       unsigned           *port_out);
 
 void dsk_ip_address_localhost (DskIpAddress *out);
 
@@ -42,9 +43,9 @@ void dsk_ip_address_localhost (DskIpAddress *out);
    returns FALSE for non-ip sockets, etc.
  */
 bool dsk_getsockname            (DskFileDescriptor   fd,
-                                        DskIpAddress       *addr_out,
-                                        unsigned           *port_out);
+                                 DskIpAddress       *addr_out,
+                                 unsigned           *port_out);
 bool dsk_getpeername            (DskFileDescriptor   fd,
-                                        DskIpAddress       *addr_out,
-                                        unsigned           *port_out);
+                                 DskIpAddress       *addr_out,
+                                 unsigned           *port_out);
 

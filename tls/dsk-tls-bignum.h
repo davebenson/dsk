@@ -14,7 +14,8 @@
 //    * needed for Elliptic Point decompression
 //
 // Montgomery's method and Barrett's method are implemented
-// for modular multiplication.
+// for modular multiplication, as well as methods for pseudo-mersenne
+// and mersenne primes.
 //
 // TODO: in many cases, aliasing is allowed
 // (esp for add,subtract functions), we should document exactly when
@@ -116,6 +117,9 @@ void     dsk_tls_bignum_shiftright_truncated (unsigned len,
                                               unsigned amount,
                                               unsigned out_len,
                                               uint32_t *out);
+void    dsk_tls_bignum_shiftright_inplace    (unsigned len,
+                                              uint32_t *in_out,
+                                              unsigned n_bits);
 
 //
 //
@@ -271,6 +275,22 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
                                         const uint32_t *modulus,
                                         const uint32_t *barrett_mu,
                                         uint32_t       *mod_value_out);
+
+
+//
+// p = 2**(32*prime_size) - c.
+//
+// Assume N = N_hi || N_lo.
+//
+// N % p = N_lo + N_hi * c
+// The latter side only has one word of overflow.
+//
+// 'in' is of size prime_size*2, 'out' is of size prime_size.
+//
+void dsk_tls_bignum_modulus_pseudomersenne32 (unsigned prime_size,
+                                              uint16_t c,
+                                              const uint32_t *in,
+                                              uint32_t *out);
 
 
 uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v);

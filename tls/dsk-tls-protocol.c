@@ -282,7 +282,7 @@ parse_extension (DskTlsHandshakeMessage    *under_construction,
         return ext;
       }
     case DSK_TLS_EXTENSION_TYPE_MAX_FRAGMENT_LENGTH:
-      // RFC 6606, Section 4.
+      // RFC 6066, Section 4.
       //
       // The "extension_data" field of this extension SHALL
       // contain:

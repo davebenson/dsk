@@ -546,7 +546,6 @@ test_isprime (void)
     {
       struct Num *p = parse_hex (tests[i].p);
       bool prime = dsk_tls_bignum_is_probable_prime (p->len, p->value);
-      printf("i=%u\n",i);
       assert (prime == tests[i].is_prime);
       free (p);
     }

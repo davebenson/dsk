@@ -31,6 +31,9 @@ extern DskTlsCipherSuiteCode dsk_tls_cipher_suite_codes[];
 bool dsk_tls_handshake_message_serialize (DskTlsHandshakeMessage     *message,
                                           DskMemPool                 *pool,
                                           DskError                  **error);
+void dsk_tls_record_layer_send_handshake (DskTlsBaseConnection *conn,
+                                          size_t data_length, 
+                                          const uint8_t *data);
 //void dsk_tls_record_layer_send_handshake (DskTlsHandshakeNegotiation *hs_info,
                                           //unsigned msg_len, const uint8_t *msg_data);
 

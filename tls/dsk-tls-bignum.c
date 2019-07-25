@@ -925,6 +925,9 @@ pr_mont(DskTlsMontgomeryInfo *mont, const char *label, const uint32_t *m)
 //
 // TODO: wiki page suggests the algo can be generalized to any n-th root.
 //
+// TODO: I also believe there's an efficient sqrt for p = 5 (mod 8),
+// similar to the one for p = 3 (mod 4).
+//
 // NOTE: modulus_words must be prime.
 //
 static bool

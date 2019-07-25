@@ -11,8 +11,9 @@ For our purposes,
  a means to convert a block cipher into one that can accept
  variable length plaintext and perform authentication.  (It also
  can provide authenticated but unencrypted data, called "associated data"
- which is needed for ...) (<i>GCM</i> and <i>CCM</i> are the AEAD required
- by TLS 1.3)
+ which in TLS 1.3 is used to validate the plaintext outer header.)
+ (<i>GCM</i> and <i>CCM</i> as well as <i>CHACHA-20 + Poly1305</i>
+ are the AEAD required by TLS 1.3)
 </li>
 
 <li>
@@ -160,6 +161,9 @@ For our purposes,
       a the inputs and outputs of a block-cipher, to slightly
       scramble it if you can pre-share a key.  This is similar
       to salting a password hash.
+      <br/>
+      That said, the first and last steps of AES are
+      essentially key-whitening steps.
   </small>
 </li>
 
@@ -171,8 +175,18 @@ For our purposes,
 
 <li>
  MD5 - a venerable, but deprecated, cryptographic hash.  A number
- of technique for finding collisions have found, and it is considered weak
+ of techniques for finding collisions have found, and it is considered weak
  for cryptographic purposes.  Still widely used.
+</li>
+
+<li>
+ Montgomery Method for Modular Arithmetic: a way of performing
+ computations modulo an arbitrary prime.
+</li>
+<li>
+ Montgomery Ladder: a way of computing large powers without
+ side-channel leaks, because the computation time should be the
+ same regardless of any properties of the exponent.
 </li>
 
 <li>
@@ -225,6 +239,12 @@ For our purposes,
 <li>RSASSA</li>
 
 <li><b>SCT</b> - Signed Certificate Timestamp.  TODO: define</li>
+
+<li>Side-Channel Leaks - generally this refers to any way to derive information
+about the encryption process that are beyond the formal inputs and outputs
+of the algorithm.
+There are two known approaches: (1) compression attacks (2) timing attacks.
+</li>
 
 <li>
   SHA1 - a venerable, cryptographic hash, whose output is 160 bits long (20 bytes).

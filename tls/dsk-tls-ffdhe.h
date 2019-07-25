@@ -1,4 +1,4 @@
-/* The remaining interface is relatively low-level;
+/* The following interface is relatively low-level;
  * generic key-share implementations should
  * probably use DskKeyShareMethod to handle
  * a range of key-sharing mechanisms instead.

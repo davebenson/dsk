@@ -31,6 +31,8 @@ typedef enum
   DSK_TLS_BASE_HMS_SUSPENDED,
 } DskTlsBaseHandshakeMessageState;
 
+#define DSK_TLS_BASE_CONNECTION(o) DSK_OBJECT_CAST(DskTlsBaseConnection, o, &dsk_tls_base_connection_class)
+#define DSK_TLS_BASE_CONNECTION_GET_CLASS(o) DSK_OBJECT_CAST_GET_CLASS(DskTlsBaseConnection, o, &dsk_tls_base_connection_class)
 struct DskTlsBaseConnectionClass
 {
   DskStreamClass base_class;
@@ -39,7 +41,7 @@ struct DskTlsBaseConnectionClass
        (DskTlsBaseConnection *connection,
         DskTlsHandshakeMessage *message,
         DskError **error);
-  void (*handle_application_data)
+  bool (*handle_application_data)
        (DskTlsBaseConnection *connection,
         DskTlsHandshakeMessage *message,
         DskError **error);
@@ -59,7 +61,7 @@ struct DskTlsBaseConnection
   DskHookTrap *write_trap;
   DskHookTrap *read_trap;
 
-  unsigned is_suspended : 1;
+  unsigned expecting_eof : 1;
 
   void *handshake;
 
@@ -67,8 +69,13 @@ struct DskTlsBaseConnection
   // Incoming/Outgoing raw data, and 
   //
   DskBuffer incoming_raw, outgoing_raw;
-  DskFlatBuffer incoming_plaintext, outgoing_plaintext;
+  DskBuffer incoming_plaintext, outgoing_plaintext;
 
+  //
+  // This buffer is used for the record fragment, and the decrypted.
+  //
+  size_t record_buffer_length;
+  uint8_t *record_buffer;
   //
   // Decoding the stream of Handshake messages,
   // which may be fragmented or combined.
@@ -85,9 +92,16 @@ struct DskTlsBaseConnection
   const DskTlsCipherSuite *cipher_suite;
   void *cipher_suite_read_instance;
   void *cipher_suite_write_instance;
+
+  uint8_t *read_iv, *write_iv;
+  uint64_t read_seqno, write_seqno;
 };
 
 void dsk_tls_base_connection_resume      (DskTlsBaseConnection *connection);
 void dsk_tls_base_connection_resume_fail (DskTlsBaseConnection *connection,
-                                          DskError            **error);
+                                          DskError             *error);
+
+// protected
+void dsk_tls_base_connection_fail (DskTlsBaseConnection *conn,
+                                   DskError *error);
 
