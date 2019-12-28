@@ -23,7 +23,7 @@ struct DskTlsServerNameListEntry
 {
   DskTlsServerNameType type;
   unsigned name_length;
-  const char *name;
+  const char *name;             /* NUL terminated. */
 };
 typedef struct DskTlsExtension_ServerNameList DskTlsExtension_ServerNameList;
 struct DskTlsExtension_ServerNameList
@@ -247,18 +247,12 @@ struct DskTlsExtension_SupportedVersions
 };
 
 /* --- Certificate Authorities Extension RFC 8446 4.2.4 --- */
-typedef struct DskTlsExtension_CertificateAuthorityDistinguishedName DskTlsExtension_CertificateAuthorityDistinguishedName;
-struct DskTlsExtension_CertificateAuthorityDistinguishedName
-{
-  unsigned length;
-  char *name;
-};
 typedef struct DskTlsExtension_CertificateAuthorities DskTlsExtension_CertificateAuthorities;
 struct DskTlsExtension_CertificateAuthorities
 {
   DskTlsExtensionBase base;
-  unsigned n_names;
-  DskTlsExtension_CertificateAuthorityDistinguishedName *names;
+  unsigned n_CAs;
+  DskTlsX509Name *CAs;
 };
 
 /* --- OID Filters Extension RFC 8446 4.2.5 --- */
@@ -278,6 +272,22 @@ struct DskTlsExtension_OIDFilters
   DskTlsOIDFilter *filters;
 };
 
+/* --- SignatureAlgorithmCert --- */
+typedef struct DskTlsExtension_SignatureAlgorithmsCert DskTlsExtension_SignatureAlgorithmsCert;
+struct DskTlsExtension_SignatureAlgorithmsCert
+{
+  DskTlsExtensionBase base;
+  uint16_t n_schemes;
+  DskTlsSignatureScheme *schemes;
+};
+
+typedef struct DskTlsExtension_CertificateType DskTlsExtension_CertificateType;
+struct DskTlsExtension_CertificateType
+{
+  DskTlsExtensionBase base;
+  uint16_t n_certs;
+  DskTlsX509Certificate **certs;
+};
 
 
 typedef union {
@@ -292,16 +302,19 @@ typedef union {
   DskTlsExtension_Heartbeat heartbeat;
   DskTlsExtension_ALPN alpn;
   DskTlsExtension_PreSharedKey pre_shared_key;
-  // TODO: client_certificate_type server_certificate_type
+  DskTlsExtension_CertificateType client_certificate_type;
+  DskTlsExtension_CertificateType server_certificate_type;
   DskTlsExtension_Padding padding;
   DskTlsExtension_KeyShare key_share;
   DskTlsExtension_EarlyDataIndication early_data_indication;
   DskTlsExtension_Cookie cookie;
+  DskTlsExtension_SignatureAlgorithmsCert signature_algorithms_cert;
 } DskTlsExtension;
 
 typedef struct {
   unsigned cert_data_length;
   const uint8_t *cert_data;
+  DskTlsX509Certificate *cert;
   unsigned n_extensions;
   DskTlsExtension **extensions;
 } DskTlsCertificateEntry;
@@ -309,7 +322,7 @@ typedef struct {
 
 //
 // This structure is designed to map to
-// what PDF 8446 calls "Handshake".
+// what RFC 8446 calls "Handshake".
 //
 // But we use DskTlsHandshake to refer to the
 // whole sequence of message-flights,
@@ -324,6 +337,11 @@ struct DskTlsHandshakeMessage
   const uint8_t *data;
   DskTlsHandshakeMessage *next;
   bool is_outgoing;   /* are we the sender or recipient of this message? */
+
+  unsigned n_extensions;
+  DskTlsExtension **extensions;
+  unsigned max_extensions;
+
   union {
     struct {
       uint16_t legacy_version;
@@ -334,8 +352,6 @@ struct DskTlsHandshakeMessage
       DskTlsCipherSuiteCode *cipher_suites;
       unsigned n_compression_methods;   /* legacy */
       uint8_t *compression_methods;     /* legacy */
-      unsigned n_extensions;
-      DskTlsExtension **extensions;
     } client_hello;
     struct {
       uint16_t legacy_version;
@@ -344,8 +360,6 @@ struct DskTlsHandshakeMessage
       uint8_t *legacy_session_id_echo;
       DskTlsCipherSuiteCode cipher_suite;
       uint8_t compression_method;       /* must be 0 for tls 1.3 */
-      unsigned n_extensions;
-      DskTlsExtension **extensions;
       bool is_retry_request;
     } server_hello, hello_retry_request;
     struct {
@@ -359,14 +373,10 @@ struct DskTlsHandshakeMessage
       const uint8_t *ticket_nonce;
       unsigned ticket_length;
       const uint8_t *ticket_data;
-      unsigned n_extensions;
-      DskTlsExtension **extensions;
     } new_session_ticket;
     struct {
       unsigned certificate_request_context_length;
       const uint8_t *certificate_request_context;
-      unsigned n_extensions;
-      DskTlsExtension **extensions;
     } certificate_request;
     struct {
       // Should be empty in handshake; only for post-handshake auth.
@@ -471,6 +481,7 @@ dsk_tls_derive_secret (DskChecksumType*type,
 //
 //       So, we need to give the length even though it is usually
 //       determined by the hash-type.
+
 void
 dsk_tls_hkdf_expand_label(DskChecksumType*type,
                           const uint8_t  *secret,
@@ -481,4 +492,29 @@ dsk_tls_hkdf_expand_label(DskChecksumType*type,
                           size_t          output_length,
                           uint8_t        *out);
 
+// Update the application-secret,
+// in response to a KeyUpdate message.
+void
+dsk_tls_update_key_inplace (DskChecksumType *checksum_type,
+                            uint8_t         *secret_inout);
+
+// Compute verify_data for the Finished message.
+//
+// Compute verify_data using BaseKey and a TranscriptHash.
+// This uses hkdf_expand_label and hmac.
+//
+// This function implements most of the cryptographic data
+// in RFC 8446, Section 4.4.4,
+// but it is also reusable to compute binder_key as per Section 4.2.11.2.
+void
+dsk_tls_finished_get_verify_data (const uint8_t *base_key,
+                                  const uint8_t *transcript_hash,
+                                  uint8_t       *verify_data_out);
+
+
+void
+dsk_tls_checksum_binder_truncated_handshake_message
+                                 (const DskChecksumType *csum_type,
+                                  void *csum_instance,
+                                  DskTlsHandshakeMessage *client_hello);
 

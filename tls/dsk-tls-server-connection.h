@@ -133,10 +133,6 @@ struct DskTlsServerContextOptions
 //
 struct DskTlsServerHandshake
 {
-  DskTlsHandshakeMessage *first_handshake;
-  DskTlsHandshakeMessage *last_handshake;
-  DskMemPool mem_pool;
-  DskTlsServerConnection *conn;
 
   const char *server_hostname;
 
@@ -153,9 +149,6 @@ struct DskTlsServerHandshake
   uint8_t *public_key;
   uint8_t *private_key;
   uint8_t *shared_key;
-
-  void *transcript_hash_instance;
-  DskTlsHandshakeMessageType transcript_hash_last_message_type;
 
   //
   // Helpers for breaking up the construction of a

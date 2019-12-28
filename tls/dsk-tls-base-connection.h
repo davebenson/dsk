@@ -8,6 +8,24 @@
 // DskTlsServerConnection and DskTlsClientConnection
 // should provide all the public methods for users.
 // 
+
+//
+// On read:
+//
+//   This breaks the raw byte-oriented stream
+//   into records.  The records may either contain
+//   handshake messages or encrypted application data.
+//
+//   For handshaking, the handle_handshake_message() method
+//   is invoked, which is different for client and server streams.
+//   It returns a code indicating what to do:
+//     * OK:  continue processing incoming records and messages.
+//     * FAILED:  send fatal alert and shutdown connection.
+//     * SUSPEND:  used to indicate that we are blocked on a user-callback.
+//          Whoever returns this must arrange to call unsuspend() or
+//          fail().
+// 
+//
 typedef struct DskTlsBaseConnectionClass DskTlsBaseConnectionClass;
 typedef struct DskTlsBaseConnection DskTlsBaseConnection;
 
@@ -18,10 +36,19 @@ typedef enum
   DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_SUSPEND
 } DskTlsBaseHandshakeMessageResponseCode;
 
-#define DSK_TLS_BASE_HANDSHAKE_MEMBERS(connection_type) \
-  DskMemPool mem_pool; \
-  connection_type *conn
+typedef struct DskTlsBaseHandshake DskTlsBaseHandshake;
+struct DskTlsBaseHandshake
+{
+  DskMemPool mem_pool;
+  DskTlsBaseConnection *conn;
+  void *transcript_hash_instance;
+  DskTlsHandshakeMessage *first_handshake;
+  DskTlsHandshakeMessage *last_handshake;
+};
   
+
+typedef uint64_t (*DskTlsGetCurrentTimeFunc)(void *get_time_data);
+uint64_t dsk_tls_get_current_time (void *get_time_data);
 
 typedef enum
 {
@@ -41,10 +68,15 @@ struct DskTlsBaseConnectionClass
        (DskTlsBaseConnection *connection,
         DskTlsHandshakeMessage *message,
         DskError **error);
+  DskTlsBaseHandshakeMessageResponseCode (*handle_unsuspend)
+       (DskTlsBaseConnection *connection,
+        DskError **error);
   bool (*handle_application_data)
        (DskTlsBaseConnection *connection,
-        DskTlsHandshakeMessage *message,
+        size_t length,
+        const uint8_t *data,
         DskError **error);
+  
   void (*fatal_alert_received)
        (DskTlsBaseConnection *connection,
         DskTlsAlertDescription description);
@@ -92,16 +124,55 @@ struct DskTlsBaseConnection
   const DskTlsCipherSuite *cipher_suite;
   void *cipher_suite_read_instance;
   void *cipher_suite_write_instance;
+  uint8_t *client_application_traffic_secret;   // client write key; server read key
+  uint8_t *server_application_traffic_secret;   // server write key; client read key
 
   uint8_t *read_iv, *write_iv;
   uint64_t read_seqno, write_seqno;
 };
 
-void dsk_tls_base_connection_resume      (DskTlsBaseConnection *connection);
-void dsk_tls_base_connection_resume_fail (DskTlsBaseConnection *connection,
-                                          DskError             *error);
+void dsk_tls_base_connection_unsuspend   (DskTlsBaseConnection *connection);
 
+bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *,
+                                              DskStream *underlying,
+                                              DskError **error);
+
+void dsk_tls_base_connection_set_max_fragment_length (DskTlsBaseConnection *conn,
+                                                      unsigned              max_fragment_length);
+
+void dsk_tls_base_connection_send_key_update (DskTlsBaseConnection *base,
+                                              bool update_requested);
+
+void dsk_tls_base_connection_send_handshake_msgdata (DskTlsBaseConnection *conn,
+                                                     unsigned msg_length,
+                                                     const uint8_t *msg_data);
+bool dsk_tls_base_connection_send_handshake_msg     (DskTlsBaseConnection *conn,
+                                                     DskTlsHandshakeMessage *msg,
+                                                     DskError **error);
+
+void
+dsk_tls_base_connection_get_transcript_hash (DskTlsBaseConnection *base,
+                                  uint8_t *hash_out);
 // protected
+//
+// Send a fatal alert, if we are able to.
+// And shutdown the connection (after the alert is sent).
+// 
+// If the connection is suspended (awaiting user callback response),
+// you must still call unsuspend() [usually via a special helper method]
+// to avoid a memory leak, but processing will not actually resume.
+// The connection will remain in the same state (NOT the FAILED state),
+// but will have the failed_while_suspended flag set.
+// dsk_tls_base_connection_unsuspend() will clear the flag
+// and move to the FAILED state.
+// 
 void dsk_tls_base_connection_fail (DskTlsBaseConnection *conn,
                                    DskError *error);
+
+
+DskTlsHandshakeMessage *
+dsk_tls_base_handshake_create_outgoing_handshake
+                                           (DskTlsBaseHandshake       *hs_info,
+                                            DskTlsHandshakeMessageType   type,
+                                            unsigned                     max_extensions);
 

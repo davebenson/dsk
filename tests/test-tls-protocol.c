@@ -464,6 +464,7 @@ test_certificate_handshake_message_parsing(void)
   assert(shake->certificate.n_entries == 1);
   assert(shake->certificate.entries[0].n_extensions == 0);
   assert(shake->certificate.entries[0].cert_data_length == 432);
+  assert(shake->certificate.entries[0].cert != NULL);
 
   dsk_mem_pool_clear (&pool);
 }
@@ -489,11 +490,13 @@ test_server_finished_handshake_message_parsing(void)
 {
   DskMemPool pool = DSK_MEM_POOL_STATIC_INIT;
   DskError *error = NULL;
-  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED,
-                                                    sizeof (rfc8448_sec3_server_finished_data) - 4 -1,
-                                                    (uint8_t*) rfc8448_sec3_server_finished_data + 4,
-                                                    &pool,
-                                                    &error);
+  DskTlsHandshakeMessage *shake = dsk_tls_handshake_message_parse (
+    DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED,
+    sizeof (rfc8448_sec3_server_finished_data) - 4 - 1,
+    (uint8_t*) rfc8448_sec3_server_finished_data + 4,
+    &pool,
+    &error
+  );
   if (shake == NULL)
     dsk_die ("error parsing Finished: %s", error->message);
   assert(shake->type == DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED);

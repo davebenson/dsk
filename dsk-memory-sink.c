@@ -44,7 +44,7 @@ dsk_memory_sink_write_buffer (DskStream      *sink,
   DSK_UNUSED (error);
   if (msink->buffer.size >= msink->max_buffer_size)
     return DSK_IO_RESULT_AGAIN;
-  dsk_buffer_transfer (&msink->buffer, buffer, max_xfer);
+  dsk_buffer_transfer_max (&msink->buffer, buffer, max_xfer);
   dsk_hook_set_idle_notify (&msink->buffer_nonempty, true);
   return DSK_IO_RESULT_SUCCESS;
 }

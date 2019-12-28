@@ -858,8 +858,8 @@ bad_guess:
  */
 #if DSK_DEBUG_BUFFER_ALLOCATIONS
 unsigned
-dsk_buffer_drain (DskBuffer *dst,
-		  DskBuffer *src)
+dsk_buffer_transfer (DskBuffer *dst,
+		     DskBuffer *src)
 {
   unsigned rv = src->size;
   DskBufferFragment *fragment;
@@ -875,9 +875,9 @@ dsk_buffer_drain (DskBuffer *dst,
   return rv;
 }
 #else	/* optimized */
-unsigned
-dsk_buffer_drain (DskBuffer *dst,
-		  DskBuffer *src)
+size_t
+dsk_buffer_transfer (DskBuffer *dst,
+		     DskBuffer *src)
 {
   unsigned rv = src->size;
 
@@ -906,7 +906,7 @@ dsk_buffer_drain (DskBuffer *dst,
 #endif
 
 /**
- * dsk_buffer_transfer:
+ * dsk_buffer_transfer_max:
  * @dst: place to copy data into.
  * @src: place to read data from.
  * @max_transfer: maximum number of bytes to transfer.
@@ -918,10 +918,10 @@ dsk_buffer_drain (DskBuffer *dst,
  * returns: the number of bytes transferred.
  */
 #if DSK_DEBUG_BUFFER_ALLOCATIONS
-unsigned
-dsk_buffer_transfer(DskBuffer *dst,
-		    DskBuffer *src,
-		    unsigned max_transfer)
+size_t
+dsk_buffer_transfer_max(DskBuffer *dst,
+		        DskBuffer *src,
+		        size_t max_transfer)
 {
   unsigned rv = 0;
   DskBufferFragment *fragment;
@@ -949,10 +949,10 @@ dsk_buffer_transfer(DskBuffer *dst,
   return rv;
 }
 #else	/* optimized */
-unsigned
-dsk_buffer_transfer(DskBuffer *dst,
-		    DskBuffer *src,
-		    unsigned max_transfer)
+size_t
+dsk_buffer_transfer_max(DskBuffer *dst,
+		        DskBuffer *src,
+		        size_t max_transfer)
 {
   unsigned rv = 0;
   CHECK_INTEGRITY (dst);
@@ -989,6 +989,44 @@ dsk_buffer_transfer(DskBuffer *dst,
   return rv;
 }
 #endif	/* !DSK_DEBUG_BUFFER_ALLOCATIONS */
+
+size_t
+dsk_buffer_append_buffer         (DskBuffer    *dst,
+                                  const DskBuffer *src)
+{
+  for (const DskBufferFragment *frag = src->first_frag;
+       frag != NULL;
+       frag = frag->next)
+    dsk_buffer_append (dst, frag->buf_length, frag->buf + frag->buf_start);
+  return src->size;
+}
+
+size_t
+dsk_buffer_append_buffer_max     (DskBuffer    *dst,
+                                  const DskBuffer *src,
+                                  size_t      max_transfer)
+{
+  if (max_transfer >= src->size)
+    return dsk_buffer_append_buffer (dst, src);
+
+  const DskBufferFragment *frag;
+  size_t rem = max_transfer;
+  for (frag = src->first_frag;
+       frag != NULL && rem >= frag->buf_length;
+       frag = frag->next)
+    {
+      dsk_buffer_append (dst, frag->buf_length, frag->buf + frag->buf_start);
+      rem -= frag->buf_length;
+    }
+  if (rem > 0)
+    {
+      assert (frag != NULL);
+      assert (frag->buf_length > rem);
+      dsk_buffer_append (dst, rem, frag->buf + frag->buf_start);
+    }
+  return max_transfer;
+}
+
 
 /* --- foreign data --- */
 /**

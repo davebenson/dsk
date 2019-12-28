@@ -17,7 +17,8 @@ static size_t hash_len_offset[] =
   SCHEDULE_MEMBER_OFFSET(client_handshake_traffic_secret),
   SCHEDULE_MEMBER_OFFSET(server_handshake_traffic_secret),
   SCHEDULE_MEMBER_OFFSET(handshake_derived_secret),
-  SCHEDULE_MEMBER_OFFSET(verify_data),
+  SCHEDULE_MEMBER_OFFSET(client_verify_data),
+  SCHEDULE_MEMBER_OFFSET(server_verify_data),
   SCHEDULE_MEMBER_OFFSET(master_secret),
   SCHEDULE_MEMBER_OFFSET(client_application_traffic_secret),
   SCHEDULE_MEMBER_OFFSET(server_application_traffic_secret),
@@ -52,7 +53,9 @@ dsk_tls_key_schedule_new   (DskTlsCipherSuite *suite)
   rv->has_early_secrets = 0;
   rv->has_handshake_secrets = 0;
   rv->has_master_secrets = 0;
-  rv->has_finish_data = 0;
+  rv->has_client_finish_data = 0;
+  rv->has_server_finish_data = 0;
+  rv->has_resumption_secret = 0;
   uint8_t *at = (uint8_t *) (rv + 1);
   for (unsigned i = 0; i < DSK_N_ELEMENTS (hash_len_offset); i++)
     {
@@ -178,8 +181,8 @@ dsk_tls_key_schedule_compute_handshake_secrets (DskTlsKeySchedule *schedule,
 }
 
 void
-dsk_tls_key_schedule_compute_finished_data (DskTlsKeySchedule *schedule,
-                                            const uint8_t     *certificate_verify_hash)
+dsk_tls_key_schedule_server_verify_data (DskTlsKeySchedule *schedule,
+                                      const uint8_t *cv_hash)
 {
   assert(schedule->has_handshake_secrets);
 
@@ -192,16 +195,16 @@ dsk_tls_key_schedule_compute_finished_data (DskTlsKeySchedule *schedule,
                              32, finished_key);
   dsk_hmac_digest (schedule->cipher->hash_type,
                    hash_size, finished_key,
-                   hash_size, certificate_verify_hash,
-                   schedule->verify_data);
-  schedule->has_finish_data = true;
+                   hash_size, cv_hash,
+                   schedule->server_verify_data);
+  schedule->has_server_finish_data = true;
 }
 
 void
 dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
-                                             const uint8_t     *finished_hash)
+                                             const uint8_t     *s_finished_hash)
 {
-  assert(schedule->has_finish_data && schedule->has_handshake_secrets);
+  assert(schedule->has_server_finish_data && schedule->has_handshake_secrets);
   unsigned hash_size = schedule->cipher->hash_size;
   uint8_t *zero_salt = alloca (hash_size);
   memset (zero_salt, 0, hash_size);
@@ -212,23 +215,18 @@ dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
   dsk_tls_derive_secret (schedule->cipher->hash_type,
                          schedule->master_secret,
                          12, (uint8_t *) "c ap traffic",
-                         finished_hash,
+                         s_finished_hash,
                          schedule->client_application_traffic_secret);
   dsk_tls_derive_secret (schedule->cipher->hash_type,
                          schedule->master_secret,
                          12, (uint8_t *) "s ap traffic",
-                         finished_hash,
+                         s_finished_hash,
                          schedule->server_application_traffic_secret);
   dsk_tls_derive_secret (schedule->cipher->hash_type,
                          schedule->master_secret,
                          10, (uint8_t *) "exp master",
-                         finished_hash,
+                         s_finished_hash,
                          schedule->exporter_master_secret);
-  dsk_tls_derive_secret (schedule->cipher->hash_type,
-                         schedule->master_secret,
-                         10, (uint8_t *) "res master",
-                         finished_hash,
-                         schedule->resumption_master_secret);
 
   //
   // Server and Client Keys and IVs (for application traffic).
@@ -258,4 +256,16 @@ dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
                             schedule->cipher->iv_size,
                             schedule->server_application_write_iv);
   schedule->has_master_secrets = true;
+}
+
+
+void
+dsk_tls_key_schedule_compute_resumption_secret (DskTlsKeySchedule *schedule,
+                                             const uint8_t     *c_finished_hash)
+{
+  dsk_tls_derive_secret (schedule->cipher->hash_type,
+                         schedule->master_secret,
+                         10, (uint8_t *) "res master",
+                         c_finished_hash,
+                         schedule->resumption_master_secret);
 }

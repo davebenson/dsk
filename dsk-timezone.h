@@ -51,7 +51,7 @@ DskTimezone*dsk_timezone_get       (const char    *name);
 void        dsk_timezone_to_date   (DskTimezone   *timezone,
                                     int64_t        unixtime,
                                     DskDate       *date_out);
-bool dsk_timezone_from_date (DskTimezone   *timezone,
+bool        dsk_timezone_from_date (DskTimezone   *timezone,
                                     const DskDate *date,
                                     int64_t       *unixtime_out);
 

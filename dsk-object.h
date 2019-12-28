@@ -88,38 +88,38 @@ struct _DskObject
 DSK_INLINE void      *dsk_object_new   (const void *object_class);
 DSK_INLINE void       dsk_object_unref (void *object);
 DSK_INLINE void      *dsk_object_ref   (void *object);
-                bool       dsk_object_is_a  (void *object,
-                                             const void *isa_class);
-                bool  dsk_object_class_is_a (const void *object_class,
-                                             const void *isa_class);
+           bool       dsk_object_is_a  (void *object,
+                                        const void *isa_class);
+           bool  dsk_object_class_is_a (const void *object_class,
+                                        const void *isa_class);
 
 /* for use by debugging cast-macro implementations */
-                void       *dsk_object_cast (void *object,
-                                             const void *isa_class,
-                                             const char *filename,
-                                             unsigned line);
-                void       *dsk_object_class_cast (void *object_class,
-                                             const void *isa_class,
-                                             const char *filename,
-                                             unsigned line);
-const           void       *dsk_object_cast_get_class (void *object,
-                                             const void *isa_class,
-                                             const char *filename,
-                                             unsigned line);
+           void       *dsk_object_cast (void *object,
+                                        const void *isa_class,
+                                        const char *filename,
+                                        unsigned line);
+           void       *dsk_object_class_cast (void *object_class,
+                                        const void *isa_class,
+                                        const char *filename,
+                                        unsigned line);
+const      void       *dsk_object_cast_get_class (void *object,
+                                        const void *isa_class,
+                                        const char *filename,
+                                        unsigned line);
 /* non-inline versions of dsk_object_{ref,unref}
    (useful when you need a function pointer) */
-                void       dsk_object_unref_f (void *object);
-                void    *  dsk_object_ref_f (void *object);
+           void       dsk_object_unref_f (void *object);
+           void    *  dsk_object_ref_f (void *object);
 
-                void       dsk_object_trap_finalize (DskObject *object,
-                                                DskDestroyNotify destroy,
-                                                void            *destroy_data);
-                void       dsk_object_untrap_finalize(DskObject      *object,
-                                                DskDestroyNotify destroy,
-                                                void            *destroy_data);
-           DskWeakPointer *dsk_weak_pointer_ref        (DskWeakPointer *);
-           void            dsk_weak_pointer_unref      (DskWeakPointer *);
-           DskWeakPointer *dsk_object_get_weak_pointer (DskObject *);
+           void       dsk_object_trap_finalize (DskObject *object,
+                                           DskDestroyNotify destroy,
+                                           void            *destroy_data);
+           void       dsk_object_untrap_finalize(DskObject      *object,
+                                           DskDestroyNotify destroy,
+                                           void            *destroy_data);
+DskWeakPointer *dsk_weak_pointer_ref        (DskWeakPointer *);
+void            dsk_weak_pointer_unref      (DskWeakPointer *);
+DskWeakPointer *dsk_object_get_weak_pointer (DskObject *);
 
 /* debugging and non-debugging implementations of the various
    cast macros.  */

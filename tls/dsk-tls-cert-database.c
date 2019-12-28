@@ -187,8 +187,82 @@ DskTlsCertDatabasePEMFileClass dsk_tls_cert_database_pem_file_class = {
 
 DskTlsCertDatabase *
 dsk_tls_cert_database_from_pem_file  (const char *filename,
-                                      DskError  **error);
+                                      DskError  **error)
+{
+  FILE *fp = fopen(filename, "rb");
+  char buf[2048];
+  if (fp == NULL)
+    {
+      *error = dsk_error_new ("error opening %s: %s",
+                              filename, strerror (errno));
+      return NULL;
+    }
+  uint8_t binary_buf[DSK_BASE64_DECODE_OUTPUT_FOR_INPUT(sizeof(buf))];
+  DskBase64DecodeProcessor base64_decoder = DSK_BASE64_DECODER_INIT
+  DskBuffer buffer = DSK_BUFFER_INIT;
+  while (fgets (buf, sizeof (buf), fp) != NULL)
+    {
+      if (memcmp (buf,
+                  //0123456789012345678901234567
+                   "-----BEGIN CERTIFICATE-----",
+                  27) == 0)
+        {
+          if (in_cert)
+            {
+              *error = dsk_error_new ("got BEGIN CERTIFICATE while already in certificate (in %s)", filename);
+              goto error_cleanup;
+            }
+          in_cert = true;
+        }
+      else if (memcmp (buf,
+                       //01234567890123456789012345
+                        "-----END CERTIFICATE-----",
+                       25) == 0)
+        {
+          if (!in_cert)
+            {
+              *error = dsk_error_new ("got END CERTIFICATE while not in certificate (in %s)", filename);
+              goto error_cleanup;
+            }
+          in_cert = false;
 
+          // parse cert.
+          size_t cert_data_len = buffer.size;
+          uint8_t *cert_data = dsk_malloc (buffer.size);
+          dsk_buffer_read (&buffer, cert_data_len, cert_data);
+          ...
+        }
+      else if (in_cert)
+        {
+          ptrdiff_t amt = dsk_base64_decode (&base64_decoder,
+                                             strlen (buf), buf,
+                                             binary_buf,
+                                             error);
+          if (amt < 0)
+            {
+              ... prepend filename
+              goto error_cleanup;
+            }
+          dsk_buffer_append (cert, amt, binary_buf);
+        }
+    }
+
+  DskTlsCertDatabase *rv = dsk_tls_cert_database_from_memory (n_certs, certs, error);
+  for (unsigned i = 0; i < n_certs; i++)
+    dsk_object_unref (certs[i]);
+  dsk_free (certs);
+  if (rv == NULL)
+    {
+      ... prepend filename
+    }
+  return rv;
+
+error_cleanup:
+  for (unsigned i = 0; i < n_certs; i++)
+    dsk_object_unref (certs[i]);
+  dsk_free (certs);
+  return NULL;
+}
 
 DskTlsCertDatabase *
 dsk_tls_cert_database_global         (void);

@@ -1,8 +1,6 @@
 /*
  * RFC 7539.  Chacha-20 and Poly 1305.
  *
- *
- *
  * Stream cipher with authentication from Daniel Bernstein.
  */
 

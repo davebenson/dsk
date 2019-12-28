@@ -23,6 +23,10 @@ DskRandType dsk_rand_type_mersenne_twister;
 
 DskRandType dsk_rand_type_xorshift1024;
 
+/* NOTE: it is STRONGLY recommended that you invoke dsk_rand_seed()
+ *       or dsk_rand_seed_array(), or else you will generate
+ *       the same sequence everytime.
+ */
 DskRand *dsk_rand_new (DskRandType *type);
 
 /* seed from /dev/urandom etc */
@@ -48,6 +52,9 @@ double   dsk_rand_double         (DskRand* rand);
 double   dsk_rand_double_range   (DskRand* rand,
                                   double   begin,
                                   double   end);
+void     dsk_rand_get_bytes      (DskRand *rand,
+                                  size_t   len,
+                                  uint8_t *data);
 
 DskRand *dsk_rand_get_global     (void);
 

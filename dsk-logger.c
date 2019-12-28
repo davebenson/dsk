@@ -110,7 +110,7 @@ dsk_logger_done_buffer (DskLogger        *logger)
 {
   if (logger->autonewline
    && logger->buffer.size > 0
-   && dsk_buffer_last_byte (&logger->buffer) != '\n')
+   && dsk_buffer_get_last_byte (&logger->buffer) != '\n')
     dsk_buffer_append_byte (&logger->buffer, '\n');
   if (logger->buffer.size > logger->max_buffer)
     flush_buffer (logger);

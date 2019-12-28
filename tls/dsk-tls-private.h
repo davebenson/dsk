@@ -90,6 +90,7 @@ bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *conn,
       dsk_tls_base_connection_shutdown_write,                 \
     },                                                        \
     lc_clss##_handle_handshake_message,                       \
+    lc_clss##_handle_unsuspend,                               \
     lc_clss##_handle_application_data,                        \
     lc_clss##_fatal_alert_received,                           \
     lc_clss##_warning_alert_received                          \

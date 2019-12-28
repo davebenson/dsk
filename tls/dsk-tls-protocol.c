@@ -1,6 +1,7 @@
 #include "../dsk.h"
 #include <string.h>
 #include <stdio.h>
+#include <alloca.h>
 
 const char *
 dsk_tls_record_content_type_name (DskTlsRecordContentType type)
@@ -994,7 +995,8 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
         {
           unsigned cdlen = dsk_uint24be_parse(at);
           rv->certificate.entries[e].cert_data_length = cdlen;
-          rv->certificate.entries[e].cert_data = at + 3;
+          const uint8_t *cddata = at + 3;
+          rv->certificate.entries[e].cert_data = cddata;
           at += 3 + cdlen;
           if (!parse_length_prefixed_extensions (rv, &at, end,
                                           &rv->certificate.entries[e].n_extensions,
@@ -1003,6 +1005,25 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
             {
               return NULL;
             }
+          size_t used;
+          DskASN1Value *value = dsk_asn1_value_parse_der (cdlen, cddata,
+                                                          &used, pool, error);
+          if (value == NULL)
+            {
+              //TODO: provide context
+              return NULL;
+            }
+          if (used != cdlen)
+            {
+              *error = dsk_error_new ("trailing data after certificate");
+              return NULL;
+            }
+          DskTlsX509Certificate *cert = dsk_tls_x509_certificate_from_asn1 (value, pool, error);
+          if (cert == NULL)
+            {
+              return NULL;
+            }
+          rv->certificate.entries[e].cert = cert;
         }
       break;
     }
@@ -1160,3 +1181,18 @@ dsk_tls_hkdf_expand_label(DskChecksumType*type,
                    output_length, out);
 }
 
+void
+dsk_tls_update_key_inplace (DskChecksumType *checksum_type,
+                            uint8_t         *secret_inout)
+{
+  unsigned hash_size = checksum_type->hash_size;
+  uint8_t *tmp_application_traffic_secret = alloca (hash_size);
+  dsk_tls_hkdf_expand_label (checksum_type,
+                             secret_inout,
+                             11, (const uint8_t *) "traffic upd",
+                             0, (const uint8_t *) "",
+                             hash_size, tmp_application_traffic_secret);
+  memcpy (secret_inout,
+          tmp_application_traffic_secret,
+          hash_size);
+}

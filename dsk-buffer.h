@@ -45,9 +45,6 @@ char    *dsk_buffer_parse_string0       (DskBuffer    *buffer);
 int      dsk_buffer_peek_byte           (const DskBuffer *buffer);
 int      dsk_buffer_read_byte           (DskBuffer    *buffer);
 
-uint8_t  dsk_buffer_byte_at             (DskBuffer    *buffer,
-                                         unsigned      index);
-uint8_t  dsk_buffer_last_byte           (DskBuffer    *buffer);
 /* 
  * Appending to the buffer.
  */
@@ -83,40 +80,46 @@ void     dsk_buffer_append_foreign      (DskBuffer    *buffer,
 void     dsk_buffer_printf              (DskBuffer    *buffer,
 					 const char   *format,
 					 ...) DSK_GNUC_PRINTF(2,3);
-void     dsk_buffer_vprintf             (DskBuffer    *buffer,
-					 const char   *format,
-					 va_list       args);
+  void     dsk_buffer_vprintf             (DskBuffer    *buffer,
+                                           const char   *format,
+                                           va_list       args);
 
-uint8_t  dsk_buffer_get_last_byte       (DskBuffer    *buffer);
-uint8_t  dsk_buffer_get_byte_at         (DskBuffer    *buffer,
-                                         size_t        idx);
+  uint8_t  dsk_buffer_get_last_byte       (DskBuffer    *buffer);
+  uint8_t  dsk_buffer_get_byte_at         (DskBuffer    *buffer,
+                                           size_t        idx);
 
 
-/* --- appending data that will be filled in later --- */
-typedef struct {
-  DskBuffer *buffer;
-  DskBufferFragment *fragment;
-  unsigned offset;
-  unsigned length;
-} DskBufferPlaceholder;
+  /* --- appending data that will be filled in later --- */
+  typedef struct {
+    DskBuffer *buffer;
+    DskBufferFragment *fragment;
+    unsigned offset;
+    unsigned length;
+  } DskBufferPlaceholder;
 
-void     dsk_buffer_append_placeholder  (DskBuffer    *buffer,
-                                         unsigned      length,
-                                         DskBufferPlaceholder *out);
-void     dsk_buffer_placeholder_set     (DskBufferPlaceholder *placeholder,
+  void     dsk_buffer_append_placeholder  (DskBuffer    *buffer,
+                                           unsigned      length,
+                                           DskBufferPlaceholder *out);
+  void     dsk_buffer_placeholder_set     (DskBufferPlaceholder *placeholder,
                                          const void       *data);
 
 /* --- buffer-to-buffer transfers --- */
 /* Take all the contents from src and append
  * them to dst, leaving src empty.
  */
-unsigned dsk_buffer_drain               (DskBuffer    *dst,
+size_t   dsk_buffer_transfer            (DskBuffer    *dst,
                                          DskBuffer    *src);
 
 /* Like `drain', but only transfers some of the data. */
-unsigned dsk_buffer_transfer            (DskBuffer    *dst,
+size_t   dsk_buffer_transfer_max        (DskBuffer    *dst,
                                          DskBuffer    *src,
-					 unsigned      max_transfer);
+					 size_t        max_transfer);
+
+size_t   dsk_buffer_append_buffer       (DskBuffer    *dst,
+                                         const DskBuffer *src);
+size_t   dsk_buffer_append_buffer_max   (DskBuffer    *dst,
+                                         const DskBuffer *src,
+					 size_t        max_transfer);
 
 /* --- file-descriptor mucking --- */
 int      dsk_buffer_writev              (DskBuffer       *read_from,

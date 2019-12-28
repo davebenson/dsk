@@ -205,7 +205,9 @@ poly1305_handle_n (uint32_t *a,    // length 5
   tmp[9] = 0;
 
   // XXX: do we need to verify the tmp <= P<<128 ?
+  // XXX: replace with pseudo-mersenne modulus:n 
   dsk_tls_bignum_modulus_with_barrett_mu (10, tmp, 5, P, P_barrett_mu, a);
+  //dsk_tls_bignum_modulus_pseudomersenne (130, 5, tmp, a);
 }
 
 // Portable version.  Probably want to optimize this?

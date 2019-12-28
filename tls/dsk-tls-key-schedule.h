@@ -12,7 +12,9 @@ struct DskTlsKeySchedule
   unsigned has_early_secrets : 1;
   unsigned has_handshake_secrets : 1;
   unsigned has_master_secrets : 1;
-  unsigned has_finish_data : 1;
+  unsigned has_server_finish_data : 1;
+  unsigned has_client_finish_data : 1;
+  unsigned has_resumption_secret : 1;
 
   DskTlsCipherSuite *cipher;
 
@@ -37,7 +39,8 @@ struct DskTlsKeySchedule
   //
   // Finished Secrets
   //
-  uint8_t *verify_data;
+  uint8_t *server_verify_data;  // for the server's Finished
+  uint8_t *client_verify_data;  // for the client's Finished
 
   //
   // Master Secrets
@@ -74,17 +77,40 @@ void               dsk_tls_key_schedule_free  (DskTlsKeySchedule *schedule);
 // Please see RFD 8446 4.4.1 for correct Transcript-Hash
 // computation after a HelloRetryRequest.
 //
-void dsk_tls_key_schedule_compute_early_secrets
-                                        (DskTlsKeySchedule *schedule,
-                                         bool               externally_shared,
-                                         const uint8_t     *client_hello_hash,
-                                         size_t             opt_pre_shared_key_size,
-                                         const uint8_t     *opt_pre_shared_key);
-void dsk_tls_key_schedule_compute_handshake_secrets (DskTlsKeySchedule *schedule,
-                                         const uint8_t     *server_hello_hash,
-                                         unsigned           key_share_len,
-                                         const uint8_t     *key_share);
-void dsk_tls_key_schedule_compute_finished_data (DskTlsKeySchedule *schedule,
-                                         const uint8_t     *certificate_verify_hash);
-void dsk_tls_key_schedule_compute_master_secrets (DskTlsKeySchedule *schedule,
-                                         const uint8_t     *finished_hash);
+void
+  dsk_tls_key_schedule_compute_early_secrets
+                      (DskTlsKeySchedule *schedule,
+                       bool               externally_shared,
+                       const uint8_t     *client_hello_hash,
+                       size_t             opt_pre_shared_key_size,
+                       const uint8_t     *opt_pre_shared_key);
+void
+  dsk_tls_key_schedule_compute_handshake_secrets
+                      (DskTlsKeySchedule *schedule,
+                       const uint8_t     *server_hello_hash,
+                       unsigned           key_share_len,
+                       const uint8_t     *key_share);
+void
+  dsk_tls_key_schedule_compute_server_verify_data
+                      (DskTlsKeySchedule *schedule,
+                       const uint8_t     *s_cert_verify_hash);
+void
+  dsk_tls_key_schedule_compute_master_secrets 
+                      (DskTlsKeySchedule *schedule,
+                       const uint8_t     *s_finished_hash);
+
+// c_cert_verify_hash is the transcript hash
+// up to the client's CertificateVerify, which only
+// exists when using client certs.  The last message
+// reflected by c_cert_verify_hash is likely to be 
+// the server's Finished message.
+//
+void
+  dsk_tls_key_schedule_compute_client_verify_data
+                      (DskTlsKeySchedule *schedule,
+                       const uint8_t     *c_cert_verify_hash);
+
+void
+  dsk_tls_key_schedule_compute_resumption_secret
+                      (DskTlsKeySchedule *schedule,
+                       const uint8_t     *c_finished_hash);

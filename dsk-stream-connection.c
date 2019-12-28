@@ -1,7 +1,7 @@
 #include "dsk.h"
 #include "debug.h"
 
-static DskStreamConnectionOptions default_options = DSK_OCTET_CONNECTION_OPTIONS_INIT;
+static DskStreamConnectionOptions default_options = DSK_STREAM_CONNECTION_OPTIONS_INIT;
 
 #if DSK_ENABLE_DEBUGGING
 bool dsk_debug_connections;

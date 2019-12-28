@@ -17,6 +17,8 @@
  * or 2 solutions which are negations of each other (mod p).
  */
 
+// TODO: if any of these primes are pseudo-mersenne, we should optimize that.
+
 // References:
 //   curve definitions: http://www.secg.org/sec2-v2.pdf
 //   point compression: https://tools.ietf.org/id/draft-jivsov-ecc-compact-05.html

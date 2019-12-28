@@ -1,6 +1,11 @@
 #include "../dsk.h"
+#include "../dsk-qsort-macro.h"
 #include <string.h>
-#include <stdio.h>
+
+//
+// TODO: add comments from the ASN def of x509
+//       just to break up the monotony.
+//
 
 #if 0
 static void
@@ -8,11 +13,10 @@ dump_asn1(const DskASN1Value *v)
 {
   DskBuffer buf = DSK_BUFFER_INIT;
   dsk_asn1_value_dump_to_buffer (v, &buf);
-  dsk_buffer_writev (&buf, 1);
+  dsk_buffer_writev (&buf, STDOUT_FILENO);
   dsk_buffer_clear (&buf);
 }
 #endif
-
 static bool
 parse_algo_id (DskASN1Value *algorithm_id,
                DskMemPool *pool,
@@ -37,6 +41,22 @@ parse_algo_id (DskASN1Value *algorithm_id,
     }
   return true;
 }
+
+#if 0
+static int
+compare_p_distiguished_name_by_type (const void *a, const void *b)
+{
+  const DskTlsX509DistinguishedName *const *p_a_dn = a;
+  const DskTlsX509DistinguishedName *const *p_b_dn = b;
+  const DskTlsX509DistinguishedName *a_dn = *p_a_dn;
+  const DskTlsX509DistinguishedName *b_dn = *p_b_dn;
+  return a_dn->type < b_dn->type
+       ? -1
+       : a_dn->type > b_dn->type
+       ? 1
+       : 0;
+}
+#endif
 
 static bool
 parse_name (DskASN1Value    *value,
@@ -94,6 +114,42 @@ parse_name (DskASN1Value    *value,
     }
   name_out->n_distinguished_names = n_names;
   name_out->distinguished_names = dn;
+
+  //
+  // Compute by-type lookup table.
+  //
+  name_out->names_sorted_by_type = DSK_NEW_ARRAY (n_names, DskTlsX509DistinguishedName *);
+  for (unsigned i = 0; i < n_names; i++)
+    name_out->names_sorted_by_type[i] = dn + i;
+#define COMPARE_DN_BY_TYPE(a,b, rv)   \
+    if (a->type < b->type)            \
+      rv = -1;                        \
+    else if (a->type > b->type)       \
+      rv = 1;                         \
+    else                              \
+      rv = 0;
+  DSK_QSORT(name_out->names_sorted_by_type,
+            DskTlsX509DistinguishedName *,
+            n_names,
+            COMPARE_DN_BY_TYPE);
+#undef COMPARE_DN_BY_TYPE
+
+  //
+  // Verify that all the distinguished-names
+  // have different distinguishers (ie types).
+  //
+  // (This loop works because names_sorted_by_type is sorted.)
+  //
+  for (unsigned i = 1; i < n_names; i++)
+    {
+      if (name_out->names_sorted_by_type[i-1]->type
+       == name_out->names_sorted_by_type[i]->type)
+        {
+          *error = dsk_error_new ("distinguished-name entries must have distinct types");
+          dsk_free (name_out->names_sorted_by_type);
+          goto failed;
+        }
+    }
   return true;
 
 failed:
@@ -102,13 +158,69 @@ failed:
   dsk_free (dn);
   return false;
 }
+
 const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
                                              DskTlsX509DistinguishedNameType t)
 {
-  for (unsigned i = 0; i < name->n_distinguished_names; i++)
-    if (name->distinguished_names[i].type == t)
-      return name->distinguished_names[i].name;
+  unsigned start = 0, n = name->n_distinguished_names;
+  while (n > 0)
+    {
+      unsigned mid = start + n / 2;
+      DskTlsX509DistinguishedNameType mid_type = name->names_sorted_by_type[mid]->type;
+      if (t < mid_type)
+        {
+          n /= 2;
+        }
+      else if (t > mid_type)
+        {
+          n = start + n - (mid + 1);
+          start = mid + 1;
+        }
+      else
+        return name->names_sorted_by_type[mid]->name;
+    }
+  if (n == 1 && name->names_sorted_by_type[start]->type == t)
+    {
+      return name->names_sorted_by_type[start]->name;
+    }
   return NULL;
+}
+
+bool     dsk_tls_x509_name_equal(const DskTlsX509Name *a,
+                                 const DskTlsX509Name *b)
+{
+  if (a->n_distinguished_names != b->n_distinguished_names)
+    return false;
+  unsigned n = a->n_distinguished_names;
+  DskTlsX509DistinguishedName **a_names = a->names_sorted_by_type;
+  DskTlsX509DistinguishedName **b_names = b->names_sorted_by_type;
+  for (unsigned i = 0; i < n; i++)
+    {
+      if (a_names[i]->type != b_names[i]->type)
+        return false;
+      if (strcmp(a_names[i]->name, b_names[i]->name) == 0)
+        return false;
+    }
+  return true;
+}
+
+uint32_t dsk_tls_x509_name_hash (const DskTlsX509Name *a)
+{
+  unsigned n = a->n_distinguished_names;
+  DskTlsX509DistinguishedName **a_names = a->names_sorted_by_type;
+  uint32_t hash = 5381;
+  for (unsigned i = 0; i < n; i++)
+    {
+      hash += a_names[i]->type;
+      hash *= 33;
+      const char *str = a_names[i]->name;
+      while (*str)
+        {
+          hash += (unsigned) (uint8_t) *str++;
+          hash *= 33;
+        }
+    }
+  return hash;
 }
 
 static void
@@ -116,6 +228,7 @@ dsk_tls_x509_name_clear (DskTlsX509Name *name)
 {
   for (unsigned i = 0; i < name->n_distinguished_names; i++)
     dsk_free (name->distinguished_names[i].name);
+  dsk_free (name->names_sorted_by_type);
   dsk_free (name->distinguished_names);
 }
 
@@ -139,6 +252,11 @@ parse_validity (DskASN1Value        *value,
 #define dsk_tls_x509_validity_clear(v)
 
 
+//
+// NOTE: pool should only be used for temporaries.
+// The members of spki_out must be initialized
+// with heap memory (ie dsk_new etc).
+//
 static bool
 parse_subject_public_key_info (DskASN1Value        *value,
                                DskMemPool          *pool,
@@ -218,7 +336,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
       *error = dsk_error_new ("serial-number too large in X509 Certificate");
       return NULL;
     }
-  DskTlsX509Certificate *rv = DSK_NEW0 (DskTlsX509Certificate);
+  DskTlsX509Certificate *rv = dsk_object_new (&dsk_tls_x509_certificate_class);
   unsigned sn_len = serial_number->value_end - serial_number->value_start;
   unsigned sn_pad = 20 - sn_len;
   memset (rv->serial_number, 0, sn_pad);
@@ -228,31 +346,31 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
   DskASN1Value *algorithm_id = value->v_sequence.children[tbs_at++];
   if (!parse_algo_id (algorithm_id, pool, &rv->signature_algorithm, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   DskASN1Value *issuer_value = value->v_sequence.children[tbs_at++];
   if (!parse_name (issuer_value, &rv->issuer, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   DskASN1Value *validity_value = value->v_sequence.children[tbs_at++];
   if (!parse_validity (validity_value, &rv->validity, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   DskASN1Value *subject_value = value->v_sequence.children[tbs_at++];
   if (!parse_name (subject_value, &rv->subject, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   DskASN1Value *subpki_value = value->v_sequence.children[tbs_at++];
   if (!parse_subject_public_key_info (subpki_value, pool, &rv->subject_public_key_info, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return false;
     }
 
@@ -263,7 +381,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
                                       DSK_ASN1_TYPE_BIT_STRING, false,
                                       error))
         {
-          dsk_tls_x509_certificate_free (rv);
+          dsk_object_unref (rv);
           return false;
         }
 
@@ -281,7 +399,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
                                       DSK_ASN1_TYPE_BIT_STRING, false,
                                       error))
         {
-          dsk_tls_x509_certificate_free (rv);
+          dsk_object_unref (rv);
           return false;
         }
 
@@ -298,7 +416,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
                                       DSK_ASN1_TYPE_SEQUENCE, false,
                                       error))
         {
-          dsk_tls_x509_certificate_free (rv);
+          dsk_object_unref (rv);
           return false;
         }
       
@@ -312,7 +430,7 @@ dsk_tls_x509_unsigned_certificate_from_asn1 (DskASN1Value *value,
            || ext_value->v_sequence.n_children > 3)
             {
               *error = dsk_error_new ("bad X509 Certificate extension");
-              dsk_tls_x509_certificate_free (rv);
+              dsk_object_unref (rv);
               return false;
             }
         }
@@ -347,20 +465,20 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
   DskTlsX509SignatureAlgorithm algo;
   if (!parse_algo_id (cert_sig_algo, pool, &algo, error))
     {
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   if (algo != rv->signature_algorithm)
     {
       *error = dsk_error_new ("signature algorithms not consisent in certificate");
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   if (sig->type != DSK_ASN1_TYPE_BIT_STRING
    || sig->v_bit_string.length % 8 != 0)
     {
       *error = dsk_error_new ("signature must be a number of bytes");
-      dsk_tls_x509_certificate_free (rv);
+      dsk_object_unref (rv);
       return NULL;
     }
   rv->is_signed = true;
@@ -370,8 +488,8 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
 }
 
 
-void
-dsk_tls_x509_certificate_free (DskTlsX509Certificate *cert)
+static void
+dsk_tls_x509_certificate_finalize (DskTlsX509Certificate *cert)
 {
   dsk_tls_x509_name_clear (&cert->issuer);
   dsk_tls_x509_validity_clear (&cert->validity);
@@ -380,5 +498,211 @@ dsk_tls_x509_certificate_free (DskTlsX509Certificate *cert)
   dsk_free (cert->issuer_unique_id);
   dsk_free (cert->subject_unique_id);
   dsk_free (cert->signature_data);
-  dsk_free (cert);
 }
+
+static size_t
+dsk_tls_x509_certificate_get_signature_length (DskTlsKeyPair     *kp,
+                                               DskTlsSignatureScheme scheme)
+{
+  DskTlsX509Certificate *cert = (DskTlsX509Certificate *) kp;
+
+  (void) scheme;
+
+  switch (cert->key_type)
+    {
+    case DSK_TLS_X509_KEY_TYPE_RSA_PUBLIC:
+      {
+        DskRSAPublicKey *k = cert->key;
+        return k->modulus_length_bytes;
+      }
+    case DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE:
+      {
+        DskRSAPrivateKey *k = cert->key;
+        return k->modulus_length_bytes;
+      }
+    default:
+      assert(false);
+      return 0;
+    }
+}
+
+static bool
+dsk_tls_x509_certificate_has_private_key      (DskTlsKeyPair     *kp)
+{
+  DskTlsX509Certificate *cert = (DskTlsX509Certificate *) kp;
+  switch (cert->key_type)
+    {
+    case DSK_TLS_X509_KEY_TYPE_RSA_PUBLIC:
+      return false;
+    case DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE:
+      return true;
+    default:
+      assert(false);
+      return 0;
+    }
+}
+
+static bool
+dsk_tls_x509_certificate_supports_scheme      (DskTlsKeyPair     *kp,
+                                               DskTlsSignatureScheme algorithm)
+{
+  DskTlsX509Certificate *cert = (DskTlsX509Certificate *) kp;
+  (void) cert;
+
+  switch (algorithm)
+    {
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256:
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384:
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512:
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256:
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384:
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static void
+dsk_tls_x509_certificate_sign    (DskTlsKeyPair     *kp,
+                                  DskTlsSignatureScheme algorithm,
+                                  size_t             content_len,
+                                  const uint8_t     *content_data,
+                                  uint8_t           *signature_out)
+{
+  DskTlsX509Certificate *cert = (DskTlsX509Certificate *) kp;
+  switch (algorithm)
+    {
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pkcs1_5_sign (cert->key,
+                               &dsk_checksum_type_sha256,
+                               content_len, content_data,
+                               signature_out);
+      break;
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pkcs1_5_sign (cert->key,
+                               &dsk_checksum_type_sha384,
+                               content_len, content_data,
+                               signature_out);
+      break;
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pkcs1_5_sign (cert->key,
+                               &dsk_checksum_type_sha512,
+                               content_len, content_data,
+                               signature_out);
+      break;
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pss_sign (cert->key,
+                           &dsk_checksum_type_sha256,
+                           256/8,          // length of salt is hash-length
+                           NULL,           // default RNG
+                           content_len, content_data,
+                           signature_out);
+      break;
+
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pss_sign (cert->key,
+                           &dsk_checksum_type_sha384,
+                           384/8,          // length of salt is hash-length
+                           NULL,           // default RNG
+                           content_len, content_data,
+                           signature_out);
+      break;
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      dsk_rsassa_pss_sign (cert->key,
+                           &dsk_checksum_type_sha512,
+                           512/8,          // length of salt is hash-length
+                           NULL,           // default RNG
+                           content_len, content_data,
+                           signature_out);
+      break;
+    default:
+      dsk_die ("algorithm not supported by dsk_tls_x509_certificate_sign()");
+    }
+    
+}
+
+static bool
+dsk_tls_x509_certificate_verify  (DskTlsKeyPair     *kp,
+                                  DskTlsSignatureScheme algorithm,
+                                  size_t             content_len,
+                                  const uint8_t     *content_data,
+                                  const uint8_t     *sig)
+{
+  DskTlsX509Certificate *cert = (DskTlsX509Certificate *) kp;
+  switch (algorithm)
+    {
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA256:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pkcs1_5_verify (cert->key,
+                                        &dsk_checksum_type_sha256,
+                                        content_len, content_data,
+                                        sig);
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA384:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pkcs1_5_verify (cert->key,
+                                        &dsk_checksum_type_sha384,
+                                        content_len, content_data,
+                                        sig);
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PKCS1_SHA512:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pkcs1_5_verify (cert->key,
+                                        &dsk_checksum_type_sha512,
+                                        content_len, content_data,
+                                        sig);
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA256:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA256:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pss_verify (cert->key,
+                                    &dsk_checksum_type_sha256,
+                                    256/8,
+                                    content_len, content_data,
+                                    sig);
+
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA384:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA384:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pss_verify (cert->key,
+                                    &dsk_checksum_type_sha384,
+                                    384/8,
+                                    content_len, content_data,
+                                    sig);
+
+    case DSK_TLS_SIGNATURE_SCHEME_RSA_PSS_RSAE_SHA512:
+    case DSK_TLS_SIGNATURE_SCHEME_RSASSA_PSS_PSS_SHA512:
+      assert (cert->key_type == DSK_TLS_X509_KEY_TYPE_RSA_PRIVATE);
+      return dsk_rsassa_pss_verify (cert->key,
+                                    &dsk_checksum_type_sha512,
+                                    512/8,
+                                    content_len, content_data,
+                                    sig);
+
+    default:
+      dsk_die ("algorithm not supported by dsk_tls_x509_certificate_sign()");
+      return false;
+    }
+    
+}
+
+#define dsk_tls_x509_certificate_init NULL
+
+DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskTlsX509Certificate);
+DskTlsX509CertificateClass dsk_tls_x509_certificate_class =
+{
+  DSK_TLS_KEY_PAIR_DEFINE_CLASS(
+    DskTlsX509Certificate,
+    dsk_tls_x509_certificate
+  )
+};

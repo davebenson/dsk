@@ -858,7 +858,7 @@ void dsk_tls_ecprime_prj_to_xy (const DskTls_ECPrime_Group *group,
 
 
 //
-// Implement ..
+// Test if x,y is a non-infinite point on the curve.
 //
 bool
 dsk_tls_ecprime_group_is_valid (const DskTls_ECPrime_Group *group,
@@ -1056,6 +1056,7 @@ static const KeyShareMethod_SECP key_share_secp256r1 =
   },
   &dsk_tls_ecprime_group_secp256r1
 };
+
 static const KeyShareMethod_SECP key_share_secp384r1 =
 {
   {

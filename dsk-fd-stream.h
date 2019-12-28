@@ -1,8 +1,12 @@
 typedef struct _DskFdStreamClass DskFdStreamClass;
 typedef struct _DskFdStream DskFdStream;
 
+// Readable stream.
 DskStream *dsk_stream_new_stdin (void);
+// Writable stream.
 DskStream *dsk_stream_new_stdout (void);
+// Readable/writable stream.
+DskStream *dsk_stream_new_stdio (void);
 
 struct _DskFdStreamClass
 {

@@ -1,6 +1,6 @@
 
-typedef struct DskChecksum DskChecksum;
 typedef struct DskChecksumType DskChecksumType;
+typedef struct DskChecksum DskChecksum;
 
 // Direct use of DskChecksumType is recommended
 // for performance-critical code.
@@ -23,9 +23,12 @@ struct DskChecksumType
   size_t hash_size;
   size_t block_size_in_bits;
   const uint8_t *empty_hash;
-  void (*init)(void *instance);
-  void (*feed)(void *instance, size_t len, const uint8_t *data);
-  void (*end)(void *instance, uint8_t *hash_out);
+  void (*init)(void          *instance);
+  void (*feed)(void          *instance,
+               size_t         len,
+               const uint8_t *data);
+  void (*end) (void          *instance,
+               uint8_t       *hash_out);
 };
 
 extern DskChecksumType dsk_checksum_type_md5;
@@ -38,6 +41,8 @@ extern DskChecksumType dsk_checksum_type_sha512_224;
 extern DskChecksumType dsk_checksum_type_sha512_256;
 extern DskChecksumType dsk_checksum_type_sha384;
 extern DskChecksumType dsk_checksum_type_sha512;
+
+// TODO: BLAKE hash.
 
 extern DskChecksumType dsk_checksum_type_crc32;      // always big-endian(!)
 
@@ -73,6 +78,7 @@ void           dsk_checksum            (DskChecksumType*type,
  *
  * This is used for computing HMACs (see RFC 2104, RFC 4868).
  */
-unsigned       dsk_checksum_type_get_block_size (DskChecksumType type);
+unsigned       dsk_checksum_type_get_block_size (DskChecksumType *type);
+
 
 DskChecksumType *dsk_checksum_type_by_name (const char *str);

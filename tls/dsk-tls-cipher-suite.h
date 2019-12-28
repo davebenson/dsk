@@ -13,6 +13,7 @@ struct DskTlsCipherSuite
   DskChecksumType *hash_type;    // only used for key-schedule computation
 
   void (*init)      (void           *instance,
+                     bool            for_encryption,
                      const uint8_t  *key);
   void (*encrypt)   (void           *instance,
                      size_t          plaintext_len,

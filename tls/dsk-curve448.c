@@ -239,6 +239,7 @@ x448(const uint32_t *k,
 #if 0
 #define MOD_TMP(out) x448_modulus (tmp, (out))
 #else
+// XXX: warn "using slow MOD_TMP"
 #define MOD_TMP(out) \
   dsk_tls_bignum_modulus_with_barrett_mu (14 * 2, tmp, 14, p, \
                                           x448__barrett_mu, \

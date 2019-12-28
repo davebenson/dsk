@@ -260,8 +260,8 @@ dsk_object_unref_f (void *object)
 
 void
 dsk_object_trap_finalize (DskObject *object,
-                     DskDestroyNotify destroy,
-                     void            *destroy_data)
+                          DskDestroyNotify destroy,
+                          void            *destroy_data)
 {
   DskObjectFinalizeHandler *f = DSK_NEW (DskObjectFinalizeHandler);
   f->destroy = destroy;

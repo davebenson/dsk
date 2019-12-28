@@ -50,10 +50,10 @@ void dsk_memory_source_add_error   (DskMemorySource *source,
                                     DskError        *error);
 void dsk_memory_source_take_error  (DskMemorySource *source,
                                     DskError        *error);
-#define dsk_memory_source_add_error(msource, error) \
-  dsk_memory_source_take_error ((msource), dsk_error_ref (error))
 
-void dsk_memory_sink_drained (DskMemorySink *sink);
+/* used to indicate that data has been taken out of the memory-sink.
+ * (It doesn't need to be completely empty) */
+void dsk_memory_sink_drained       (DskMemorySink   *sink);
 
 extern DskMemorySourceClass dsk_memory_source_class;
 extern DskMemorySinkClass dsk_memory_sink_class;

@@ -26,99 +26,104 @@
 // for almost any aliasing situation.
 //    
 
+typedef uint32_t DSK_WORD;
+typedef uint64_t DSK_DWORD;
+#define DSK_WORD_SIZE         4
+#define DSK_WORD_BIT_SIZE    32
+
 bool     dsk_tls_bignum_is_zero              (unsigned        len,
-                                              const uint32_t *v);
-uint32_t dsk_tls_bignum_subtract_with_borrow (unsigned        len,
-                                              const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t        borrow,
-                                              uint32_t       *out);
+                                              const DSK_WORD *v);
+DSK_WORD dsk_tls_bignum_subtract_with_borrow (unsigned        len,
+                                              const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD        borrow,
+                                              DSK_WORD       *out);
 #define dsk_tls_bignum_subtract(len,a,b,out) \
         dsk_tls_bignum_subtract_with_borrow(len,a,b,0,out)
-uint32_t dsk_tls_bignum_add_with_carry       (unsigned   len,
-                                              const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t carry,
-                                              uint32_t *out);
+DSK_WORD dsk_tls_bignum_add_with_carry       (unsigned   len,
+                                              const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD carry,
+                                              DSK_WORD *out);
 #define dsk_tls_bignum_add(len,a,b,out) \
         dsk_tls_bignum_add_with_carry(len,a,b,0,out)
-uint32_t dsk_tls_bignum_add_word_inplace     (unsigned len,
-                                              uint32_t *v,
-                                              uint32_t carry);
-uint32_t dsk_tls_bignum_subtract_word_inplace(unsigned len,
-                                              uint32_t *v,
-                                              uint32_t carry);
-uint32_t dsk_tls_bignum_add_word             (unsigned len,
-                                              const uint32_t *in,
-                                              uint32_t carry,
-                                              uint32_t *out);
-uint32_t dsk_tls_bignum_subtract_word_inplace(unsigned len,
-                                              uint32_t *v,
-                                              uint32_t carry);
-uint32_t dsk_tls_bignum_subtract_word        (unsigned len,
-                                              const uint32_t *in,
-                                              uint32_t carry,
-                                              uint32_t *out);
+DSK_WORD dsk_tls_bignum_add_word_inplace     (unsigned len,
+                                              DSK_WORD *v,
+                                              DSK_WORD carry);
+DSK_WORD dsk_tls_bignum_subtract_word_inplace(unsigned len,
+                                              DSK_WORD *v,
+                                              DSK_WORD carry);
+DSK_WORD dsk_tls_bignum_add_word             (unsigned len,
+                                              const DSK_WORD *in,
+                                              DSK_WORD carry,
+                                              DSK_WORD *out);
+DSK_WORD dsk_tls_bignum_subtract_word_inplace(unsigned len,
+                                              DSK_WORD *v,
+                                              DSK_WORD carry);
+DSK_WORD dsk_tls_bignum_subtract_word        (unsigned len,
+                                              const DSK_WORD *in,
+                                              DSK_WORD carry,
+                                              DSK_WORD *out);
 
 void     dsk_tls_bignum_multiply             (unsigned p_len,
-                                              const uint32_t *p_words,
+                                              const DSK_WORD *p_words,
                                               unsigned q_len,
-                                              const uint32_t *q_words,
-                                              uint32_t *out);
+                                              const DSK_WORD *q_words,
+                                              DSK_WORD *out);
 void     dsk_tls_bignum_multiply_truncated   (unsigned a_len,
-                                              const uint32_t *a_words,
+                                              const DSK_WORD *a_words,
                                               unsigned b_len,
-                                              const uint32_t *b_words,
+                                              const DSK_WORD *b_words,
                                               unsigned out_len,
-                                              uint32_t *product_words_out);
-uint32_t dsk_tls_bignum_multiply_word        (unsigned len,
-                                              const uint32_t *in,
-                                              uint32_t word,
-                                              uint32_t *out);
-void     dsk_tls_bignum_multiply_2x2         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_3x3         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_4x4         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_5x5         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_6x6         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_7x7         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
-void     dsk_tls_bignum_multiply_8x8         (const uint32_t *a,
-                                              const uint32_t *b,
-                                              uint32_t       *out);
+                                              DSK_WORD *product_words_out);
+DSK_WORD dsk_tls_bignum_multiply_word        (unsigned len,
+                                              const DSK_WORD *in,
+                                              DSK_WORD word,
+                                              DSK_WORD *out);
+void     dsk_tls_bignum_multiply_2x2         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_3x3         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_4x4         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_5x5         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_6x6         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_7x7         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
+void     dsk_tls_bignum_multiply_8x8         (const DSK_WORD *a,
+                                              const DSK_WORD *b,
+                                              DSK_WORD       *out);
 void     dsk_tls_bignum_square               (unsigned len,
-                                              const uint32_t *words,
-                                              uint32_t *out);
+                                              const DSK_WORD *words,
+                                              DSK_WORD *out);
 
 unsigned dsk_tls_bignum_actual_len           (unsigned len,
-                                              const uint32_t *v);
+                                              const DSK_WORD *v);
 
 // highest bit that's one, or -1 if v is zero.
 int      dsk_tls_bignum_max_bit              (unsigned len,
-                                              const uint32_t *v);
+                                              const DSK_WORD *v);
 
 void     dsk_tls_bignum_shiftleft_truncated  (unsigned len,
-                                              const uint32_t *in,
+                                              const DSK_WORD *in,
                                               unsigned amount,
                                               unsigned out_len,
-                                              uint32_t *out);
+                                              DSK_WORD *out);
 void     dsk_tls_bignum_shiftright_truncated (unsigned len,
-                                              const uint32_t *in,
+                                              const DSK_WORD *in,
                                               unsigned amount,
                                               unsigned out_len,
-                                              uint32_t *out);
+                                              DSK_WORD *out);
 void    dsk_tls_bignum_shiftright_inplace    (unsigned len,
-                                              uint32_t *in_out,
+                                              DSK_WORD *in_out,
                                               unsigned n_bits);
 
 //
@@ -133,27 +138,30 @@ void    dsk_tls_bignum_shiftright_inplace    (unsigned len,
 // * q_words[q_len-1] != 0.
 //
 void     dsk_tls_bignum_divide               (unsigned p_len,
-                                              const uint32_t *p_words,
+                                              const DSK_WORD *p_words,
                                               unsigned q_len,
-                                              const uint32_t *q_words,
-                                              uint32_t *quotient_out,
-                                              uint32_t *remainder_out);
+                                              const DSK_WORD *q_words,
+                                              DSK_WORD *quotient_out,
+                                              DSK_WORD *remainder_out);
 
 int      dsk_tls_bignum_compare              (unsigned len,
-                                              const uint32_t *a,
-                                              const uint32_t *b);
+                                              const DSK_WORD *a,
+                                              const DSK_WORD *b);
+bool     dsk_tls_bignums_equal               (unsigned len,
+                                              const DSK_WORD *a,
+                                              const DSK_WORD *b);
 
 
 void     dsk_tls_bignum_modular_add          (unsigned        len,
-                                              const uint32_t *a_words,
-                                              const uint32_t *b_words,
-                                              const uint32_t *modulus_words,
-                                              uint32_t       *out);
+                                              const DSK_WORD *a_words,
+                                              const DSK_WORD *b_words,
+                                              const DSK_WORD *modulus_words,
+                                              DSK_WORD       *out);
 void     dsk_tls_bignum_modular_subtract     (unsigned        len,
-                                              const uint32_t *a_words,
-                                              const uint32_t *b_words,
-                                              const uint32_t *modulus_words,
-                                              uint32_t       *out);
+                                              const DSK_WORD *a_words,
+                                              const DSK_WORD *b_words,
+                                              const DSK_WORD *modulus_words,
+                                              DSK_WORD       *out);
 
 //
 // Compute the number X_inv such that X * X_inv == 1 (mod modulus).
@@ -165,9 +173,9 @@ void     dsk_tls_bignum_modular_subtract     (unsigned        len,
 // are relatively prime).
 //
 bool     dsk_tls_bignum_modular_inverse      (unsigned len,
-                                              const uint32_t *X_words,
-                                              const uint32_t *modulus_words,
-                                              uint32_t *X_inv_out);
+                                              const DSK_WORD *X_words,
+                                              const DSK_WORD *modulus_words,
+                                              DSK_WORD *X_inv_out);
 
 //
 // This is fairly slow in some cases (modulus==1 % 4),
@@ -183,9 +191,9 @@ bool     dsk_tls_bignum_modular_inverse      (unsigned len,
 // See the wiki page for quadratic residues.
 //
 bool     dsk_tls_bignum_modular_sqrt         (unsigned len,
-                                              const uint32_t *X_words,
-                                              const uint32_t *modulus_words,
-                                              uint32_t *X_sqrt_out);
+                                              const DSK_WORD *X_words,
+                                              const DSK_WORD *modulus_words,
+                                              DSK_WORD *X_sqrt_out);
 
 //
 // Montgomery Representation mod p.
@@ -198,55 +206,55 @@ typedef struct {
   unsigned len;                 // number of 32-bit words in N.
 
   // must be odd (in fact, it'll be prime for our purposes).
-  const uint32_t *N;
+  const DSK_WORD *N;
 
   // "R" in the Montgomery reduction, etc, is 1 << (32 * len).
 
   // a number such that Rinv * R == 1 (mod N).
-  //const uint32_t *Rinv;
+  //const DSK_WORD *Rinv;
 
   // a number such that N*Nprime = -1 (mod R)
-  uint32_t Nprime;
+  DSK_WORD Nprime;
 
   // of length len+1; this is needed to efficiently convert
   // number to montgomery form.
-  const uint32_t *barrett_mu;   
+  const DSK_WORD *barrett_mu;   
 } DskTlsMontgomeryInfo;
 
 
 void dsk_tls_montgomery_info_init  (DskTlsMontgomeryInfo *info,
                                     unsigned len,
-                                    const uint32_t *N);
+                                    const DSK_WORD *N);
 void dsk_tls_montgomery_info_clear  (DskTlsMontgomeryInfo *info);
 void dsk_tls_bignum_to_montgomery (DskTlsMontgomeryInfo *info,
-                                   const uint32_t       *in,
-                                   uint32_t             *out_mont);
+                                   const DSK_WORD       *in,
+                                   DSK_WORD             *out_mont);
 void dsk_tls_bignum_word_to_montgomery (DskTlsMontgomeryInfo *info,
-                                        uint32_t              word,
-                                        uint32_t             *out);
+                                        DSK_WORD              word,
+                                        DSK_WORD             *out);
 
 // NOTE: if one of a_mont or b_mont is not in montgomery form,
 // then this outputs a non-montgomery form.
 void dsk_tls_bignum_multiply_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   const uint32_t       *a_mont,
-                                   const uint32_t       *b_mont,
-                                   uint32_t             *out_mont);
+                                   const DSK_WORD       *a_mont,
+                                   const DSK_WORD       *b_mont,
+                                   DSK_WORD             *out_mont);
 void dsk_tls_bignum_square_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   const uint32_t       *a_mont,
-                                   uint32_t             *out_mont);
+                                   const DSK_WORD       *a_mont,
+                                   DSK_WORD             *out_mont);
 void dsk_tls_bignum_from_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   const uint32_t       *in_mont,
-                                   uint32_t             *out);
+                                   const DSK_WORD       *in_mont,
+                                   DSK_WORD             *out);
 void dsk_tls_bignum_dump_montgomery(DskTlsMontgomeryInfo *info,
                                     const char *label);
 
 void
 dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
-                                  uint32_t             *T,
-                                  uint32_t             *out);
+                                  DSK_WORD             *T,
+                                  DSK_WORD             *out);
 //
 // Compute base^exponent (mod info->modulus).
 //
@@ -256,26 +264,44 @@ dsk_tls_bignum_montgomery_reduce (DskTlsMontgomeryInfo *info,
 //
 void dsk_tls_bignum_exponent_montgomery
                                   (DskTlsMontgomeryInfo *info,
-                                   const uint32_t       *base_mont,
+                                   const DSK_WORD       *base_mont,
                                    unsigned              exponent_len,
-                                   const uint32_t       *exponent,
-                                   uint32_t             *out_mont);
+                                   const DSK_WORD       *exponent,
+                                   DSK_WORD             *out_mont);
 
 
 void
 dsk_tls_bignum_compute_barrett_mu (unsigned              len,
-                                   const uint32_t       *modulus,
-                                   uint32_t             *out            // of length len+2, but out[len+1]==0
+                                   const DSK_WORD       *modulus,
+                                   DSK_WORD             *out            // of length len+2, but out[len+1]==0
                                    );
 // ASSERT: for now, len == 2 * modulus_len
 void
 dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
-                                        const uint32_t *value,
+                                        const DSK_WORD *value,
                                         unsigned        modulus_len,
-                                        const uint32_t *modulus,
-                                        const uint32_t *barrett_mu,
-                                        uint32_t       *mod_value_out);
+                                        const DSK_WORD *modulus,
+                                        const DSK_WORD *barrett_mu,
+                                        DSK_WORD       *mod_value_out);
 
+
+// Compute     base^exponent (mod modulus)     as fast as possible
+// given no preparation, as is needed for RSA signing and verifying.
+//
+// In many applications:
+//    the modulus is a pseudomercenne prime - use dsk_tls_bignum_modulus_pseudomersenne32 instead
+//    the modulus is fixed - use 
+// in most EC situations be chosen as a friendly prime.
+// 
+
+void
+dsk_tls_bignum_modular_exponent        (unsigned        base_len,
+                                        const DSK_WORD *base,
+                                        unsigned        exponent_len,
+                                        const DSK_WORD *exponent,
+                                        unsigned        modulus_len,
+                                        const DSK_WORD *modulus,
+                                        DSK_WORD       *mod_value_out);
 
 //
 // p = 2**(32*prime_size) - c.
@@ -289,17 +315,17 @@ dsk_tls_bignum_modulus_with_barrett_mu (unsigned        len,
 //
 void dsk_tls_bignum_modulus_pseudomersenne32 (unsigned prime_size,
                                               uint16_t c,
-                                              const uint32_t *in,
-                                              uint32_t *out);
+                                              const DSK_WORD *in,
+                                              DSK_WORD *out);
 
 
-uint32_t dsk_tls_bignum_invert_mod_wordsize32 (uint32_t v);
+DSK_WORD dsk_tls_bignum_invert_mod_wordsize32 (DSK_WORD v);
 
 
 //
 // Primality testing.
 //
 bool dsk_tls_bignum_find_probable_prime (unsigned len,
-                                         uint32_t *inout);
+                                         DSK_WORD *inout);
 bool dsk_tls_bignum_is_probable_prime (unsigned len,
-                                       const uint32_t *p);
+                                       const DSK_WORD *p);

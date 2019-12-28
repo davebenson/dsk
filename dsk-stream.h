@@ -45,27 +45,27 @@ void dsk_stream_set_last_error       (DskStream       *stream,
 void dsk_stream_set_error            (DskStream       *stream,
                                       DskError        *error);
 
-DSK_INLINE DskIOResult dsk_stream_read (void         *stream,
-                                                   unsigned      max_len,
-                                                   void         *data_out,
-                                                   unsigned     *n_read_out,
-                                                   DskError    **error);
-DSK_INLINE DskIOResult dsk_stream_read_buffer (void           *stream,
-                                                  DskBuffer      *read_buffer,
-                                                  DskError      **error);
-DSK_INLINE void dsk_stream_shutdown_read   (void           *stream);
-DSK_INLINE DskIOResult dsk_stream_write (void           *stream,
-                                                  unsigned        max_len,
-                                                  const void     *data,
-                                                  unsigned       *n_written_out,
-                                                  DskError      **error);
-DSK_INLINE DskIOResult dsk_stream_write_buffer  (void           *stream,
-                                                  DskBuffer      *write_buffer,
-                                                  DskError      **error);
-DSK_INLINE void dsk_stream_shutdown_write     (void           *stream);
+DSK_INLINE DskIOResult  dsk_stream_read           (void           *stream,
+                                                   unsigned        max_len,
+                                                   void           *data_out,
+                                                   unsigned       *n_read_out,
+                                                   DskError      **error);
+DSK_INLINE DskIOResult  dsk_stream_read_buffer    (void           *stream,
+                                                   DskBuffer      *read_buffer,
+                                                   DskError      **error);
+DSK_INLINE void         dsk_stream_shutdown_read   (void          *stream);
+DSK_INLINE DskIOResult  dsk_stream_write           (void          *stream,
+                                                    unsigned       max_len,
+                                                    const void    *data,
+                                                    unsigned      *n_written_out,
+                                                    DskError     **error);
+DSK_INLINE DskIOResult  dsk_stream_write_buffer    (void          *stream,
+                                                    DskBuffer     *write_buffer,
+                                                    DskError     **error);
+DSK_INLINE void         dsk_stream_shutdown_write  (void          *stream);
 
-DSK_INLINE bool dsk_stream_is_readable       (void           *stream);
-DSK_INLINE bool dsk_stream_is_writable       (void           *stream);
+DSK_INLINE bool         dsk_stream_is_readable     (void          *stream);
+DSK_INLINE bool         dsk_stream_is_writable     (void          *stream);
 
 
 int64_t dsk_stream_get_length (DskStream *stream); /* BIG HACK; may return -1 */
@@ -73,6 +73,12 @@ int64_t dsk_stream_get_length (DskStream *stream); /* BIG HACK; may return -1 */
 typedef struct _DskStreamConnectionClass DskStreamConnectionClass;
 typedef struct _DskStreamConnection DskStreamConnection;
 typedef struct _DskStreamConnectionOptions DskStreamConnectionOptions;
+
+
+typedef void (*DskStreamConnectionTransferFunc) 
+                                        (size_t transferred_len,
+                                         const uint8_t *transferred_data,
+                                         void *transfer_func_data);
 
 struct _DskStreamConnectionClass
 {
@@ -94,6 +100,9 @@ struct _DskStreamConnection
   /* tracking the latest error */
   unsigned last_error_from_reading : 1;
   DskError *last_error;
+
+  DskStreamConnectionTransferFunc transfer_func;
+  void *transfer_func_data;
 };
 
 struct _DskStreamConnectionOptions
@@ -101,22 +110,26 @@ struct _DskStreamConnectionOptions
   unsigned max_buffer;
   bool shutdown_on_read_error;
   bool shutdown_on_write_error;
+  DskStreamConnectionTransferFunc transfer_func;
+  void *transfer_func_data;
 };
-#define DSK_OCTET_CONNECTION_OPTIONS_INIT \
-{ 4096,                         /* max_buffer */                \
+#define DSK_STREAM_CONNECTION_OPTIONS_INIT                  \
+{ 4096,                     /* max_buffer */                \
   true,                     /* shutdown_on_read_error */    \
-  true                      /* shutdown_on_write_error */   \
+  true,                     /* shutdown_on_write_error */   \
+  NULL,                     /* transfer_func */             \
+  NULL,                     /* transfer_func_data */        \
 }
 
-DSK_INLINE void dsk_stream_connect       (DskStream *source,
+DSK_INLINE void      dsk_stream_connect       (DskStream *source,
                                               DskStream   *sink,
                                               DskStreamConnectionOptions *opt);
 
 DskStreamConnection *dsk_stream_connection_new (DskStream *source,
                                                 DskStream   *sink,
                                                 DskStreamConnectionOptions *opt);
-void                dsk_stream_connection_shutdown (DskStreamConnection *);
-void                dsk_stream_connection_disconnect (DskStreamConnection *);
+void                 dsk_stream_connection_shutdown   (DskStreamConnection *);
+void                 dsk_stream_connection_disconnect (DskStreamConnection *);
 
 /* --- pipes --- */
 /* Pipes are the opposite of connections, in some sense.
@@ -125,14 +138,14 @@ void                dsk_stream_connection_disconnect (DskStreamConnection *);
 */
 /* Specify pipe_buffer_size==0 to get the default buffer size */
 void          dsk_pipe_new (unsigned       pipe_buffer_size,
-                            DskStream **sink_out,
-                            DskStream **source_out);
+                            DskStream    **sink_out,
+                            DskStream    **source_out);
 
 
 extern const DskStreamClass dsk_stream_class;
 extern const DskStreamConnectionClass dsk_stream_connection_class;
 
-DSK_INLINE DskIOResult dsk_stream_read (void         *stream,
+DSK_INLINE DskIOResult dsk_stream_read    (void         *stream,
                                            unsigned      max_len,
                                            void         *data_out,
                                            unsigned     *n_read_out,
@@ -190,4 +203,3 @@ DSK_INLINE bool dsk_stream_is_writable       (void           *stream)
 {
   return !dsk_hook_is_cleared (&DSK_STREAM (stream)->writable_hook);
 }
-DSK_INLINE bool dsk_stream_is_writable       (void           *stream);

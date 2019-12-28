@@ -203,6 +203,8 @@ dsk_rand_double (DskRand* rand)
   union { uint64_t i; double v; } u;
   uint64_t r52 = dsk_rand_uint64 (rand) & 0xfffffffffffffULL;
   // TODO: if r52==0, then we should maybe repeat and use an exponent 52 less.
+  //       But I think it's also nice not to require callers to handle
+  //       very small non-zero numbers.
   u.i = 0x1ff0000000000000ULL | r52;
   return u.v - 1.0;
 #endif

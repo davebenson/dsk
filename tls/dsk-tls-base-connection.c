@@ -12,15 +12,10 @@
 #include <string.h>
 #include <alloca.h>
 
-typedef struct DskTlsBaseHandshake DskTlsBaseHandshake;
-struct DskTlsBaseHandshake
-{
-  DSK_TLS_BASE_HANDSHAKE_MEMBERS(DskTlsBaseConnection);
-};
-
 static void
 dsk_tls_base_connection_finalize (DskTlsBaseConnection *conn)
 {
+  assert (conn->handshake == NULL); // taken care of by subclass finalize
   if (conn->underlying)
     {
       if (conn->write_trap != NULL)
@@ -118,6 +113,10 @@ dsk_tls_base_connection_handle_handshake_record
               return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
             case DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_SUSPEND:
               connection->handshake_message_state = DSK_TLS_BASE_HMS_SUSPENDED;
+              dsk_hook_trap_block (connection->read_trap);
+
+              // This will be undone in _unsuspend().
+              dsk_object_ref (connection);
               return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_SUSPEND;
             }
         }
@@ -242,6 +241,7 @@ dsk_tls_base_connection_handle_record (DskTlsBaseConnection *connection,
 // will be "abstracted" away by the time we get
 // to dsk_tls_base_connection_handle_record().
 //
+
 
 static bool
 handle_complete_records (DskTlsBaseConnection *conn)
@@ -410,6 +410,31 @@ handle_underlying_readable (DskStream *underlying,
   return true;
 }
 
+
+void
+dsk_tls_base_connection_send_key_update (DskTlsBaseConnection *conn,
+                                         bool request_key_update)
+{
+  // Update write-key.
+  dsk_tls_update_key_inplace (conn->cipher_suite->hash_type,
+                              conn->client_application_traffic_secret);
+  conn->cipher_suite->init (conn->cipher_suite_write_instance,
+                            true,            // for encryption
+                            conn->client_application_traffic_secret);
+
+  DskTlsHandshakeMessage msg;
+  memset (&msg, 0, sizeof (msg));
+  msg.type = DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE;
+  msg.is_outgoing = true;
+  msg.key_update.update_requested = request_key_update;
+
+  DskBuffer buf = DSK_BUFFER_INIT;
+  dsk_tls_handshake_to_buffer (&msg, &buf);
+  uint8_t *msg_data = alloca (buf.size);
+  size_t msg_len = buf.size;
+  dsk_tls_base_connection_send_handshake_msgdata (conn, msg_len, msg_data);
+}
+
 bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *conn,
                                               DskStream *underlying,
                                               DskError **error)
@@ -423,4 +448,64 @@ bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *conn,
                                    conn,
                                    NULL);
   return true;
+}
+void
+dsk_tls_base_handshake_get_transcript_hash (DskTlsBaseHandshake *hs_info,
+                                            uint8_t *transcript_hash)
+{
+  const DskChecksumType *csum_type = hs_info->conn->cipher_suite->hash_type;
+
+  // Create a copy of the transcript_instance.
+  void *instance = alloca (csum_type->instance_size);
+  memcpy (
+    instance,
+    hs_info->transcript_hash_instance,
+    csum_type->instance_size
+  );
+
+  // Get the transcript_hash from the instance.
+  csum_type->end (instance, transcript_hash);
+}
+
+DskTlsHandshakeMessage *
+dsk_tls_base_handshake_create_outgoing_handshake
+                         (DskTlsBaseHandshake       *hs_info,
+                          DskTlsHandshakeMessageType   type,
+                          unsigned                     max_extensions)
+
+{
+  DskTlsHandshakeMessage *hs = dsk_mem_pool_alloc0 (&hs_info->mem_pool, sizeof (DskTlsHandshakeMessage));
+  hs->type = type;
+  hs->is_outgoing = true;
+
+  hs->n_extensions = 0;
+  hs->max_extensions = max_extensions;
+  hs->extensions = dsk_mem_pool_alloc (&hs_info->mem_pool, max_extensions * sizeof( DskTlsExtension *));
+
+  return hs;
+}
+
+void dsk_tls_base_connection_unsuspend   (DskTlsBaseConnection *connection)
+{
+  assert (connection->handshake_message_state == DSK_TLS_BASE_HMS_SUSPENDED);
+  DskTlsBaseConnectionClass *cclass = DSK_TLS_BASE_CONNECTION_GET_CLASS (connection);
+  DskError *error = NULL;
+  switch (cclass->handle_unsuspend (connection, &error))
+    {
+    case DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK:
+      dsk_hook_trap_block (connection->read_trap);
+      connection->handshake_message_state = DSK_TLS_BASE_HMS_INIT;
+      if (!handle_complete_records(connection))
+        dsk_warning ("handle_complete_records returned false");
+      break;
+    case DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED:
+      connection->handshake_message_state = DSK_TLS_BASE_HMS_INIT;
+      dsk_tls_base_connection_fail (connection, error);
+      break;
+    case DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_SUSPEND:
+      break;
+    }
+
+  // undoes ref in handle_message_record().
+  dsk_object_unref (connection);
 }

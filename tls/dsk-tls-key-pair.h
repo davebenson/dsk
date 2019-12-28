@@ -1,10 +1,21 @@
 //
 // A Key-Pair is a public-key and a private-key.
+// This is assymmetric crypto in a nutshell.
 //
 // A DskTlsKeyPair instance may be just a public-key,
-// or the pair.  Without private-key, signing is not possible.
+// or the pair.
+//
+// Without a private-key, signing is not possible
+// (that's the whole point of the key-pair system).
 //
 
+//
+// There are also asymmetric encryption schemes
+// (where the public key is for encryption
+// and the private key is for decryption),
+// but they aren't used by TLS, so we omit them
+// from our abstraction.
+//
 
 typedef struct DskTlsKeyPairClass DskTlsKeyPairClass;
 typedef struct DskTlsKeyPair DskTlsKeyPair;
@@ -55,5 +66,19 @@ void   dsk_tls_key_pair_verify          (DskTlsKeyPair     *kp,
                                          size_t             content_len,
                                          const uint8_t     *content_data,
                                          const uint8_t     *sig);
+#define DSK_TLS_KEY_PAIR_DEFINE_CLASS(CN, cn) \
+  {                                           \
+    DSK_OBJECT_CLASS_DEFINE(                  \
+      CN,                                     \
+      &dsk_tls_key_pair_class,                \
+      cn ## _init,                            \
+      cn ## _finalize                         \
+    ),                                        \
+    cn ## _get_signature_length,              \
+    cn ## _has_private_key,                   \
+    cn ## _supports_scheme,                   \
+    cn ## _sign,                              \
+    cn ## _verify                             \
+  }
 
 extern DskTlsKeyPairClass dsk_tls_key_pair_class;

@@ -1320,6 +1320,7 @@ send_server_hello_flight (DskTlsServerHandshake *hs_info,
 //  conn->cipher_suite->init (conn->cipher_suite_read_instance,
 //                            key_schedule->client_handshake_write_key);
   conn->cipher_suite->init (conn->cipher_suite_write_instance,
+                            true,
                             key_schedule->server_handshake_write_key);
 
   // send_handshake encrypted_extensions
@@ -1656,6 +1657,53 @@ handle_finished    (DskTlsServerConnection  *conn,
 }
 
 static DskTlsBaseHandshakeMessageResponseCode
+handle_key_update          (DskTlsServerConnection *conn,
+                            DskTlsHandshakeMessage  *shake,
+                            DskError        **error)
+{
+  //
+  // RFC 8446, Section 4.6.3:
+  //
+  //     This message can be sent by either peer after it has sent
+  //     a Finished message.  Implementations that receive a KeyUpdate message
+  //     prior to receiving a Finished message MUST terminate the connection
+  //     with an "unexpected_message" alert.
+  //
+  if (conn->state != DSK_TLS_SERVER_CONNECTION_CONNECTED)
+    {
+      *error = dsk_error_new ("bad state for KeyUpdate message: %s",
+                              dsk_tls_server_connection_state_name (conn->state));
+      DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
+      return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_FAILED;
+    }
+
+  //
+  // Update key.
+  //
+  DskTlsBaseConnection *base = &conn->base_instance;
+  dsk_tls_update_key_inplace (base->cipher_suite->hash_type,
+                              base->client_application_traffic_secret);
+  base->cipher_suite->init (base->cipher_suite_read_instance,
+                            false,               // for decryption
+                            base->client_application_traffic_secret);
+
+  if (shake->key_update.update_requested)
+    {
+      // Send KeyUpdate
+      dsk_tls_base_connection_send_key_update (base, false);
+
+      // Update write-key.
+      dsk_tls_update_key_inplace (base->cipher_suite->hash_type,
+                                  base->server_application_traffic_secret);
+      base->cipher_suite->init (base->cipher_suite_write_instance,
+                                true,            // for encryption
+                                base->server_application_traffic_secret);
+    }
+  return DSK_TLS_BASE_HANDSHAKE_MESSAGE_RESPONSE_OK;
+}
+
+
+static DskTlsBaseHandshakeMessageResponseCode
 dsk_tls_server_connection_handle_handshake_message
                                (DskTlsBaseConnection    *connection,
                                 DskTlsHandshakeMessage  *shake,
@@ -1674,8 +1722,8 @@ dsk_tls_server_connection_handle_handshake_message
       return handle_certificate_verify (conn, shake, error);
     case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_FINISHED:
       return handle_finished (conn, shake, error);
-//    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE:
-//      return handle_key_update (conn, shake, error);
+    case DSK_TLS_HANDSHAKE_MESSAGE_TYPE_KEY_UPDATE:
+      return handle_key_update (conn, shake, error);
     default:
       *error = dsk_error_new ("unexpected message received");
       DSK_ERROR_SET_TLS (*error, FATAL, UNEXPECTED_MESSAGE);
@@ -1727,9 +1775,21 @@ dsk_tls_server_connection_new (DskStream           *underlying,
 {
   DskTlsServerConnection *rv;
   rv = dsk_object_new (&dsk_tls_server_connection_class);
+  //
+  // Create handshake-info.
+  //
   rv->handshake = DSK_NEW0 (DskTlsServerHandshake);
   rv->handshake->conn = rv;
   rv->context = dsk_object_ref (context);
+
+  //
+  // The first message will be from the client, so all we have to
+  // do is the basic members, including the readability trap.
+  //
+
+  //
+  // Finish the setup of a the base-connection.
+  //
   if (!dsk_tls_base_connection_init_underlying (&rv->base_instance, underlying, error))
     {
       dsk_object_unref (rv);

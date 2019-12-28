@@ -1,4 +1,7 @@
 #include "../dsk.h"
+#include <stdio.h>
+
+static bool cmdline_verbose = false;
 
 static void
 charbychar_decode()

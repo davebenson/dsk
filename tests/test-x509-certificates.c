@@ -89,7 +89,7 @@ test_cert (void)
                   16) == 0);
 
   dsk_mem_pool_clear (&pool);
-  dsk_tls_x509_certificate_free (cert);
+  dsk_object_unref (cert);
 }
 
 

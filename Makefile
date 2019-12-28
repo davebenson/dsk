@@ -27,9 +27,11 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
 		tests/test-dsk-ts0 \
 		tests/test-daemonize \
                 tests/test-crypto \
+                tests/test-base64 \
                 tests/test-strv \
                 tests/test-asn1 \
                 tests/test-tls-bignum \
+                tests/test-rsa \
                 tests/test-x509-certificates \
                 tests/test-tls-protocol
 EXAMPLE_PROGRAMS = 
@@ -38,7 +40,8 @@ PROGRAMS = programs/dsk-dns-lookup programs/dsk-netcat programs/dsk-host \
 	   programs/dsk-ifconfig programs/dsk-asn1-dump \
 	   programs/dsk-grep programs/svg-to-cocoa \
 	   programs/dsk-dump-html-entities \
-           programs/dsk-make-ffdhe-montgomery-info 
+           programs/dsk-make-ffdhe-montgomery-info \
+           programs/dsk-tls-client
 all: $(BUILT_SOURCES) $(PROGRAMS) build-examples build-tests
 
 install: all
@@ -100,6 +103,7 @@ libdsk.a: dsk-inlines.o \
 	  dsk-octet-filter-source.o \
 	  dsk-socket-stream-listener.o dsk-cleanup.o \
 	  dsk-memory-source.o dsk-memory-sink.o \
+          dsk-stream-debug.o \
 	  dsk-mime.o \
 	  dsk-url.o \
 	  dsk-cgi.o \
@@ -138,6 +142,8 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-aead-ccm.o \
           tls/dsk-curve25519.o \
           tls/dsk-curve448.o \
+          tls/dsk-tls-cryptorandom.o \
+          tls/dsk-tls-key-pair.o \
           tls/dsk-hmac.o \
           tls/dsk-hkdf.o \
           tls/dsk-asn1.o \
@@ -155,8 +161,9 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-tls-ec-prime.o \
           tls/dsk-tls-cipher-suite.o \
           tls/dsk-tls-base-connection.o \
-          tls/dsk-tls-server-connection.o \
           tls/dsk-tls-ecdsa.o \
+          tls/dsk-rsa.o \
+          tls/dsk-tls-client-connection.o \
 	  codepages/codepage-CP1250.o codepages/codepage-CP1251.o \
 	  codepages/codepage-CP1253.o codepages/codepage-CP1254.o \
 	  codepages/codepage-CP1256.o codepages/codepage-CP1257.o \

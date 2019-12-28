@@ -21,6 +21,8 @@ typedef struct _ExclNode ExclNode;
    arbitrary number of aliases. */
 #define DSK_CMDLINE_MAX_ALIASES 5
 
+static const char *cmdline_prgname = "PROGRAM_NAME";
+
 struct _DskCmdlineMode
 {
   const char *mode_name;                /* NULL for top-level */
@@ -656,6 +658,12 @@ static void usage (DskCmdlineMode *mode,
   print_options_recursive (mode->arg_tree);
 }
 
+void
+dsk_cmdline_print_usage (void)
+{
+  usage(&toplevel_mode, cmdline_prgname);
+}
+
 static DskCmdlineMode *
 find_child_mode (DskCmdlineMode *parent,
                  const char     *name)
@@ -682,6 +690,7 @@ dsk_cmdline_try_process_args (int *argc_inout,
   int i;
   DskCmdlineMode *mode = &toplevel_mode;
   DskCmdlineMode *submode;
+  cmdline_prgname = argv[0];
   for (i = 1; i < *argc_inout; )
     {
       if (argv[i][0] == '-')
