@@ -7,6 +7,6 @@ typedef enum
 } DskZlibMode;
 
 DskSyncFilter *dsk_zlib_compressor_new   (DskZlibMode mode,
-                                           unsigned    level);  /* 0 .. 9 */
+                                          unsigned    level);  /* 0 .. 9 */
 DskSyncFilter *dsk_zlib_decompressor_new (DskZlibMode mode);
 

@@ -1,6 +1,6 @@
 //
 // A Key-Pair is a public-key and a private-key.
-// This is assymmetric crypto in a nutshell.
+// This is asymmetric crypto in a nutshell.
 //
 // A DskTlsKeyPair instance may be just a public-key,
 // or the pair.

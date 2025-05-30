@@ -1615,7 +1615,7 @@ is_probable_prime  (unsigned       len,
 
 
 //
-// This comes from the Table 7.2 from Understanding Crytography by Christof Paar,
+// This comes from the Table 7.2 from Understanding Cryptography by Christof Paar,
 // which claims that this number of rounds leaves an error probability < 2^{-80}.
 // 
 static inline unsigned

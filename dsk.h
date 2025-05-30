@@ -157,14 +157,14 @@
 #include "tls/dsk-tls-key-schedule.h"
 #include "tls/dsk-tls-protocol.h"
 #include "tls/dsk-tls-key-share.h"
-#include "tls/dsk-tls-signature.h"
+//#include "tls/dsk-tls-signature.h"
 #include "tls/dsk-tls-ec-prime.h"
 #include "tls/dsk-tls-cert-database.h"
 #include "tls/dsk-tls-base-connection.h"
 #include "tls/dsk-tls-client-connection.h"
 #include "tls/dsk-tls-server-connection.h"
 #include "tls/dsk-tls-oid-mappings.h"
-#include "tls/dsk-tls-support.h"
+//#include "tls/dsk-tls-support.h"
 #include "tls/dsk-rsa.h"
 
 // TODO: remove!

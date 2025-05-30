@@ -117,7 +117,7 @@ dsk_stream_source_filter_read_buffer (DskStream *source,
       if (sf->buffer.size == 0)
         return sf->filter == NULL ? DSK_IO_RESULT_EOF : DSK_IO_RESULT_AGAIN;
     }
-  dsk_buffer_drain (read_buffer, &sf->buffer);
+  dsk_buffer_transfer (read_buffer, &sf->buffer);
   dsk_hook_set_idle_notify (&source->readable_hook, sf->filter == NULL);
   if (sf->sub != NULL
    && sf->read_trap == NULL

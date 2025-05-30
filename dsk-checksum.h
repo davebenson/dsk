@@ -11,7 +11,7 @@ typedef struct DskChecksum DskChecksum;
 //
 // Checksum "instances" (the thing initialized by init)
 // must have several properties:
-//   * it must be of size instance_size and aligned per instance_alignment
+//   * it must be of size instance_size and aligned per default allocator alignment
 //   * they are movable (ie you can replace "init" with
 //     a memcpy of a valid instance (of the same type, of course)).
 //   * they have no destructor - they must not do memory allocation, etc

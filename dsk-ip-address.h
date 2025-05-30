@@ -16,11 +16,11 @@ struct _DskIpAddress
   
 bool    dsk_hostname_looks_numeric   (const char         *str);
 bool    dsk_ip_address_parse_numeric (const char         *str,
-                                             DskIpAddress       *out);
+                                      DskIpAddress       *out);
 char   *dsk_ip_address_to_string     (const DskIpAddress *address);
 
 bool    dsk_ip_addresses_equal       (const DskIpAddress *a,
-                                             const DskIpAddress *b);
+                                      const DskIpAddress *b);
 
 
 /* --- interfacing with system-level sockaddr structures --- */

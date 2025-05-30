@@ -29,11 +29,11 @@ static DskTlsSignatureScheme global_sig_schemes[] = {
 #define HS_ALLOC(hs_info, type) \
   ((type *) dsk_mem_pool_alloc (&((hs_info)->mem_pool), sizeof(type)))
 #define HS_ALLOC0(hs_info, type) \
-  ((type *) dsk_mem_pool_alloc (&((hs_info)->mem_pool), sizeof(type)))
+  ((type *) dsk_mem_pool_alloc0 (&((hs_info)->mem_pool), sizeof(type)))
 #define HS_ALLOC_ARRAY(hs_info, count, type) \
   ((type *) dsk_mem_pool_alloc (&((hs_info)->mem_pool), sizeof(type) * (count)))
 #define HS_ALLOC_ARRAY0(hs_info, count, type) \
-  ((type *) dsk_mem_pool_alloc (&((hs_info)->mem_pool), sizeof(type) * (count)))
+  ((type *) dsk_mem_pool_alloc0 (&((hs_info)->mem_pool), sizeof(type) * (count)))
 
 static bool
 handle_certificate_verify  (DskTlsConnection *conn,

@@ -110,7 +110,7 @@ void     dsk_buffer_printf              (DskBuffer    *buffer,
 size_t   dsk_buffer_transfer            (DskBuffer    *dst,
                                          DskBuffer    *src);
 
-/* Like `drain', but only transfers some of the data. */
+/* Like `transfer', but only transfers some of the data. */
 size_t   dsk_buffer_transfer_max        (DskBuffer    *dst,
                                          DskBuffer    *src,
 					 size_t        max_transfer);
