@@ -1,3 +1,7 @@
+//
+// Immutable JSON objects.
+//
+
 typedef struct _DskJsonMember DskJsonMember;
 typedef union _DskJsonValue DskJsonValue;
 typedef struct _DskJsonParser DskJsonParser;

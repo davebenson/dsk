@@ -68,10 +68,7 @@ struct DskRSAPublicKey
 };
 
 // In RFS 8017 Section 5.1.1 this is routine RSAEP.
-bool dsk_rsa_public_key_crypt  (const DskRSAPublicKey *key,
-                                const uint32_t *in,
-                                uint32_t *out);
-bool dsk_rsa_private_key_crypt (const DskRSAPrivateKey *key,
+bool dsk_rsa_public_key_encrypt(const DskRSAPublicKey *key,
                                 const uint32_t *in,
                                 uint32_t *out);
 

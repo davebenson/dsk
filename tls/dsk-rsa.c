@@ -293,7 +293,7 @@ dsk_rsa_private_key_decrypt (const DskRSAPrivateKey *key,
 
 // In RFC 8017 Section 5.1.1 this is routine RSAEP.
 bool
-dsk_rsa_public_key_encrypt (const DskRSAPublicKey *key,
+dsk_rsa_public_key_encrypt  (const DskRSAPublicKey *key,
                              const uint32_t *plaintext,
                              uint32_t *ciphertext_out)
 {

@@ -171,6 +171,7 @@ void       *dsk_error_find_data  (DskError   *error,
 DskErrorDataType dsk_error_data_type_errno = {
   "errno",
   sizeof(int),
+  NULL,
   NULL
 };
 void        dsk_error_set_errno  (DskError   *error,
@@ -189,6 +190,64 @@ bool dsk_error_get_errno  (DskError   *error,
       return true;
     }
   return false;
+}
+
+static void clear_error (DskErrorDataType *type, void *data)
+{
+  DSK_UNUSED(type);
+
+  DskError **p_err = data;
+  if (*p_err == NULL)
+    return;
+
+  dsk_error_unref(*p_err);
+  *p_err = NULL;
+}
+
+static void copy_error(DskErrorDataType *type,
+                       void *dst_data,
+		       const void *src_data)
+{
+  DSK_UNUSED(type);
+
+  DskError *dst = * (DskError **) dst_data;
+  DskError *src = * (DskError **) src_data;
+  if (src != NULL)
+    dsk_error_ref (src);
+  if (dst != NULL)
+    dsk_error_unref (dst);
+  *(DskError **) dst = src;
+}
+
+DskErrorDataType dsk_error_data_type_cause = {
+  "cause",
+  sizeof(DskError*),
+  clear_error,
+  copy_error
+};
+
+void        dsk_error_set_cause  (DskError   *error,
+                                  DskError   *cause)
+{
+  if (!cause)
+    {
+       dsk_error_remove_data(error, &dsk_error_data_type_cause);
+       return;
+    }
+
+  DskError **err = (DskError **) dsk_error_force_data (error, &dsk_error_data_type_cause, NULL);
+  dsk_error_ref (cause);
+  if (*err)
+    dsk_error_unref (*err);
+  *err = cause;
+}
+
+DskError *dsk_error_get_cause  (DskError   *error)
+{
+  DskError **e = dsk_error_find_data (error, &dsk_error_data_type_cause);
+  if (e == NULL)
+    return NULL;
+  return *e;
 }
 
 void        dsk_propagate_error  (DskError  **dst,

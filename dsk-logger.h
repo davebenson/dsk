@@ -21,9 +21,14 @@ struct _DskLoggerOptions
 
 DskLogger *dsk_logger_new         (DskLoggerOptions *options,
                                    DskError        **error);
+void       dsk_logger_destroy     (DskLogger        *logger);
+
+// TODO: find a convenient sub that's thread-safe, 
+// but maybe a thread-local variable is the answer?
+// Probably peek_buffer should drop the old buffer
 DskBuffer *dsk_logger_peek_buffer (DskLogger        *logger);
 void       dsk_logger_done_buffer (DskLogger        *logger);
-void       dsk_logger_destroy     (DskLogger        *logger);
+
 
 /* helper functions */
 void       dsk_logger_printf      (DskLogger        *logger,

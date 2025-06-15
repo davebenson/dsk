@@ -14,7 +14,7 @@ struct _DskCryptoOptions
     -1,               /* algo_index */         \
     0,                /* key_length */         \
     NULL,             /* key_data */           \
-    true          /* encrypt by default */ \
+    true              /* encrypt by default */ \
   }
 
 struct _DskCipherInfo
@@ -26,7 +26,7 @@ struct _DskCipherInfo
 };
 
 DskSyncFilter *dsk_crypto_filter_new (DskCryptoOptions *options,
-                                       DskError        **error);
+                                      DskError        **error);
 
 extern DskCipherInfo dsk_ciphers[];
 extern unsigned dsk_n_ciphers;

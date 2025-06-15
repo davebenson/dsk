@@ -23,7 +23,7 @@ DskDir      *dsk_dir_new                     (DskDir         *parent,
                                               DskDirNewFlags flags,
                                               DskError      **error);
 
-/* note: these functions passthru NULL safely (as does all this API) */
+/* note: these functions allow dir=NULL safely (as does all this API) */
 DskDir      *dsk_dir_ref                     (DskDir         *dir);
 void         dsk_dir_unref                   (DskDir         *dir);
 

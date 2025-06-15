@@ -59,10 +59,6 @@
  *         Find the last node in the tree which is before or equal to 'key'.
  *   LOOKUP_OR_NEXT(tree, key, out)
  *         Find the first node in the tree which is after or equal to 'key'.
- *   LOOKUP_PREV_COMPARATOR(tree, key, key_comparator, out)
- *         Find the last node in the tree which is before or equal to 'key'.
- *   LOOKUP_NEXT_COMPARATOR(tree, key, key_comparator, out)
- *         Find the first node in the tree which is after or equal to 'key'.
  *   LOOKUP_PREV(tree, key, out)
  *         Find the last node in the tree which is before or equal to 'key'.
  *   LOOKUP_NEXT(tree, key, out)

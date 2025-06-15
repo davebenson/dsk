@@ -37,7 +37,7 @@ struct _DskHook
   void *object;
   DskHookFuncs *funcs;
 
-  /* the remaining methods are zeroed initially */
+  /* the remaining members are zeroed initially */
   unsigned char is_idle_notify : 1;
   unsigned char is_cleared : 1;
   unsigned char is_notifying : 1;
