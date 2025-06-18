@@ -21,9 +21,11 @@ struct AES128_GCM_CTX
 
 static void
 aes128_gcm_init     (void           *instance,
+		     bool            for_encryption,
                      const uint8_t  *key)
 {
   AES128_GCM_CTX *ctx = instance;
+  DSK_UNUSED (for_encryption);
   dsk_aes128_encryptor_init (&ctx->cipher, key);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes128_encrypt_inplace,
                            &ctx->cipher, &ctx->gcm_precompute);
@@ -95,9 +97,11 @@ struct AES256_GCM_CTX
 
 static void
 aes256_gcm_init     (void           *instance,
+		     bool            for_encryption,
                      const uint8_t  *key)
 {
   AES256_GCM_CTX *ctx = instance;
+  DSK_UNUSED (for_encryption);
   dsk_aes256_encryptor_init (&ctx->cipher, key);
   dsk_aead_gcm_precompute ((DskBlockCipherInplaceFunc) dsk_aes256_encrypt_inplace,
                            &ctx->cipher, &ctx->gcm_precompute);
@@ -174,9 +178,11 @@ struct AES128_CCM_CTX
 
 static void
 aes128_ccm_init     (void           *instance,
+		     bool            for_encryption,
                      const uint8_t  *key)
 {
   AES128_CCM_CTX *ctx = instance;
+  DSK_UNUSED (for_encryption);
   dsk_aes128_encryptor_init (&ctx->cipher, key);
 }
 static void
@@ -296,9 +302,12 @@ struct CHACHA20_POLY1305_CTX
 };
 
 static void
-chacha20_poly1305_init (void *instance, const uint8_t *key)
+chacha20_poly1305_init (void *instance,
+		        bool  for_encryption,
+		        const uint8_t *key)
 {
   CHACHA20_POLY1305_CTX *ctx = (CHACHA20_POLY1305_CTX *) instance;
+  DSK_UNUSED (for_encryption);
 #if DSK_IS_BIG_ENDIAN
   for (unsigned i = 0; i < 8; i++)
     ctx->key[i] = dsk_uint32le_parse (key + 4*i);

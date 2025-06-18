@@ -173,9 +173,8 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
                                     DskError    **error);
 
 
-//
-//bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
-//                                      const DskTlsX509Certificate *b);
+bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
+                                      const DskTlsX509Certificate *b);
 
 // This only validates the signature.  Expiration times are ignored.
 ///bool

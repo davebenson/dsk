@@ -7,20 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "dsk-common.h"
-#include "dsk-mem-pool.h"
-#include "dsk-hook.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
-#include "dsk-buffer.h"
-#include "dsk-stream.h"
-#include "dsk-stream-listener.h"
-#include "dsk-fd.h"
-#include "dsk-ip-address.h"
-#include "dsk-dispatch.h"
-#include "dsk-main.h"
-#include "dsk-fd-stream.h"
-#include "dsk-socket-stream-listener.h"
+#include "dsk.h"
 
 #if !defined(AF_LOCAL) && defined(AF_UNIX)
 #  define AF_LOCAL AF_UNIX

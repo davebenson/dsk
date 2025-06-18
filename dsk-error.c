@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "dsk-common.h"
-#include "dsk-object.h"
-#include "dsk-error.h"
+#include "dsk.h"
 
 static void dsk_error_finalize (DskError *error)
 {
@@ -168,11 +166,22 @@ void       *dsk_error_find_data  (DskError   *error,
   return NULL;
 }
 
+static void
+dsk_error_data_type_errno__to_string (DskErrorDataType *type,
+		                      const void *data,
+				      DskBuffer *buffer)
+{
+  DSK_UNUSED (type);
+  int e = * (const int *) data;
+  dsk_buffer_printf (buffer, "[errno: %d %s]", e, strerror(e));
+}
+
 DskErrorDataType dsk_error_data_type_errno = {
   "errno",
   sizeof(int),
   NULL,
-  NULL
+  NULL,
+  dsk_error_data_type_errno__to_string
 };
 void        dsk_error_set_errno  (DskError   *error,
                                   int         error_no)
@@ -219,11 +228,25 @@ static void copy_error(DskErrorDataType *type,
   *(DskError **) dst = src;
 }
 
+static void dsk_error_data_type_cause__to_string
+                      (DskErrorDataType *type,
+		       const void *data,
+		       DskBuffer *buffer)
+{
+  char *e = dsk_error_to_string (* (DskError **) data);
+  DSK_UNUSED (type);
+  dsk_buffer_append_byte (buffer, '[');
+  dsk_buffer_append (buffer, strlen (e), e);
+  dsk_free (e);
+  dsk_buffer_append_byte (buffer, ']');
+}
+
 DskErrorDataType dsk_error_data_type_cause = {
   "cause",
   sizeof(DskError*),
   clear_error,
-  copy_error
+  copy_error,
+  dsk_error_data_type_cause__to_string
 };
 
 void        dsk_error_set_cause  (DskError   *error,

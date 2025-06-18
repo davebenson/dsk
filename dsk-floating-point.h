@@ -44,12 +44,12 @@ DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
   return sign | exp | mant;
 }
 
-DSK_INLINE uint32_t dsk_float16_as_uint16  (uint8_t sign_bit,
-                                            int16_t exponent,
-                                            uint16_t mantissa)
-{
-  uint16_t sign = (uint16_t) sign_bit << ???;
-  uint16_t exp = (uint32_t) ((exponent + DSK_FLOAT16_EXPONENT_BIAS) & ????) << ????;
-  uint16_t mant = mantissa & ????
-  return sign | exp | mant;
-}
+//DSK_INLINE uint32_t dsk_float16_as_uint16  (uint8_t sign_bit,
+//                                            int16_t exponent,
+//                                            uint16_t mantissa)
+//{
+//  uint16_t sign = (uint16_t) sign_bit << ???;
+//  uint16_t exp = (uint32_t) ((exponent + DSK_FLOAT16_EXPONENT_BIAS) & ????) << ????;
+//  uint16_t mant = mantissa & ????
+//  return sign | exp | mant;
+//}

@@ -1,7 +1,7 @@
 /* invariant:  if a buffer.size==0, then first_frag/last_frag == NULL.
    corollary:  if a buffer.size==0, then the buffer is using no memory. */
 
-typedef struct _DskBuffer DskBuffer;
+//typedef struct _DskBuffer DskBuffer;
 typedef struct _DskBufferFragment DskBufferFragment;
 
 struct _DskBufferFragment
@@ -58,8 +58,6 @@ DSK_INLINE void dsk_buffer_append_small(DskBuffer    *buffer,
 void     dsk_buffer_append_string       (DskBuffer    *buffer, 
                                          const char   *string);
 DSK_INLINE void dsk_buffer_append_byte(DskBuffer    *buffer, 
-                                         uint8_t       byte);
-void      dsk_buffer_append_byte_f      (DskBuffer    *buffer, 
                                          uint8_t       byte);
 void     dsk_buffer_append_repeated_byte(DskBuffer    *buffer, 
                                          size_t        count,

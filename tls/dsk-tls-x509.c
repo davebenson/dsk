@@ -706,3 +706,23 @@ DskTlsX509CertificateClass dsk_tls_x509_certificate_class =
     dsk_tls_x509_certificate
   )
 };
+
+
+// TODO: let's find the part of TLS 1.3 spec that defines this!
+bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
+                                      const DskTlsX509Certificate *b)
+{
+  const DskTlsX509SubjectPublicKeyInfo *a_pki = &a->subject_public_key_info;
+  const DskTlsX509SubjectPublicKeyInfo *b_pki = &b->subject_public_key_info;
+  if (a_pki->algorithm != b_pki->algorithm
+   || a_pki->public_key_length == b_pki->public_key_length
+   || memcmp (a_pki->public_key,
+	      b_pki->public_key,
+	      a_pki->public_key_length) != 0)
+    {
+      return false;
+    }
+  return true;
+}
+bool dsk_tls_x509_certificates_verify(const DskTlsX509Certificate *a,
+                                      const DskTlsX509Certificate *b)

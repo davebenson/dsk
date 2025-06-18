@@ -36,3 +36,6 @@ extern void dsk_tls_crypto_rng_test_read   (DskTlsCryptoRNG *rng,
 extern void dsk_tls_crypto_rng_nonzero_read(DskTlsCryptoRNG *rng,
                                             size_t           len,
                                             uint8_t         *data);
+
+void dsk_get_cryptorandom_data (size_t length,
+                                uint8_t *data);

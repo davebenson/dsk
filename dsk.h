@@ -4,9 +4,11 @@
 #define DSK_ASM_NONE        0
 #define DSK_ASM_AMD64       1
 
+typedef struct _DskBuffer DskBuffer;
+
 #include "dsk-config.h"
 
-/* Univerisally needed functions and typedefs (like the int## types) */
+/* Universally needed functions and typedefs (like the int## types) */
 #include "dsk-common.h"
 
 /* Parsing and formatting ints in endian-specific ways. */

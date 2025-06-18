@@ -829,8 +829,8 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
       // 
       if (!parse_length_prefixed_extensions (rv,
                                              &at, end,
-                                             &rv->client_hello.n_extensions,
-                                             &rv->client_hello.extensions,
+                                             &rv->n_extensions,
+                                             &rv->extensions,
                                              pool,
                                              error))
         return NULL;
@@ -901,8 +901,8 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
       // 
       if (!parse_length_prefixed_extensions (rv,
                                              &at, end,
-                                             &rv->server_hello.n_extensions,
-                                             &rv->server_hello.extensions,
+                                             &rv->n_extensions,
+                                             &rv->extensions,
                                              pool,
                                              error))
         return NULL;
@@ -912,8 +912,8 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
     {
       if (!parse_length_prefixed_extensions (rv,
                                              &at, end,
-                                             &rv->encrypted_extensions.n_extensions,
-                                             &rv->encrypted_extensions.extensions,
+                                             &rv->n_extensions,
+                                             &rv->extensions,
                                              pool,
                                              error))
         return NULL;
@@ -1085,9 +1085,9 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
           return NULL;
         }
       if (!parse_length_prefixed_extensions (rv, &at, end,
-                                          &rv->new_session_ticket.n_extensions,
-                                          &rv->new_session_ticket.extensions,
-                                                 pool, error))
+                                             &rv->n_extensions,
+                                             &rv->extensions,
+                                             pool, error))
         return NULL;
       break;
     }
@@ -1117,8 +1117,8 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
           return NULL;
         }
       if (!parse_length_prefixed_extensions (rv, &at, end,
-                                   &rv->certificate_request.n_extensions,
-                                   &rv->certificate_request.extensions,
+                                             &rv->n_extensions,
+                                             &rv->extensions,
                                              pool, error))
         {
           return NULL;

@@ -236,7 +236,7 @@ dsk_tls_ecdsa_verify (const DskTls_ECPrime_Group *group,
                                 group->len, u2, u2QA, u2QA + group->len);
   uint32_t *x1 = alloca (4 * group->len);
   uint32_t *y1 = alloca (4 * group->len);
-  dsk_tls_ecprime_add (group->len,
+  dsk_tls_ecprime_add (group,
                        u1G, u1G + group->len,
                        u2QA, u2QA + group->len,
                        x1, y1);
