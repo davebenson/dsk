@@ -1,0 +1,102 @@
+Page 11:
+* If (EC)DHE key establishment
+  is in use, then the ServerHello contains a "key_share" extension with
+  the server's ephemeral Diffie-Hellman share; the server's share MUST
+  be in the same group as one of the client's shares.
+
+Page 12:
+* Application Data MUST NOT be sent prior to sending the Finished
+  message, except as specified in Section 2.3.
+
+Page 13:
+* If the client has not provided a sufficient "key_share" extension......,
+  If no common cryptographic parameters can be negotiated, the server MUST
+  abort the handshake with an appropriate alert.  [This should be inferred to refer
+  to the KeyShare and SupportedGroups extensions;
+  this overlaps with the requirement on p. 26]
+
+Page 15:
+* When a client offers resumption via a PSK,
+  it SHOULD also supply a "key_share" extension
+  to the server to allow the server to decline resumption and fall back
+  to a full handshake, if needed.
+
+Page 24:
+* Protocol messages MUST be sent in the order defined in Section 4.4.1
+  and shown in the diagrams in Section 2.  A peer which receives a
+  handshake message in an unexpected order MUST abort the handshake
+  with an "unexpected_message" alert.
+
+Page 25:
+* If the server selects an (EC)DHE group and the client did not offer a
+  compatible "key_share" extension in the initial ClientHello, the
+  server MUST respond with a HelloRetryRequest (Section 4.1.4) message.
+
+Page 26:
+* If the server is unable to negotiate a supported set of parameters
+  (i.e., there is no overlap between the client and server parameters),
+  it MUST abort the handshake with either a "handshake_failure" or
+  "insufficient_security" fatal alert (see Section 6).
+
+* When a client first connects to a server, it is REQUIRED to send the
+  ClientHello as its first TLS message.  The client will also send a
+  ClientHello when the server has responded to its ClientHello with a
+  HelloRetryRequest.  In that case, the client MUST send the same
+  ClientHello without modification, except as follows....
+
+Page 27:
+* Because TLS 1.3 forbids renegotiation, if a server has negotiated
+  TLS 1.3 and receives a ClientHello at any other time, it MUST
+  terminate the connection with an "unexpected_message" alert.
+
+* If a server established a TLS connection with a previous version of
+  TLS and receives a TLS 1.3 ClientHello in a renegotiation, it MUST
+  retain the previous protocol version.  In particular, it MUST NOT
+  negotiate TLS 1.3.
+
+Page 28:
+* In TLS 1.3, the client indicates its version preferences in the
+  "supported_versions" extension (Section 4.2.1) and the
+  legacy_version field MUST be set to 0x0303, which is the version
+  number for TLS 1.2.
+
+* [referring to legacy_session_id]: client which has a
+  cached session ID set by a pre-TLS 1.3 server SHOULD set this
+  field to that value.  In compatibility mode (see Appendix D.4),
+  this field MUST be non-empty, so a client not offering a
+  pre-TLS 1.3 session MUST generate a new 32-byte value.  This value
+  need not be random but SHOULD be unpredictable to avoid
+  implementations fixating on a specific value (also known as
+  ossification).  Otherwise, it MUST be set as a zero-length vector
+  (i.e., a zero-valued single byte length field).
+
+* [referring to cipher_suites]: If the list contains cipher suites
+  that the server does not recognize, support, or wish to use,
+  Jthe server MUST ignore those cipher suites and process
+  the remaining ones as usual.
+
+Page 29:
+
+* [referring to legacy_compression_methods]:
+  For every TLS 1.3 ClientHello, this vector
+  MUST contain exactly one byte, set to zero, which corresponds to
+  the "null" compression method in prior versions of TLS.
+  If a TLS 1.3 ClientHello is received with any other value in this
+  field, the server MUST abort the handshake with an
+  "illegal_parameter" alert.  Note that TLS 1.3 servers might
+  receive TLS 1.2 or prior ClientHellos which contain other
+  compression methods and (if negotiating such a prior version) MUST
+  follow the procedures for the appropriate prior version of TLS.
+
+* [referring to extensions]
+  Servers MUST ignore unrecognized extensions.
+
+* If negotiating a version of TLS prior to 1.3,
+  a server MUST check that the message either contains no data after
+  legacy_compression_methods or that it contains a valid extensions
+  block with no data following.  If not, then it MUST abort the
+  handshake with a "decode_error" alert.
+
+* In the event that a client requests additional functionality using
+  extensions and this functionality is not supplied by the server, the
+  client MAY abort the handshake.

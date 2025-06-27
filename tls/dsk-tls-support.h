@@ -1,0 +1,3 @@
+
+extern size_t dsk_tls_client_n_cipher_suite_codes;
+extern const DskTlsCipherSuiteCode dsk_tls_client_cipher_suite_codes[];
