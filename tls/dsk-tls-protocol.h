@@ -97,7 +97,7 @@ struct DskTlsExtension_SignatureAlgorithms
 {
   DskTlsExtensionBase base;
   uint16_t n_schemes;
-  DskTlsSignatureScheme *schemes;
+  const DskTlsSignatureScheme *schemes;
 };
 
 /* --- Heartbeat Mode RFC 6520 --- */
@@ -252,7 +252,7 @@ struct DskTlsExtension_CertificateAuthorities
 {
   DskTlsExtensionBase base;
   unsigned n_CAs;
-  DskTlsX509Name *CAs;
+  DskTlsX509DistinguishedName *CAs;
 };
 
 /* --- OID Filters Extension RFC 8446 4.2.5 --- */
@@ -285,8 +285,9 @@ typedef struct DskTlsExtension_CertificateType DskTlsExtension_CertificateType;
 struct DskTlsExtension_CertificateType
 {
   DskTlsExtensionBase base;
-  uint16_t n_certs;
-  DskTlsX509Certificate **certs;
+
+  uint16_t n_cert_types;
+  DskTlsCertificateType *cert_types;
 };
 
 
@@ -322,7 +323,7 @@ typedef struct {
 
 //
 // This structure is designed to map to
-// what RFC 8446 calls "Handshake".
+// the data format RFC 8446 calls "Handshake".
 //
 // But we use DskTlsHandshake to refer to the
 // whole sequence of message-flights,
@@ -426,6 +427,7 @@ DskTlsHandshakeMessage *dsk_tls_handshake_message_parse  (DskTlsHandshakeMessage
                                            DskMemPool         *pool,
                                            DskError          **error);
 
+void dsk_tls_handshake_message_add_extension(DskTlsHandshakeMessage *msg, DskTlsExtension *ext);
 typedef enum
 {
   DSK_TLS_PARSE_RESULT_CODE_OK,

@@ -35,50 +35,62 @@ typedef enum
 // Everyone's favorite concept from ASN.1: the DistinguishedName.
 // (These suckers are pervasive in ldap as well)
 //
+// A DistinguishedName consists of a sequence of RelativeDistinguishedName
+// which we call RDN here.  Each RDN is a attribute type / value pair.
+// The types are given as the following enum:
 typedef enum
 {
-  DSK_TLS_X509_DN_NAME,
-  DSK_TLS_X509_DN_SURNAME,
-  DSK_TLS_X509_DN_GIVEN_NAME,
-  DSK_TLS_X509_DN_INITIALS,
-  DSK_TLS_X509_DN_GENERATION_QUALIFIER,
-  DSK_TLS_X509_DN_COMMON_NAME,
-  DSK_TLS_X509_DN_LOCALITY,
-  DSK_TLS_X509_DN_STATE_OR_PROVINCE,
-  DSK_TLS_X509_DN_ORGANIZATION_NAME,
-  DSK_TLS_X509_DN_ORGANIZATIONAL_UNIT,
-  DSK_TLS_X509_DN_STREET_ADDRESS,
-  DSK_TLS_X509_DN_TITLE,
-  DSK_TLS_X509_DN_QUALIFIER,
-  DSK_TLS_X509_DN_COUNTRY,
-  DSK_TLS_X509_DN_SERIAL_NUMBER,
-  DSK_TLS_X509_DN_PSEUDONAME,
-  DSK_TLS_X509_DN_DOMAIN_COMPONENT,
-  DSK_TLS_X509_DN_EMAIL_ADDRESS,
-  DSK_TLS_X509_DN_USER_ID,
-} DskTlsX509DistinguishedNameType;
+  DSK_TLS_X509_RDN_NAME,
+  DSK_TLS_X509_RDN_SURNAME,
+  DSK_TLS_X509_RDN_GIVEN_NAME,
+  DSK_TLS_X509_RDN_INITIALS,
+  DSK_TLS_X509_RDN_GENERATION_QUALIFIER,
+  DSK_TLS_X509_RDN_COMMON_NAME,
+  DSK_TLS_X509_RDN_LOCALITY,
+  DSK_TLS_X509_RDN_STATE_OR_PROVINCE,
+  DSK_TLS_X509_RDN_ORGANIZATION_NAME,
+  DSK_TLS_X509_RDN_ORGANIZATIONAL_UNIT,
+  DSK_TLS_X509_RDN_STREET_ADDRESS,
+  DSK_TLS_X509_RDN_TITLE,
+  DSK_TLS_X509_RDN_QUALIFIER,
+  DSK_TLS_X509_RDN_COUNTRY,
+  DSK_TLS_X509_RDN_SERIAL_NUMBER,
+  DSK_TLS_X509_RDN_PSEUDONAME,
+  DSK_TLS_X509_RDN_DOMAIN_COMPONENT,
+  DSK_TLS_X509_RDN_EMAIL_ADDRESS,
+  DSK_TLS_X509_RDN_USER_ID,
+} DskTlsX509RDNType;
+
+typedef struct DskTlsX509RelativeDistinguishedName
+{
+  DskTlsX509RDNType type;
+  char *name;
+} DskTlsX509RelativeDistinguishedName;
 
 typedef struct DskTlsX509DistinguishedName
 {
-  DskTlsX509DistinguishedNameType type;
-  char *name;
+  size_t n_rdn;
+  DskTlsX509RelativeDistinguishedName *rdn;
+  DskTlsX509RelativeDistinguishedName **rdn_sorted_by_type;
 } DskTlsX509DistinguishedName;
 
-typedef struct DskTlsX509Name
-{
-  size_t n_distinguished_names;
-  DskTlsX509DistinguishedName *distinguished_names;
-  DskTlsX509DistinguishedName **names_sorted_by_type;
-} DskTlsX509Name;
+const char *dsk_tls_x509_distinguished_name_get_component 
+                              (const DskTlsX509DistinguishedName *name,
+                               DskTlsX509RDNType                  type);
 
-const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
-                                             DskTlsX509DistinguishedNameType t);
+bool        dsk_tls_x509_distinguished_names_equal
+                              (const DskTlsX509DistinguishedName *a,
+                               const DskTlsX509DistinguishedName *b);
+unsigned    dsk_tls_x509_distinguished_name_hash
+                              (const DskTlsX509DistinguishedName *a);
 
-bool     dsk_tls_x509_names_equal(const DskTlsX509Name *a,
-                                  const DskTlsX509Name *b);
-unsigned dsk_tls_x509_name_hash (const DskTlsX509Name *a);
-
-char * dsk_tls_x509_name_to_string (const DskTlsX509Name *a);
+char     * dsk_tls_x509_distinguished_name_to_string
+                              (const DskTlsX509DistinguishedName *a);
+DskTlsX509DistinguishedName * 
+           dsk_tls_x509_distinguished_name_parse
+                              (const char *str,
+                               DskMemPool *mem_pool,
+                               DskError **error);
 
 //
 // Unix-Timestamps for the range with
@@ -129,9 +141,9 @@ struct DskTlsX509Certificate
   unsigned version;             // 1 is v1, etc
   uint8_t serial_number[20];
   DskTlsX509SignatureAlgorithm signature_algorithm;
-  DskTlsX509Name issuer;
+  DskTlsX509DistinguishedName issuer;
   DskTlsX509Validity validity;
-  DskTlsX509Name subject;
+  DskTlsX509DistinguishedName subject;
   DskTlsX509SubjectPublicKeyInfo subject_public_key_info;
 
   DskTlsX509KeyType key_type;

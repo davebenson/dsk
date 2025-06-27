@@ -20,4 +20,4 @@ const DskTlsObjectID *
 //
 // Object-ID to DskTlsX509DistinguishedNameType
 bool dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
-                                                  DskTlsX509DistinguishedNameType *name_type_out);
+                                                  DskTlsX509RDNType *name_type_out);

@@ -2,7 +2,8 @@
 typedef enum
 {
   DSK_TLS_CLIENT_CONNECTION_START,
-  DSK_TLS_CLIENT_CONNECTION_DOING_PSK_LOOKUP,
+  DSK_TLS_CLIENT_CONNECTION_FINDING_PSKS,
+  DSK_TLS_CLIENT_CONNECTION_DONE_FINDING_PSKS,
   DSK_TLS_CLIENT_CONNECTION_WAIT_SERVER_HELLO,
   DSK_TLS_CLIENT_CONNECTION_WAIT_ENCRYPTED_EXTENSIONS,
   DSK_TLS_CLIENT_CONNECTION_WAIT_CERT_CR,
@@ -67,6 +68,8 @@ typedef struct {
   const uint8_t *identity_data;
   size_t state_length;
   const uint8_t *state_data;
+  uint32_t session_create_time;
+  uint32_t ticket_age_add;
 } DskTlsClientSessionInfo;
   
 typedef void (*DskTlsClientStoreSessionFunc) (DskTlsClientHandshake *handshake,
@@ -91,7 +94,7 @@ typedef struct {
   unsigned n_oid_filters;
   DskTlsOIDFilter *oid_filters;
   unsigned n_certificate_authorities;
-  DskTlsX509Name *certificate_authorities;
+  DskTlsX509DistinguishedName *certificate_authorities;
   unsigned n_schemes;
   const DskTlsSignatureScheme *schemes;
 } DskTlsClientCertificateLookup;
@@ -159,6 +162,9 @@ typedef bool (*DskTlsClientWarnHandler) (DskTlsClientConnection  *conn,
                                          DskTlsAlertDescription   description,
                                          void                    *warn_data,
                                          DskError               **error);
+typedef void (*DskTlsClientFatalHandler)(DskTlsClientConnection  *conn, 
+                                         DskTlsAlertDescription   description,
+                                         void                    *warn_data);
 
 typedef struct DskTlsClientContextOptions DskTlsClientContextOptions;
 struct DskTlsClientContextOptions
@@ -169,6 +175,8 @@ struct DskTlsClientContextOptions
   size_t n_application_layer_protocols;
   const char **application_layer_protocols;
   bool application_layer_protocol_negotiation_required;
+
+  bool support_early_data;              // requires Pre-Shared Key
 
   // A comma-sep list of key-shares whose
   // public/private keys should be computed
@@ -182,6 +190,9 @@ struct DskTlsClientContextOptions
   const char *cacert_file;
   const char *cacert_dir;
 
+  size_t n_certificate_authorities;
+  DskTlsX509DistinguishedName *certificate_authorities;
+
   const char *server_name;
 
   bool allow_self_signed;
@@ -193,6 +204,10 @@ struct DskTlsClientContextOptions
   DskTlsClientWarnHandler client_warn_handler;
   void *client_warn_data;
   DskDestroyNotify client_warn_destroy;
+
+  DskTlsClientFatalHandler fatal_handler;
+  void *fatal_handler_data;
+  DskDestroyNotify fatal_handler_destroy;
 };
 #define DSK_TLS_CLIENT_CONTEXT_OPTIONS_INIT (DskTlsClientContextOptions){ \
         .n_certificates = 0, \
@@ -226,12 +241,16 @@ struct DskTlsClientHandshake
 
   DskRand *rng;
   DskError *tmp_error;
+  DskBuffer *early_data;
 
   unsigned allow_early_data : 1;
   unsigned received_hello_retry_request : 1;
   unsigned doing_client_cert_lookup : 1;
   unsigned testing_cert : 1;
   unsigned invoking_user_handler : 1;
+
+  unsigned psk_allow_wo_dh : 1;
+  unsigned psk_allow_w_dh : 1;
 
   //
   // In theory, the client could present multiple key-shares.
@@ -262,13 +281,7 @@ struct DskTlsClientHandshake
   const DskTlsPresharedKeyIdentity *psk_identity;
   int psk_index; // index in PreSharedKey extension of ClientHello
 
-  //
-  // Used transiently to handle handshakes.
-  //
-  DskTlsHandshakeMessage  *received_handshake;
-
   // Handshake currently begin constructed.
-  DskTlsHandshakeMessage  *currently_under_construction;
   unsigned          n_extensions;
   DskTlsExtension **extensions;
   unsigned          max_extensions;

@@ -44,8 +44,11 @@ struct DskTlsBaseHandshake
   void *transcript_hash_instance;
   DskTlsHandshakeMessage *first_handshake;
   DskTlsHandshakeMessage *last_handshake;
+
+  // TODO: need generic destruction list?
 };
-  
+
+void dsk_tls_base_handshake_free (DskTlsBaseHandshake *hs);
 
 typedef uint64_t (*DskTlsGetCurrentTimeFunc)(void *get_time_data);
 uint64_t dsk_tls_get_current_time (void *get_time_data);
@@ -136,6 +139,9 @@ void dsk_tls_base_connection_unsuspend   (DskTlsBaseConnection *connection);
 bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *,
                                               DskStream *underlying,
                                               DskError **error);
+
+// Suspend in constructor.
+void dsk_tls_base_connection_init_suspend (DskTlsBaseConnection *connection);
 
 void dsk_tls_base_connection_set_max_fragment_length (DskTlsBaseConnection *conn,
                                                       unsigned              max_fragment_length);

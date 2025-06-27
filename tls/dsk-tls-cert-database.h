@@ -8,7 +8,7 @@ struct DskTlsCertDatabaseClass
 
   // NOTE: caller must unref the returned cert (if non-NULL)
   DskTlsX509Certificate *(*lookup)(DskTlsCertDatabase *db,
-                                   const DskTlsX509Name *name);
+                                   const DskTlsX509DistinguishedName *name);
   bool (*reload)(DskTlsCertDatabase *db,
                  DskError **error);
 };

@@ -60,7 +60,7 @@ compare_p_distiguished_name_by_type (const void *a, const void *b)
 
 static bool
 parse_name (DskASN1Value    *value,
-            DskTlsX509Name  *name_out,
+            DskTlsX509DistinguishedName  *name_out,
             DskError       **error)
 {
   if (value->type != DSK_ASN1_TYPE_SEQUENCE)
@@ -70,7 +70,7 @@ parse_name (DskASN1Value    *value,
     }
   unsigned n_names = value->v_sequence.n_children;
   DskASN1Value **names = value->v_sequence.children;
-  DskTlsX509DistinguishedName *dn = DSK_NEW_ARRAY (n_names, DskTlsX509DistinguishedName);
+  DskTlsX509RelativeDistinguishedName *dn = DSK_NEW_ARRAY (n_names, DskTlsX509RelativeDistinguishedName);
   unsigned i;
   for (i = 0; i < n_names; i++)
     {
@@ -112,15 +112,15 @@ parse_name (DskASN1Value    *value,
         }
       dn[i].name = dsk_asn1_primitive_value_to_string (name_value);
     }
-  name_out->n_distinguished_names = n_names;
-  name_out->distinguished_names = dn;
+  name_out->n_rdn = n_names;
+  name_out->rdn = dn;
 
   //
   // Compute by-type lookup table.
   //
-  name_out->names_sorted_by_type = DSK_NEW_ARRAY (n_names, DskTlsX509DistinguishedName *);
+  name_out->rdn_sorted_by_type = DSK_NEW_ARRAY (n_names, DskTlsX509RelativeDistinguishedName *);
   for (unsigned i = 0; i < n_names; i++)
-    name_out->names_sorted_by_type[i] = dn + i;
+    name_out->rdn_sorted_by_type[i] = dn + i;
 #define COMPARE_DN_BY_TYPE(a,b, rv)   \
     if (a->type < b->type)            \
       rv = -1;                        \
@@ -128,8 +128,8 @@ parse_name (DskASN1Value    *value,
       rv = 1;                         \
     else                              \
       rv = 0;
-  DSK_QSORT(name_out->names_sorted_by_type,
-            DskTlsX509DistinguishedName *,
+  DSK_QSORT(name_out->rdn_sorted_by_type,
+            DskTlsX509RelativeDistinguishedName *,
             n_names,
             COMPARE_DN_BY_TYPE);
 #undef COMPARE_DN_BY_TYPE
@@ -142,11 +142,11 @@ parse_name (DskASN1Value    *value,
   //
   for (unsigned i = 1; i < n_names; i++)
     {
-      if (name_out->names_sorted_by_type[i-1]->type
-       == name_out->names_sorted_by_type[i]->type)
+      if (name_out->rdn_sorted_by_type[i-1]->type
+       == name_out->rdn_sorted_by_type[i]->type)
         {
           *error = dsk_error_new ("distinguished-name entries must have distinct types");
-          dsk_free (name_out->names_sorted_by_type);
+          dsk_free (name_out->rdn_sorted_by_type);
           goto failed;
         }
     }
@@ -159,14 +159,14 @@ failed:
   return false;
 }
 
-const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
-                                             DskTlsX509DistinguishedNameType t)
+const char *dsk_tls_x509_distinguished_name_get_component (const DskTlsX509DistinguishedName *name,
+                                             DskTlsX509RDNType t)
 {
-  unsigned start = 0, n = name->n_distinguished_names;
+  unsigned start = 0, n = name->n_rdn;
   while (n > 0)
     {
       unsigned mid = start + n / 2;
-      DskTlsX509DistinguishedNameType mid_type = name->names_sorted_by_type[mid]->type;
+      DskTlsX509RDNType mid_type = name->rdn_sorted_by_type[mid]->type;
       if (t < mid_type)
         {
           n /= 2;
@@ -177,23 +177,23 @@ const char *dsk_tls_x509_name_get_component (const DskTlsX509Name *name,
           start = mid + 1;
         }
       else
-        return name->names_sorted_by_type[mid]->name;
+        return name->rdn_sorted_by_type[mid]->name;
     }
-  if (n == 1 && name->names_sorted_by_type[start]->type == t)
+  if (n == 1 && name->rdn_sorted_by_type[start]->type == t)
     {
-      return name->names_sorted_by_type[start]->name;
+      return name->rdn_sorted_by_type[start]->name;
     }
   return NULL;
 }
 
-bool     dsk_tls_x509_name_equal(const DskTlsX509Name *a,
-                                 const DskTlsX509Name *b)
+bool     dsk_tls_x509_distinguished_name_equal(const DskTlsX509DistinguishedName *a,
+                                 const DskTlsX509DistinguishedName *b)
 {
-  if (a->n_distinguished_names != b->n_distinguished_names)
+  if (a->n_rdn != b->n_rdn)
     return false;
-  unsigned n = a->n_distinguished_names;
-  DskTlsX509DistinguishedName **a_names = a->names_sorted_by_type;
-  DskTlsX509DistinguishedName **b_names = b->names_sorted_by_type;
+  unsigned n = a->n_rdn;
+  DskTlsX509RelativeDistinguishedName **a_names = a->rdn_sorted_by_type;
+  DskTlsX509RelativeDistinguishedName **b_names = b->rdn_sorted_by_type;
   for (unsigned i = 0; i < n; i++)
     {
       if (a_names[i]->type != b_names[i]->type)
@@ -204,10 +204,10 @@ bool     dsk_tls_x509_name_equal(const DskTlsX509Name *a,
   return true;
 }
 
-uint32_t dsk_tls_x509_name_hash (const DskTlsX509Name *a)
+uint32_t dsk_tls_x509_distinguished_name_hash (const DskTlsX509DistinguishedName *a)
 {
-  unsigned n = a->n_distinguished_names;
-  DskTlsX509DistinguishedName **a_names = a->names_sorted_by_type;
+  unsigned n = a->n_rdn;
+  DskTlsX509RelativeDistinguishedName **a_names = a->rdn_sorted_by_type;
   uint32_t hash = 5381;
   for (unsigned i = 0; i < n; i++)
     {
@@ -224,12 +224,12 @@ uint32_t dsk_tls_x509_name_hash (const DskTlsX509Name *a)
 }
 
 static void
-dsk_tls_x509_name_clear (DskTlsX509Name *name)
+dsk_tls_x509_distinguished_name_clear (DskTlsX509DistinguishedName *name)
 {
-  for (unsigned i = 0; i < name->n_distinguished_names; i++)
-    dsk_free (name->distinguished_names[i].name);
-  dsk_free (name->names_sorted_by_type);
-  dsk_free (name->distinguished_names);
+  for (unsigned i = 0; i < name->n_rdn; i++)
+    dsk_free (name->rdn[i].name);
+  dsk_free (name->rdn_sorted_by_type);
+  dsk_free (name->rdn);
 }
 
 static bool
@@ -491,9 +491,9 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
 static void
 dsk_tls_x509_certificate_finalize (DskTlsX509Certificate *cert)
 {
-  dsk_tls_x509_name_clear (&cert->issuer);
+  dsk_tls_x509_distinguished_name_clear (&cert->issuer);
   dsk_tls_x509_validity_clear (&cert->validity);
-  dsk_tls_x509_name_clear (&cert->subject);
+  dsk_tls_x509_distinguished_name_clear (&cert->subject);
   dsk_tls_x509_subject_public_key_info_clear (&cert->subject_public_key_info);
   dsk_free (cert->issuer_unique_id);
   dsk_free (cert->subject_unique_id);
@@ -635,7 +635,7 @@ dsk_tls_x509_certificate_sign    (DskTlsKeyPair     *kp,
 }
 
 static bool
-dsk_tls_x509_certificate_verify  (DskTlsKeyPair     *kp,
+dsk_tls_x509_certificate_kp_verify  (DskTlsKeyPair     *kp,
                                   DskTlsSignatureScheme algorithm,
                                   size_t             content_len,
                                   const uint8_t     *content_data,
@@ -698,6 +698,7 @@ dsk_tls_x509_certificate_verify  (DskTlsKeyPair     *kp,
 
 #define dsk_tls_x509_certificate_init NULL
 
+#define dsk_tls_x509_certificate_verify dsk_tls_x509_certificate_kp_verify
 DSK_OBJECT_CLASS_DEFINE_CACHE_DATA(DskTlsX509Certificate);
 DskTlsX509CertificateClass dsk_tls_x509_certificate_class =
 {
@@ -706,6 +707,7 @@ DskTlsX509CertificateClass dsk_tls_x509_certificate_class =
     dsk_tls_x509_certificate
   )
 };
+#undef dsk_tls_x509_certificate_verify
 
 
 // TODO: let's find the part of TLS 1.3 spec that defines this!
@@ -724,5 +726,3 @@ bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
     }
   return true;
 }
-bool dsk_tls_x509_certificates_verify(const DskTlsX509Certificate *a,
-                                      const DskTlsX509Certificate *b)
