@@ -1,7 +1,7 @@
 /* invariant:  if a buffer.size==0, then first_frag/last_frag == NULL.
    corollary:  if a buffer.size==0, then the buffer is using no memory. */
 
-//typedef struct _DskBuffer DskBuffer;
+typedef struct _DskBuffer DskBuffer;
 typedef struct _DskBufferFragment DskBufferFragment;
 
 struct _DskBufferFragment
@@ -119,19 +119,6 @@ size_t   dsk_buffer_append_buffer_max   (DskBuffer    *dst,
                                          const DskBuffer *src,
 					 size_t        max_transfer);
 
-/* --- file-descriptor mucking --- */
-int      dsk_buffer_writev              (DskBuffer       *read_from,
-                                         int              fd);
-int      dsk_buffer_writev_len          (DskBuffer *read_from,
-		                         int              fd,
-		                         unsigned         max_bytes);
-/* returns TRUE iff all the data was written.  'read_from' is blank. */
-bool dsk_buffer_write_all_to_fd  (DskBuffer       *read_from,
-                                         int              fd,
-                                         DskError       **error);
-int      dsk_buffer_readv               (DskBuffer       *write_to,
-                                         int              fd);
-
 /* --- deallocating memory used by buffer --- */
 
 /* This deallocates memory used by the buffer-- you are responsible
@@ -154,20 +141,6 @@ DskBufferFragment *dsk_buffer_find_fragment (DskBuffer   *buffer,
 /* Free all unused buffer fragments. */
 void     _dsk_buffer_cleanup_recycling_bin ();
 
-typedef enum {
-  DSK_BUFFER_DUMP_DRAIN = (1<<0),
-  DSK_BUFFER_DUMP_NO_DRAIN = (1<<1),
-  DSK_BUFFER_DUMP_FATAL_ERRORS = (1<<2),
-  DSK_BUFFER_DUMP_LEAVE_PARTIAL = (1<<3),
-  DSK_BUFFER_DUMP_NO_CREATE_DIRS = (1<<4),
-  DSK_BUFFER_DUMP_EXECUTABLE = (1<<5),
-} DskBufferDumpFlags;
-
-bool dsk_buffer_dump (DskBuffer          *buffer,
-                             const char         *filename,
-                             DskBufferDumpFlags  flags,
-                             DskError          **error);
-                          
 
 /* misc */
 int dsk_buffer_index_of(DskBuffer *buffer, char char_to_find);

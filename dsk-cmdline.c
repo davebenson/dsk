@@ -5,9 +5,9 @@
 #include "dsk-rbtree-macros.h"
 #include "dsk-common.h"
 #include "dsk-object.h"
+#include "dsk-buffer.h"
 #include "dsk-error.h"
 #include "dsk-cmdline.h"
-#include "dsk-buffer.h"
 
 typedef struct _DskCmdlineMode DskCmdlineMode;
 typedef struct _DskCmdlineArg DskCmdlineArg;

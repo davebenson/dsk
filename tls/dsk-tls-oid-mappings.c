@@ -5,7 +5,7 @@
 //
 bool
 dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
-                                             DskTlsX509DistinguishedNameType *out)
+                                             DskTlsX509RDNType *out)
 {
   if (oid->n_subids == 4)
     {
@@ -16,37 +16,37 @@ dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
           switch (oid->subids[3])
             {
             case 3:
-              *out = DSK_TLS_X509_DN_COMMON_NAME;               /* CN */
+              *out = DSK_TLS_X509_RDN_COMMON_NAME;               /* CN */
               return true;
             case 4:
-              *out = DSK_TLS_X509_DN_SURNAME;                   /* SN */
+              *out = DSK_TLS_X509_RDN_SURNAME;                   /* SN */
               return true;
             case 5:
-              *out = DSK_TLS_X509_DN_SERIAL_NUMBER;              /* SERIALNUMBER */
+              *out = DSK_TLS_X509_RDN_SERIAL_NUMBER;              /* SERIALNUMBER */
               return true;
             case 6:
-              *out = DSK_TLS_X509_DN_COUNTRY;              /* C */
+              *out = DSK_TLS_X509_RDN_COUNTRY;              /* C */
               return true;
             case 7:
-              *out = DSK_TLS_X509_DN_LOCALITY;             /* L */
+              *out = DSK_TLS_X509_RDN_LOCALITY;             /* L */
               return true;
             case 8:
-              *out = DSK_TLS_X509_DN_STATE_OR_PROVINCE;    /* S or ST */
+              *out = DSK_TLS_X509_RDN_STATE_OR_PROVINCE;    /* S or ST */
               return true;
             case 9:
-              *out = DSK_TLS_X509_DN_STREET_ADDRESS;            /* STREET */
+              *out = DSK_TLS_X509_RDN_STREET_ADDRESS;            /* STREET */
               return true;
             case 10:
-              *out = DSK_TLS_X509_DN_ORGANIZATION_NAME;         /* O */
+              *out = DSK_TLS_X509_RDN_ORGANIZATION_NAME;         /* O */
               return true;
             case 11:
-              *out = DSK_TLS_X509_DN_ORGANIZATIONAL_UNIT;       /* OU */
+              *out = DSK_TLS_X509_RDN_ORGANIZATIONAL_UNIT;       /* OU */
               return true;
             case 12:
-              *out = DSK_TLS_X509_DN_TITLE;                     /* T or TITLE */
+              *out = DSK_TLS_X509_RDN_TITLE;                     /* T or TITLE */
               return true;
             case 42:
-              *out = DSK_TLS_X509_DN_GIVEN_NAME;                /* G or GN */
+              *out = DSK_TLS_X509_RDN_GIVEN_NAME;                /* G or GN */
               return true;
             }
         }
@@ -55,17 +55,17 @@ dsk_tls_oid_to_x509_distinguished_name_type (const DskTlsObjectID *oid,
     {
       if (dsk_tls_object_ids_equal (dsk_tls_object_id__dn_email_address, oid))
         {
-          *out = DSK_TLS_X509_DN_EMAIL_ADDRESS;
+          *out = DSK_TLS_X509_RDN_EMAIL_ADDRESS;
           return true;
         }
       if (dsk_tls_object_ids_equal (dsk_tls_object_id__dn_user_id, oid))
         {
-          *out = DSK_TLS_X509_DN_USER_ID;
+          *out = DSK_TLS_X509_RDN_USER_ID;
           return true;
         }
       if (dsk_tls_object_ids_equal (dsk_tls_object_id__dn_domain_component, oid))
         {
-          *out = DSK_TLS_X509_DN_DOMAIN_COMPONENT;
+          *out = DSK_TLS_X509_RDN_DOMAIN_COMPONENT;
           return true;
         }
     }

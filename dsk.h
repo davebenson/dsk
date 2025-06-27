@@ -4,7 +4,6 @@
 #define DSK_ASM_NONE        0
 #define DSK_ASM_AMD64       1
 
-typedef struct _DskBuffer DskBuffer;
 
 #include "dsk-config.h"
 
@@ -38,14 +37,18 @@ typedef struct _DskBuffer DskBuffer;
 /* Base-class for the object system. */
 #include "dsk-object.h"
 
+/* DskBuffer: Binary-Data queue. */
+#include "dsk-buffer.h"
+
 /* Base-class for the error system. */
 #include "dsk-error.h"
+
+/* Depends on DskBuffer and DskError */
+#include "dsk-buffer-io.h"
 
 /* DskHook is a lightweight notification system. */
 #include "dsk-hook.h"
 
-/* DskBuffer: Binary-Data queue. */
-#include "dsk-buffer.h"
 
 /* DskFlatBuffer: Binary-Data queue implemented with a single buffer. */
 #include "dsk-flat-buffer.h"

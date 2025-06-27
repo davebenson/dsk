@@ -29,6 +29,8 @@ struct DskTlsKeyPairClass
   size_t (*get_signature_length) (DskTlsKeyPair     *kp,
                                   DskTlsSignatureScheme scheme);
   bool   (*has_private_key)      (DskTlsKeyPair     *kp);
+  bool   (*supports_scheme)      (DskTlsKeyPair     *bp,
+		                  DskTlsSignatureScheme scheme);
   void   (*sign)                 (DskTlsKeyPair     *kp,
                                   DskTlsSignatureScheme algo,
                                   size_t             content_len,
