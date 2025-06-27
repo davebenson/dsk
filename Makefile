@@ -1,6 +1,8 @@
 # just so :make works in vi
 
 # NOTES: add $BREW/opt/openssl/lib/pkgconfig to PKG_CONFIG_PATH
+CPU := $(shell uname -m)
+
 
 BUILT_SOURCES = dsk-ascii-chartable.inc dsk-digit-chartables.inc \
                 dsk-http-ident-chartable.inc dsk-byte-name-table.inc \
@@ -65,12 +67,22 @@ full: all extra
 
 # For minimum size:
 #CC_FLAGS =  -W -Wall -g -O2 -DDSK_DEBUG=0 -DDSK_DISABLE_ASSERTIONS=1 $(EXTRA_CFLAGS) $(DEP_CFLAGS) -DDSK_ASM_MODE=DSK_ASM_AMD64
+ifeq (${CPU}, x86_64)
+ASM_FILES = $(AMD64_ASM_FILES)
+C_ASM_DEFINES = -DDSK_ASM_MODE=DSK_ASM_AMD64
+else ifeq (${CPU}, amd64)
+ASM_FILES = $(AMD64_ASM_FILES)
+C_ASM_DEFINES = -DDSK_ASM_MODE=DSK_ASM_AMD64
+else
+ASM_FILES = 
+endif
+
 
 # For standard initial size:
-CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS) -DDSK_ASM_MODE=DSK_ASM_AMD64
+CC_FLAGS =  -W -Wall -g -O0 -std=c99 -DDSK_DEBUG=1 -D_FILE_OFFSET_BITS=64 $(EXTRA_CFLAGS) $(DEP_CFLAGS) $(C_ASM_DEFINES)
 LINK_FLAGS = -g -lz $(EXTRA_LDFLAGS) $(DEP_LIBS)
 
-ASM_FILES = \
+AMD64_ASM_FILES = \
         tls/amd64/dsk_tls_bignum_add_with_carry.o \
         tls/amd64/dsk_tls_bignum_mul64word.o \
         tls/amd64/dsk_tls_bignum_mul64word_addto.o \
@@ -235,7 +247,7 @@ codepages: mk-codepage Makefile
 #	examples/generated/wikiformats.h examples/generated/wikiformats.c
 #
 clean:
-	rm -f *.o tls/*.o checksums/*.o libdsk.a
+	rm -f *.o tls/*.o checksums/*.o codepages/*.o tls/amd64/*.o json/*.o libdsk.a
 	rm -f $(TEST_PROGRAMS)
 	rm -f $(BUILT_SOURCES)
 	rm -f $(PROGRAMS)

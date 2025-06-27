@@ -189,6 +189,6 @@ bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
                                       const DskTlsX509Certificate *b);
 
 // This only validates the signature.  Expiration times are ignored.
-///bool
-///dsk_tls_x509_certificate_verify (DskTlsX509Certificate *cert,
-///                                 DskTlsX509Certificate *signing_cert);
+bool
+dsk_tls_x509_certificate_verify (DskTlsX509Certificate *cert,
+                                 DskTlsX509Certificate *signing_cert);

@@ -347,9 +347,10 @@ parse_extension (DskTlsHandshakeMessage    *under_construction,
 	    }
 	  unsigned n = algo_size / 2;
 	  ext->signature_algorithms.n_schemes = n;
-	  ext->signature_algorithms.schemes = dsk_mem_pool_alloc (pool, n * sizeof(DskTlsSignatureScheme));
+	  DskTlsSignatureScheme *schemes = dsk_mem_pool_alloc (pool, n * sizeof(DskTlsSignatureScheme));
+	  ext->signature_algorithms.schemes = schemes;
 	  for (unsigned i = 0; i < n; i++)
-	    ext->signature_algorithms.schemes[i] = dsk_uint16be_parse (ext_payload + 2 + i * 2);
+	    schemes[i] = dsk_uint16be_parse (ext_payload + 2 + i * 2);
         }
       else if (dsk_tls_handshake_is_server_hello (under_construction))
         {
