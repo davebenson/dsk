@@ -143,6 +143,15 @@ dsk_mem_pool_strdup       (DskMemPool     *pool,
   L = strlen (str) + 1;
   return memcpy (dsk_mem_pool_alloc_unaligned (pool, L), str, L);
 }
+
+uint8_t *
+dsk_mem_pool_memdup       (DskMemPool     *pool,
+		           size_t          len,
+			   const uint8_t  *data)
+{
+  return memcpy (dsk_mem_pool_alloc_unaligned (pool, len), data, len);
+}
+
 char    *dsk_mem_pool_strcut   (DskMemPool      *pool,
                                 const char      *start,
                                 const char      *past_end)

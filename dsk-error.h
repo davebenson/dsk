@@ -60,7 +60,7 @@ void       *dsk_error_force_data (DskError     *error,
                                   bool         *created_out);
 void       *dsk_error_find_data  (DskError     *error,
                                   DskErrorDataType *data_type);
-void        dsk_error_remove_data(DskError     *error,
+bool        dsk_error_remove_data(DskError     *error,
                                   DskErrorDataType *data_type);
 DskError   *dsk_error_ref        (DskError     *error);
 void        dsk_error_unref      (DskError     *error);

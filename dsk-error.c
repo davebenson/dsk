@@ -136,6 +136,22 @@ void      dsk_add_error_suffix (DskError   **error,
   (*error)->message = new_message;
 }
 
+void dsk_error_to_buffer (DskError *error,
+		          DskBuffer *out)
+{
+  dsk_buffer_append_string (out, "ERROR: ");
+  dsk_buffer_append_string (out, error->message);
+  for (DskErrorData *at = error->data_list; at != NULL; at = at->next)
+    at->type->to_string(at->type, at + 1, out);
+}
+
+char * dsk_error_to_string (DskError *error)
+{
+  DskBuffer buf = DSK_BUFFER_INIT;
+  dsk_error_to_buffer (error, &buf);
+  return dsk_buffer_empty_to_string (&buf);
+}
+
 void       *dsk_error_force_data (DskError   *error,
                                   DskErrorDataType *data_type,
                                   bool *created_out)
@@ -164,6 +180,24 @@ void       *dsk_error_find_data  (DskError   *error,
     if (at->type == data_type)
       return at + 1;
   return NULL;
+}
+
+bool dsk_error_remove_data       (DskError *error,
+                                  DskErrorDataType *data_type)
+{
+  DskErrorData **p_at;
+  for (p_at = &error->data_list; *p_at != NULL; p_at = &((*p_at)->next))
+    if ((*p_at)->type == data_type)
+      {
+	DskErrorData *to_kill = *p_at;
+        *p_at = to_kill->next;
+
+	if (data_type->clear)
+          (*data_type->clear)(data_type, to_kill);
+	dsk_free (to_kill);
+	return true;
+      }
+  return false;
 }
 
 static void
@@ -285,3 +319,4 @@ void        dsk_propagate_error  (DskError  **dst,
   else
     dsk_error_unref (src);
 }
+
