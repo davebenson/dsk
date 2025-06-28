@@ -211,7 +211,7 @@ object_finished (DskJsonParser *parser)
   unsigned i;
   unsigned n_members = STACK_TOP(parser).n_subs;
   DskJsonMember *members = STACK_TOP(parser).u.members;
-  object = dsk_json_value_new_object (n_members, members);
+  object = dsk_json_value_new_object_take (n_members, members);
 
   /* pop the stack (free members' names) */
   for (i = 0; i < n_members; i++)
@@ -229,7 +229,7 @@ array_finished (DskJsonParser *parser)
   DskJsonValue *array;
   unsigned n_values = STACK_TOP(parser).n_subs;
   DskJsonValue **values = STACK_TOP(parser).u.values;
-  array = dsk_json_value_new_array (n_values, values);
+  array = dsk_json_value_new_array_take (n_values, values);
 
   /* pop the stack */
   parser->stack_size--;
@@ -771,7 +771,7 @@ void           dsk_json_parser_destroy  (DskJsonParser *parser)
   unsigned i, j;
   DskJsonValue *v;
   while ((v = dsk_json_parser_pop (parser)) != NULL)
-    dsk_json_value_free (v);
+    dsk_json_value_unref (v);
   for (i = 0; i < parser->stack_size; i++)
     {
       switch (parser->stack[i].type)
@@ -781,12 +781,12 @@ void           dsk_json_parser_destroy  (DskJsonParser *parser)
             {
               dsk_free (parser->stack[i].u.members[j].name);
               if (parser->stack[i].u.members[j].value)
-                dsk_json_value_free (parser->stack[i].u.members[j].value);
+                dsk_json_value_unref (parser->stack[i].u.members[j].value);
             }
           break;
         case STACK_NODE_ARRAY:
           for (j = 0; j < parser->stack[i].n_subs; j++)
-            dsk_json_value_free (parser->stack[i].u.values[j]);
+            dsk_json_value_unref (parser->stack[i].u.values[j]);
         }
       dsk_free (parser->stack[i].u.members);
     }
@@ -821,8 +821,8 @@ DskJsonValue * dsk_json_parse           (size_t         len,
     {
       dsk_set_error (error, "json parser returned multiple values, but only one expected");
       dsk_json_parser_destroy (parser);
-      dsk_json_value_free (test);
-      dsk_json_value_free (rv);
+      dsk_json_value_unref (test);
+      dsk_json_value_unref (rv);
       return NULL;
     }
   dsk_json_parser_destroy (parser);

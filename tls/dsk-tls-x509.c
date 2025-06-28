@@ -708,7 +708,10 @@ DskTlsX509CertificateClass dsk_tls_x509_certificate_class =
 };
 
 
-// TODO: let's find the part of TLS 1.3 spec that defines this!
+// 'a' is the pinned client certificate.
+// 'b' is the first in the server's certificate chain
+//
+// This called when the client gets a CertificateVerify message.`
 bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
                                       const DskTlsX509Certificate *b)
 {
@@ -724,5 +727,3 @@ bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
     }
   return true;
 }
-bool dsk_tls_x509_certificates_verify(const DskTlsX509Certificate *a,
-                                      const DskTlsX509Certificate *b)

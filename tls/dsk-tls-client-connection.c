@@ -112,7 +112,7 @@ struct DskTlsClientContext
   DskDestroyNotify warn_destroy;
 };
 //
-// Allocate memory and objects from the handshke-pool.
+// Allocate memory and objects from the handshake-pool.
 //
 #define HS_ALLOC_DATA(hs_info, len) \
   (         dsk_mem_pool_alloc (&((hs_info)->base.mem_pool), (len)))
@@ -1679,7 +1679,7 @@ dsk_tls_client_connection_new (DskStream     *underlying,
 
   //
   // May need to compute PSK binders.
-  // This couid suspend.
+  // This could suspend.
   //
   if (context->lookup_sessions_func != NULL)
     {

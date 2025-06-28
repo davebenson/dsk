@@ -1,6 +1,8 @@
 //
 // Immutable JSON objects.
 //
+// TODO switch to ref counting?
+//
 
 typedef struct _DskJsonMember DskJsonMember;
 typedef union _DskJsonValue DskJsonValue;
@@ -26,6 +28,7 @@ typedef struct _DskJsonValueBase DskJsonValueBase;
 struct _DskJsonValueBase
 {
   DskJsonValueType type;
+  unsigned ref_count;
 };
 
 typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
@@ -96,23 +99,27 @@ DskJsonValue * dsk_json_parse_file      (const char    *filename,
 /* --- values --- */
 DskJsonValue *dsk_json_value_new_null   (void);
 DskJsonValue *dsk_json_value_new_boolean(bool    value);
-/* takes ownership of subvalues, but not of the members array */
 DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
                                          DskJsonMember *members);
-/* takes ownership of subvalues, but not of the values array */
 DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
                                          DskJsonValue **values);
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
                                          const char    *str);
 DskJsonValue *dsk_json_value_new_number (double         value);
-DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value);
+DskJsonValue *dsk_json_value_ref        (DskJsonValue *value);
 
-void          dsk_json_value_free       (DskJsonValue  *value);
+void          dsk_json_value_unref      (DskJsonValue  *value);
 
 DskJsonValue *dsk_json_object_get_value (DskJsonValue  *object,
                                          const char    *name);
 DskJsonMember*dsk_json_object_get_member(DskJsonValue  *object,
                                          const char    *name);
+
+/* --- ownership transferring constructors --- */
+DskJsonValue *dsk_json_value_new_object_take (unsigned       n_members,
+                                         DskJsonMember *members);
+DskJsonValue *dsk_json_value_new_array_take  (unsigned       n_values,
+                                         DskJsonValue **values);
 
 /* --- writing --- */
 
