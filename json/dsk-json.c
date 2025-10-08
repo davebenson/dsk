@@ -23,6 +23,7 @@ DskJsonValue *dsk_json_value_new_null   (void)
 {
   DskJsonValue *rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_NULL;
+  rv->base.ref_count = 1;
   return rv;
 }
 DskJsonValue *dsk_json_value_new_boolean(bool    value)
@@ -30,6 +31,7 @@ DskJsonValue *dsk_json_value_new_boolean(bool    value)
   DskJsonValue *rv = DSK_NEW (DskJsonValue);
   rv->type = DSK_JSON_VALUE_BOOLEAN;
   rv->v_boolean.value = value;
+  rv->base.ref_count = 1;
   return rv;
 }
 /* takes ownership of subvalues, but not of the members array */
@@ -48,6 +50,7 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
                    + sizeof (DskJsonMember*) * n_members
                    + total_str_len);
   rv->type = DSK_JSON_VALUE_OBJECT;
+  rv->base.ref_count = 1;
   rv->v_object.n_members = n_members;
   rv->v_object.members = (DskJsonMember *) (rv + 1);
   smembers = (DskJsonMember **) (rv->v_object.members + n_members);
@@ -55,7 +58,7 @@ DskJsonValue *dsk_json_value_new_object (unsigned       n_members,
   str_heap = (char*)(smembers + n_members);
   for (i = 0; i < n_members; i++)
     {
-      rv->v_object.members[i].value = members[i].value;
+      rv->v_object.members[i].value = dsk_json_value_ref (members[i].value);
       rv->v_object.members[i].name = str_heap;
       strcpy (str_heap, members[i].name);
       str_heap = strchr (str_heap, 0) + 1;
@@ -102,7 +105,6 @@ dsk_json_object_get_value  (DskJsonValue *value,
   return member == NULL ? NULL : member->value;
 }
 
-/* takes ownership of subvalues, but not of the values array */
 DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
                                          DskJsonValue **values)
 {
@@ -112,7 +114,8 @@ DskJsonValue *dsk_json_value_new_array  (unsigned       n_values,
   rv->type = DSK_JSON_VALUE_ARRAY;
   rv->v_array.n_values = n_values;
   rv->v_array.values = (DskJsonValue **) (rv + 1);
-  memcpy (rv->v_array.values, values, sizeof (DskJsonValue*) * n_values);
+  for (unsigned i = 0; i < n_values; i++)
+    rv->v_array.values[i] = dsk_json_value_ref (values[i]);
   return rv;
 }
 DskJsonValue *dsk_json_value_new_string (unsigned       n_bytes,
@@ -137,6 +140,7 @@ DskJsonValue *dsk_json_value_new_number (double         value)
   return rv;
 }
 
+#if 0
 DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
 {
   switch (value->type)
@@ -176,9 +180,22 @@ DskJsonValue *dsk_json_value_copy       (const DskJsonValue *value)
     }
   dsk_return_val_if_reached ("bad value", NULL);
 }
+#endif
 
-void          dsk_json_value_free       (DskJsonValue  *value)
+DskJsonValue *dsk_json_value_ref (DskJsonValue *value)
 {
+  dsk_assert (value != NULL);
+  dsk_assert (value->base.ref_count > 0);
+  ++(value->base.ref_count);
+  return value;
+}
+
+void          dsk_json_value_unref       (DskJsonValue  *value)
+{
+  dsk_assert (value != NULL);
+  dsk_assert (value->base.ref_count > 0);
+  if (--(value->base.ref_count) > 0)
+    return;
   unsigned i;
   if (value->type == DSK_JSON_VALUE_OBJECT)
     for (i = 0; i < value->v_object.n_members; i++)

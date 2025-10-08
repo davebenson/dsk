@@ -48,6 +48,10 @@ void dsk_hmac_digest (DskChecksumType*type,
   unsigned L = type->hash_size;
   void *H = alloca (type->instance_size);
 
+  // RFC 2104, Section 2: "Applications that use keys longer
+  //                       than B bytes will first hash the key
+  //                       using H and then use the resultant L
+  //                       byte string as the actual key to HMAC."
   if (key_len > B)
     {
       uint8_t *long_key = alloca (L);

@@ -50,13 +50,14 @@ Checksumming algos:
 	http://www.ietf.org/rfc/rfc3174.txt
   SHA256:
 
+TLS/SSL:
+  TLS1.3 RFC 8446 https://www.ietf.org/rfc/rfc8446.txt
 ---
 NOT IMPLEMENTEDD
 
 FTP?
 	...
 	
-SSL
 HTTPS
 JSON
 YAML

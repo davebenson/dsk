@@ -185,10 +185,17 @@ dsk_tls_x509_certificate_from_asn1 (DskASN1Value *value,
                                     DskError    **error);
 
 
+// The first certificate is pinned certificate (context->pinned_cert)
+// in the Client's CertificateVerify message.
 bool dsk_tls_x509_certificates_match (const DskTlsX509Certificate *a,
                                       const DskTlsX509Certificate *b);
 
 // This only validates the signature.  Expiration times are ignored.
+//
+// This is used to verify a link in a signature chain.
+// So given an array of signatures `sig[]`,
+// we will call dsk_tls_x509_certificate_verify(sig[i], sig[i+1])
+// for each element in the chain.
 bool
 dsk_tls_x509_certificate_verify (DskTlsX509Certificate *cert,
                                  DskTlsX509Certificate *signing_cert);
