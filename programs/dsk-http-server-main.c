@@ -19,7 +19,7 @@ static DSK_CMDLINE_CALLBACK_DECLARE(handle_config_file)
   if (value == NULL)
     return false;
   parse_config (value);
-  dsk_json_value_free (value);
+  dsk_json_value_unref (value);
   return true;
 }
 

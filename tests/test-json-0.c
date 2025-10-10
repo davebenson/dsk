@@ -67,50 +67,50 @@ int main(int argc, char **argv)
   v = parse_value ("true");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
   dsk_assert (v->v_boolean.value == true);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("true ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
   dsk_assert (v->v_boolean.value == true);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("false");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
   dsk_assert (v->v_boolean.value == false);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("false ");
   dsk_assert (v->type == DSK_JSON_VALUE_BOOLEAN);
   dsk_assert (v->v_boolean.value == false);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("null");
   dsk_assert (v->type == DSK_JSON_VALUE_NULL);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("null ");
   dsk_assert (v->type == DSK_JSON_VALUE_NULL);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("42 ");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_number.value == 42.0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("42.0");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_number.value == 42.0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("1e3");
   dsk_assert (v->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_number.value == 1000.0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("{}");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
   dsk_assert (v->v_object.n_members == 0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("{ \"a\": 1 }");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
   dsk_assert (strcmp (v->v_object.members[0].name, "a") == 0);
   dsk_assert (v->v_object.members[0].value->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_object.members[0].value->v_number.value == 1.0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("{ \"a\": 1, \"bbb\": false }");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
@@ -129,12 +129,12 @@ int main(int argc, char **argv)
   dsk_assert (strcmp (v->v_object.members[1].name, "bbb") == 0);
   dsk_assert (v->v_object.members[1].value->type == DSK_JSON_VALUE_BOOLEAN);
   dsk_assert (v->v_object.members[1].value->v_boolean.value == false);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("[]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
   dsk_assert (v->v_array.n_values == 0);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("[\"a\",false,666]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
   dsk_assert (v->v_array.values[1]->v_boolean.value == false);
   dsk_assert (v->v_array.values[2]->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_array.values[2]->v_number.value == 666);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("[{\"a\":1}, [1,2,4,9]]");
   dsk_assert (v->type == DSK_JSON_VALUE_ARRAY);
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
   dsk_assert (v->v_array.values[1]->v_array.values[2]->v_number.value == 4);
   dsk_assert (v->v_array.values[1]->v_array.values[3]->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (v->v_array.values[1]->v_array.values[3]->v_number.value == 9);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("{\"b\":123, \"a\":\"foo\", \"c\":42.0}");
   dsk_assert (v->type == DSK_JSON_VALUE_OBJECT);
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
   dsk_assert (mem != NULL);
   dsk_assert (mem->value->type == DSK_JSON_VALUE_NUMBER);
   dsk_assert (mem->value->v_number.value == 42);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   v = parse_value ("\"\\u0001\"");
   dsk_assert (v->type == DSK_JSON_VALUE_STRING);
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
   str = print_value (v);
   dsk_assert (strcmp (str, "\"\\u0001\"") == 0);
   dsk_free (str);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   // Test surrogate pair.
   //  unicode points:     1         x10dc01       2
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
   dsk_assert (strcmp (v->v_string.str, "\x01\xf4\x8f\xb0\x81\x02") == 0);
   str = print_value (v);
   dsk_free (str);
-  dsk_json_value_free (v);
+  dsk_json_value_unref (v);
 
   // Isolated surrogate pair parts do not parse.
   parse_fail ("\\udbff");

@@ -33,7 +33,7 @@ static void flush_parser (DskJsonParser *parser,
     {
       dsk_json_value_to_buffer (json, 0, out);
       dsk_buffer_append_byte (out, '\n');
-      dsk_json_value_free (json);
+      dsk_json_value_unref (json);
     }
 }
 
