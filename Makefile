@@ -33,6 +33,7 @@ TEST_PROGRAMS = tests/test-dns-protocol tests/test-client-server-0 \
                 tests/test-strv \
                 tests/test-asn1 \
                 tests/test-tls-bignum \
+                tests/test-qsort \
                 tests/test-rsa \
                 tests/test-x509-certificates \
                 tests/test-tls-protocol

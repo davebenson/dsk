@@ -267,7 +267,7 @@ void dsk_cmdline_add_int64   (const char     *option_name,
                               const char     *description,
 			      const char     *arg_description,
                               DskCmdlineFlags flags,
-                              int            *value_out)
+                              int64_t        *value_out)
 {
   DskCmdlineArg *arg = add_option (option_name);
   dsk_assert (description != NULL);
@@ -306,7 +306,7 @@ void dsk_cmdline_add_uint64  (const char     *option_name,
                               const char     *description,
 			      const char     *arg_description,
                               DskCmdlineFlags flags,
-                              unsigned       *value_out)
+                              uint64_t       *value_out)
 {
   DskCmdlineArg *arg = add_option (option_name);
   dsk_assert (description != NULL);

@@ -418,7 +418,7 @@ struct _DskQsortStackNode
 
 /* Do not allow equality, since that would make the next push a
    stack overflow, and we might not detect it correctly to stack corruption. */
-#define DSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                          \
+#define DSK_QSORT_ASSERT_STACK_SIZE(stack_alloced)                           \
   dsk_assert(dsk_stack_size < stack_alloced)
 
 #define DSK_INSERTION_SORT(array, type, length, compare)                     \
