@@ -7,10 +7,10 @@ struct _DskMimeKeyValueInplace
   const char *value_start, *value_end;
 };
 bool dsk_mime_key_values_scan (const char *str,
-                                      unsigned    max_kv,
-                                      DskMimeKeyValueInplace *kv,
-                                      unsigned   *n_kv_out,
-                                      DskError  **error);
+                               unsigned    max_kv,
+                               DskMimeKeyValueInplace *kv,
+                               unsigned   *n_kv_out,
+                               DskError  **error);
 
 /* See RFC 2183: Content-Disposition header type;  i guess;
    these fields are far from exhaustive;
@@ -28,6 +28,6 @@ struct _DskMimeContentDisposition
   const char *id_end;
 };
 
-bool dsk_parse_mime_content_disposition_header (const char *line,
-                                                       DskMimeContentDisposition *out,
-                                                       DskError **error);
+bool dsk_parse_mime_content_disposition_header (const char             *line,
+                                                DskMimeContentDisposition *out,
+                                                DskError              **error);

@@ -9,8 +9,8 @@
 // there is an implied one in front of the mantissa
 // for a normalized floating point number.
 DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
-                                               int16_t exponent,
-                                               uint64_t mantissa);
+                                          int16_t exponent,
+                                          uint64_t mantissa);
 
 #define DSK_FLOAT_MANTISSA_BITS   23
 #define DSK_FLOAT_EXPONENT_BITS   8
@@ -19,14 +19,19 @@ DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
 // exponent goes from -127 to 128.
 // mantissa is 23 bits with an implied 1 in front.
 DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
-                                               int16_t exponent,
-                                               uint32_t mantissa);
+                                          int16_t exponent,
+                                          uint32_t mantissa);
 
-
+#define DSK_FLOAT16_MANTISSA_BITS   10
+#define DSK_FLOAT16_EXPONENT_BITS   5
+#define DSK_FLOAT16_EXPONENT_BIAS   15
+DSK_INLINE uint32_t dsk_float16_as_uint16  (uint8_t sign_bit,
+                                            int16_t exponent,
+                                            uint16_t mantissa);
 
 DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
-                                               int16_t exponent,
-                                               uint64_t mantissa)
+                                          int16_t exponent,
+                                          uint64_t mantissa)
 {
   uint64_t sign = (uint64_t) sign_bit << 63;
   uint64_t exp = (uint64_t) ((exponent + DSK_DOUBLE_EXPONENT_BIAS) & 0x7ff) << 52;
@@ -35,8 +40,8 @@ DSK_INLINE uint64_t dsk_double_as_uint64 (uint8_t sign_bit,
 }
 
 DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
-                                               int16_t exponent,
-                                               uint32_t mantissa)
+                                          int16_t exponent,
+                                          uint32_t mantissa)
 {
   uint32_t sign = (uint32_t) sign_bit << 31;
   uint32_t exp = (uint32_t) ((exponent + DSK_FLOAT_EXPONENT_BIAS) & 0xff) << 23;
@@ -44,12 +49,12 @@ DSK_INLINE uint32_t dsk_float_as_uint32  (uint8_t sign_bit,
   return sign | exp | mant;
 }
 
-//DSK_INLINE uint32_t dsk_float16_as_uint16  (uint8_t sign_bit,
-//                                            int16_t exponent,
-//                                            uint16_t mantissa)
-//{
-//  uint16_t sign = (uint16_t) sign_bit << ???;
-//  uint16_t exp = (uint32_t) ((exponent + DSK_FLOAT16_EXPONENT_BIAS) & ????) << ????;
-//  uint16_t mant = mantissa & ????
-//  return sign | exp | mant;
-//}
+DSK_INLINE uint32_t dsk_float16_as_uint16  (uint8_t sign_bit,
+                                            int16_t exponent,
+                                            uint16_t mantissa)
+{
+  uint16_t sign = (uint16_t) sign_bit << 15;
+  uint16_t exp = (uint32_t) ((exponent + DSK_FLOAT16_EXPONENT_BIAS) & 0x1f) << 10;
+  uint16_t mant = mantissa & 0x3ff;
+  return sign | exp | mant;
+}

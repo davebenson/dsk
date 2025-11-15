@@ -8,6 +8,8 @@ DSK_INLINE uint32_t dsk_uint32be_parse (const uint8_t *rep);
 DSK_INLINE int32_t  dsk_int32be_parse  (const uint8_t *rep);
 DSK_INLINE uint64_t dsk_uint64be_parse (const uint8_t *rep);
 DSK_INLINE int64_t  dsk_int64be_parse  (const uint8_t *rep);
+DSK_INLINE float    dsk_float_be_parse (const uint8_t *rep);
+DSK_INLINE double   dsk_double_be_parse(const uint8_t *rep);
 
 /* little-endian parsing */
 DSK_INLINE uint16_t dsk_uint16le_parse (const uint8_t *rep);
@@ -18,6 +20,8 @@ DSK_INLINE uint32_t dsk_uint32le_parse (const uint8_t *rep);
 DSK_INLINE int32_t  dsk_int32le_parse  (const uint8_t *rep);
 DSK_INLINE uint64_t dsk_uint64le_parse (const uint8_t *rep);
 DSK_INLINE int64_t  dsk_int64le_parse  (const uint8_t *rep);
+DSK_INLINE float    dsk_float_le_parse (const uint8_t *rep);
+DSK_INLINE double   dsk_double_le_parse(const uint8_t *rep);
 
 /* big-endian packing */
 DSK_INLINE void     dsk_uint16be_pack  (uint16_t       value,
@@ -36,6 +40,10 @@ DSK_INLINE void     dsk_uint64be_pack  (uint64_t       value,
                                         uint8_t       *rep);
 DSK_INLINE void     dsk_int64be_pack   (int64_t        value,
                                         uint8_t       *rep);
+DSK_INLINE void     dsk_float_be_pack  (float          value,
+                                        uint8_t       *rep);
+DSK_INLINE void     dsk_double_be_pack (double         value,
+                                        uint8_t       *rep);
 
 /* little-endian packing */
 DSK_INLINE void     dsk_uint16le_pack  (uint16_t       value,
@@ -49,6 +57,10 @@ DSK_INLINE void     dsk_int32le_pack   (int32_t        value,
 DSK_INLINE void     dsk_uint64le_pack  (uint64_t       value,
                                         uint8_t       *rep);
 DSK_INLINE void     dsk_int64le_pack   (int64_t        value,
+                                        uint8_t       *rep);
+DSK_INLINE void     dsk_float_le_pack  (float          value,
+                                        uint8_t       *rep);
+DSK_INLINE void     dsk_double_le_pack (double         value,
                                         uint8_t       *rep);
 
 
@@ -117,17 +129,41 @@ dsk_int64be_parse  (const uint8_t *rep)
   return (int64_t) dsk_uint64be_parse (rep);
 }
 
+DSK_INLINE float
+dsk_float_be_parse (const uint8_t *rep)
+{
+  union { uint32_t i; float f; } u;
+  u.i = dsk_uint32be_parse (rep);
+  return u.f;
+}
+
+DSK_INLINE double
+dsk_double_be_parse (const uint8_t *rep)
+{
+  union { uint64_t i; double f; } u;
+  u.i = dsk_uint64be_parse (rep);
+  return u.f;
+}
+
 /* little-endian parsing */
 DSK_INLINE uint16_t
 dsk_uint16le_parse (const uint8_t *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (uint16_t *) rep;
+#else
   return (((uint16_t)rep[0]) << 0)
        | (((uint16_t)rep[1]) << 8);
+#endif
 }
 DSK_INLINE int16_t
 dsk_int16le_parse  (const uint8_t *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (int16_t *) rep;
+#else
   return (int16_t) dsk_uint16le_parse (rep);
+#endif
 }
 DSK_INLINE uint32_t
 dsk_uint24le_parse (const uint8_t *rep)
@@ -147,20 +183,30 @@ dsk_int24le_parse (const uint8_t *rep)
 DSK_INLINE uint32_t
 dsk_uint32le_parse (const uint8_t *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (uint32_t *) rep;
+#else
   return (((uint32_t)rep[0]) << 0)
        | (((uint32_t)rep[1]) << 8)
        | (((uint32_t)rep[2]) << 16)
        | (((uint32_t)rep[3]) << 24);
+#endif
 }
 DSK_INLINE int32_t
 dsk_int32le_parse  (const uint8_t *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (int32_t *) rep;
+#else
   return (int32_t) dsk_uint32le_parse (rep);
+#endif
 }
 DSK_INLINE uint64_t
 dsk_uint64le_parse (const uint8_t *rep)
 {
-#if DSK_SIZEOF_SIZE_T == 4
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (uint64_t *) rep;
+#elif DSK_SIZEOF_SIZE_T == 4
   uint32_t hi = dsk_uint32le_parse (rep + 4);
   uint32_t lo = dsk_uint32le_parse (rep + 0);
   return (((uint64_t)hi) << 32) | (lo);
@@ -178,7 +224,35 @@ dsk_uint64le_parse (const uint8_t *rep)
 DSK_INLINE int64_t
 dsk_int64le_parse  (const uint8_t *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (int64_t *) rep;
+#else
   return (int64_t) dsk_uint64le_parse (rep);
+#endif
+}
+
+DSK_INLINE float
+dsk_float_le_parse (const uint8_t *rep)
+{
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (float *) rep;
+#else
+  union { uint32_t i; float f; } u;
+  u.i = dsk_uint32le_parse (rep);
+  return u.f;
+#endif
+}
+
+DSK_INLINE double
+dsk_double_le_parse (const uint8_t *rep)
+{
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  return * (double *) rep;
+#else
+  union { uint64_t i; double f; } u;
+  u.i = dsk_uint64le_parse (rep);
+  return u.f;
+#endif
 }
 
 /* --- packing --- */
@@ -249,19 +323,46 @@ dsk_int64be_pack   (int64_t        value,
   dsk_uint64be_pack (value, rep);
 }
 
+DSK_INLINE void
+dsk_float_be_pack  (float          value,
+                    uint8_t       *rep)
+{
+  union { uint32_t i; float f; } u;
+  u.f = value;
+  dsk_uint32be_pack (u.i, rep);
+}
+
+DSK_INLINE void
+dsk_double_be_pack (double         value,
+                    uint8_t       *rep)
+{
+  union { uint64_t i; double f; } u;
+  u.f = value;
+  dsk_uint64be_pack (u.i, rep);
+}
+
+
 /* little-endian packing */
 DSK_INLINE void
 dsk_uint16le_pack  (uint16_t       value,
                     uint8_t       *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (uint16_t *) rep = value;
+#else
   rep[0] = value>>0;
   rep[1] = value>>8;
+#endif
 }
 DSK_INLINE void
 dsk_int16le_pack   (int16_t        value,
                     uint8_t       *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (int16_t *) rep = value;
+#else
   dsk_uint16le_pack (value, rep);
+#endif
 }
 DSK_INLINE void
 dsk_uint24le_pack  (uint32_t       value,
@@ -281,22 +382,32 @@ DSK_INLINE void
 dsk_uint32le_pack  (uint32_t       value,
                     uint8_t       *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (uint32_t *) rep = value;
+#else
   rep[0] = value>>0;
   rep[1] = value>>8;
   rep[2] = value>>16;
   rep[3] = value>>24;
+#endif
 }
 DSK_INLINE void
 dsk_int32le_pack   (int32_t        value,
                     uint8_t       *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (int32_t *) rep = value;
+#else
   dsk_uint32le_pack (value, rep);
+#endif
 }
 DSK_INLINE void
 dsk_uint64le_pack  (uint64_t       value,
                     uint8_t       *rep)
 {
-#if DSK_SIZEOF_SIZE_T == 4
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (uint64_t *) rep = value;
+#elif DSK_SIZEOF_SIZE_T == 4
   dsk_uint32le_pack (value >> 32, rep + 4);
   dsk_uint32le_pack (value >> 0, rep);
 #else
@@ -314,6 +425,36 @@ DSK_INLINE void
 dsk_int64le_pack   (int64_t        value,
                     uint8_t       *rep)
 {
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (int64_t *) rep = value;
+#else
   dsk_uint64le_pack (value, rep);
+#endif
+}
+
+DSK_INLINE void
+dsk_float_le_pack  (float          value,
+                    uint8_t       *rep)
+{
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (float *) rep = value;
+#else
+  union { uint32_t i; float f; } u;
+  u.f = value;
+  dsk_uint32le_pack (u.i, rep);
+#endif
+}
+
+DSK_INLINE void
+dsk_double_le_pack (double         value,
+                    uint8_t       *rep)
+{
+#if DSK_IS_LITTLE_ENDIAN && DSK_ALLOW_UNALIGNED_ACCESS
+  * (double *) rep = value;
+#else
+  union { uint64_t i; double f; } u;
+  u.f = value;
+  dsk_uint64le_pack (u.i, rep);
+#endif
 }
 
