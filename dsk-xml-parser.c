@@ -284,7 +284,6 @@ validate_and_split_xpath (const char *xmlpath,
       const char *slash = strchr (at, '/');
       if (slash)
         {
-          rv[i++] = dsk_strdup_slice (at, slash);
           at = slash + 1;
         }
       else

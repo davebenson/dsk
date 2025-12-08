@@ -22,7 +22,7 @@ typedef enum {
 } DskBufferDumpFlags;
 
 bool dsk_buffer_dump (DskBuffer          *buffer,
-                             const char         *filename,
-                             DskBufferDumpFlags  flags,
-                             DskError          **error);
+                      const char         *filename,
+                      DskBufferDumpFlags  flags,
+                      DskError          **error);
                           

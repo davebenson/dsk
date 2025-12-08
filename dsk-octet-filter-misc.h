@@ -45,13 +45,32 @@ typedef enum
 } DskUtf8FixerMode;
 DskSyncFilter *dsk_utf8_fixer_new                 (DskUtf8FixerMode mode);
 
+typedef struct _DskCodepageUnicodeToCodepageEntry DskCodepageUnicodeToCodepageEntry;
+struct _DskCodepageUnicodeToCodepageEntry {
+  uint16_t init_unicode_codepoint;
+  uint8_t codepage_value;       // 128..255
+  uint8_t n_codepage_values;
+}
+
 typedef struct _DskCodepage DskCodepage;
 struct _DskCodepage
 {
   /* gives mappings for characters above 127. */
   uint16_t offsets[129];
   const uint8_t *heap;
+
+  unsigned n_codepage_lookup;
+  DskCodepageUnicodeToCodepageEntry *codepage_lookup;
 };
+
+unsigned dsk_codepage_lookup_utf8_by_cpbyte    (DskCodepag *codepage,
+                                                uint8_t      byte,
+                                                const char **utf8_out);
+
+bool     dsk_codepage_lookup_cpbyte_by_unicode (DskCodepage *codepage,
+                                                unsigned     unicode,
+                                                uint8_t     *cp_out);
+
 extern const DskCodepage dsk_codepage_latin1;
 
 DskSyncFilter *dsk_codepage_to_utf8_new           (const DskCodepage *codepage);

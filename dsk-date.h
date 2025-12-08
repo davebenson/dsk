@@ -38,7 +38,7 @@ struct _DskDate
  * or ANSI C dates (Sun Nov  6 08:49:37 1994)
  * or ISO 8601 dates (2009-02-12 T 14:32:61.1+01:00) (see RFC 3339)
  */
-bool dsk_date_parse   (const char *str,
+bool        dsk_date_parse   (const char *str,
                               char      **end,
                               DskDate    *out,
                               DskError  **error);
@@ -73,9 +73,9 @@ void        dsk_unixtime_to_date (dsk_time_t unixtime,
    The return value is the number of minutes you must add to Greenwich time
    to get the time in the timezone's area.
    (ie a negative number west of Greenwich) */
-bool dsk_date_parse_timezone (const char *at,
-                                     char **end,
-				     int *zone_offset_out);
+bool        dsk_date_parse_timezone (const char *at,
+                                     char      **end,
+				     int        *zone_offset_out);
 
 /* Day 0 was a Thursday, FYI, so we implement day-of-week macros below. */
 int dsk_date_get_days_since_epoch (const DskDate *);

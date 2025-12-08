@@ -79,7 +79,7 @@ retry_open:
           char *slash = strrchr (buf, '/');
           if (slash != NULL)
             {
-              char *dir = dsk_strdup_slice (buf, slash);
+              char *dir = dsk_strcut (buf, slash);
               DskError *error = NULL;
               if (!dsk_mkdir_recursive (dir, 0777, &error))
                 dsk_die ("error making directory %s: %s", dir, error->message);
@@ -239,7 +239,7 @@ retry_inner_pid_file_open:
               char *slash = strrchr (dsk_daemon_pid_filename, '/');
               if (slash == NULL)
                 dsk_die ("daemonize: error creating %s: no such file or dir (cwd does not exist?)", dsk_daemon_pid_filename);
-              char *dir = dsk_strdup_slice (dsk_daemon_pid_filename, slash);
+              char *dir = dsk_strcut (dsk_daemon_pid_filename, slash);
               DskError *error = NULL;
               if (!dsk_mkdir_recursive (dir, 0777, &error))
                 dsk_die ("error making directory %s: %s", dir, error->message);

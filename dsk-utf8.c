@@ -297,7 +297,7 @@ dsk_utf8_split_on_whitespace(const char *str)
             }
           alloced *= 2;
         }
-      rv[n++] = dsk_strdup_slice (start, str);
+      rv[n++] = dsk_strcut (start, str);
     }
   if (rv == pad)
     {

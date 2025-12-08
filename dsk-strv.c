@@ -99,7 +99,7 @@ char    **dsk_strsplit     (const char *str,
   char *next_sep = strstr (str, sep);
   while (next_sep)
     {
-      char *substr = dsk_strdup_slice (str, next_sep);
+      char *substr = dsk_strcut (str, next_sep);
       if (n_pieces == pieces_alloced)
         {
           if (pieces == init_pieces)

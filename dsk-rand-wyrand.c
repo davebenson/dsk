@@ -1,6 +1,4 @@
 //
-//
-//
 // Wyrand generator function (requires __uint128_t support)
 inline uint64_t wyrand(void) {
     wyrand_seed += 0xa0761d6478bd642fULL;

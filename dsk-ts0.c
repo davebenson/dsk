@@ -1129,7 +1129,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
                     }
                   str = end;
                   skip_whitespace (&str, &line_no);
-                  named_expr.name = dsk_strdup_slice (arg_name_start, arg_name_end);
+                  named_expr.name = dsk_strcut (arg_name_start, arg_name_end);
                   if (args_alloced == n_args)
                     {
                       unsigned old_size = args_alloced * sizeof (DskTs0NamedExpr);
@@ -1166,7 +1166,7 @@ DskTs0Stanza *dsk_ts0_stanza_parse_str  (const char   *str,
               /* TODO: free 'args' */
               goto error_cleanup;
             }
-          tag_stack[tag_stack_size].name = dsk_strdup_slice (tag_name_start, tag_name_end);
+          tag_stack[tag_stack_size].name = dsk_strcut (tag_name_start, tag_name_end);
           tag_stack[tag_stack_size].n_args = n_args;
           tag_stack[tag_stack_size].args = dsk_memdup (sizeof (DskTs0NamedExpr) * n_args, args);
           tag_stack[tag_stack_size].first_piece = n_pieces;

@@ -84,8 +84,7 @@ typedef enum
 #endif
 
 /* DSK_GNUC_NULL_TERMINATED(): Advise the compiler
- * that the arguments should be like printf(3); it may
- * optionally print type warnings.  */
+ * that the arguments should be null terminated. */
 #ifdef __GNUC__
 #if     __GNUC__ >= 4
 #define DSK_GNUC_NULL_TERMINATED()    __attribute__((sentinel))
@@ -199,16 +198,14 @@ void  dsk_free (void *);
 void *dsk_realloc (void *, size_t);
 char *dsk_strdup (const char *str);
 char *dsk_strndup (size_t len, const char *str);
+/* copy the string starting at 'str', and ending with the last-character
+   at end-1 (so endwould point to the NUL on a NUL-terminated string */
 char *dsk_strcut (const char *start, const char *end);
 void *dsk_memdup (size_t, const void *);
 
 void  dsk_strstrip (char *str_inout);
 void  dsk_strchomp (char *str_inout);
 void *dsk_memrchr  (const void *mem, int c, size_t n);
-
-/* copy the string starting at 'str', and ending with the last-character
-   at end_str-1 (so end_str would point to the NUL on a NUL-terminated string */
-char *dsk_strdup_slice (const char *str, const char *end_str);
 
 /* utility for initializing objects */
 void dsk_bzero_pointers (void *ptrs, unsigned n_ptrs);

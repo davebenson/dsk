@@ -52,7 +52,7 @@ int main(int argc, char **argv)
           port = atoi (colon + 1);
           if (port == 0)
             dsk_error ("error parsing port (from '%s')", colon+1);
-          hostname = dsk_strdup_slice (argv[1], colon);
+          hostname = dsk_strcut (argv[1], colon);
         }
     }
 

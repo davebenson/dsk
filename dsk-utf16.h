@@ -16,6 +16,10 @@ dsk_utf16_to_surrogate_pair (uint32_t  unicode,
   _dsk_inline_assert (unicode < 0x110000); /* (1<<20) + (1<<16) */
   pair_out[0] = DSK_UTF16_HI_SURROGATE_START
               + ((unicode - 0x10000) >> 10);
+  //
+  // note: unicode & 0x3ff == (unicode - 0x10000) & 0x3ff,
+  // so there's no reason to use (unicode-0x10000) & 0x3ff below.
+  //
   pair_out[1] = DSK_UTF16_LO_SURROGATE_START
               + (unicode & 0x3ff);
 }

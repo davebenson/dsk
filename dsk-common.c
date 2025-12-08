@@ -123,14 +123,7 @@ dsk_memdup (size_t size, const void *ptr)
   memcpy (rv, ptr, size);
   return rv;
 }
-char *dsk_strdup_slice (const char *str, const char *end_str)
-{
-  unsigned length = end_str - str;
-  char *rv = dsk_malloc (length + 1);
-  memcpy (rv, str, length);
-  rv[length] = '\0';
-  return rv;
-}
+
 void
 dsk_bzero_pointers (void *ptrs,
                     unsigned n_ptrs)
@@ -140,24 +133,36 @@ dsk_bzero_pointers (void *ptrs,
     *at++ = NULL;
 }
 
+//
+// false strings: 0 n no N NO f false F FALSE
+// true strings:  1 y yes Y YES t true T TRUE
+//
 bool
 dsk_parse_boolean (const char *str,
                    bool *out)
 {
   switch (str[0])
     {
-    case '0': if (strcmp (str, "0") == 0) goto is_false; break;
-    case '1': if (strcmp (str, "1") == 0) goto is_true; break;
-    case 'n': if (strcmp (str, "no") == 0) goto is_false; break;
-    case 'y': if (strcmp (str, "yes") == 0) goto is_true; break;
-    case 'N': if (strcmp (str, "NO") == 0) goto is_false; break;
-    case 'Y': if (strcmp (str, "YES") == 0) goto is_true; break;
-    case 'f': if (strcmp (str, "false") == 0) goto is_false; break;
-    case 't': if (strcmp (str, "true") == 0) goto is_true; break;
-    case 'F': if (strcmp (str, "FALSE") == 0) goto is_false; break;
-    case 'T': if (strcmp (str, "TRUE") == 0) goto is_true; break;
-    default: return false;
+    case '0': if (strcmp (str, "0") == 0)     goto is_false; break;
+    case '1': if (strcmp (str, "1") == 0)     goto is_true;  break;
+    case 'n': if (str[1] == '\0'
+               || strcmp (str, "no") == 0)    goto is_false; break;
+    case 'y': if (str[1] == '\0'
+               || strcmp (str, "yes") == 0)   goto is_true;  break;
+    case 'N': if (str[1] == '\0'
+               || strcmp (str, "NO") == 0)    goto is_false; break;
+    case 'Y': if (str[1] == '\0'
+               || strcmp (str, "YES") == 0)   goto is_true;  break;
+    case 'f': if (str[1] == '\0'
+               || strcmp (str, "false") == 0) goto is_false; break;
+    case 't': if (str[1] == '\0'
+               || strcmp (str, "true") == 0)  goto is_true;  break;
+    case 'F': if (str[1] == '\0'
+               || strcmp (str, "FALSE") == 0) goto is_false; break;
+    case 'T': if (str[1] == '\0'
+               || strcmp (str, "TRUE") == 0)  goto is_true;  break;
     }
+    return false;
 is_true:
   *out = true;
   return true;

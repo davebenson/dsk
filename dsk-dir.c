@@ -475,7 +475,7 @@ do_try_open_fd:
        && (flags & DSK_DIR_OPENFD_NO_MKDIR) == 0
        && (end = filepath_to_directory_end (path)) != NULL)
         {
-          char *dirpath = dsk_strdup_slice (path, end);
+          char *dirpath = dsk_strcut (path, end);
           if (!dsk_dir_mkdir (dir, dirpath, 0, NULL, error))
             {
               dsk_free (dirpath);

@@ -83,7 +83,7 @@ void dsk_cmdline_add_shortcut(char            shortcut,
    are command-line elements that DO NOT begin with "-";
    _options_ DO begin with "-".) */
 typedef bool (*DskCmdlineArgumentHandler) (const char *argument,
-                                                  DskError  **error);
+                                           DskError  **error);
 void dsk_cmdline_set_argument_handler   (DskCmdlineArgumentHandler handler);
 void dsk_cmdline_permit_unknown_options (bool     permit);
 void dsk_cmdline_permit_extra_arguments (bool     permit);
