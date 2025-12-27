@@ -35,37 +35,37 @@ struct _DskCodegenFunction
   const char    *name;
   unsigned       n_args;
   DskCodegenArg *args;
-  bool    semicolon;
-  bool    newline;
-  bool    render_void_args;  /* say "void" if n_args==0 */
+  bool           semicolon;
+  bool           newline;
+  bool           render_void_args;  /* say "void" if n_args==0 */
 
   /* --- used to align all functions in a file together --- */
 
   /* -1 means put return-type and function name on the same line;
      otherwise, they go on separate lines unless they fit. */
-  int             function_name_pos;
+  int            function_name_pos;
 
   /* -1 means just use the length of name; if the name is too long,
      the arguments go on the next line, unless there are 0 args. */
-  int             function_name_width;
+  int            function_name_width;
 
   /* -1 means use the longest type name */
-  int             function_argtypes_width;
+  int            function_argtypes_width;
 
   /* -1 means use the longest arg name */
-  int             function_argnames_width;
+  int            function_argnames_width;
 };
 
-#define DSK_CODEGEN_FUNCTION_INIT                       \
-{                                                       \
-  NULL,                         /* storage */           \
-  "void",                       /* return_type */       \
-  NULL,                         /* name */              \
-  0, NULL,                      /* n_args, args */      \
-  false,                    /* semicolon */         \
-  true,                     /* newline */           \
-  true,                     /* render_void_args */  \
-  -1, -1, -1, -1                /* optional alignment args */ \
+#define DSK_CODEGEN_FUNCTION_INIT                  \
+{                                                  \
+  NULL,              /* storage */                 \
+  "void",            /* return_type */             \
+  NULL,              /* name */                    \
+  0, NULL,           /* n_args, args */            \
+  false,             /* semicolon */               \
+  true,              /* newline */                 \
+  true,              /* render_void_args */        \
+  -1, -1, -1, -1     /* optional alignment args */ \
 }
 
 

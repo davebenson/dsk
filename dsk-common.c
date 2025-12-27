@@ -110,6 +110,9 @@ dsk_strndup (size_t length, const char *str)
 char *
 dsk_strcut (const char *start, const char *end)
 {
+  if (start == NULL)
+    return NULL;
+
   char *rv = dsk_malloc (end - start + 1);
   memcpy (rv, start, end - start);
   rv[end - start] = 0;

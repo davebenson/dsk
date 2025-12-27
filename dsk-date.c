@@ -774,7 +774,7 @@ dsk_date_strftime (const DskDate *date,
     if (out + str_length >= end_out)              \
       {                                           \
         memcpy (out, str_value, end_out - out);   \
-        return false;                         \
+        return false;                             \
       }                                           \
     else                                          \
       {                                           \

@@ -28,7 +28,7 @@ typedef struct _DskJsonValueBase DskJsonValueBase;
 struct _DskJsonValueBase
 {
   DskJsonValueType type;
-  unsigned ref_count;
+  uint32_t ref_count;
 };
 
 typedef struct _DskJsonValueBoolean DskJsonValueBoolean;
@@ -44,18 +44,21 @@ struct _DskJsonValueObject
   DskJsonMember *members;
   DskJsonMember **members_sorted_by_name; /* private */
 };
+
 struct _DskJsonValueArray
 {
   DskJsonValueBase base;
   unsigned n_values;
   DskJsonValue **values;
 };
+
 struct _DskJsonValueString
 {
   DskJsonValueBase base;
   unsigned length;            /* in bytes (!) */
   char *str;
 };
+
 struct _DskJsonValueNumber
 {
   DskJsonValueBase base;
@@ -81,12 +84,12 @@ struct _DskJsonMember
 
 /* --- parser --- */
 DskJsonParser *dsk_json_parser_new      (void);
-bool    dsk_json_parser_feed     (DskJsonParser *parser,
+bool           dsk_json_parser_feed     (DskJsonParser *parser,
                                          size_t         len,
                                          const uint8_t *data,
                                          DskError     **error);
 DskJsonValue * dsk_json_parser_pop      (DskJsonParser *parser);
-bool    dsk_json_parser_finish   (DskJsonParser *parser,
+bool           dsk_json_parser_finish   (DskJsonParser *parser,
                                          DskError     **error);
 void           dsk_json_parser_destroy  (DskJsonParser *parser);
 
@@ -117,9 +120,9 @@ DskJsonMember*dsk_json_object_get_member(DskJsonValue  *object,
 
 /* --- ownership transferring constructors --- */
 DskJsonValue *dsk_json_value_new_object_take (unsigned       n_members,
-                                         DskJsonMember *members);
+                                              DskJsonMember *members);
 DskJsonValue *dsk_json_value_new_array_take  (unsigned       n_values,
-                                         DskJsonValue **values);
+                                              DskJsonValue **values);
 
 /* --- writing --- */
 
@@ -143,3 +146,10 @@ char   *dsk_json_string_dequote   (const char          *init_quote,
                                    const char         **past_end_quote_out,
                                    unsigned            *rv_len_out,
                                    DskError           **error);
+
+
+/* --- other internals --- */
+
+/* static JSON objects are given this ref-count */
+#define DSK_JSON_STATIC_REFCOUNT_MAGIC 0xfe7318ab
+

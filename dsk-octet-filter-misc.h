@@ -50,7 +50,7 @@ struct _DskCodepageUnicodeToCodepageEntry {
   uint16_t init_unicode_codepoint;
   uint8_t codepage_value;       // 128..255
   uint8_t n_codepage_values;
-}
+};
 
 typedef struct _DskCodepage DskCodepage;
 struct _DskCodepage
@@ -63,7 +63,7 @@ struct _DskCodepage
   DskCodepageUnicodeToCodepageEntry *codepage_lookup;
 };
 
-unsigned dsk_codepage_lookup_utf8_by_cpbyte    (DskCodepag *codepage,
+unsigned dsk_codepage_lookup_utf8_by_cpbyte    (DskCodepage *codepage,
                                                 uint8_t      byte,
                                                 const char **utf8_out);
 

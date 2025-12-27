@@ -1,3 +1,6 @@
+//
+// An error, with various hang-on data.
+//
 
 typedef struct _DskErrorClass DskErrorClass;
 typedef struct _DskError DskError;

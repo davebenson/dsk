@@ -278,33 +278,30 @@ bool  dsk_url_scan  (const char     *url_string,
   return true;
 }
 
-static char *strcut (const char *start, const char *end)
-{
-  if (start == NULL)
-    return NULL;
-  char *rv = dsk_malloc (end + 1 - start);
-  memcpy(rv, start, end-start);
-  rv[end - start] = 0;
-  return rv;
-}
-
-// TODO: optimize to use a single allocation for all the strings
 DskUrl *dsk_url_new           (const char *str, 
                                DskError  **error)
 {
   DskUrlScanned scanned;
   if (!dsk_url_scan (str, &scanned, error))
     return NULL;
+  return dsk_url_new_from_scanned (&scanned, error);
+}
+
+// TODO: optimize to use a single allocation for all the strings
+DskUrl *
+dsk_url_new_from_scanned (const DskUrlScanned *scanned,
+                          DskError **error)
+{
   DskUrl *url = dsk_object_new (&dsk_url_class);
-  url->scheme_str = strcut (scanned.scheme_start, scanned.scheme_end);
-  url->scheme = scanned.scheme;
-  url->username = strcut (scanned.username_start, scanned.username_end);
-  url->password = strcut (scanned.password_start, scanned.password_end);
-  url->host = strcut (scanned.host_start, scanned.host_end);
-  url->port = scanned.port;
-  url->path = strcut (scanned.path_start, scanned.path_end);
-  url->query = strcut (scanned.query_start, scanned.query_end);
-  url->fragment = strcut (scanned.fragment_start, scanned.fragment_end);
+  url->scheme_str = dsk_strcut (scanned->scheme_start, scanned->scheme_end);
+  url->scheme = scanned->scheme;
+  url->username = dsk_strcut (scanned->username_start, scanned->username_end);
+  url->password = dsk_strcut (scanned->password_start, scanned->password_end);
+  url->host = dsk_strcut (scanned->host_start, scanned->host_end);
+  url->port = scanned->port;
+  url->path = dsk_strcut (scanned->path_start, scanned->path_end);
+  url->query = dsk_strcut (scanned->query_start, scanned->query_end);
+  url->fragment = dsk_strcut (scanned->fragment_start, scanned->fragment_end);
   return url;
 };
 
