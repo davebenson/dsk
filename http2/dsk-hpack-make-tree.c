@@ -264,6 +264,7 @@ const char *encodings[256+1] = {
  /*EOS */  "111111111111111111111111111111",
 };
 
+#ifdef GENERATE_DECODE_TABLES
 typedef struct Node Node;
 struct Node {
   Node *children[2];
@@ -299,8 +300,11 @@ void number_leafs(Node *at, int *idx_inout)
   if (at->is_value)
     return;
   at->leaf_index = (*idx_inout)++;
-  number_leafs(at->children[0], idx_inout);
+
+  // By visiting the '1' node first, the EOS string
+  // of all ones will come at the front.
   number_leafs(at->children[1], idx_inout);
+  number_leafs(at->children[0], idx_inout);
 }
 
 void condense_nodes(Node *at, CondensedNode *out)
@@ -343,6 +347,8 @@ int main() {
     at = at->children[1];
   printf("#define NODE_1111111 %d\n",at->leaf_index);
 
+  printf("#define EOS_NUM_ONES 30\n");
+
   ByteAndLength bal_entries[256];
   memset (bal_entries, 0, sizeof(bal_entries));
   for (int i = 0; i <= 256; i++)
@@ -365,3 +371,24 @@ int main() {
 
   return 0;
 }
+#endif
+
+#ifdef GENERATE_ENCODE_TABLES
+int main()
+{
+  printf("static uint8_t byte_encodings[256][5] = {\n");
+  for (unsigned i = 0; i < 256; i++)
+    {
+      unsigned len = strlen (encodings[i]);
+      uint32_t base = strtoul (encodings[i], NULL, 2) << (32 - len);
+      printf("  {%2d,0x%02x,0x%02x,0x%02x,0x%02x},    /* %3u (0x%02x)",
+          len, (base>>24)&0xff, (base>>16)&0xff, (base>>8)&0xff, (base)&0xff,
+          i, i);
+      if (32 <= i && i < 127)
+        printf(" '%c'", i);
+      printf(" */\n");
+    }
+  printf("};\n");
+  return 0;
+}
+#endif

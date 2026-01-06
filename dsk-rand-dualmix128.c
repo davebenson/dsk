@@ -3,9 +3,14 @@
 struct RandDualMix128 {
   uint64_t state0;
   uint64_t state1;
-  dsk_boolean has_extra;
+  bool has_extra;
   uint32_t extra;
 };
+
+static inline uint64_t rotateLeft(uint64_t v, unsigned amt)
+{
+  return (v << amt) | (v >> (64 - amt));
+}
 
 void rand_dual_mix128_seed (void *instance, size_t N, const uint32_t *seed)
 {
