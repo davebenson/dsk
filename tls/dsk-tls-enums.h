@@ -131,6 +131,7 @@ typedef enum
   DSK_TLS_ALERT_LEVEL_WARNING = 1,
   DSK_TLS_ALERT_LEVEL_FATAL = 2,
 } DskTlsAlertLevel;
+const char *dsk_tls_alert_level_name (DskTlsAlertLevel level);
 
 typedef enum
 {

@@ -50,6 +50,10 @@ dsk_time_t dsk_get_current_time ();
 typedef void (*DskDestroyNotify) (void *data);
 typedef void (*DskVoidFunc) (void);
 
+typedef void (*DskAppendFunc) (size_t         binary_data_length,
+                               const uint8_t *binary_data,
+                               void          *append_data);
+
 typedef enum
 {
   DSK_IO_RESULT_SUCCESS,

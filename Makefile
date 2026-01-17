@@ -161,6 +161,7 @@ libdsk.a: dsk-inlines.o \
           tls/dsk-hkdf.o \
           tls/dsk-asn1.o \
           tls/dsk-chacha20.o \
+          tls/dsk-tls-error.o \
           tls/dsk-tls-object-id.o \
           tls/dsk-tls-object-ids.o \
           tls/dsk-tls-x509.o \

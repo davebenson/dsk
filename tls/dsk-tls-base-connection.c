@@ -509,3 +509,78 @@ void dsk_tls_base_connection_unsuspend   (DskTlsBaseConnection *connection)
   // undoes ref in handle_message_record().
   dsk_object_unref (connection);
 }
+
+
+DskIOResult dsk_tls_base_connection_read        (DskStream      *stream,
+                                                 unsigned        max_len,
+                                                 void           *data_out,
+                                                 unsigned       *bytes_read_out,
+                                                 DskError      **error)
+{
+  DSK_UNUSED (error);
+
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  unsigned amt = dsk_buffer_read (&conn->incoming_plaintext, max_len, data_out);
+  *bytes_read_out = amt;
+
+  // TODO: maybe unblock underlying read
+
+  return DSK_IO_RESULT_SUCCESS;
+}
+
+DskIOResult dsk_tls_base_connection_read_buffer (DskStream      *stream,
+                                                 DskBuffer      *read_buffer,
+                                                 DskError      **error)
+{
+  DSK_UNUSED (error);
+
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  dsk_buffer_transfer (read_buffer, &conn->incoming_plaintext);
+
+  // TODO: maybe unblock underlying read
+
+  return DSK_IO_RESULT_SUCCESS;
+}
+
+
+void        dsk_tls_base_connection_shutdown_read(DskStream      *stream)
+{
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  DSK_UNUSED (conn);
+}
+
+DskIOResult dsk_tls_base_connection_write       (DskStream      *stream,
+                                                 unsigned        max_len,
+                                                 const void     *data_out,
+                                                 unsigned       *n_written_out,
+                                                 DskError      **error)
+{
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  dsk_buffer_append (&conn->outgoing_plaintext, max_len, data_out);
+  *n_written_out = max_len;
+
+  // MAYBE SCHEDULE WRITE
+
+  return DSK_IO_RESULT_SUCCESS;
+}
+
+DskIOResult dsk_tls_base_connection_write_buffer(DskStream      *stream,
+                                                 DskBuffer      *write_buffer,
+                                                 DskError      **error)
+{
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  dsk_buffer_transfer (&conn->outgoing_plaintext, max_len, data_out);
+  *n_written_out = max_len;
+
+  // MAYBE SCHEDULE WRITE
+
+  return DSK_IO_RESULT_SUCCESS;
+  ...
+}
+
+void        dsk_tls_base_connection_shutdown_write(DskStream   *stream)
+{
+  DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
+  ...
+}
+

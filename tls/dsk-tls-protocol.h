@@ -415,7 +415,7 @@ DSK_INLINE bool dsk_tls_handshake_is_hello_retry_request (DskTlsHandshakeMessage
 
 /* --- Parsing --- */
 
-// NOTE: may substructures returned by this function point directly
+// NOTE: many substructures returned by this function point directly
 // into 'data'.  You can track that separately, or you can allocate 'data'
 // from 'pool', which is what we do.
 //
@@ -427,7 +427,10 @@ DskTlsHandshakeMessage *dsk_tls_handshake_message_parse  (DskTlsHandshakeMessage
                                            DskMemPool         *pool,
                                            DskError          **error);
 
-void dsk_tls_handshake_message_add_extension(DskTlsHandshakeMessage *msg, DskTlsExtension *ext);
+// NOTE: 'ext' must be allocated from the handshake pool.
+void dsk_tls_handshake_message_add_extension(DskTlsHandshakeMessage *msg,
+                                             DskTlsExtension *ext,
+                                             DskMemPool      *pool);
 typedef enum
 {
   DSK_TLS_PARSE_RESULT_CODE_OK,

@@ -61,7 +61,7 @@ DskUrl *dsk_url_new              (const char *str,
 DskUrl *dsk_url_new_from_base    (DskUrl *base,
                                   const char *path,
                                   DskError  **error);
-DskUrl *dsk_url_new_from_scanned (DskUrlScanned *scanned,
+DskUrl *dsk_url_new_from_scanned (const DskUrlScanned *scanned,
                                   DskError  **error);
 DskUrl *dsk_url_new_from_parts   (const char *scheme,
                                   const char *username,

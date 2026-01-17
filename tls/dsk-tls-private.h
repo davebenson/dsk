@@ -95,3 +95,25 @@ bool dsk_tls_base_connection_init_underlying (DskTlsBaseConnection *conn,
     lc_clss##_fatal_alert_received,                           \
     lc_clss##_warning_alert_received                          \
   }
+
+// DskStream implementation methods.
+// Not for public use.
+DskIOResult dsk_tls_base_connection_read        (DskStream      *stream,
+                                                 unsigned        max_len,
+                                                 void           *data_out,
+                                                 unsigned       *bytes_read_out,
+                                                 DskError      **error);
+DskIOResult dsk_tls_base_connection_read_buffer (DskStream      *stream,
+                                                 DskBuffer      *read_buffer,
+                                                 DskError      **error);
+
+void        dsk_tls_base_connection_shutdown_read(DskStream      *stream);
+DskIOResult dsk_tls_base_connection_write       (DskStream      *stream,
+                                                 unsigned        max_len,
+                                                 const void     *data_out,
+                                                 unsigned       *n_written_out,
+                                                 DskError      **error);
+DskIOResult dsk_tls_base_connection_write_buffer(DskStream      *stream,
+                                                 DskBuffer      *write_buffer,
+                                                 DskError      **error);
+void        dsk_tls_base_connection_shutdown_write(DskStream   *stream);

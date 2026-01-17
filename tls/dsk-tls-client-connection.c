@@ -1693,7 +1693,7 @@ DskTlsClientConnectionClass dsk_tls_client_connection_class = {
   )
 };
 
-#define ADD_EXT(m, e) dsk_tls_handshake_message_add_extension(m, e)
+#define ADD_EXT(m, e) dsk_tls_handshake_message_add_extension(m, e, &hs_info->base.mem_pool)
 
 DskTlsClientConnection *
 dsk_tls_client_connection_new (DskStream     *underlying,
@@ -1819,7 +1819,7 @@ done_maybe_finding_psks (DskTlsClientConnection *conn,
       sn->entries[0].type = DSK_TLS_SERVER_NAME_TYPE_HOSTNAME;
       sn->entries[0].name_length = strlen (context->server_name);
       sn->entries[0].name = (char*) (context->server_name);
-      ADD_EXT (c_hello, (DskTlsExtension *) sn);
+     ADD_EXT (c_hello, (DskTlsExtension *) sn);
     }
 
   // NOT SUPPORTED: extension: max_fragment_length

@@ -430,7 +430,7 @@ dsk_aes192_encryptor_init(DskAES192Encryptor          *s,
 
 #if DSK_ASM_MODE != DSK_ASM_AMD64
 void
-dsk_aes192_encrypt_inplace(const DskAES192 *s,
+dsk_aes192_encrypt_inplace(const DskAES192Encryptor *s,
                            uint8_t         *in_out)      /* length 16 */
 {
   ADDROUNDKEY(in_out, s->w, 0);

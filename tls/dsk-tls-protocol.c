@@ -733,6 +733,9 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
   rv->type = type;
   rv->data_length = len;
   rv->data = data;
+  rv->n_extensions = 0;
+  rv->max_extensions = 8;
+  rv->extensions = dsk_mem_pool_alloc (pool, sizeof (DskTlsExtension*) * rv->max_extensions);
 
   const uint8_t *at = data;
   const uint8_t *end = data + len;
@@ -1145,6 +1148,26 @@ dsk_tls_handshake_message_parse  (DskTlsHandshakeMessageType type,
     return false;
   }
   return rv;
+}
+
+void
+dsk_tls_handshake_message_add_extension (DskTlsHandshakeMessage *msg,  
+                                         DskTlsExtension *ext,
+                                         DskMemPool *pool)
+{
+  if (msg->n_extensions == msg->max_extensions)
+    {
+      size_t new_max = msg->n_extensions == 0
+                     ? 8
+                     : (msg->max_extensions*2);
+      size_t old_ext_size = sizeof(DskTlsExtension*) * msg->max_extensions;
+      size_t new_ext_size = sizeof(DskTlsExtension*) * new_max;
+      DskTlsExtension **extensions = dsk_mem_pool_alloc (pool, new_ext_size);
+      memcpy (extensions, msg->extensions, old_ext_size);
+      msg->max_extensions = new_max;
+      msg->extensions = extensions;
+    }
+  msg->extensions[msg->n_extensions++] = ext;
 }
 
 void
