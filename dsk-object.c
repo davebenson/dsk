@@ -8,8 +8,8 @@ bool dsk_debug_object_lifetimes;
 #define ASSERT_OBJECT_CLASS_MAGIC(class) \
   dsk_assert ((class)->object_class_magic == DSK_OBJECT_CLASS_MAGIC)
 
-static DskMemPoolFixed weak_pointer_pool = DSK_MEM_POOL_FIXED_STATIC_INIT(sizeof (DskWeakPointer));
-void dsk_weak_pointer_unref (DskWeakPointer *weak_pointer)
+static DskMemPoolFixed weak_pointer_pool = DSK_MEM_POOL_FIXED_STATIC_INIT(sizeof (DskWeakRef));
+void dsk_weak_ref_unref (DskWeakRef *weak_pointer)
 {
   if (--(weak_pointer->ref_count) == 0)
     {
@@ -17,12 +17,12 @@ void dsk_weak_pointer_unref (DskWeakPointer *weak_pointer)
       dsk_mem_pool_fixed_free (&weak_pointer_pool, weak_pointer);
     }
 }
-DskWeakPointer * dsk_weak_pointer_ref (DskWeakPointer *weak_pointer)
+DskWeakRef * dsk_weak_ref_ref (DskWeakRef *weak_pointer)
 {
   ++(weak_pointer->ref_count);
   return weak_pointer;
 }
-DskWeakPointer * dsk_object_get_weak_pointer (DskObject *object)
+DskWeakRef * dsk_object_get_weak_pointer (DskObject *object)
 {
   if (object->weak_pointer)
     ++(object->weak_pointer->ref_count);
@@ -225,10 +225,10 @@ dsk_object_handle_last_unref (DskObject *o)
 
   if (o->weak_pointer)
     {
-      DskWeakPointer *wp = o->weak_pointer;
+      DskWeakRef *wp = o->weak_pointer;
       wp->object = NULL;
       o->weak_pointer = NULL;
-      dsk_weak_pointer_unref (wp);
+      dsk_weak_ref_unref (wp);
     }
   while (o->finalizer_list)
     {

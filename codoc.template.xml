@@ -6909,7 +6909,7 @@
       </member>
     </structure>
     <structure>
-      <name>DskWeakPointer</name>
+      <name>DskWeakRef</name>
       <member>
         <name>ref_count</name>
         <type>unsigned</type>
@@ -6946,7 +6946,7 @@
       </member>
       <member>
         <name>weak_pointer</name>
-        <type>DskWeakPointer *</type>
+        <type>DskWeakRef *</type>
       </member>
       <member>
         <name>finalizer_list</name>
@@ -7086,24 +7086,24 @@
       </parameter>
     </function>
     <function>
-      <name>dsk_weak_pointer_ref</name>
-      <return-type>DskWeakPointer *</return-type>
+      <name>dsk_weak_ref_ref</name>
+      <return-type>DskWeakRef *</return-type>
       <parameter>
-        <type>DskWeakPointer *</type>
+        <type>DskWeakRef *</type>
         <name>unnamed0</name>
       </parameter>
     </function>
     <function>
-      <name>dsk_weak_pointer_unref</name>
+      <name>dsk_weak_ref_unref</name>
       <return-type>void</return-type>
       <parameter>
-        <type>DskWeakPointer *</type>
+        <type>DskWeakRef *</type>
         <name>unnamed0</name>
       </parameter>
     </function>
     <function>
       <name>dsk_object_get_weak_pointer</name>
-      <return-type>DskWeakPointer *</return-type>
+      <return-type>DskWeakRef *</return-type>
       <parameter>
         <type>DskObject *</type>
         <name>unnamed0</name>

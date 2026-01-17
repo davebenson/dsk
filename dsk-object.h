@@ -60,8 +60,8 @@ struct _DskObjectClassCacheData
   const DskObjectClass *prev_instantiated;
 };
 
-typedef struct _DskWeakPointer DskWeakPointer;
-struct _DskWeakPointer
+typedef struct _DskWeakRef DskWeakRef;
+struct _DskWeakRef
 {
   unsigned ref_count;
   DskObject *object;
@@ -80,7 +80,7 @@ struct _DskObject
 {
   const DskObjectClass *object_class;
   unsigned ref_count;
-  DskWeakPointer *weak_pointer;
+  DskWeakRef *weak_pointer;
   DskObjectFinalizeHandler *finalizer_list;
 };
 
@@ -117,9 +117,10 @@ const      void       *dsk_object_cast_get_class (void *object,
            void       dsk_object_untrap_finalize(DskObject      *object,
                                            DskDestroyNotify destroy,
                                            void            *destroy_data);
-DskWeakPointer *dsk_weak_pointer_ref        (DskWeakPointer *);
-void            dsk_weak_pointer_unref      (DskWeakPointer *);
-DskWeakPointer *dsk_object_get_weak_pointer (DskObject *);
+
+DskWeakRef *dsk_object_weak_ref         (DskObject *);
+void        dsk_weak_ref_unref          (DskWeakRef *);
+DskWeakRef *dsk_weak_ref_ref            (DskWeakRef *);
 
 /* debugging and non-debugging implementations of the various
    cast macros.  */
