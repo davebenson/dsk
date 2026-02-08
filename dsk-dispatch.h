@@ -3,6 +3,7 @@
 
 typedef struct _DskDispatch DskDispatch;
 typedef struct _DskDispatchTimer DskDispatchTimer;
+typedef struct _DskDispatchBusy DskDispatchBusy;
 typedef struct _DskDispatchIdle DskDispatchIdle;
 typedef struct _DskDispatchSignal DskDispatchSignal;
 typedef struct _DskDispatchChild DskDispatchChild;
@@ -69,13 +70,20 @@ uint64_t     dsk_dispatch_timer_get_expiration_millis (DskDispatchTimer *);
  */
 bool  dsk_supports_effective_timers (void);
 
-/* Idle functions */
+/* Idle functions (called repetitively for each polling) */
 typedef void (*DskIdleFunc)   (void               *func_data);
-DskDispatchIdle *
-      dsk_dispatch_add_idle (DskDispatch *dispatch,
-                                    DskIdleFunc func,
-                                    void               *func_data);
+DskDispatchIdle *dsk_dispatch_add_idle (DskDispatch *dispatch,
+                                        DskIdleFunc func,
+                                        void               *func_data);
 void  dsk_dispatch_remove_idle (DskDispatchIdle *);
+
+/* Busy functions (called once before polling) */
+typedef void (*DskBusyFunc)   (void               *func_data);
+DskDispatchBusy *dsk_dispatch_add_busy    (DskDispatch *dispatch,
+                                           DskBusyFunc  func,
+                                           void        *func_data);
+void             dsk_dispatch_remove_busy (DskDispatchBusy *);
+
 
 /* Signal handling */
 typedef void (*DskSignalHandler) (void *func_data);

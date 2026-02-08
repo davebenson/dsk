@@ -57,6 +57,12 @@
      Ð Zcy          Ð® YUcy         Ñ khcy         Ñ ubrcy
      Ð Icy          Ð¯ YAcy         Ñ tscy         Ñ dzcy
  */
+
+// txt does not include '&' or ';'
+// this handles &#XXXX; type codes as well.
+bool dsk_html_entity_lookup (size_t len, 
+                             const char *txt,
+                             uint32_t *codepoint_out);
 /* U+000A0: NO-BREAK SPACE ( ) */
 #define DSK_HTML_ENTITY_UNICODE_nbsp 0x000A0
 #define DSK_HTML_ENTITY_UTF8_nbsp "\302\240"

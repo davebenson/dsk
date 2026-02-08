@@ -104,7 +104,15 @@ print <<"EOF";
      З Zcy          Ю YUcy         х khcy         ў ubrcy
      И Icy          Я YAcy         ц tscy         џ dzcy
  */
+
+// txt does not include '&' or ';'
+// this handles &#XXXX; type codes as well.
+bool dsk_html_entity_lookup (size_t len, 
+                             const char *txt,
+                             uint32_t *codepoint_out);
 EOF
+
+
 
 my @tags = ();
 while (<D>) {

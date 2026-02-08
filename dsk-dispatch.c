@@ -113,6 +113,9 @@ struct _RealDispatch
 
   DskDispatchIdle *first_idle, *last_idle;
   DskDispatchIdle *recycled_idles;
+
+  DskDispatchBusy *first_busy, *last_busy;
+  DskDispatchBusy *recycled_busys;
 };
 
 struct _DskDispatchTimer
@@ -167,6 +170,16 @@ struct _DskDispatchChild
   void *func_data;
 
   DskDispatchChild *left, *right, *parent;
+};
+
+struct _DskDispatchBusy
+{
+  RealDispatch *dispatch;
+  unsigned is_notifying : 1;
+  unsigned is_defunct : 1;
+  DskDispatchBusy *prev, *next;
+  DskBusyFunc func;
+  void *func_data;
 };
 
 /* only one dispatch may assume responsibility for signal-handling */

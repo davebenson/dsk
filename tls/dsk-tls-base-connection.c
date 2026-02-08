@@ -555,6 +555,8 @@ DskIOResult dsk_tls_base_connection_write       (DskStream      *stream,
                                                  unsigned       *n_written_out,
                                                  DskError      **error)
 {
+  DSK_UNUSED (error);
+
   DskTlsBaseConnection *conn = DSK_TLS_BASE_CONNECTION (stream);
   dsk_buffer_append (&conn->outgoing_plaintext, max_len, data_out);
   *n_written_out = max_len;

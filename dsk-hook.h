@@ -99,6 +99,7 @@ _dsk_hook_incr_trap_count         (DskHook       *hook)
   if (++(hook->trap_count) == 1)
     _dsk_hook_trap_count_nonzero (hook);
 } 
+
 DSK_INLINE void
 _dsk_hook_decr_trap_count         (DskHook       *hook)
 {
